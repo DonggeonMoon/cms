@@ -25,8 +25,9 @@ configurations {
         into "$buildDir/libs/exploded" with war
     }
     all {
-        querydsl.extendsFrom compileClasspath
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
     }
+    querydsl.extendsFrom compileClasspath
 }
 
 repositories {
@@ -66,6 +67,9 @@ dependencies {
     testImplementation 'org.springframework.batch:spring-batch-test'
     testImplementation 'org.springframework.security:spring-security-test'
 
+    //JSTL
+    implementation "javax.servlet:jstl:1.2"
+
     implementation "aopalliance:aopalliance:1.0"
     implementation "cglib:cglib:2.2"
     implementation "cglib:cglib:3.1"
@@ -94,7 +98,6 @@ dependencies {
     implementation "egovframework.rte:egovframework.rte.ptl.mvc:${egovRteVersion}"
     implementation "eu.bitwalker:UserAgentUtils:1.21"
     implementation "it.sauronsoftware.cron4j:cron4j:2.2.5"
-    implementation "javax.servlet:jstl:1.2"
     implementation "javax.validation:validation-api:1.1.0.Final"
     implementation "net.bull.javamelody:javamelody-core:1.57.0"
     implementation "net.coobird:thumbnailator:0.4.8"
