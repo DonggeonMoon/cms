@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ibm.icu.util.ChineseCalendar;
-import egovframework.com.cms.config.model.Config;
+import egovframework.com.cms.config.dto.Config;
 import egovframework.com.cms.site.model.Site;
 import egovframework.com.cms.support.Constant;
 import eu.bitwalker.useragentutils.Browser;
