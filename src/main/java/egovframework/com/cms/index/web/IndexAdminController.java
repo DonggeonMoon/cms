@@ -44,6 +44,7 @@ public class IndexAdminController {
     @GetMapping(Constant.APP_PATH + Constant.SITE_ID_PATH + Constant.ADMIN_PATH + "/frame/left.do")
     public String frameleftGet() {
         return "admin/frame/left";
+
     }
 
     @GetMapping(Constant.APP_PATH + Constant.SITE_ID_PATH + Constant.ADMIN_PATH + "/refreshDummy.do")
