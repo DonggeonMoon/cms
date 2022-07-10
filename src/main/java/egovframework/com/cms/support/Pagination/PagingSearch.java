@@ -1,6 +1,6 @@
 package egovframework.com.cms.support.Pagination;
 
-import egovframework.com.cms.config.model.Config;
+import egovframework.com.cms.config.dto.Config;
 import egovframework.com.cms.config.service.ConfigService;
 import egovframework.com.cms.site.dto.MultiSiteVO;
 import egovframework.com.cms.site.model.Site;

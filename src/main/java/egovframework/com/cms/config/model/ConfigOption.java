@@ -1,12 +1,19 @@
 package egovframework.com.cms.config.model;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+@Entity
+@Table(name = "ECMS_CONFIG_OPTION")
 public class ConfigOption {
-    private String confId;//confId + optKey = unique
-    private String optKey;//confId + optKey = unique
+    @Id
+    private String confId; // confId + optKey = unique
+    private String optKey; // confId + optKey = unique
     private String optValue;
     private String optName;
     private String optHelp;
-    private String optType = "text";//옵션유형 text,radio,checkbox,textarea
+    private String optType = "text"; // 옵션 유형 text,radio,checkbox,textarea
     private boolean optHidden = false;
     private String optUnitText;
 

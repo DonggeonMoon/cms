@@ -1,11 +1,13 @@
-package egovframework.com.cms.config.model;
+package egovframework.com.cms.config.dto;
 
+import egovframework.com.cms.config.model.ConfigOption;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 
 @Slf4j
 public class Config {
