@@ -1,6 +1,11 @@
 package egovframework.com.cms.site.model;
 
+import egovframework.com.cms.support.Constant;
 import egovframework.com.cms.watchdog.aop.WatchDog;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Site {
     private static final String DOMAIN_GLUE = ",";
@@ -65,6 +70,9 @@ public class Site {
     }
 
     public String getSiteLocale() {
+        if (StringUtils.isBlank(this.siteLocale)) {
+            return "ko_KR";
+        }
         return siteLocale;
     }
 
@@ -78,5 +86,29 @@ public class Site {
 
     public void setSiteType(String siteType) {
         this.siteType = siteType;
+    }
+
+    public String getSitePrefix() {
+        //메인사이트의 경우 테이블은 ECMS로 시작하고 데이터상의 사이트 아이디는 main 임
+        if (Constant.MAIN_SITE_DISPLAY_ID.equals(this.getSiteId())) {
+            return Constant.MAIN_SITE_PREFIX;
+        }
+        return this.getSiteId().toUpperCase();
+    }
+
+    public List<String> getSeperatedSiteDomains() {
+        List<String> list = new ArrayList<String>();
+        String domains = StringUtils.deleteWhitespace(this.getSiteDomain());
+        if (StringUtils.isNotBlank(domains)) {
+            if (!domains.contains(DOMAIN_GLUE)) {
+                list.add(domains);
+            } else {
+                String[] temp = domains.split(DOMAIN_GLUE);
+                for (String item : temp) {
+                    list.add(item);
+                }
+            }
+        }
+        return list;
     }
 }
