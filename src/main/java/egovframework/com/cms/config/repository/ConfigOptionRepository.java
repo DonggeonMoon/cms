@@ -2,9 +2,8 @@ package egovframework.com.cms.config.repository;
 
 import com.querydsl.core.types.Predicate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import egovframework.com.cms.config.dto.Config;
-import egovframework.com.cms.config.dto.ConfigSearch;
-import egovframework.com.cms.config.dto.ConfigUpdateDto;
+import egovframework.com.cms.config.dto.ConfigOptionSearch;
+import egovframework.com.cms.config.dto.ConfigOptionUpdateDto;
 import egovframework.com.cms.config.model.ConfigOption;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -18,7 +17,7 @@ import static egovframework.com.cms.config.model.QConfigOption.configOption;
 
 @Repository
 @RequiredArgsConstructor
-public class ConfigRepository {
+public class ConfigOptionRepository {
     private final EntityManager entityManager;
     private final JPAQueryFactory queryFactory;
 
@@ -32,14 +31,14 @@ public class ConfigRepository {
         return Optional.ofNullable(config);
     }
 
-    public List<ConfigOption> findList(ConfigSearch configSearch) {
+    public List<ConfigOption> findList(ConfigOptionSearch configSearch) {
         if (configSearch.isPaging())
             return pagingQuery(configSearch);
 
         return nonPagingQuery(configSearch);
     }
 
-    public int count(ConfigSearch configSearch) {
+    public int count(ConfigOptionSearch configSearch) {
         Long count = queryFactory
                 .select(configOption.count())
                 .from(configOption)
@@ -51,7 +50,7 @@ public class ConfigRepository {
         return count.intValue();
     }
 
-    public void updateConfig(Config config, ConfigUpdateDto configUpdateDto) {
+    public void updateConfig(Config config, ConfigOptionUpdateDto configUpdateDto) {
 
     }
 
@@ -59,7 +58,7 @@ public class ConfigRepository {
         entityManager.remove(config);
     }
 
-    private List<ConfigOption> pagingQuery(ConfigSearch configSearch) {
+    private List<ConfigOption> pagingQuery(ConfigOptionSearch configSearch) {
         return queryFactory
                 .selectFrom(configOption)
                 .orderBy(configOption.confId.desc())
@@ -70,7 +69,7 @@ public class ConfigRepository {
                 .fetch();
     }
 
-    private List<ConfigOption> nonPagingQuery(ConfigSearch configSearch) {
+    private List<ConfigOption> nonPagingQuery(ConfigOptionSearch configSearch) {
         return queryFactory
                 .selectFrom(configOption)
                 .orderBy(configOption.confId.desc())
