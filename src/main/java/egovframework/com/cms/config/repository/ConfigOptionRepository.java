@@ -50,11 +50,13 @@ public class ConfigOptionRepository {
         return count.intValue();
     }
 
-    public void updateConfig(Config config, ConfigOptionUpdateDto configUpdateDto) {
-
+    public void updateConfig(ConfigOption configOption, ConfigOptionUpdateDto configUpdateDto) {
+        configOption.update(configUpdateDto.getConfId(), configUpdateDto.getOptKey(),
+                configUpdateDto.getOptValue(), configUpdateDto.getOptName(), configUpdateDto.getOptHelp(),
+                configUpdateDto.getOptType(), configUpdateDto.isOptHidden(), configUpdateDto.getOptUnitText());
     }
 
-    public void delete(Config config) {
+    public void delete(ConfigOption config) {
         entityManager.remove(config);
     }
 

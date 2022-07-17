@@ -1,7 +1,7 @@
 package egovframework.com.cms.support.Pagination;
 
-import egovframework.com.cms.config.dto.Config;
-import egovframework.com.cms.config.service.ConfigService;
+import egovframework.com.cms.config.dto.ConfigOptionResponseDto;
+import egovframework.com.cms.config.service.ConfigOptionService;
 import egovframework.com.cms.site.dto.MultiSiteVO;
 import egovframework.com.cms.site.model.Site;
 import egovframework.com.cms.support.ApplicationContextProvider;
@@ -249,8 +249,9 @@ public class PagingSearch extends MultiSiteVO {
 
     public void fixBrokenSvByDefaultCharsets() throws Exception {
         ApplicationContext context = ApplicationContextProvider.getApplicationContext();
-        ConfigService configService = context.getBean(ConfigService.class);
-        Config config = configService.findConfigById("global");
+        ConfigOptionService configOptionService = context.getBean(ConfigOptionService
+                .class);
+        ConfigOptionResponseDto config = configOptionService.findConfigOptionById() ("global");
         if ("true".equalsIgnoreCase(config.getOption("fix_kor_active"))) {
             this.fixBrokenSv(StringUtils.defaultString(config.getOption("fix_kor_from"), "8859_1"), StringUtils.defaultString(config.getOption("fix_kor_to"), "UTF-8"));
         }
