@@ -12,11 +12,13 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.IdClass;
 import javax.persistence.Table;
 import java.io.Serializable;
 
 @Entity
 @Table(name = "ECMS_CONFIG_OPTION")
+@IdClass(ConfigOptionPK.class)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -25,6 +27,7 @@ public class ConfigOption extends MultiSiteVO implements Serializable {
     @Id
     @WatchDog
     private String confId; // confId + optKey = unique
+    @Id
     private String optKey; // confId + optKey = unique
     private String optValue;
     private String optName;

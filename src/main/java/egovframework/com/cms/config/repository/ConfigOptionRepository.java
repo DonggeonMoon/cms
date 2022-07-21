@@ -25,7 +25,7 @@ public class ConfigOptionRepository {
         entityManager.persist(configOption);
     }
 
-    public Optional<ConfigOption> findById(Long id) {
+    public Optional<ConfigOption> findById(String id) {
         ConfigOption config = entityManager.find(ConfigOption.class, id);
 
         return Optional.ofNullable(config);
