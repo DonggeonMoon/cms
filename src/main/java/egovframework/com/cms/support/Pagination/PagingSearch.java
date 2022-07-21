@@ -1,6 +1,6 @@
 package egovframework.com.cms.support.Pagination;
 
-import egovframework.com.cms.config.dto.ConfigOptionResponseDto;
+import egovframework.com.cms.config.dto.Config;
 import egovframework.com.cms.config.service.ConfigOptionService;
 import egovframework.com.cms.site.dto.MultiSiteVO;
 import egovframework.com.cms.site.model.Site;
@@ -251,7 +251,7 @@ public class PagingSearch extends MultiSiteVO {
         ApplicationContext context = ApplicationContextProvider.getApplicationContext();
         ConfigOptionService configOptionService = context.getBean(ConfigOptionService
                 .class);
-        ConfigOptionResponseDto config = configOptionService.findConfigOptionById() ("global");
+        Config config = configOptionService.getConfig("global");
         if ("true".equalsIgnoreCase(config.getOption("fix_kor_active"))) {
             this.fixBrokenSv(StringUtils.defaultString(config.getOption("fix_kor_from"), "8859_1"), StringUtils.defaultString(config.getOption("fix_kor_to"), "UTF-8"));
         }
