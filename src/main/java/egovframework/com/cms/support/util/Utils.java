@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ibm.icu.util.ChineseCalendar;
+import egovframework.com.cms.config.dto.Config;
 import egovframework.com.cms.site.model.Site;
 import egovframework.com.cms.support.Constant;
 import eu.bitwalker.useragentutils.Browser;
@@ -338,7 +339,7 @@ public class Utils {
         if (globalConfig != null) {
             cookie.setDomain(globalConfig.getOption("cookie_domain"));
         } else {
-            log.info("[ECMS] EcmsUtils global config is null. maybe sub sirectory site request?");
+            log.info("[] Utils global config is null. maybe sub sirectory site request?");
         }
         cookie.setPath(path);
         cookie.setMaxAge(0);
@@ -519,22 +520,22 @@ public class Utils {
 
     public static void guessEncoding(String str, String... encodings) {
         if (StringUtils.isBlank(str)) {
-            System.out.println("EcmsUtils : str is null.");
+            System.out.println("Utils : str is null.");
         }
         try {
-            System.out.println("EcmsUtils : START SHALLOW MODE ============================");
+            System.out.println("Utils : START SHALLOW MODE ============================");
             for (String getBytesEnc : encodings) {
                 for (String newStringEnc : encodings) {
-                    System.out.println("EcmsUtils guessEncoding SHALLOW! : " + getBytesEnc + ",	" + newStringEnc + " = " + new String(str.getBytes(getBytesEnc), newStringEnc));
+                    System.out.println("Utils guessEncoding SHALLOW! : " + getBytesEnc + ",	" + newStringEnc + " = " + new String(str.getBytes(getBytesEnc), newStringEnc));
                 }
             }
 			/*
-			System.out.println("EcmsUtils : START DEEP MODE ============================");
+			System.out.println("Utils : START DEEP MODE ============================");
 			for( String getBytesEnc : encodings ){
 				for( String newStringEnc : encodings ){
 					for( String getBytesEncDeep : encodings ){
 						for( String newStringEncDeep : encodings ){
-							System.out.println("EcmsUtils guessEncoding DEEP! : " + getBytesEnc + ", " + newStringEnc + ", " + getBytesEncDeep + ", " + newStringEncDeep + " = " + new String(str.getBytes(getBytesEnc), newStringEnc));
+							System.out.println("Utils guessEncoding DEEP! : " + getBytesEnc + ", " + newStringEnc + ", " + getBytesEncDeep + ", " + newStringEncDeep + " = " + new String(str.getBytes(getBytesEnc), newStringEnc));
 						}
 					}
 				}
@@ -769,7 +770,7 @@ public class Utils {
         File directory = new File(directoryPath);
         //이미 있는데 디렉토리가 아니다
         if (directory.exists() && !directory.isDirectory()) {
-            System.out.println("[seocho] EcmsUtils : " + directoryPath + " is already exists. But target is not a directory.");
+            System.out.println("[seocho] Utils : " + directoryPath + " is already exists. But target is not a directory.");
             return false;
         } else if (directory.exists() && directory.isDirectory()) {
             // pass
