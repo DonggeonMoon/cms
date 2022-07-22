@@ -5,4 +5,13 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class IndexServiceImpl implements IndexService {
+    @Override
+    public void dummy() {
+
+    }
+
+    @Override
+    public void flush() {
+
+    }
 }
