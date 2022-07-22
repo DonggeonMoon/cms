@@ -113,7 +113,7 @@ public class SiteInterceptor implements HandlerInterceptor {
         request.setAttribute("gaConfigMap", gaConfig.getOptionMap());
 
         if (StringUtils.isBlank(MailServiceImpl.schemeDomainPort) ||
-                StringUtils.equals(MailServiceImpl.schemeDomainPort, Utils.getSchemeDomainPort(request))
+                !StringUtils.equals(MailServiceImpl.schemeDomainPort, Utils.getSchemeDomainPort(request))
         ) {
             MailServiceImpl.schemeDomainPort = Utils.getSchemeDomainPort(request);
         }
@@ -131,7 +131,7 @@ public class SiteInterceptor implements HandlerInterceptor {
 
         Cookie deviceType = Utils.getCookie(request.getCookies(), "deviceType");
 
-        if (!Utils.isFilePath(requestUri) && StringUtils.isNotBlank("deviceType")) {
+        if (!Utils.isFilePath(requestUri) && StringUtils.isNotBlank(request.getParameter("deviceType"))) {
             deviceType = new Cookie("deviceType", request.getParameter("deviceType"));
             deviceType.setPath("/");
             deviceType.setHttpOnly(true);
