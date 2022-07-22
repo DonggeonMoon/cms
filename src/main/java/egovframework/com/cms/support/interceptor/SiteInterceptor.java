@@ -10,10 +10,12 @@ import eu.bitwalker.useragentutils.DeviceType;
 import eu.bitwalker.useragentutils.UserAgent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
 import javax.persistence.EntityManager;
 import javax.servlet.http.Cookie;
@@ -21,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 @Component
 @RequiredArgsConstructor
@@ -58,6 +61,11 @@ public class SiteInterceptor implements HandlerInterceptor {
             langManualCookie.setPath("/");
             langManualCookie.setHttpOnly(true);
             response.addCookie(langManualCookie);
+        }
+
+        if (!requestUri.startsWith(Utils.getAdminPath(currentSite))) {
+            Locale locale = LocaleUtils.toLocale(currentSite.getSiteLocale());
+            request.getSession().setAttribute(SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME, locale);
         }
 
         if ("true".equals(request.getParameter("flush"))) {
