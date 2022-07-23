@@ -21,4 +21,6 @@ public interface ConfigOptionService {
     void deleteConfigOption(String id) throws Exception;
 
     Config getConfig(String confId);
+
+    ConfigOption getNoCacheOption(String confId, String optKey);
 }

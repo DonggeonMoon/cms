@@ -79,4 +79,9 @@ public class ConfigOptionServiceImpl implements ConfigOptionService {
         return new Config(configOptionRepository.findList(configOptionSearch));
     }
 
+    @Override
+    public ConfigOption getNoCacheOption(String confId, String optKey) {
+        return null;
+    }
+
 }
