@@ -39,6 +39,7 @@ public class SSLInterceptor implements HandlerInterceptor {
         String sslPort = configOptionService.getNoCacheOption("security", "ssl_port").getOptValue();
 
         if (StringUtils.isBlank(sslPatterns) && !"https".equalsIgnoreCase(currentScheme)) {
+            log.info("SSLInterceptor SSL is applying to all urls. redirect to HTTPS");
             response.sendRedirect(Utils.getSchemeDomainPort(request, "https", sslPort) + Utils.getRequestUriWithParameters(request));
             return true;
         }
