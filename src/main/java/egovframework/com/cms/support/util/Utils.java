@@ -44,7 +44,7 @@ import java.util.regex.Pattern;
 
 @Slf4j
 public class Utils {
-    public static String getRempoteIp(HttpServletRequest request) {
+    public static String getRemoteIp(HttpServletRequest request) {
         String ip = request.getHeader("HTTP_X_FORWARDED_FOR");
         if (StringUtils.isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
@@ -313,7 +313,7 @@ public class Utils {
 
     private static final String IPADDRESS_PATTERN = "^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
 
-    public static boolean isIPAdress(String string) {
+    public static boolean isIPAddress(String string) {
         Pattern p = Pattern.compile(IPADDRESS_PATTERN);
         return p.matcher(string).matches();
     }
@@ -339,7 +339,7 @@ public class Utils {
         if (globalConfig != null) {
             cookie.setDomain(globalConfig.getOption("cookie_domain"));
         } else {
-            log.info("[] Utils global config is null. maybe sub sirectory site request?");
+            log.info("[] Utils global config is null. maybe sub directory site request?");
         }
         cookie.setPath(path);
         cookie.setMaxAge(0);
@@ -470,22 +470,17 @@ public class Utils {
     }
 
     public static String nl2br(String html) {
-        //String str = html.replace("\r\n", "<br />");
-        //str = str.replace("\r", "<br />");
-        //str = str.replace("\n", "<br />");
         String value = html
                 .replace("\r\n", "<br />")
                 .replace("\r", "<br />")
                 .replace("\n", "<br />");
-        //value = value.replaceAll("(\\s*<br \\/>\\s*)+", "<br />");
         value = value
-                .replaceAll("(\\s*<br \\/>\\s*){3,}", "<br /><br />");//br 3개이상 연속 나오는건 2개로 바꿈
+                .replaceAll("(\\s*<br \\/>\\s*){3,}", "<br /><br />");
 
         return value;
     }
 
     public static String getSlugFromRequestUri(String requestUri) {
-        // ${APP_PATH}/archive/post/2015-세계산불총회-종합계획-수립-용역-입찰공고
         String[] temps = requestUri.split("/");
         int size = temps.length;
         String slug = temps[size - 1];
@@ -628,10 +623,6 @@ public class Utils {
         return serverName.contains("localhost") || serverName.contains("127.0.0.1") || serverName.contains(".dev.com");
     }
 
-    public static boolean isEpartNet(HttpServletRequest request) {
-        return request.getServerName().contains(".epart.net") || request.getServerName().contains("110.45.147.184");
-    }
-
     public static Map<String, String[]> parseQueryString(String s) {
 
         String valArray[] = null;
@@ -646,18 +637,16 @@ public class Utils {
             String pair = (String) st.nextToken();
             int pos = pair.indexOf('=');
             if (pos == -1) {
-                // XXX
-                // should give more detail about the illegal argument
                 throw new IllegalArgumentException();
             }
             String key = parseName(pair.substring(0, pos), sb);
             String val = parseName(pair.substring(pos + 1, pair.length()), sb);
             if (hm.containsKey(key)) {
-                String oldVals[] = (String[]) hm.get(key);
-                valArray = new String[oldVals.length + 1];
-                for (int i = 0; i < oldVals.length; i++)
-                    valArray[i] = oldVals[i];
-                valArray[oldVals.length] = val;
+                String oldValues[] = (String[]) hm.get(key);
+                valArray = new String[oldValues.length + 1];
+                for (int i = 0; i < oldValues.length; i++)
+                    valArray[i] = oldValues[i];
+                valArray[oldValues.length] = val;
             } else {
                 valArray = new String[1];
                 valArray[0] = val;
@@ -680,8 +669,6 @@ public class Utils {
                         sb.append((char) Integer.parseInt(s.substring(i + 1, i + 3), 16));
                         i += 2;
                     } catch (NumberFormatException e) {
-                        // XXX
-                        // need to be more specific about illegal arg
                         throw new IllegalArgumentException();
                     } catch (StringIndexOutOfBoundsException e) {
                         String rest = s.substring(i);
@@ -703,15 +690,15 @@ public class Utils {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
-    public static String getLoginUrl(Site currentSite, String returlUrl) {
-        if (StringUtils.isBlank(returlUrl)) {
+    public static String getLoginUrl(Site currentSite, String returnUrl) {
+        if (StringUtils.isBlank(returnUrl)) {
             return getAppPath(currentSite) + "/member/public/login";
         } else {
             try {
-                return getAppPath(currentSite) + "/member/public/login?returnUrl=" + URLEncoder.encode(returlUrl, "UTF-8");
+                return getAppPath(currentSite) + "/member/public/login?returnUrl=" + URLEncoder.encode(returnUrl, "UTF-8");
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
-                return getAppPath(currentSite) + "/member/public/login?returnUrl=" + returlUrl;
+                return getAppPath(currentSite) + "/member/public/login?returnUrl=" + returnUrl;
             }
         }
     }
@@ -768,9 +755,8 @@ public class Utils {
             return false;
         }
         File directory = new File(directoryPath);
-        //이미 있는데 디렉토리가 아니다
         if (directory.exists() && !directory.isDirectory()) {
-            System.out.println("[seocho] Utils : " + directoryPath + " is already exists. But target is not a directory.");
+            System.out.println("Utils : " + directoryPath + " is already exists. But target is not a directory.");
             return false;
         } else if (directory.exists() && directory.isDirectory()) {
             // pass
@@ -825,10 +811,8 @@ public class Utils {
 
             int age = todayYear - birthYear;
 
-            //월일 비교하기위해 년도 맞춰줌
             birthCal.add(Calendar.YEAR, age);
             Date birthday2 = birthCal.getTime();
-            //생일 안지남
             if (birthday2.after(today)) {
                 age--;
             }
@@ -869,7 +853,6 @@ public class Utils {
 
     public static File getPrefixedFile(String directory, String prefix) {
         File dir = new File(directory);
-        //폴더자체가 없다
         if (!dir.exists()) {
             return null;
         }
@@ -878,7 +861,6 @@ public class Utils {
             if (files.size() == 1) {
                 return files.get(0);
             } else {
-                // 원래 무조건 하나만 있어야 하는데 하나 이상 있으면 제일 최신거 반환
                 Collections.sort(files, new Comparator<File>() {
                     @Override
                     public int compare(File o1, File o2) {
@@ -900,7 +882,6 @@ public class Utils {
 
     public static List<File> getPrefixedFiles(String directory, String prefix) {
         File dir = new File(directory);
-        //폴더자체가 없다
         if (!dir.exists()) {
             return null;
         }

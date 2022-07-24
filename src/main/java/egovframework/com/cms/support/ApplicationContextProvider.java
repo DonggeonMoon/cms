@@ -3,6 +3,7 @@ package egovframework.com.cms.support;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.lang.NonNull;
 
 public class ApplicationContextProvider implements ApplicationContextAware {
     private static ApplicationContext applicationContext;
@@ -12,7 +13,7 @@ public class ApplicationContextProvider implements ApplicationContextAware {
     }
 
     @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    public void setApplicationContext(@NonNull ApplicationContext applicationContext) throws BeansException {
 
     }
 }
