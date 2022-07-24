@@ -4,6 +4,7 @@ import egovframework.com.cms.config.dto.ConfigOptionCreateDto;
 import egovframework.com.cms.config.dto.ConfigOptionResponseDto;
 import egovframework.com.cms.config.dto.ConfigOptionUpdateDto;
 import egovframework.com.cms.site.dto.MultiSiteVO;
+import egovframework.com.cms.support.Constant;
 import egovframework.com.cms.watchdog.aop.WatchDog;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +18,7 @@ import javax.persistence.Table;
 import java.io.Serializable;
 
 @Entity
-@Table(name = "ECMS_CONFIG_OPTION")
+@Table(name = Constant.MAIN_SITE_PREFIX + "_CONFIG_OPTION")
 @IdClass(ConfigOptionPK.class)
 @NoArgsConstructor
 @AllArgsConstructor

@@ -54,8 +54,8 @@ public class SiteInterceptor implements HandlerInterceptor {
         response.setDateHeader("Expires", -1);
 
         Cookie langManualCookie;
-        if (!requestUri.startsWith(Utils.getAppPath(currentSite) + "/file/") && !requestUri.endsWith(".do") &&
-                "manual".equals(request.getParameter("lang"))
+        if (!requestUri.startsWith(Utils.getAppPath(currentSite) + "/file/") && !requestUri.endsWith(".do")
+                && "manual".equals(request.getParameter("lang"))
         ) {
             langManualCookie = new Cookie("lang", "manual");
             langManualCookie.setPath("/");
@@ -112,8 +112,8 @@ public class SiteInterceptor implements HandlerInterceptor {
         request.setAttribute("gaConfig", gaConfig);
         request.setAttribute("gaConfigMap", gaConfig.getOptionMap());
 
-        if (StringUtils.isBlank(MailServiceImpl.schemeDomainPort) ||
-                !StringUtils.equals(MailServiceImpl.schemeDomainPort, Utils.getSchemeDomainPort(request))
+        if (StringUtils.isBlank(MailServiceImpl.schemeDomainPort)
+                || !StringUtils.equals(MailServiceImpl.schemeDomainPort, Utils.getSchemeDomainPort(request))
         ) {
             MailServiceImpl.schemeDomainPort = Utils.getSchemeDomainPort(request);
         }
@@ -121,9 +121,9 @@ public class SiteInterceptor implements HandlerInterceptor {
         UserAgent userAgent = UserAgent.parseUserAgentString(request.getHeader("User-Agent"));
         request.setAttribute("userAgent", userAgent);
 
-        if (!requestUri.startsWith(Utils.getAdminPath(currentSite)) && !requestUri.contains("logout.do") &&
-                "true".equals(siteConfig.getOption("force_redirect")) &&
-                StringUtils.isNotBlank(siteConfig.getOption("force_redirect_url"))) {
+        if (!requestUri.startsWith(Utils.getAdminPath(currentSite)) && !requestUri.contains("logout.do")
+                && "true".equals(siteConfig.getOption("force_redirect"))
+                && StringUtils.isNotBlank(siteConfig.getOption("force_redirect_url"))) {
             log.info("SiteInterceptor FORCE REDIRECT: {}", siteConfig.getOption("force_redirect_url"));
             response.sendRedirect((siteConfig.getOption("force_redirect_url")));
             return false;
@@ -138,10 +138,10 @@ public class SiteInterceptor implements HandlerInterceptor {
             response.addCookie(deviceType);
         }
 
-        if (!Utils.isFilePath(requestUri) &&
-                userAgent.getOperatingSystem().getDeviceType().equals(DeviceType.MOBILE) &&
-                deviceType == null && StringUtils.isNotBlank(siteConfig.getOption("mobile_home_index")) &&
-                "true".equals(siteConfig.getOption("mobile_home_redirect"))) {
+        if (!Utils.isFilePath(requestUri)
+                && userAgent.getOperatingSystem().getDeviceType().equals(DeviceType.MOBILE)
+                && deviceType == null && StringUtils.isNotBlank(siteConfig.getOption("mobile_home_index"))
+                && "true".equals(siteConfig.getOption("mobile_home_redirect"))) {
             deviceType = new Cookie("deviceType", "mobile");
             deviceType.setPath("/");
             deviceType.setHttpOnly(true);
@@ -151,11 +151,11 @@ public class SiteInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        if (!Utils.isFilePath(requestUri) &&
-                userAgent.getOperatingSystem().getDeviceType().equals(DeviceType.MOBILE) &&
-                deviceType != null && "mobile".equals(deviceType.getValue()) &&
-                StringUtils.isNotBlank(siteConfig.getOption("mobile_home_index")) &&
-                "true".equals(siteConfig.getOption("mobile_home_redirect"))) {
+        if (!Utils.isFilePath(requestUri)
+                && userAgent.getOperatingSystem().getDeviceType().equals(DeviceType.MOBILE)
+                && deviceType != null && "mobile".equals(deviceType.getValue())
+                && StringUtils.isNotBlank(siteConfig.getOption("mobile_home_index"))
+                && "true".equals(siteConfig.getOption("mobile_home_redirect"))) {
             log.info("SiteInterceptor redirect to mobile index");
             response.sendRedirect(siteConfig.getOption("mobile_home_index"));
             return false;

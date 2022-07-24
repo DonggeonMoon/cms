@@ -30,7 +30,7 @@ public class MvcConfiguration implements WebMvcConfigurer {
         registry.addInterceptor(userInterceptor).addPathPatterns("/site/**");
         registry.addInterceptor(boardInterceptor).addPathPatterns("/site/**/board/**");
         registry.addInterceptor(adminInterceptor).addPathPatterns("/site/**/admin/**/*.do");
-        registry.addInterceptor(securityInterceptor).addPathPatterns("/site/**");
+        registry.addInterceptor(statisticsInterceptor).addPathPatterns("/site/**");
     }
 
     @Bean

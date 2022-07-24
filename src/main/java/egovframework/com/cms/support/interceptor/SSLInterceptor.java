@@ -56,28 +56,27 @@ public class SSLInterceptor implements HandlerInterceptor {
                 continue;
             }
 
-            if (!"https".equalsIgnoreCase(currentScheme) &&
-                    requestUri.matches(pattern)) {
+            if (!"https".equalsIgnoreCase(currentScheme)
+                    && requestUri.matches(pattern)) {
                 log.info("SSLInterceptor SSL pattern[{}] matched, redirect to HTTPS.", pattern);
                 response.sendRedirect(Utils.getSchemeDomainPort(request, "https", sslPort));
                 return false;
             }
 
-            if ("https".equalsIgnoreCase(currentScheme) &&
-                    requestUri.matches(pattern)) {
+            if ("https".equalsIgnoreCase(currentScheme)
+                    && requestUri.matches(pattern)) {
                 isPatternedSSL = true;
                 break;
             }
         }
 
-        if ("https".equalsIgnoreCase(currentScheme) &&
-                StringUtils.isNotBlank(sslPatterns) &&
-                "true".equalsIgnoreCase(configOptionService.getNoCacheOption("security", "ssl_force_http").getOptValue()) &&
-                !isPatternedSSL) {
+        if ("https".equalsIgnoreCase(currentScheme)
+                && StringUtils.isNotBlank(sslPatterns)
+                && "true".equalsIgnoreCase(configOptionService.getNoCacheOption("security", "ssl_force_http").getOptValue())
+                && !isPatternedSSL) {
             response.sendRedirect(Utils.getSchemeDomainPort(request, "http", null) + Utils.getRequestUriWithParameters(request));
             return false;
         }
-
         return true;
     }
 }

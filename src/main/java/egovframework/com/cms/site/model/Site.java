@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "ECMS_SITE")
+@Table(name = Constant.MAIN_SITE_PREFIX + "_SITE")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
