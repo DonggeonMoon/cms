@@ -8,7 +8,7 @@ import lombok.Setter;
 public class AdvancedSearchItem {
     private String catTitle;
     private String catUrl;
-    private String getItemUrl;
+    private String itemTitle;
     private String itemUrl;
     private String itemExcerpt;
 }

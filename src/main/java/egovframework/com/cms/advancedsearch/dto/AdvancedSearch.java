@@ -1,6 +1,6 @@
 package egovframework.com.cms.advancedsearch.dto;
 
-import egovframework.com.cms.support.Pagination.PagingSearch;
+import egovframework.com.cms.support.pagination.PagingSearch;
 import lombok.Getter;
 import lombok.Setter;
 

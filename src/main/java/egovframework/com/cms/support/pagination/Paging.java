@@ -1,4 +1,4 @@
-package egovframework.com.cms.support.Pagination;
+package egovframework.com.cms.support.pagination;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -12,8 +12,8 @@ public class Paging {
     private int startPage;
     private int endPage;
     private int currentPage;
-    private int prevPage;
-    private int nextPage;
+    private int prevPage;//버그 수정
+    private int nextPage;//버그 수정
     private int totalPage;
     private int rowTop;
     private int rowTotal;
@@ -68,19 +68,22 @@ public class Paging {
         } else {
             totalPage = (int) Math.ceil((double) rowTotal / (double) this.pageSize);
         }
-        this.blockSize = blockSize;
+        this.blockSize = blockSize;//default
 
         rowTop = rowTotal - (currentPage - 1) * pageSize;
 
-        startPage = ((currentPage - 1) / blockSize) * blockSize + 1;
+        // 시작페이지와 종료페이지의 값을 구한다.
+        startPage = (int) ((currentPage - 1) / blockSize) * blockSize + 1;
         //startPage = startPage - 1 < 1 ? 1 : startPage - 1;
         startPage = startPage - 1 < 1 ? 1 : startPage;
         endPage = startPage + blockSize - 1;
 
+        // 마지막 페이지 값이 전체 페이지값보다 클경우 강제 조정
         if (endPage > totalPage) {
             endPage = totalPage;
         }
 
+        //버그 수정
         prevPage = startPage == 1 ? 1 : startPage - 1;
         //nextPage = startPage == 1 ? blockSize + 1 : ( startPage + blockSize >= totalPage ? totalPage : startPage + blockSize );
         nextPage = endPage >= totalPage ? endPage : endPage + 1;
@@ -95,75 +98,9 @@ public class Paging {
         adminImageTag = buildAdminImageTag(this.queryString);
     }
 
-    public int getCurrentPage() {
-        return currentPage;
-    }
-
-    public void setCurrentPage(int currentPage) {
-        this.currentPage = currentPage;
-    }
-
-    public int getTotalPage() {
-        return totalPage;
-    }
-
-    public int getRowTop() {
-        return rowTop;
-    }
-
-    public int getRowTotal() {
-        return rowTotal;
-    }
-
-    public int getBlockSize() {
-        return blockSize;
-    }
-
-    public void setBlockSize(int blockSize) {
-        this.blockSize = blockSize;
-    }
-
-    public String getUserTextTag() {
-        return userTextTag;
-    }
-
-    public void setUserTextTag(String userTextTag) {
-        this.userTextTag = userTextTag;
-    }
-
-    public String getUserImageTag() {
-        return userImageTag;
-    }
-
-    public void setUserImageTag(String userImageTag) {
-        this.userImageTag = userImageTag;
-    }
-
-    public String getAdminTextTag() {
-        return adminTextTag;
-    }
-
-    public void setAdminTextTag(String adminTextTag) {
-        this.adminTextTag = adminTextTag;
-    }
-
-    public String getAdminImageTag() {
-        return adminImageTag;
-    }
-
-    public void setAdminImageTag(String adminImageTag) {
-        this.adminImageTag = adminImageTag;
-    }
-
-    public List<?> getResult() {
-        return result;
-    }
-
-    public String getQueryString() {
-        return queryString;
-    }
-
+    //페이징 태그 생성 - 사용자단 텍스트링크
     private String buildUserTextTag(String qs) {
+
         String firstText = StringUtils.isBlank(this.firstText) ? "&lt;&lt;" : this.firstText;
         String prevText = StringUtils.isBlank(this.prevText) ? "&lt;" : this.prevText;
         String nextText = StringUtils.isBlank(this.nextText) ? "&gt;" : this.nextText;
@@ -179,13 +116,15 @@ public class Paging {
                 tag += "<li><a href=\"?" + pageParamName + "=" + i + qs + "\" class=\"page_num\"><span>" + i + "</span></a></li>";
             }
         }
-        tag += "<li><a href=\"?" + pageParamName + "=" + this.nextPage + qs + "\" class=\"page_next\" title=\"다음 페이지\"><span>" + nextText + "</span></a></li>";
+        tag += "<li><a href=\"?" + pageParamName + "=" + this.nextPage + qs + "\" class=\"page_next\" title=\"다음 페이지\"<span>" + nextText + "</span></a></li>";
         tag += "<li><a href=\"?" + pageParamName + "=" + this.totalPage + qs + "\" class=\"page_last\" title=\"마지막 페이지\"><span>" + lastText + "</span></a></li>";
 
         return tag + "</ul>";
     }
 
+    //페이징 태그 생성 - 사용자단 이미지링크
     private String buildUserImageTag(String qs) {
+
         String firstText = StringUtils.isBlank(this.firstText) ? "&lt;&lt;" : this.firstText;
         String prevText = StringUtils.isBlank(this.prevText) ? "&lt;" : this.prevText;
         String nextText = StringUtils.isBlank(this.nextText) ? "&gt;" : this.nextText;
@@ -207,7 +146,9 @@ public class Paging {
         return tag + "</ul>";
     }
 
+    //페이징 태그 생성 - 사용자 텍스트링크
     private String buildAdminTextTag(String qs) {
+
         String firstText = StringUtils.isBlank(this.firstText) ? "&lt;&lt;" : this.firstText;
         String prevText = StringUtils.isBlank(this.prevText) ? "&lt;" : this.prevText;
         String nextText = StringUtils.isBlank(this.nextText) ? "&gt;" : this.nextText;
@@ -229,7 +170,9 @@ public class Paging {
         return tag + "</ul>";
     }
 
+    //페이징 태그 생성 - 관리자 이미지링크
     private String buildAdminImageTag(String qs) {
+
         String firstText = StringUtils.isBlank(this.firstText) ? "&lt;&lt;" : this.firstText;
         String prevText = StringUtils.isBlank(this.prevText) ? "&lt;" : this.prevText;
         String nextText = StringUtils.isBlank(this.nextText) ? "&gt;" : this.nextText;
@@ -250,4 +193,4 @@ public class Paging {
 
         return tag + "</ul>";
     }
-}
+}	

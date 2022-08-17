@@ -1,6 +1,6 @@
 package egovframework.com.cms.mail.dto;
 
-import egovframework.com.cms.support.Pagination.PagingSearch;
+import egovframework.com.cms.support.pagination.PagingSearch;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
@@ -8,18 +8,17 @@ import org.apache.commons.lang3.StringUtils;
 @Getter
 @Setter
 public class MailTrackSearch extends PagingSearch {
-    private String mailTrackOpened;
+    private String mtOpened;
 
     @Override
     public String getQueryString() {
-        StringBuilder stringBuilder = new StringBuilder(100);
-        stringBuilder.append(super.getQueryString());
+        StringBuilder sb = new StringBuilder(100);
+        sb.append(super.getQueryString());
 
-        if (StringUtils.isNotBlank(getMailTrackOpened())) {
-            stringBuilder.append("&amp;mailTrackedOpened");
-            stringBuilder.append(getMailTrackOpened());
+        if (StringUtils.isNotBlank(this.getMtOpened())) {
+            sb.append("&amp;mtOpened=");
+            sb.append(this.getMtOpened());
         }
-
-        return stringBuilder.toString();
+        return sb.toString();
     }
 }

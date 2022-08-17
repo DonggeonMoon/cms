@@ -1,6 +1,6 @@
 package egovframework.com.cms.mail.dto;
 
-import egovframework.com.cms.support.Pagination.PagingSearch;
+import egovframework.com.cms.support.pagination.PagingSearch;
 
 public class SubscriberSearch extends PagingSearch {
 }

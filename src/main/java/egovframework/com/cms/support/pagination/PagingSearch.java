@@ -1,34 +1,38 @@
-package egovframework.com.cms.support.Pagination;
+package egovframework.com.cms.support.pagination;
 
 import egovframework.com.cms.config.dto.Config;
 import egovframework.com.cms.config.service.ConfigOptionService;
 import egovframework.com.cms.site.dto.MultiSiteVO;
 import egovframework.com.cms.site.model.Site;
 import egovframework.com.cms.support.ApplicationContextProvider;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationContext;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 
+@Getter
+@Setter
 public class PagingSearch extends MultiSiteVO {
     protected String sc;
     protected String sv;
 
-    protected String pageParamName = "cp"; // 페이지 파라미터명
-    protected Integer cp; // 현재 페이지
-    protected Integer pageSize = 10;// 한 페이지당 개수
-    protected int offset; // MySQL용
-    protected int startRow; // Oracle용
-    protected int endRow; // Oracle용
-    protected boolean paging = true;
+    protected String pageParamName = "cp";//페이지 파라메터
+    protected Integer cp;//현재페이지
+    protected Integer pageSize = 10;// 한페이지에 몇개
+    protected int offset;// for MYSQL
+    protected int startRow; // for ORACLE
+    protected int endRow; // for ORACLE
+    protected boolean paging = true;//페이징 적용 여부 기본값 : true
 
     protected String sortOrder;
     protected String sortDirection;
-    protected String sortOverride;
+    protected String sortOverride;//프로그램단에서 강제로 정렬 덮을때, 파라메터로는 노출되지 않음
 
-    private String openerCallback;
-    private String extra1; // 임시 파라미터
+    private String openerCallback;//팝업 콜백함수 이름 처리용
+    private String extra1;//임시 파라메터 다용도로 사용가능
     private String extra2;
 
     private String listType = "list";
@@ -38,145 +42,6 @@ public class PagingSearch extends MultiSiteVO {
         if (site != null) {
             this.sitePrefix = site.getSitePrefix();
         }
-    }
-
-    public String getSc() {
-        return sc;
-    }
-
-    public void setSc(String sc) {
-        this.sc = sc;
-    }
-
-    public String getSv() {
-        return sv;
-    }
-
-    public void setSv(String sv) {
-        this.sv = sv;
-    }
-
-    public Integer getCp() {
-        return cp == null || cp == 0 ? 1 : cp;
-    }
-
-    public void setCp(Integer cp) {
-        this.cp = cp;
-    }
-
-    public int getOffset() {
-        if (this.getCp() == 1) {
-            return 0;
-        } else {
-            return this.getPageSize() * (this.getCp() - 1);
-        }
-    }
-
-    public void setOffset(int offset) {
-        this.offset = offset;
-    }
-
-    public Integer getPageSize() {
-        // return pageSize == 0 || pageSize == null ? 10 : pageSize;
-        return pageSize;
-    }
-
-    public void setPageSize(Integer pageSize) {
-        this.pageSize = pageSize;
-    }
-
-    public String getPageParamName() {
-        return pageParamName;
-    }
-
-    public void setPageParamName(String pageParamName) {
-        this.pageParamName = pageParamName;
-    }
-
-    public int getStartRow() {
-        //return this.startRow;
-        return (this.getCp() - 1) * this.getPageSize() + 1;
-    }
-
-    public void setStartRow(int startRow) {
-        this.startRow = startRow;
-    }
-
-    public int getEndRow() {
-        //페이징없이 전체 다 가져오도록
-        if (!this.isPaging()) {
-            return Integer.MAX_VALUE;
-        }
-        //return endRow;
-        return this.getStartRow() + this.getPageSize() - 1;
-    }
-
-    public void setEndRow(int endRow) {
-        this.endRow = endRow;
-    }
-
-    public boolean isPaging() {
-        return paging;
-    }
-
-    public void setPaging(boolean paging) {
-        this.paging = paging;
-    }
-
-    public String getSortOrder() {
-        return sortOrder;
-    }
-
-    public void setSortOrder(String sortOrder) {
-        this.sortOrder = sortOrder;
-    }
-
-    public String getSortDirection() {
-        return sortDirection;
-    }
-
-    public void setSortDirection(String sortDirection) {
-        this.sortDirection = sortDirection;
-    }
-
-    public String getOpenerCallback() {
-        return openerCallback;
-    }
-
-    public void setOpenerCallback(String openerCallback) {
-        this.openerCallback = openerCallback;
-    }
-
-    public String getExtra1() {
-        return extra1;
-    }
-
-    public void setExtra1(String extra1) {
-        this.extra1 = extra1;
-    }
-
-    public String getExtra2() {
-        return extra2;
-    }
-
-    public void setExtra2(String extra2) {
-        this.extra2 = extra2;
-    }
-
-    public String getSortOverride() {
-        return sortOverride;
-    }
-
-    public void setSortOverride(String sortOverride) {
-        this.sortOverride = sortOverride;
-    }
-
-    public String getListType() {
-        return listType;
-    }
-
-    public void setListType(String listType) {
-        this.listType = listType;
     }
 
     public String getQueryString() {
@@ -247,11 +112,10 @@ public class PagingSearch extends MultiSiteVO {
             "select", "sys", "sysobjects", "syscolumns",
             "table", "update"};
 
-    public void fixBrokenSvByDefaultCharsets() throws Exception {
+    public void fixBrokenSvByDefaultCharsets() {
         ApplicationContext context = ApplicationContextProvider.getApplicationContext();
-        ConfigOptionService configOptionService = context.getBean(ConfigOptionService
-                .class);
-        Config config = configOptionService.getConfig("global");
+        ConfigOptionService configService = context.getBean(ConfigOptionService.class);
+        Config config = configService.getConfig("global");
         if ("true".equalsIgnoreCase(config.getOption("fix_kor_active"))) {
             this.fixBrokenSv(StringUtils.defaultString(config.getOption("fix_kor_from"), "8859_1"), StringUtils.defaultString(config.getOption("fix_kor_to"), "UTF-8"));
         }

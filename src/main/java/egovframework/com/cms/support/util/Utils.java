@@ -524,18 +524,6 @@ public class Utils {
                     System.out.println("Utils guessEncoding SHALLOW! : " + getBytesEnc + ",	" + newStringEnc + " = " + new String(str.getBytes(getBytesEnc), newStringEnc));
                 }
             }
-			/*
-			System.out.println("Utils : START DEEP MODE ============================");
-			for( String getBytesEnc : encodings ){
-				for( String newStringEnc : encodings ){
-					for( String getBytesEncDeep : encodings ){
-						for( String newStringEncDeep : encodings ){
-							System.out.println("Utils guessEncoding DEEP! : " + getBytesEnc + ", " + newStringEnc + ", " + getBytesEncDeep + ", " + newStringEncDeep + " = " + new String(str.getBytes(getBytesEnc), newStringEnc));
-						}
-					}
-				}
-			}
-			*/
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }

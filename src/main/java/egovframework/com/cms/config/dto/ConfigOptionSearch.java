@@ -1,7 +1,7 @@
 package egovframework.com.cms.config.dto;
 
 import egovframework.com.cms.config.model.ConfigOption;
-import egovframework.com.cms.support.Pagination.PagingSearch;
+import egovframework.com.cms.support.pagination.PagingSearch;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

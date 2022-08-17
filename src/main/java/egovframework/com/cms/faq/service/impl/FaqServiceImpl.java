@@ -7,7 +7,7 @@ import egovframework.com.cms.faq.dto.FaqUpdateDto;
 import egovframework.com.cms.faq.model.Faq;
 import egovframework.com.cms.faq.repository.FaqRepository;
 import egovframework.com.cms.faq.service.FaqService;
-import egovframework.com.cms.support.Pagination.Paging;
+import egovframework.com.cms.support.pagination.Paging;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

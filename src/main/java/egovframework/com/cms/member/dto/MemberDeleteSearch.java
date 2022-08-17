@@ -1,4 +1,6 @@
 package egovframework.com.cms.member.dto;
 
-public class MemberDeleteSearch {
+import egovframework.com.cms.support.pagination.PagingSearch;
+
+public class MemberDeleteSearch extends PagingSearch {
 }
