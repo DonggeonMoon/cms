@@ -14,7 +14,7 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final BoardMapper boardMapper;
 
-    @Transactional(value = "transactionManager")
+    @Transactional
     public Long insertBoard() throws Exception {
             boardRepository.save(Board.builder().content("board1").build());
             throwException();
