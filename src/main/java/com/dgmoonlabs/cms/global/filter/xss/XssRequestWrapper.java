@@ -3,6 +3,8 @@ package com.dgmoonlabs.cms.global.filter.xss;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 
+import java.util.Arrays;
+
 public class XssRequestWrapper extends HttpServletRequestWrapper {
 
     public XssRequestWrapper(final HttpServletRequest request) {
@@ -22,19 +24,18 @@ public class XssRequestWrapper extends HttpServletRequestWrapper {
     @Override
     public String[] getParameterValues(final String name) {
         String[] values = super.getParameterValues(name);
-
-        int count = values.length;
-        String[] encodedValues = new String[count];
-        for (int i = 0; i < count; i++) {
-            encodedValues[i] = sanitize(values[i]);
+        if (values == null) {
+            return null;
         }
-        return encodedValues;
+        return Arrays.stream(values)
+                .map(this::sanitize)
+                .toArray(String[]::new);
     }
 
     private String sanitize(String value) {
         if (value == null) {
             return null;
         }
-        return XssRule.sanitize(value);
+        return XssSanitizationRule.sanitize(value);
     }
 }
