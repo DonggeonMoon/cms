@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor(access = AccessLevel.NONE)
 @AllArgsConstructor
-public class BoardDto {
+public class ArticleDto {
     private Long id;
     private String content;
 }
