@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 @Getter
 public enum XssSanitizationRule {
-    LT(Pattern.compile("<"), "& lt;"),
+    LT(Pattern.compile("<"), "&lt;"),
     PARENTHESIS(Pattern.compile("\\("), "["),
     EVAL(Pattern.compile("eval\\((.*)\\)"), ""),
     JAVASCRIPT_SCHEME(Pattern.compile("[\"'][\\s]*javascript:(.*)[\"']"), "\"\""),
