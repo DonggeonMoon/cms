@@ -4,11 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Configuration;
 
-import javax.sql.DataSource;
-
 @Configuration
 @MapperScan(basePackages = {"com.dgmoonlabs.cms"})
 @RequiredArgsConstructor
 public class MybatisConfig {
-    private final DataSource dataSource;
 }
