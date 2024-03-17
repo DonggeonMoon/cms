@@ -20,7 +20,7 @@ public class SecurityConfig {
 
         http.csrf(configurer -> configurer
                 .ignoringRequestMatchers(RequestMatchers.anyOf(AntPathRequestMatcher.antMatcher(HttpMethod.GET)))
-                .csrfTokenRepository(new CookieCsrfTokenRepository())
+                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
         );
 
         http.formLogin(Customizer.withDefaults());
