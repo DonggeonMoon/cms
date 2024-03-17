@@ -1,14 +1,14 @@
 package com.dgmoonlabs.cms.global.filter.xss;
 
+import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 
 import java.util.Arrays;
 
 public class XssRequestWrapper extends HttpServletRequestWrapper {
-
-    public XssRequestWrapper(final HttpServletRequest request) {
-        super(request);
+    public XssRequestWrapper(final ServletRequest request) {
+        super((HttpServletRequest) request);
     }
 
     @Override
@@ -23,13 +23,7 @@ public class XssRequestWrapper extends HttpServletRequestWrapper {
 
     @Override
     public String[] getParameterValues(final String name) {
-        String[] values = super.getParameterValues(name);
-        if (values == null) {
-            return null;
-        }
-        return Arrays.stream(values)
-                .map(this::sanitize)
-                .toArray(String[]::new);
+        return sanitize(super.getParameterValues(name));
     }
 
     private String sanitize(String value) {
@@ -37,5 +31,14 @@ public class XssRequestWrapper extends HttpServletRequestWrapper {
             return null;
         }
         return XssSanitizationRule.sanitize(value);
+    }
+
+    private String[] sanitize(String[] values) {
+        if (values == null) {
+            return new String[]{};
+        }
+        return Arrays.stream(values)
+                .map(this::sanitize)
+                .toArray(String[]::new);
     }
 }

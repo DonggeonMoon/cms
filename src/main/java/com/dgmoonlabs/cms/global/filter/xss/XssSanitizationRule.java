@@ -18,7 +18,7 @@ public enum XssSanitizationRule {
     private final String replacement;
 
     public static String sanitize(String value) {
-        for (XssSanitizationRule rule: values()) {
+        for (XssSanitizationRule rule : values()) {
             value = rule.pattern.matcher(value).replaceAll(rule.replacement);
         }
         return value;
