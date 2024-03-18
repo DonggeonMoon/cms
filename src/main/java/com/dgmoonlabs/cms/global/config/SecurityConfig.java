@@ -7,6 +7,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatchers;
 
@@ -21,6 +22,7 @@ public class SecurityConfig {
         http.csrf(configurer -> configurer
                 .ignoringRequestMatchers(RequestMatchers.anyOf(AntPathRequestMatcher.antMatcher(HttpMethod.GET)))
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
         );
 
         http.formLogin(Customizer.withDefaults());
