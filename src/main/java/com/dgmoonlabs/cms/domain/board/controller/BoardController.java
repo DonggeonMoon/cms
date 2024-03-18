@@ -9,9 +9,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class BoardController {
     private final BoardService boardService;
+
     @GetMapping("/test")
     public String test() throws Exception {
         Long inserted = boardService.insertBoard();
-        return  "completed" + inserted;
+        return "completed" + inserted;
     }
+
 }
