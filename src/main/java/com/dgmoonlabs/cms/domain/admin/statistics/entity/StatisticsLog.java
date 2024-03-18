@@ -15,18 +15,18 @@ public class StatisticsLog extends BaseEntity {
     @Id
     private Long id;
 
+    @Comment("회원 아이디")
+    private String memberUsername;
+
     @Comment("방문 URL")
     private String url;
 
     @Comment("HTTP 요청 메서드")
     private String requestMethod;
 
-    @Comment("회원 아이디")
-    private String memberUsername;
+    @Comment("리퍼러")
+    private String referer;
 
     @Comment("IP 주소")
     private String ipAddress;
-
-    @Comment("리퍼러")
-    private String referer;
 }
