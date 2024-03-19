@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-public class BoardController {
+public class BoardUserController {
     private final BoardService boardService;
 
     @GetMapping("/test")

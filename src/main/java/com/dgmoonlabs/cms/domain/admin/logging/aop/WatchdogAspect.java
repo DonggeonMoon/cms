@@ -24,7 +24,7 @@ public class WatchdogAspect {
     }
 
     @After("admin()")
-    public void afterAdminPublic(JoinPoint joinPoint) {
+    public void afterAdminMethods(JoinPoint joinPoint) {
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
 
         if (!HttpMethod.POST.matches(request.getMethod())) {

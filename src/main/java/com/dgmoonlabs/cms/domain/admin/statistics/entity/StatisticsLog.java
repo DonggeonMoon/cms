@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.admin.statistics.entity;
 
+import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsLogRequest;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -29,4 +30,13 @@ public class StatisticsLog extends BaseEntity {
 
     @Comment("IP 주소")
     private String ipAddress;
+
+    public void update(StatisticsLogRequest request) {
+        this.id = request.getId();
+        this.memberUsername = request.getMemberUsername();
+        this.url = request.getUrl();
+        this.requestMethod = request.getRequestMethod();
+        this.referer = request.getReferer();
+        this.ipAddress = request.getIpAddress();
+    }
 }

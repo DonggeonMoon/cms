@@ -18,13 +18,13 @@ public class Statistics extends BaseEntity {
     private Long id;
 
     @Comment("날짜")
-    private LocalDate localDate;
+    private LocalDate date;
 
     @Comment("방문 국가 코드")
     private String nationCode;
 
     @Comment("OS")
-    private int os;
+    private String os;
 
     @Comment("브라우저")
     private String browser;
@@ -34,4 +34,8 @@ public class Statistics extends BaseEntity {
 
     @Comment("방문 횟수")
     private int count;
+
+    public void increaseCount() {
+        this.count += 1;
+    }
 }
