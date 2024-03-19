@@ -3,10 +3,7 @@ package com.dgmoonlabs.cms.domain.archive.entity.article;
 import com.dgmoonlabs.cms.domain.archive.constant.ArchiveStatus;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
@@ -32,21 +29,21 @@ public class ArchiveArticle extends BaseEntity {
 
     @Lob
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("내용 텍스트")
     private String contentText;
 
     @Lob
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;
 
-    @Column(columnDefinition = "json")
     @JdbcTypeCode(SqlTypes.JSON)
     @Comment("추가 필드")
     private String fields;
 
+    @Enumerated(EnumType.STRING)
     @Comment("사용자 타입")
     private UserType userType;
 
@@ -63,6 +60,7 @@ public class ArchiveArticle extends BaseEntity {
     @Comment("추천/좋아요/하트 수")
     private int likes;
 
+    @Enumerated(EnumType.STRING)
     @Comment("아카이브 상태")
     private ArchiveStatus status;
 

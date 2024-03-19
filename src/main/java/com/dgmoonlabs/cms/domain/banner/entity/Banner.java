@@ -2,9 +2,7 @@ package com.dgmoonlabs.cms.domain.banner.entity;
 
 import com.dgmoonlabs.cms.domain.banner.constant.BannerType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
 
@@ -19,6 +17,7 @@ public class Banner extends BaseEntity {
     @Id
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Comment("배너 타입")
     private BannerType type;
 

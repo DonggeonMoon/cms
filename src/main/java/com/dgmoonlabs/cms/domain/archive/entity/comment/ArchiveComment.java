@@ -4,10 +4,7 @@ import com.dgmoonlabs.cms.domain.board.constant.CommentStatus;
 import com.dgmoonlabs.cms.domain.board.constant.SnsType;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
@@ -22,6 +19,7 @@ public class ArchiveComment extends BaseEntity {
     private Long id;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     @Comment("사용자 타입")
     private UserType userType;
 
@@ -46,10 +44,11 @@ public class ArchiveComment extends BaseEntity {
 
     @Lob
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("내용")
     private String content;
 
+    @Enumerated(EnumType.STRING)
     @Comment("SNS 타입")
     private SnsType snsType;
 
@@ -63,6 +62,7 @@ public class ArchiveComment extends BaseEntity {
     private Long profileImageFileId;
 
     @Comment("댓글 상태")
+    @Enumerated(EnumType.STRING)
     private CommentStatus status;
 
     @Comment("작성자 IP 주소")

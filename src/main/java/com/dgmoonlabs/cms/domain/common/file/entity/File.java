@@ -1,10 +1,7 @@
 package com.dgmoonlabs.cms.domain.common.file.entity;
 
 import com.dgmoonlabs.cms.domain.common.file.constant.MediaType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Inheritance;
-import jakarta.persistence.InheritanceType;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -39,6 +36,7 @@ public class File {
     private MimeType mimeType;
 
     @Comment("미디어 종류")
+    @Enumerated(EnumType.STRING)
     private MediaType mediaType;
 
     @Comment("파일 사이즈")

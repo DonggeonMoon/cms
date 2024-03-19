@@ -56,17 +56,16 @@ public class Program extends BaseEntity {
 
     @Lob
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("내용 텍스트")
     private String contentText;
 
     @Lob
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;
 
-    @Column(columnDefinition = "json")
     @JdbcTypeCode(SqlTypes.JSON)
     @Comment("추가 필드")
     private String fields;

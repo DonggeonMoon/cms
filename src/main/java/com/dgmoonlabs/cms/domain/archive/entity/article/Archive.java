@@ -26,10 +26,10 @@ public class Archive extends BaseEntity {
     private String name;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     @Comment("아카이브 타입")
     private BoardType type = BoardType.NORMAL;
 
-    @Column(columnDefinition = "json")
     @JdbcTypeCode(SqlTypes.JSON)
     @Comment("추가 필드")
     private String fields;

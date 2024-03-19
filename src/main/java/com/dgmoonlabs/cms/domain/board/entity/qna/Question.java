@@ -2,10 +2,7 @@ package com.dgmoonlabs.cms.domain.board.entity.qna;
 
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
@@ -21,27 +18,27 @@ public class Question extends BaseEntity {
     @Id
     private Long id;
 
-    @ColumnDefault("제목 없음")
+    @ColumnDefault("'제목 없음'")
     @Comment("제목")
     private String title;
 
     @Lob
     @Comment("내용 텍스트")
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     private String contentText;
 
     @Lob
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;
 
-    @Column(columnDefinition = "json")
     @JdbcTypeCode(SqlTypes.JSON)
     @Comment("추가 필드")
     private String fields;
 
+    @Enumerated(EnumType.STRING)
     @Comment("사용자 타입")
     private UserType userType;
 

@@ -2,9 +2,7 @@ package com.dgmoonlabs.cms.domain.admin.config.entity;
 
 import com.dgmoonlabs.cms.domain.admin.config.constant.OptionType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
@@ -23,14 +21,15 @@ public class Config extends BaseEntity {
     private String optionKey;
 
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("옵션 값")
     private String optionValue;
 
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     private String description;
 
+    @Enumerated(EnumType.STRING)
     private OptionType type;
 
     @Column(nullable = false)

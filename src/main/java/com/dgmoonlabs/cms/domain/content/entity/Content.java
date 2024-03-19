@@ -2,10 +2,7 @@ package com.dgmoonlabs.cms.domain.content.entity;
 
 import com.dgmoonlabs.cms.domain.content.constant.ContentStatus;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
@@ -21,16 +18,17 @@ public class Content extends BaseEntity {
 
     @Lob
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("내용 텍스트")
     private String contentText;
 
     @Lob
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;
 
+    @Enumerated(EnumType.STRING)
     @Comment("컨텐츠 상태")
     private ContentStatus status;
 
@@ -43,7 +41,7 @@ public class Content extends BaseEntity {
     private String lastWorker;
 
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("메모")
     private String memo;
 }

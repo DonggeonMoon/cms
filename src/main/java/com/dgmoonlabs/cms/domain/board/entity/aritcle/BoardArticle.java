@@ -2,10 +2,7 @@ package com.dgmoonlabs.cms.domain.board.entity.aritcle;
 
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
@@ -33,17 +30,16 @@ public class BoardArticle extends BaseEntity {
 
     @Lob
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("내용 텍스트")
     private String contentText;
 
     @Lob
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;
 
-    @Column(columnDefinition = "json")
     @JdbcTypeCode(SqlTypes.JSON)
     @Comment("추가 필드")
     private String fields;
@@ -64,6 +60,7 @@ public class BoardArticle extends BaseEntity {
     @Comment("비공개 여부")
     private boolean isHidden;
 
+    @Enumerated(EnumType.STRING)
     @Comment("사용자 타입")
     private UserType userType;
 

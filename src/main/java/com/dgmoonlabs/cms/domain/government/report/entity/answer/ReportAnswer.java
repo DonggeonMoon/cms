@@ -2,10 +2,7 @@ package com.dgmoonlabs.cms.domain.government.report.entity.answer;
 
 import com.dgmoonlabs.cms.domain.board.constant.CommentStatus;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
@@ -31,28 +28,29 @@ public class ReportAnswer extends BaseEntity {
     @Comment("깊이")
     private int depth;
 
-    @Column(nullable = false)
+    @Column(name = "`order`", nullable = false)
     @ColumnDefault("0")
     @Comment("순서")
     private int order;
 
     @Column(nullable = false)
-    @ColumnDefault("제목 없음")
+    @ColumnDefault("'제목 없음'")
     @Comment("제목")
     private String title;
 
     @Lob
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("내용 텍스트")
     private String contentText;
 
     @Lob
     @Column(nullable = false)
-    @ColumnDefault("")
+    @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;
 
     @Comment("댓글 상태")
+    @Enumerated(EnumType.STRING)
     private CommentStatus status;
 }
