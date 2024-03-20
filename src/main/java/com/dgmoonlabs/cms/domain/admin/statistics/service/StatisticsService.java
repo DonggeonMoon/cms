@@ -3,23 +3,22 @@ package com.dgmoonlabs.cms.domain.admin.statistics.service;
 import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
 import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
 import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsRepository;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ua_parser.Client;
 import ua_parser.Parser;
 
 import java.time.LocalDate;
-
-import static com.dgmoonlabs.cms.domain.admin.statistics.entity.QStatistics.statistics;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class StatisticsService {
     private final StatisticsRepository statisticsRepository;
-    private final JPAQueryFactory queryFactory;
 
     @Transactional
     public void saveStatistics(StatisticsRequest request) {
@@ -27,13 +26,13 @@ public class StatisticsService {
     }
 
     @Transactional
-    public void getStatistics(Statistics statistics) {
-        statisticsRepository.findAll();
+    public Page<Statistics> getStatistics(Statistics statistics, Pageable pageable) {
+        return statisticsRepository.findAll(pageable);
     }
 
     @Transactional
-    public void getStatistics(long id) {
-        statisticsRepository.findById(id);
+    public Statistics getStatistics(long id) {
+        return statisticsRepository.findById(id).orElseThrow(RuntimeException::new);
     }
 
     @Transactional
@@ -48,27 +47,31 @@ public class StatisticsService {
         String browser = client.userAgent.family;
         String url = request.getRequestURI();
 
-        Statistics result = queryFactory.select(statistics)
-                .from(statistics)
-                .where(
-                        statistics.date.eq(LocalDate.now()),
-                        statistics.nationCode.eq(nationCode),
-                        statistics.os.eq(os),
-                        statistics.browser.eq(browser),
-                        statistics.url.eq(url)
-                ).fetchOne();
-        if (result == null) {
+        List<Statistics> results = statisticsRepository.find(
+                StatisticsRequest.builder()
+                        .date(LocalDate.now())
+                        .nationCode(nationCode)
+                        .os(os)
+                        .browser(browser)
+                        .url(url)
+                        .build()
+        );
+
+        if (results.isEmpty()) {
             statisticsRepository.save(
                     Statistics.builder()
                             .date(LocalDate.now())
                             .nationCode(nationCode)
                             .os(os)
                             .browser(browser)
+                            .url(url)
                             .count(1)
                             .build()
             );
             return;
         }
+
+        Statistics result = results.get(0);
         result.increaseCount();
     }
 }

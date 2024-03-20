@@ -21,7 +21,7 @@ public class SecurityConfig {
 
         http.csrf(configurer -> configurer
                 .ignoringRequestMatchers(RequestMatchers.anyOf(AntPathRequestMatcher.antMatcher(HttpMethod.GET)))
-                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRepository(new CookieCsrfTokenRepository())
                 .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
         );
 

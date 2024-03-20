@@ -32,7 +32,6 @@ public class StatisticsLog extends BaseEntity {
     private String ipAddress;
 
     public void update(StatisticsLogRequest request) {
-        this.id = request.getId();
         this.memberUsername = request.getMemberUsername();
         this.url = request.getUrl();
         this.requestMethod = request.getRequestMethod();

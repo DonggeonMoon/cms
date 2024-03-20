@@ -4,10 +4,10 @@ import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsLogRequest;
 import com.dgmoonlabs.cms.domain.admin.statistics.entity.StatisticsLog;
 import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsLogRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,18 +20,19 @@ public class StatisticsLogService {
     }
 
     @Transactional
-    public List<StatisticsLog> getStatisticsLogs() {
-        return statisticsLogRepository.findAll();
+    public Page<StatisticsLog> getStatisticsLogs(Pageable pageable) {
+        return statisticsLogRepository.findAll(pageable);
     }
 
     @Transactional
-    public void getStatisticsLog(long id) {
-        statisticsLogRepository.findById(id);
+    public StatisticsLog getStatisticsLog(long id) {
+        return statisticsLogRepository.findById(id).orElseThrow(RuntimeException::new);
     }
 
     @Transactional
     public void updateStatisticsLog(StatisticsLogRequest request) {
-        StatisticsLog statisticsLog = statisticsLogRepository.findById(request.getId()).orElseThrow(RuntimeException::new);
-        statisticsLog.update(request);
+        statisticsLogRepository.findById(request.getId())
+                .orElseThrow(RuntimeException::new)
+                .update(request);
     }
 }
