@@ -35,8 +35,9 @@ public class File {
     @Comment("MIME 타입")
     private MimeType mimeType;
 
-    @Comment("미디어 종류")
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
+    @Comment("미디어 종류")
     private MediaType mediaType;
 
     @Comment("파일 사이즈")

@@ -38,6 +38,7 @@ public class Question extends BaseEntity {
     @Comment("추가 필드")
     private String fields;
 
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("사용자 타입")
     private UserType userType;

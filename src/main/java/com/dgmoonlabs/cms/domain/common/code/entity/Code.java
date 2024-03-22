@@ -25,7 +25,7 @@ public class Code extends BaseEntity {
     @Comment("코드 깊이")
     private int depth;
 
-    @Column(nullable = false)
+    @Column(name = "`order`", nullable = false)
     @ColumnDefault("0")
     @Comment("코드 순서")
     private int order;

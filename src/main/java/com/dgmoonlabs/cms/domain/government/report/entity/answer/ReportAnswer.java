@@ -50,7 +50,8 @@ public class ReportAnswer extends BaseEntity {
     @Comment("내용 HTML")
     private String contentHtml;
 
-    @Comment("댓글 상태")
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
+    @Comment("댓글 상태")
     private CommentStatus status;
 }

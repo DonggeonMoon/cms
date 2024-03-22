@@ -60,6 +60,7 @@ public class BoardArticle extends BaseEntity {
     @Comment("비공개 여부")
     private boolean isHidden;
 
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("사용자 타입")
     private UserType userType;

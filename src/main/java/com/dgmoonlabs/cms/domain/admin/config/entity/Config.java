@@ -29,6 +29,7 @@ public class Config extends BaseEntity {
     @ColumnDefault("''")
     private String description;
 
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     private OptionType type;
 

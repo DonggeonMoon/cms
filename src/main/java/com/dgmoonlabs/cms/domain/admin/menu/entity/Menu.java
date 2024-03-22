@@ -1,7 +1,9 @@
 package com.dgmoonlabs.cms.domain.admin.menu.entity;
 
 import com.dgmoonlabs.cms.domain.admin.menu.constant.MenuType;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
@@ -19,7 +21,7 @@ public class Menu {
     private String name;
 
     @Comment("메뉴 종류")
-    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "varchar(255)")
     private MenuType type;
 
     @Comment("부모 댓글 ID")

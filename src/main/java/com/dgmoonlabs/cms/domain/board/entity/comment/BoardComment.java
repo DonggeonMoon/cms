@@ -18,7 +18,7 @@ public class BoardComment extends BaseEntity {
     @Id
     private Long id;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("사용자 타입")
     private UserType userType;
@@ -34,7 +34,7 @@ public class BoardComment extends BaseEntity {
     @Comment("댓글 깊이")
     private int depth;
 
-    @Column(nullable = false)
+    @Column(name = "`order`", nullable = false)
     @ColumnDefault("0")
     @Comment("댓글 순서")
     private int order;
@@ -45,6 +45,7 @@ public class BoardComment extends BaseEntity {
     @Comment("내용")
     private String content;
 
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("SNS 타입")
     private SnsType snsType;
@@ -58,8 +59,9 @@ public class BoardComment extends BaseEntity {
     @Comment("프로필 이미지 파일 ID")
     private Long profileImageFileId;
 
-    @Comment("댓글 상태")
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
+    @Comment("댓글 상태")
     private CommentStatus status;
 
     @Comment("작성자 IP 주소")

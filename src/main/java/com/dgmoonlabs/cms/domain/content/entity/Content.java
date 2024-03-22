@@ -28,6 +28,7 @@ public class Content extends BaseEntity {
     @Comment("내용 HTML")
     private String contentHtml;
 
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("컨텐츠 상태")
     private ContentStatus status;

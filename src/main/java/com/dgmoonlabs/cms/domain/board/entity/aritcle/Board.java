@@ -24,7 +24,7 @@ public class Board extends BaseEntity {
     @Comment("게시판 이름")
     private String name;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("게시판 타입")
     private BoardType type = BoardType.NORMAL;

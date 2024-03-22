@@ -17,11 +17,12 @@ public class Banner extends BaseEntity {
     @Id
     private Long id;
 
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("배너 타입")
     private BannerType type;
 
-    @Column(nullable = false)
+    @Column(name = "`order`", nullable = false)
     @Comment("배너 순서")
     private int order;
 
@@ -55,6 +56,7 @@ public class Banner extends BaseEntity {
     @Comment("CSS 위치 top 값")
     private Integer top;
 
+    @Column(name = "`left`")
     @Comment("CSS 위치 left")
     private Integer left;
 

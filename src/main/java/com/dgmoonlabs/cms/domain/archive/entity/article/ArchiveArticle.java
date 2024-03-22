@@ -43,6 +43,7 @@ public class ArchiveArticle extends BaseEntity {
     @Comment("추가 필드")
     private String fields;
 
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("사용자 타입")
     private UserType userType;
@@ -60,6 +61,7 @@ public class ArchiveArticle extends BaseEntity {
     @Comment("추천/좋아요/하트 수")
     private int likes;
 
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("아카이브 상태")
     private ArchiveStatus status;

@@ -25,7 +25,7 @@ public class Archive extends BaseEntity {
     @Comment("아카이브 이름")
     private String name;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("아카이브 타입")
     private BoardType type = BoardType.NORMAL;
