@@ -26,9 +26,7 @@ public class StatisticsCustomRepositoryImpl implements StatisticsCustomRepositor
                 .where(
                         nationCodeEquals(statisticsRequest.getNationCode()),
                         osEquals(statisticsRequest.getOs()),
-                        urlEquals(statisticsRequest.getUrl()),
-                        browserEquals(statisticsRequest.getBrowser()),
-                        countEquals(statisticsRequest.getCount())
+                        urlEquals(statisticsRequest.getUrl()), browserEquals(statisticsRequest.getBrowser())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -42,9 +40,7 @@ public class StatisticsCustomRepositoryImpl implements StatisticsCustomRepositor
                 .where(
                         nationCodeEquals(statisticsRequest.getNationCode()),
                         osEquals(statisticsRequest.getOs()),
-                        urlEquals(statisticsRequest.getUrl()),
-                        browserEquals(statisticsRequest.getBrowser()),
-                        countEquals(statisticsRequest.getCount())
+                        urlEquals(statisticsRequest.getUrl()), browserEquals(statisticsRequest.getBrowser())
                 )
                 .fetch();
     }
@@ -65,15 +61,8 @@ public class StatisticsCustomRepositoryImpl implements StatisticsCustomRepositor
         return checkIfEmpty(url) ? statistics.os.eq(url) : null;
     }
 
-    private BooleanExpression countEquals(final Integer count) {
-        return checkIfNull(count) ? statistics.count.eq(count) : null;
-    }
 
     private boolean checkIfEmpty(final String input) {
         return input == null || input.isEmpty();
-    }
-
-    private boolean checkIfNull(final Integer input) {
-        return input == null;
     }
 }
