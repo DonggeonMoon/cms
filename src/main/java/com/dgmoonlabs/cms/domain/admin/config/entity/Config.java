@@ -27,12 +27,16 @@ public class Config extends BaseEntity {
 
     @Column(nullable = false)
     @ColumnDefault("''")
+    @Comment("옵션 설명")
     private String description;
 
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
+    @Comment("옵션 타입")
     private OptionType type;
 
     @Column(nullable = false)
+    @ColumnDefault("0")
+    @Comment("숨김 여부")
     private boolean isHidden;
 }
