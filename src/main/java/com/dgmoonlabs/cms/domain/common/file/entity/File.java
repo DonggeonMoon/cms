@@ -1,6 +1,7 @@
 package com.dgmoonlabs.cms.domain.common.file.entity;
 
 import com.dgmoonlabs.cms.domain.common.file.constant.MediaType;
+import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -16,7 +17,7 @@ import org.springframework.util.MimeType;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Getter
-public class File {
+public class File extends BaseEntity {
     @Id
     private Long id;
 

@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.common.user.entity.group.entity;
 
+import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -14,7 +15,7 @@ import org.hibernate.annotations.Comment;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Getter
-public class Group {
+public class Group extends BaseEntity {
     @Id
     private Long id;
 

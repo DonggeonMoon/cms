@@ -3,18 +3,16 @@ package com.dgmoonlabs.cms.domain.common.user.entity.member;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 @Entity
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Getter
-public class MemberAgreement extends AuthenticatedMember {
+public class MemberAgreement {
     @Id
     private Long id;
 

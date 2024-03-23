@@ -1,6 +1,7 @@
 package com.dgmoonlabs.cms.domain.admin.menu.entity;
 
 import com.dgmoonlabs.cms.domain.admin.menu.constant.MenuType;
+import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -13,7 +14,7 @@ import org.hibernate.annotations.Comment;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Getter
-public class Menu {
+public class Menu extends BaseEntity {
     @Id
     private Long id;
 
