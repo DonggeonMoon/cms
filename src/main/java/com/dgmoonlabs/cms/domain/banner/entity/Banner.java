@@ -4,6 +4,7 @@ import com.dgmoonlabs.cms.domain.banner.constant.BannerType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import java.time.LocalDateTime;
@@ -35,6 +36,8 @@ public class Banner extends BaseEntity {
     @Comment("링크")
     private String link;
 
+    @Column(nullable = false)
+    @ColumnDefault("0")
     @Comment("새창 열기 여부")
     private boolean opensNewWindow;
 
@@ -44,6 +47,8 @@ public class Banner extends BaseEntity {
     @Comment("게시 종료 일시")
     private LocalDateTime endDateTime;
 
+    @Column(nullable = false)
+    @ColumnDefault("1")
     @Comment("사용 여부")
     private boolean isUsing;
 

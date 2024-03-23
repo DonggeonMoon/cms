@@ -4,6 +4,7 @@ import com.dgmoonlabs.cms.domain.admin.menu.constant.MenuType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 @Entity
@@ -29,8 +30,10 @@ public class Site extends BaseEntity {
     @Comment("사이트 종류")
     private MenuType type;
 
+    @Column(nullable = false)
+    @ColumnDefault("0")
     @Comment("기본 사이트 여부")
-    private boolean isMain;
+    private boolean isDefault;
 
     @Comment("사이트 로케일")
     private String locale;

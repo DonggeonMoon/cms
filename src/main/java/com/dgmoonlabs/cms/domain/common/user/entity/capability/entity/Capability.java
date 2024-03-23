@@ -1,8 +1,10 @@
 package com.dgmoonlabs.cms.domain.common.user.entity.capability.entity;
 
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
+import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 @Entity
@@ -10,7 +12,7 @@ import org.hibernate.annotations.Comment;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Getter
-public class Capability {
+public class Capability extends BaseEntity {
     @Id
     private Long id;
 
@@ -20,6 +22,8 @@ public class Capability {
     @Comment("권한 설명")
     private String description;
 
+    @Column(nullable = false)
+    @ColumnDefault("0")
     @Comment("기본 여부")
     private boolean isDefault;
 

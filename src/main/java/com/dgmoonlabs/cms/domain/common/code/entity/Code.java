@@ -40,7 +40,7 @@ public class Code extends BaseEntity {
     private String description;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("1")
     @Comment("사용 여부")
     private boolean isUsing;
 }

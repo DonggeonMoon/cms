@@ -59,6 +59,8 @@ public class Member extends BaseEntity {
     @Comment("생년월일")
     private LocalDate birthDate;
 
+    @Column(nullable = false)
+    @ColumnDefault("0")
     @Comment("음력 여부")
     private boolean isLunarBirthDate;
 
