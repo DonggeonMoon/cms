@@ -56,6 +56,6 @@ public class Product extends BaseEntity {
 
     @Column(nullable = false)
     @ColumnDefault("1")
-    @Comment("예약 가능 여부")
+    @Comment("주문 가능 여부")
     private boolean isEnabled;
 }
