@@ -5,6 +5,7 @@ import com.dgmoonlabs.cms.domain.admin.statistics.entity.StatisticsLog;
 import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,9 +20,20 @@ public class StatisticsLogService {
         statisticsLogRepository.save(request.toEntity());
     }
 
-    @Transactional
-    public Page<StatisticsLog> getStatisticsLogs(Pageable pageable) {
-        return statisticsLogRepository.findAll(pageable);
+    @Transactional(readOnly = true)
+    public Page<StatisticsLog> getStatisticsLogs(StatisticsLogRequest statisticsLogRequest, Pageable pageable) {
+        return new PageImpl<>(
+                statisticsLogRepository.find(statisticsLogRequest, pageable),
+                pageable,
+                statisticsLogRepository.count()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public Page<StatisticsLog> getStatisticsLogsWithoutPaging(StatisticsLogRequest statisticsLogRequest, Pageable pageable) {
+        return new PageImpl<>(
+                statisticsLogRepository.find(statisticsLogRequest, pageable)
+        );
     }
 
     @Transactional
@@ -33,6 +45,12 @@ public class StatisticsLogService {
     public void updateStatisticsLog(StatisticsLogRequest request) {
         statisticsLogRepository.findById(request.getId())
                 .orElseThrow(RuntimeException::new)
-                .update(request);
+                .update(
+                        request.getMemberUsername(),
+                        request.getUrl(),
+                        request.getRequestMethod(),
+                        request.getReferer(),
+                        request.getIpAddress()
+                );
     }
 }
