@@ -27,7 +27,7 @@ public class Site extends BaseEntity {
 
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
-    @Comment("사이트 종류")
+    @Comment("메뉴 종류")
     private MenuType type;
 
     @Column(nullable = false)
