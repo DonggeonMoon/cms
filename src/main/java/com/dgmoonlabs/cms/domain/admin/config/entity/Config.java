@@ -18,12 +18,12 @@ public class Config extends BaseEntity {
 
     @Column(nullable = false)
     @Comment("옵션 키")
-    private String optionKey;
+    private String key;
 
     @Column(nullable = false)
     @ColumnDefault("''")
     @Comment("옵션 값")
-    private String optionValue;
+    private String value;
 
     @Column(nullable = false)
     @ColumnDefault("''")
