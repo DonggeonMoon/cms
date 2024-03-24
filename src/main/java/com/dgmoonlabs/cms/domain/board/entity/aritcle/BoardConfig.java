@@ -92,16 +92,19 @@ public class BoardConfig extends BaseEntity {
     @Comment("썸네일 세로 길이")
     private boolean thumbnailHeight;
 
+    @Builder.Default
     @Column(nullable = false)
     @ColumnDefault("0")
     @Comment("최대 첨부 파일 수")
     private int maximumFileCount = 5;
 
+    @Builder.Default
     @Column(nullable = false)
     @ColumnDefault("0")
     @Comment("최대 파일 크기")
     private int maximumFileSize = 10;
 
+    @Builder.Default
     @Column(nullable = false)
     @ColumnDefault("0")
     @Comment("페이지 당 글 수")

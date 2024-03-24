@@ -25,6 +25,7 @@ public class Archive extends BaseEntity {
     @Comment("아카이브 이름")
     private String name;
 
+    @Builder.Default
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("아카이브 타입")
@@ -39,6 +40,7 @@ public class Archive extends BaseEntity {
     @Comment("댓글 기능 활성화 여부")
     private boolean supportsComment;
 
+    @Builder.Default
     @Column(nullable = false)
     @ColumnDefault("0")
     @Comment("페이지 당 글 수")
