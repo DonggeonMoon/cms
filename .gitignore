@@ -37,3 +37,5 @@ out/
 .vscode/
 /src/main/webapp/
 /src/main/resources/
+!/src/main/resources/static/**
+!/src/main/resources/templates/**
