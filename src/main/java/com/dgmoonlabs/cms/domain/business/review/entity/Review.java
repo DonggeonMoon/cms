@@ -16,6 +16,7 @@ import org.hibernate.type.SqlTypes;
 @Getter
 public class Review extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ColumnDefault("'제목 없음'")

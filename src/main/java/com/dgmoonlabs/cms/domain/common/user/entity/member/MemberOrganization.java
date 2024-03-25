@@ -1,8 +1,6 @@
 package com.dgmoonlabs.cms.domain.common.user.entity.member;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,6 +15,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 public class MemberOrganization {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)

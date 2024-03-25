@@ -17,6 +17,7 @@ import org.hibernate.type.SqlTypes;
 @Getter
 public class ArchiveArticle extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column

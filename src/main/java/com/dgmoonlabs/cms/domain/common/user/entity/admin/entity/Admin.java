@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 @Getter
 public class Admin extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)

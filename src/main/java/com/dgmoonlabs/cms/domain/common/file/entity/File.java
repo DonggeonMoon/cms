@@ -19,6 +19,7 @@ import org.springframework.util.MimeType;
 @Getter
 public class File extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Comment("파일 원본 이름")

@@ -14,6 +14,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 public class Capability extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Comment("권한 이름")

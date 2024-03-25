@@ -2,6 +2,8 @@ package com.dgmoonlabs.cms.domain.admin.logging.entity;
 
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.*;
 import org.hibernate.annotations.Comment;
@@ -13,6 +15,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 public class WatchdogLog extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Comment("회원 아이디")

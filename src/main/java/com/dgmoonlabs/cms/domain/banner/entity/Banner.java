@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 @Getter
 public class Banner extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(columnDefinition = "varchar(255)")

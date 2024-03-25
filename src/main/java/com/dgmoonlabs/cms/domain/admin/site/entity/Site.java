@@ -14,6 +14,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 public class Site extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Comment("사이트 이름")

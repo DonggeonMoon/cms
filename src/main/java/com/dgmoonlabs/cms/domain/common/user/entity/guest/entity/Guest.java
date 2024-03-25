@@ -1,10 +1,7 @@
 package com.dgmoonlabs.cms.domain.common.user.entity.guest.entity;
 
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Inheritance;
-import jakarta.persistence.InheritanceType;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
 
@@ -18,6 +15,7 @@ import java.time.LocalDate;
 @Getter
 public class Guest extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Comment("이름")

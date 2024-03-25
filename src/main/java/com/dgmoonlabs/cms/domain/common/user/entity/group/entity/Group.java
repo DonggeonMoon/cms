@@ -1,10 +1,7 @@
 package com.dgmoonlabs.cms.domain.common.user.entity.group.entity;
 
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
@@ -17,6 +14,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 public class Group extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Comment("그룹 이름")

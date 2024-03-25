@@ -14,6 +14,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 public class Content extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Lob

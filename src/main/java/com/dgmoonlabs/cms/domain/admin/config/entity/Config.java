@@ -14,6 +14,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 public class Config extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)

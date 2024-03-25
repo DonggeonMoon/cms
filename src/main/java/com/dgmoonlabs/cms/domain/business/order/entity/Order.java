@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 @Getter
 public class Order extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Comment("주문 번호")

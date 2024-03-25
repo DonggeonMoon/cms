@@ -2,6 +2,8 @@ package com.dgmoonlabs.cms.domain.business.order.entity.product;
 
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.*;
 import org.hibernate.annotations.Comment;
@@ -15,6 +17,7 @@ import org.hibernate.type.SqlTypes;
 @Getter
 public class ProductOption extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Comment("이름")

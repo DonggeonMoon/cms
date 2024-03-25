@@ -1,9 +1,7 @@
 package com.dgmoonlabs.cms.domain.government.satisfaction.entity;
 
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
@@ -15,6 +13,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 public class Satisfaction extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true)

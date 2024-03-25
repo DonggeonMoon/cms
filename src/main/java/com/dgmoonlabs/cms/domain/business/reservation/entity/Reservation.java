@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 @Getter
 public class Reservation extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Comment("예약 번호")

@@ -2,9 +2,7 @@ package com.dgmoonlabs.cms.domain.admin.menu.entity;
 
 import com.dgmoonlabs.cms.domain.admin.menu.constant.MenuType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
@@ -16,6 +14,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 public class Menu extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Comment("메뉴 이름")

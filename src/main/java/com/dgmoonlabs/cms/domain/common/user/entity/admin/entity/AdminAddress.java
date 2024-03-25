@@ -1,8 +1,6 @@
 package com.dgmoonlabs.cms.domain.common.user.entity.admin.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
 
@@ -13,6 +11,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 public class AdminAddress {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)

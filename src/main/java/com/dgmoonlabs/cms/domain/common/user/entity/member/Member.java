@@ -16,8 +16,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Getter
 public class Member extends BaseEntity {
-    @Id
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY) Long id;
 
     @Column(nullable = false)
     @Comment("회원 ID")

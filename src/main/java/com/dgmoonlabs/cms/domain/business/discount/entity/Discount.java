@@ -1,9 +1,7 @@
 package com.dgmoonlabs.cms.domain.business.discount.entity;
 
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
 
@@ -16,6 +14,7 @@ import java.math.BigDecimal;
 @Getter
 public class Discount extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Comment("제품 ID")
