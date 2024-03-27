@@ -4,9 +4,12 @@ import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsLogRequest;
 import com.dgmoonlabs.cms.domain.admin.statistics.entity.StatisticsLog;
 import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsLogCustomRepository;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -19,8 +22,8 @@ public class StatisticsLogCustomRepositoryImpl implements StatisticsLogCustomRep
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<StatisticsLog> find(StatisticsLogRequest statisticsLogRequest, Pageable pageable) {
-        return queryFactory.select(statisticsLog)
+    public Page<StatisticsLog> find(StatisticsLogRequest statisticsLogRequest, Pageable pageable) {
+        List<StatisticsLog> content = queryFactory.select(statisticsLog)
                 .from(statisticsLog)
                 .where(
                         memberUsernameEquals(statisticsLogRequest.getMemberUsername()),
@@ -32,6 +35,19 @@ public class StatisticsLogCustomRepositoryImpl implements StatisticsLogCustomRep
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
+
+        JPAQuery<Long> countQuery = queryFactory.select(statisticsLog.count())
+                .from(statisticsLog)
+                .where(
+                        memberUsernameEquals(statisticsLogRequest.getMemberUsername()),
+                        urlEquals(statisticsLogRequest.getUrl()),
+                        requestMethodEquals(statisticsLogRequest.getRequestMethod()),
+                        refererEquals(statisticsLogRequest.getReferer()),
+                        ipAddressEquals(statisticsLogRequest.getIpAddress())
+                )
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize());
+        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
 
     @Override
