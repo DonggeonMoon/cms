@@ -4,9 +4,12 @@ import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
 import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
 import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsCustomRepository;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,8 +23,8 @@ public class StatisticsCustomRepositoryImpl implements StatisticsCustomRepositor
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<Statistics> find(StatisticsRequest statisticsRequest, Pageable pageable) {
-        return queryFactory.select(statistics)
+    public Page<Statistics> find(StatisticsRequest statisticsRequest, Pageable pageable) {
+        List<Statistics> content = queryFactory.select(statistics)
                 .from(statistics)
                 .where(
                         nationCodeEquals(statisticsRequest.getNationCode()),
@@ -31,6 +34,18 @@ public class StatisticsCustomRepositoryImpl implements StatisticsCustomRepositor
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
+
+        JPAQuery<Long> countQuery = queryFactory.select(statistics.count())
+                .from(statistics)
+                .where(
+                        nationCodeEquals(statisticsRequest.getNationCode()),
+                        osEquals(statisticsRequest.getOs()),
+                        urlEquals(statisticsRequest.getUrl()), browserEquals(statisticsRequest.getBrowser())
+                )
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize());
+
+        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
 
     @Override

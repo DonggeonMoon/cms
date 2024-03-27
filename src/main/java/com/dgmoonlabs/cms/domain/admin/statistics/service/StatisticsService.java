@@ -6,7 +6,6 @@ import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsRepositor
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,18 +20,9 @@ import java.util.List;
 public class StatisticsService {
     private final StatisticsRepository statisticsRepository;
 
-    @Transactional
-    public void saveStatistics(StatisticsRequest request) {
-        statisticsRepository.save(request.toEntity());
-    }
-
     @Transactional(readOnly = true)
     public Page<Statistics> getStatistics(StatisticsRequest statistics, Pageable pageable) {
-        return new PageImpl<>(
-                statisticsRepository.find(statistics, pageable),
-                pageable,
-                statisticsRepository.count()
-        );
+        return statisticsRepository.find(statistics, pageable);
     }
 
     @Transactional(readOnly = true)

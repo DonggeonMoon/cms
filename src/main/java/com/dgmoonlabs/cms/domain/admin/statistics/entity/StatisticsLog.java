@@ -32,12 +32,4 @@ public class StatisticsLog extends BaseEntity {
 
     @Comment("IP 주소")
     private String ipAddress;
-
-    public void update(final String memberUsername, final String url, final String requestMethod, final String referer, final String ipAddress) {
-        this.memberUsername = memberUsername;
-        this.url = url;
-        this.requestMethod = requestMethod;
-        this.referer = referer;
-        this.ipAddress = ipAddress;
-    }
 }
