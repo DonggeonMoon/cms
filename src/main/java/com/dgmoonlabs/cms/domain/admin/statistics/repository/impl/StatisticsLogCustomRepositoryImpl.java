@@ -47,6 +47,7 @@ public class StatisticsLogCustomRepositoryImpl implements StatisticsLogCustomRep
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
+
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
 
