@@ -5,34 +5,52 @@ import com.dgmoonlabs.cms.domain.admin.config.dto.ConfigRequest;
 import com.dgmoonlabs.cms.domain.admin.config.entity.Config;
 import com.dgmoonlabs.cms.domain.admin.config.repository.ConfigCustomRepository;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
+import org.springframework.data.support.PageableExecutionUtils;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 import static com.dgmoonlabs.cms.domain.admin.config.entity.QConfig.config;
 
-@Service
+
+@Repository
 @RequiredArgsConstructor
 public class ConfigCustomRepositoryImpl implements ConfigCustomRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<Config> find(ConfigRequest request, Pageable pageable) {
-        return queryFactory.select(config)
+    public Page<Config> find(ConfigRequest request, Pageable pageable) {
+        List<Config> content = queryFactory.select(config)
                 .from(config)
                 .where(
                         keyEquals(request.getKey()),
                         valueEquals(request.getValue()),
-                        descriptionEquals(request.getDescription()),
+                        descriptionLike(request.getDescription()),
                         typeEquals(request.getType()),
                         isHiddenEquals(request.isHidden())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
+
+        JPAQuery<Long> countQuery = queryFactory.select(config.count())
+                .from(config)
+                .where(
+                        keyEquals(request.getKey()),
+                        valueEquals(request.getValue()),
+                        descriptionLike(request.getDescription()),
+                        typeEquals(request.getType()),
+                        isHiddenEquals(request.isHidden())
+                )
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize());
+
+        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
 
     @Override
@@ -42,7 +60,7 @@ public class ConfigCustomRepositoryImpl implements ConfigCustomRepository {
                 .where(
                         keyEquals(request.getKey()),
                         valueEquals(request.getValue()),
-                        descriptionEquals(request.getDescription()),
+                        descriptionLike(request.getDescription()),
                         typeEquals(request.getType()),
                         isHiddenEquals(request.isHidden())
                 )
@@ -54,20 +72,21 @@ public class ConfigCustomRepositoryImpl implements ConfigCustomRepository {
     }
 
     private BooleanExpression valueEquals(final String value) {
-        return checkIfEmpty(value) ? config.value.contains(value) : null;
+        return checkIfEmpty(value) ? config.value.eq(value) : null;
+    }
+
+    private BooleanExpression descriptionLike(final String description) {
+        return checkIfEmpty(description) ? config.description.like(description) : null;
     }
 
     private BooleanExpression typeEquals(final OptionType type) {
         return config.type.eq(type);
     }
 
-    private BooleanExpression descriptionEquals(final String domain) {
-        return checkIfEmpty(domain) ? config.description.eq(domain) : null;
-    }
-
     private BooleanExpression isHiddenEquals(final boolean isHidden) {
         return config.isHidden.eq(isHidden);
     }
+
 
     private boolean checkIfEmpty(final String input) {
         return input == null || input.isEmpty();

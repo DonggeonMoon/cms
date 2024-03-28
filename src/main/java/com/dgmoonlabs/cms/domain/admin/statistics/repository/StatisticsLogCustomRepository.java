@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface StatisticsLogCustomRepository {
-    Page<StatisticsLog> find(StatisticsLogRequest statisticsLogRequest, Pageable pageable);
+    Page<StatisticsLog> find(StatisticsLogRequest request, Pageable pageable);
 
-    List<StatisticsLog> find(StatisticsLogRequest statisticsLogRequest);
+    List<StatisticsLog> find(StatisticsLogRequest request);
 }

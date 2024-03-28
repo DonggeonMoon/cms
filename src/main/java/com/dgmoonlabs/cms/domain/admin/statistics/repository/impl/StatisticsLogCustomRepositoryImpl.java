@@ -22,15 +22,15 @@ public class StatisticsLogCustomRepositoryImpl implements StatisticsLogCustomRep
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<StatisticsLog> find(StatisticsLogRequest statisticsLogRequest, Pageable pageable) {
+    public Page<StatisticsLog> find(StatisticsLogRequest request, Pageable pageable) {
         List<StatisticsLog> content = queryFactory.select(statisticsLog)
                 .from(statisticsLog)
                 .where(
-                        memberUsernameEquals(statisticsLogRequest.getMemberUsername()),
-                        urlEquals(statisticsLogRequest.getUrl()),
-                        requestMethodEquals(statisticsLogRequest.getRequestMethod()),
-                        refererEquals(statisticsLogRequest.getReferer()),
-                        ipAddressEquals(statisticsLogRequest.getIpAddress())
+                        memberUsernameEquals(request.getMemberUsername()),
+                        urlEquals(request.getUrl()),
+                        requestMethodEquals(request.getRequestMethod()),
+                        refererEquals(request.getReferer()),
+                        ipAddressEquals(request.getIpAddress())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -39,11 +39,11 @@ public class StatisticsLogCustomRepositoryImpl implements StatisticsLogCustomRep
         JPAQuery<Long> countQuery = queryFactory.select(statisticsLog.count())
                 .from(statisticsLog)
                 .where(
-                        memberUsernameEquals(statisticsLogRequest.getMemberUsername()),
-                        urlEquals(statisticsLogRequest.getUrl()),
-                        requestMethodEquals(statisticsLogRequest.getRequestMethod()),
-                        refererEquals(statisticsLogRequest.getReferer()),
-                        ipAddressEquals(statisticsLogRequest.getIpAddress())
+                        memberUsernameEquals(request.getMemberUsername()),
+                        urlEquals(request.getUrl()),
+                        requestMethodEquals(request.getRequestMethod()),
+                        refererEquals(request.getReferer()),
+                        ipAddressEquals(request.getIpAddress())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
@@ -52,15 +52,15 @@ public class StatisticsLogCustomRepositoryImpl implements StatisticsLogCustomRep
     }
 
     @Override
-    public List<StatisticsLog> find(StatisticsLogRequest statisticsLogRequest) {
+    public List<StatisticsLog> find(StatisticsLogRequest request) {
         return queryFactory.select(statisticsLog)
                 .from(statisticsLog)
                 .where(
-                        memberUsernameEquals(statisticsLogRequest.getMemberUsername()),
-                        urlEquals(statisticsLogRequest.getUrl()),
-                        requestMethodEquals(statisticsLogRequest.getRequestMethod()),
-                        refererEquals(statisticsLogRequest.getReferer()),
-                        ipAddressEquals(statisticsLogRequest.getIpAddress())
+                        memberUsernameEquals(request.getMemberUsername()),
+                        urlEquals(request.getUrl()),
+                        requestMethodEquals(request.getRequestMethod()),
+                        refererEquals(request.getReferer()),
+                        ipAddressEquals(request.getIpAddress())
                 )
                 .fetch();
     }
