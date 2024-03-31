@@ -8,15 +8,12 @@ import lombok.*;
 @AllArgsConstructor
 @Getter
 public class SiteRequest {
+    private Long id;
     private String name;
-
     private String description;
-
     private String domain;
-
+    private String theme;
     private MenuType type;
-
-    private boolean isDefault;
-
     private String locale;
+    private Boolean isDefault;
 }

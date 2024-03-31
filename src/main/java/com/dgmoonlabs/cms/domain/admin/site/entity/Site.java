@@ -26,16 +26,19 @@ public class Site extends BaseEntity {
     @Comment("사이트 도메인")
     private String domain;
 
+    @Comment("사이트 테마")
+    private String theme;
+
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("메뉴 종류")
     private MenuType type;
 
+    @Comment("사이트 로케일")
+    private String locale;
+
     @Column(nullable = false)
     @ColumnDefault("0")
     @Comment("기본 사이트 여부")
     private boolean isDefault;
-
-    @Comment("사이트 로케일")
-    private String locale;
 }

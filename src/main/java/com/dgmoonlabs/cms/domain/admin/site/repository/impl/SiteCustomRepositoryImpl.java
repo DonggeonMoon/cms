@@ -27,9 +27,10 @@ public class SiteCustomRepositoryImpl implements SiteCustomRepository {
                         nameEquals(request.getName()),
                         descriptionLike(request.getDescription()),
                         domainEquals(request.getDomain()),
+                        themeEquals(request.getTheme()),
                         menuTypeEquals(request.getType()),
-                        isDefault(request.isDefault()),
-                        localeEquals(request.getLocale())
+                        localeEquals(request.getLocale()),
+                        isDefault(request.getIsDefault())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -44,38 +45,48 @@ public class SiteCustomRepositoryImpl implements SiteCustomRepository {
                         nameEquals(request.getName()),
                         descriptionLike(request.getDescription()),
                         domainEquals(request.getDomain()),
+                        themeEquals(request.getTheme()),
                         menuTypeEquals(request.getType()),
-                        isDefault(request.isDefault()),
-                        localeEquals(request.getLocale())
+                        localeEquals(request.getLocale()),
+                        isDefault(request.getIsDefault())
                 )
                 .fetch();
     }
 
     private BooleanExpression nameEquals(final String name) {
-        return checkIfEmpty(name) ? site.name.eq(name) : null;
+        return isNotEmpty(name) ? site.name.eq(name) : null;
     }
 
     private BooleanExpression descriptionLike(final String description) {
-        return checkIfEmpty(description) ? site.description.contains(description) : null;
+        return isNotEmpty(description) ? site.description.contains(description) : null;
+    }
+
+    private BooleanExpression domainEquals(final String domain) {
+        return isNotEmpty(domain) ? site.domain.eq(domain) : null;
+    }
+
+    private BooleanExpression themeEquals(final String theme) {
+        return isNotEmpty(theme) ? site.description.contains(theme) : null;
     }
 
     private BooleanExpression menuTypeEquals(final MenuType type) {
         return site.type.eq(type);
     }
 
-    private BooleanExpression domainEquals(final String domain) {
-        return checkIfEmpty(domain) ? site.domain.eq(domain) : null;
-    }
-
-    private BooleanExpression isDefault(final boolean isDefault) {
-        return site.isDefault.eq(isDefault);
-    }
-
     private BooleanExpression localeEquals(final String locale) {
-        return checkIfEmpty(locale) ? site.domain.eq(locale) : null;
+        return isNotEmpty(locale) ? site.domain.eq(locale) : null;
     }
 
-    private boolean checkIfEmpty(final String input) {
-        return input == null || input.isEmpty();
+    private BooleanExpression isDefault(final Boolean isDefault) {
+        return isNotEmpty(isDefault) ? site.isDefault.eq(isDefault) : null;
     }
+
+    private boolean isNotEmpty(final String input) {
+        return input != null && !input.isEmpty();
+    }
+
+    private boolean isNotEmpty(final Boolean input) {
+        return input != null;
+    }
+
 }
