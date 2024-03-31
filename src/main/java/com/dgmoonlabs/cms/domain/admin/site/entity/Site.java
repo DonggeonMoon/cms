@@ -41,4 +41,14 @@ public class Site extends BaseEntity {
     @ColumnDefault("0")
     @Comment("기본 사이트 여부")
     private boolean isDefault;
+
+    public void update(String name, String description, String domain, String theme, MenuType type, String locale, boolean isDefault) {
+        this.name = name;
+        this.description = description;
+        this.domain = domain;
+        this.theme = theme;
+        this.type = type;
+        this.locale = locale;
+        this.isDefault = isDefault;
+    }
 }

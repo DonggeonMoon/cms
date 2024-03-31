@@ -8,7 +8,7 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 @Getter
-public class SiteRequest {
+public class SiteResponse {
     private Long id;
     private String name;
     private String description;
@@ -18,16 +18,15 @@ public class SiteRequest {
     private String locale;
     private Boolean isDefault;
 
-    public Site toEntity() {
-        return Site.builder()
-                .id(id)
-                .name(name)
-                .description(description)
-                .domain(domain)
-                .theme(theme)
-                .type(type)
-                .locale(locale)
-                .isDefault(isDefault)
+    public static SiteResponse from(Site site) {
+        return SiteResponse.builder()
+                .id(site.getId())
+                .name(site.getName())
+                .domain(site.getDomain())
+                .theme(site.getTheme())
+                .type(site.getType())
+                .locale(site.getLocale())
+                .isDefault(site.isDefault())
                 .build();
     }
 }

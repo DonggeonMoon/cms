@@ -1,77 +1,60 @@
 package com.dgmoonlabs.cms.domain.admin.site.service;
 
-import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
-import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
-import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsRepository;
-import jakarta.servlet.http.HttpServletRequest;
+import com.dgmoonlabs.cms.domain.admin.site.dto.SiteRequest;
+import com.dgmoonlabs.cms.domain.admin.site.dto.SiteResponse;
+import com.dgmoonlabs.cms.domain.admin.site.entity.Site;
+import com.dgmoonlabs.cms.domain.admin.site.repository.SiteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ua_parser.Client;
-import ua_parser.Parser;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class SiteService {
-    private final StatisticsRepository statisticsRepository;
+    private final SiteRepository siteRepository;
 
-    @Transactional(readOnly = true)
-    public Page<Statistics> getStatistics(StatisticsRequest statistics, Pageable pageable) {
-        return statisticsRepository.find(statistics, pageable);
+    public Long saveSite(SiteRequest request) {
+        return siteRepository.save(request.toEntity()).getId();
     }
 
     @Transactional(readOnly = true)
-    public Page<Statistics> getStatisticsWithoutPaging(Statistics statistics, Pageable pageable) {
-        return statisticsRepository.findAll(pageable);
+    public Page<SiteResponse> getSite(SiteRequest request, Pageable pageable) {
+        return siteRepository.find(request, pageable).map(SiteResponse::from);
     }
 
     @Transactional(readOnly = true)
-    public Statistics getStatistics(long id) {
-        return statisticsRepository.findById(id).orElseThrow(RuntimeException::new);
+    public List<Site> getSitesWithoutPaging(SiteRequest siteRequest) {
+        return siteRepository.find(siteRequest);
     }
 
-    @Transactional
-    public void updateStatistics(HttpServletRequest request) {
-        String userAgent = request.getHeader("USER-AGENT");
+    @Transactional(readOnly = true)
+    public Site getSiteById(long id) {
+        return siteRepository.findById(id)
+                .orElseThrow(RuntimeException::new);
+    }
 
-        Parser uaParser = new Parser();
-        Client client = uaParser.parse(userAgent);
-
-        String nationCode = "";
-        String os = client.os.family;
-        String browser = client.userAgent.family;
-        String url = request.getRequestURI();
-
-        List<Statistics> results = statisticsRepository.find(
-                StatisticsRequest.builder()
-                        .date(LocalDate.now())
-                        .nationCode(nationCode)
-                        .os(os)
-                        .browser(browser)
-                        .url(url)
-                        .build()
+    public void updateSite(SiteRequest request) {
+        Site site = siteRepository.findById(request.getId()).orElseThrow(RuntimeException::new);
+        site.update(
+                request.getName(),
+                request.getDescription(),
+                request.getDomain(),
+                request.getTheme(),
+                request.getType(),
+                request.getLocale(),
+                request.getIsDefault()
         );
+    }
 
-        if (results.isEmpty()) {
-            statisticsRepository.save(
-                    Statistics.builder()
-                            .date(LocalDate.now())
-                            .nationCode(nationCode)
-                            .os(os)
-                            .browser(browser)
-                            .url(url)
-                            .count(1)
-                            .build()
-            );
-            return;
-        }
+    public void deleteSiteById(Long id) {
+        siteRepository.deleteById(id);
+    }
 
-        Statistics result = results.get(0);
-        result.increaseCount();
+    public void deleteSitesByIds(List<Long> ids) {
+        siteRepository.deleteAllById(ids);
     }
 }

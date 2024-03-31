@@ -5,9 +5,12 @@ import com.dgmoonlabs.cms.domain.admin.site.dto.SiteRequest;
 import com.dgmoonlabs.cms.domain.admin.site.entity.Site;
 import com.dgmoonlabs.cms.domain.admin.site.repository.SiteCustomRepository;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,8 +23,8 @@ public class SiteCustomRepositoryImpl implements SiteCustomRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<Site> find(SiteRequest request, Pageable pageable) {
-        return queryFactory.select(site)
+    public Page<Site> find(SiteRequest request, Pageable pageable) {
+        List<Site> content = queryFactory.select(site)
                 .from(site)
                 .where(
                         nameEquals(request.getName()),
@@ -35,6 +38,22 @@ public class SiteCustomRepositoryImpl implements SiteCustomRepository {
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
+
+        JPAQuery<Long> countQuery = queryFactory.select(site.count())
+                .from(site)
+                .where(
+                        nameEquals(request.getName()),
+                        descriptionLike(request.getDescription()),
+                        domainEquals(request.getDomain()),
+                        themeEquals(request.getTheme()),
+                        menuTypeEquals(request.getType()),
+                        localeEquals(request.getLocale()),
+                        isDefault(request.getIsDefault())
+                )
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize());
+        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+
     }
 
     @Override
