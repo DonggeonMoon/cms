@@ -2,7 +2,7 @@ package com.dgmoonlabs.cms.domain.banner.repository.impl;
 
 import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
 import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
-import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsCustomRepository;
+import com.dgmoonlabs.cms.domain.banner.repository.BannerCustomRepository;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -19,7 +19,7 @@ import static com.dgmoonlabs.cms.domain.admin.statistics.entity.QStatistics.stat
 
 @Repository
 @RequiredArgsConstructor
-public class BannerCustomRepositoryImpl implements StatisticsCustomRepository {
+public class BannerCustomRepositoryImpl implements BannerCustomRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override

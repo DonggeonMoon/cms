@@ -7,4 +7,5 @@ import lombok.*;
 @AllArgsConstructor
 @Getter
 public class ReviewRequest {
+    private Long id;
 }
