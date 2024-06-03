@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.common.user.entity.member;
 
+import com.dgmoonlabs.cms.domain.common.user.dto.MemberModifyRequest;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -72,8 +73,22 @@ public class Member extends BaseEntity {
     private String email;
 
     @Comment("전화번호")
-    private String telephoneName;
+    private String telephoneNumber;
 
     @Comment("휴대폰 번호")
-    private String mobilePhoneName;
+    private String mobilePhoneNumber;
+
+    public void update(MemberModifyRequest request) {
+        this.username = request.getUsername();
+        this.password = request.getPassword();
+        this.name = request.getName();
+        this.lastName = request.getLastName();
+        this.firstName = request.getFirstName();
+        this.isLunarBirthDate = request.getIsLunarBirthDate();
+        this.birthDate = request.getBirthDate();
+        this.gender = request.getGender();
+        this.email = request.getEmail();
+        this.telephoneNumber = request.getTelephoneName();
+        this.mobilePhoneNumber = request.getMobilePhoneNumber();
+    }
 }
