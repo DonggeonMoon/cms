@@ -8,4 +8,5 @@ import lombok.*;
 @Getter
 public class SatisfactionRequest {
     private Long id;
+    private Long menuId;
 }

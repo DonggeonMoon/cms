@@ -1,77 +1,37 @@
 package com.dgmoonlabs.cms.domain.common.code.service;
 
-import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
-import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
-import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsRepository;
+import com.dgmoonlabs.cms.domain.common.code.dto.CodeRequest;
+import com.dgmoonlabs.cms.domain.common.code.entity.Code;
+import com.dgmoonlabs.cms.domain.common.code.repository.CodeRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ua_parser.Client;
-import ua_parser.Parser;
-
-import java.time.LocalDate;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class CodeService {
-    private final StatisticsRepository statisticsRepository;
+    private final CodeRepository codeRepository;
 
     @Transactional(readOnly = true)
-    public Page<Statistics> getStatistics(StatisticsRequest statistics, Pageable pageable) {
-        return statisticsRepository.find(statistics, pageable);
+    public Page<Code> getCode(CodeRequest code, Pageable pageable) {
+        return codeRepository.find(code, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<Statistics> getStatisticsWithoutPaging(Statistics statistics, Pageable pageable) {
-        return statisticsRepository.findAll(pageable);
+    public Page<Code> getCodeWithoutPaging(Code code, Pageable pageable) {
+        return codeRepository.findAll(pageable);
     }
 
     @Transactional(readOnly = true)
-    public Statistics getStatistics(long id) {
-        return statisticsRepository.findById(id).orElseThrow(RuntimeException::new);
+    public Code getCode(long id) {
+        return codeRepository.findById(id).orElseThrow(RuntimeException::new);
     }
 
     @Transactional
-    public void updateStatistics(HttpServletRequest request) {
-        String userAgent = request.getHeader("USER-AGENT");
+    public void updateCode(HttpServletRequest request) {
 
-        Parser uaParser = new Parser();
-        Client client = uaParser.parse(userAgent);
-
-        String nationCode = "";
-        String os = client.os.family;
-        String browser = client.userAgent.family;
-        String url = request.getRequestURI();
-
-        List<Statistics> results = statisticsRepository.find(
-                StatisticsRequest.builder()
-                        .date(LocalDate.now())
-                        .nationCode(nationCode)
-                        .os(os)
-                        .browser(browser)
-                        .url(url)
-                        .build()
-        );
-
-        if (results.isEmpty()) {
-            statisticsRepository.save(
-                    Statistics.builder()
-                            .date(LocalDate.now())
-                            .nationCode(nationCode)
-                            .os(os)
-                            .browser(browser)
-                            .url(url)
-                            .count(1)
-                            .build()
-            );
-            return;
-        }
-
-        Statistics result = results.get(0);
-        result.increaseCount();
     }
 }

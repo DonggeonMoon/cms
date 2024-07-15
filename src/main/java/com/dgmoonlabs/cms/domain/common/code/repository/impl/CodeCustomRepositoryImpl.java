@@ -1,8 +1,8 @@
 package com.dgmoonlabs.cms.domain.common.code.repository.impl;
 
-import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
-import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
-import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsCustomRepository;
+import com.dgmoonlabs.cms.domain.common.code.dto.CodeRequest;
+import com.dgmoonlabs.cms.domain.common.code.entity.Code;
+import com.dgmoonlabs.cms.domain.common.code.repository.CodeCustomRepository;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -14,33 +14,41 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-import static com.dgmoonlabs.cms.domain.admin.statistics.entity.QStatistics.statistics;
+import static com.dgmoonlabs.cms.domain.common.code.entity.QCode.code;
 
 
 @Repository
 @RequiredArgsConstructor
-public class CodeCustomRepositoryImpl implements StatisticsCustomRepository {
+public class CodeCustomRepositoryImpl implements CodeCustomRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<Statistics> find(StatisticsRequest statisticsRequest, Pageable pageable) {
-        List<Statistics> content = queryFactory.select(statistics)
-                .from(statistics)
+    public Page<Code> find(CodeRequest codeRequest, Pageable pageable) {
+        List<Code> content = queryFactory.select(code)
+                .from(code)
                 .where(
-                        nationCodeEquals(statisticsRequest.getNationCode()),
-                        osEquals(statisticsRequest.getOs()),
-                        urlEquals(statisticsRequest.getUrl()), browserEquals(statisticsRequest.getBrowser())
+                        parentIdEquals(codeRequest.getParentId()),
+                        depthEquals(codeRequest.getDepth()),
+                        orderEquals(codeRequest.getOrder()),
+                        nameEquals(codeRequest.getName()),
+                        englishNameEquals(codeRequest.getEnglishName()),
+                        depthEquals(codeRequest.getDepth()),
+                        isUsingEquals(codeRequest.isUsing())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        JPAQuery<Long> countQuery = queryFactory.select(statistics.count())
-                .from(statistics)
+        JPAQuery<Long> countQuery = queryFactory.select(code.count())
+                .from(code)
                 .where(
-                        nationCodeEquals(statisticsRequest.getNationCode()),
-                        osEquals(statisticsRequest.getOs()),
-                        urlEquals(statisticsRequest.getUrl()), browserEquals(statisticsRequest.getBrowser())
+                        parentIdEquals(codeRequest.getParentId()),
+                        depthEquals(codeRequest.getDepth()),
+                        orderEquals(codeRequest.getOrder()),
+                        nameEquals(codeRequest.getName()),
+                        englishNameEquals(codeRequest.getEnglishName()),
+                        depthEquals(codeRequest.getDepth()),
+                        isUsingEquals(codeRequest.isUsing())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
@@ -49,35 +57,54 @@ public class CodeCustomRepositoryImpl implements StatisticsCustomRepository {
     }
 
     @Override
-    public List<Statistics> find(StatisticsRequest statisticsRequest) {
-        return queryFactory.select(statistics)
-                .from(statistics)
+    public List<Code> find(CodeRequest codeRequest) {
+        return queryFactory.select(code)
+                .from(code)
                 .where(
-                        nationCodeEquals(statisticsRequest.getNationCode()),
-                        osEquals(statisticsRequest.getOs()),
-                        urlEquals(statisticsRequest.getUrl()), browserEquals(statisticsRequest.getBrowser())
+                        parentIdEquals(codeRequest.getParentId()),
+                        depthEquals(codeRequest.getDepth()),
+                        orderEquals(codeRequest.getOrder()),
+                        nameEquals(codeRequest.getName()),
+                        englishNameEquals(codeRequest.getEnglishName()),
+                        depthEquals(codeRequest.getDepth()),
+                        isUsingEquals(codeRequest.isUsing())
                 )
                 .fetch();
     }
 
-    private BooleanExpression osEquals(final String os) {
-        return checkIfEmpty(os) ? statistics.os.eq(os) : null;
+    private BooleanExpression depthEquals(final int depth) {
+        return code.depth.eq(depth);
     }
 
-    private BooleanExpression nationCodeEquals(final String nationCode) {
-        return checkIfEmpty(nationCode) ? statistics.nationCode.eq(nationCode) : null;
+    private BooleanExpression parentIdEquals(final long parentId) {
+        return code.parentId.eq(parentId);
     }
 
-    private BooleanExpression browserEquals(final String browser) {
-        return checkIfEmpty(browser) ? statistics.browser.eq(browser) : null;
+    private BooleanExpression orderEquals(final int order) {
+        return code.order.eq(order);
     }
 
-    private BooleanExpression urlEquals(final String url) {
-        return checkIfEmpty(url) ? statistics.os.eq(url) : null;
+    private BooleanExpression nameEquals(final String name) {
+        return checkIfEmpty(name) ? code.name.eq(name) : null;
     }
 
+    private BooleanExpression englishNameEquals(final String englishName) {
+        return checkIfEmpty(englishName) ? code.englishName.eq(englishName) : null;
+    }
+
+    private BooleanExpression descriptionContains(final String description) {
+        return checkIfEmpty(description) ? code.description.contains(description) : null;
+    }
+
+    private BooleanExpression isUsingEquals(final Boolean isUsing) {
+        return checkIfEmpty(isUsing) ? code.isUsing.eq(isUsing) : null;
+    }
 
     private boolean checkIfEmpty(final String input) {
         return input == null || input.isEmpty();
+    }
+
+    private boolean checkIfEmpty(final Boolean input) {
+        return input == null;
     }
 }

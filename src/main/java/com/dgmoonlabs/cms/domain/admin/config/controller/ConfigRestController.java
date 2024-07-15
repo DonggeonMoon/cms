@@ -21,8 +21,8 @@ public class ConfigRestController {
         return ResponseEntity.ok().body(configService.getMultiple(pageable));
     }
 
-    @GetMapping
-    public ResponseEntity<Config> getOne(@RequestParam Long id) {
+    @GetMapping("/{id}")
+    public ResponseEntity<Config> getOne(@PathVariable Long id) {
         return ResponseEntity.ok().body(configService.getOne(id));
     }
 

@@ -1,8 +1,8 @@
 package com.dgmoonlabs.cms.domain.government.satisfaction.repository.impl;
 
-import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
-import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
-import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsCustomRepository;
+import com.dgmoonlabs.cms.domain.government.satisfaction.dto.SatisfactionRequest;
+import com.dgmoonlabs.cms.domain.government.satisfaction.entity.Satisfaction;
+import com.dgmoonlabs.cms.domain.government.satisfaction.repository.SatisfactionCustomRepository;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -14,33 +14,29 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-import static com.dgmoonlabs.cms.domain.admin.statistics.entity.QStatistics.statistics;
+import static com.dgmoonlabs.cms.domain.government.satisfaction.entity.QSatisfaction.satisfaction;
 
 
 @Repository
 @RequiredArgsConstructor
-public class SatisfactionCustomRepositoryImpl implements StatisticsCustomRepository {
+public class SatisfactionCustomRepositoryImpl implements SatisfactionCustomRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<Statistics> find(StatisticsRequest statisticsRequest, Pageable pageable) {
-        List<Statistics> content = queryFactory.select(statistics)
-                .from(statistics)
+    public Page<Satisfaction> find(SatisfactionRequest satisfactionRequest, Pageable pageable) {
+        List<Satisfaction> content = queryFactory.select(satisfaction)
+                .from(satisfaction)
                 .where(
-                        nationCodeEquals(statisticsRequest.getNationCode()),
-                        osEquals(statisticsRequest.getOs()),
-                        urlEquals(statisticsRequest.getUrl()), browserEquals(statisticsRequest.getBrowser())
+                        menuIdEquals(satisfactionRequest.getMenuId())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        JPAQuery<Long> countQuery = queryFactory.select(statistics.count())
-                .from(statistics)
+        JPAQuery<Long> countQuery = queryFactory.select(satisfaction.count())
+                .from(satisfaction)
                 .where(
-                        nationCodeEquals(statisticsRequest.getNationCode()),
-                        osEquals(statisticsRequest.getOs()),
-                        urlEquals(statisticsRequest.getUrl()), browserEquals(statisticsRequest.getBrowser())
+                        menuIdEquals(satisfactionRequest.getMenuId())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
@@ -49,35 +45,20 @@ public class SatisfactionCustomRepositoryImpl implements StatisticsCustomReposit
     }
 
     @Override
-    public List<Statistics> find(StatisticsRequest statisticsRequest) {
-        return queryFactory.select(statistics)
-                .from(statistics)
+    public List<Satisfaction> find(SatisfactionRequest satisfactionRequest) {
+        return queryFactory.select(satisfaction)
+                .from(satisfaction)
                 .where(
-                        nationCodeEquals(statisticsRequest.getNationCode()),
-                        osEquals(statisticsRequest.getOs()),
-                        urlEquals(statisticsRequest.getUrl()), browserEquals(statisticsRequest.getBrowser())
+                        menuIdEquals(satisfactionRequest.getMenuId())
                 )
                 .fetch();
     }
 
-    private BooleanExpression osEquals(final String os) {
-        return checkIfEmpty(os) ? statistics.os.eq(os) : null;
+    private BooleanExpression menuIdEquals(final Long menuId) {
+        return checkIfEmpty(menuId) ? satisfaction.menuId.eq(menuId) : null;
     }
 
-    private BooleanExpression nationCodeEquals(final String nationCode) {
-        return checkIfEmpty(nationCode) ? statistics.nationCode.eq(nationCode) : null;
-    }
-
-    private BooleanExpression browserEquals(final String browser) {
-        return checkIfEmpty(browser) ? statistics.browser.eq(browser) : null;
-    }
-
-    private BooleanExpression urlEquals(final String url) {
-        return checkIfEmpty(url) ? statistics.os.eq(url) : null;
-    }
-
-
-    private boolean checkIfEmpty(final String input) {
-        return input == null || input.isEmpty();
+    private boolean checkIfEmpty(final Long input) {
+        return input == null;
     }
 }

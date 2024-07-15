@@ -1,8 +1,9 @@
 package com.dgmoonlabs.cms.domain.board.repository.impl;
 
-import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
-import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
-import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsCustomRepository;
+import com.dgmoonlabs.cms.domain.board.constant.BoardType;
+import com.dgmoonlabs.cms.domain.board.dto.BoardRequest;
+import com.dgmoonlabs.cms.domain.board.entity.aritcle.Board;
+import com.dgmoonlabs.cms.domain.board.repository.BoardCustomRepository;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -14,33 +15,32 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-import static com.dgmoonlabs.cms.domain.admin.statistics.entity.QStatistics.statistics;
-
+import static com.dgmoonlabs.cms.domain.board.entity.aritcle.QBoard.board;
 
 @Repository
 @RequiredArgsConstructor
-public class BoardCustomRepositoryImpl implements StatisticsCustomRepository {
+public class BoardCustomRepositoryImpl implements BoardCustomRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<Statistics> find(StatisticsRequest statisticsRequest, Pageable pageable) {
-        List<Statistics> content = queryFactory.select(statistics)
-                .from(statistics)
+    public Page<Board> find(BoardRequest boardRequest, Pageable pageable) {
+        List<Board> content = queryFactory.select(board)
+                .from(board)
                 .where(
-                        nationCodeEquals(statisticsRequest.getNationCode()),
-                        osEquals(statisticsRequest.getOs()),
-                        urlEquals(statisticsRequest.getUrl()), browserEquals(statisticsRequest.getBrowser())
+                        nameEquals(boardRequest.getName()),
+                        typeEquals(boardRequest.getType()),
+                        fieldsEquals(boardRequest.getFields())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        JPAQuery<Long> countQuery = queryFactory.select(statistics.count())
-                .from(statistics)
+        JPAQuery<Long> countQuery = queryFactory.select(board.count())
+                .from(board)
                 .where(
-                        nationCodeEquals(statisticsRequest.getNationCode()),
-                        osEquals(statisticsRequest.getOs()),
-                        urlEquals(statisticsRequest.getUrl()), browserEquals(statisticsRequest.getBrowser())
+                        nameEquals(boardRequest.getName()),
+                        typeEquals(boardRequest.getType()),
+                        fieldsEquals(boardRequest.getFields())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
@@ -49,35 +49,34 @@ public class BoardCustomRepositoryImpl implements StatisticsCustomRepository {
     }
 
     @Override
-    public List<Statistics> find(StatisticsRequest statisticsRequest) {
-        return queryFactory.select(statistics)
-                .from(statistics)
+    public List<Board> find(BoardRequest boardRequest) {
+        return queryFactory.select(board)
+                .from(board)
                 .where(
-                        nationCodeEquals(statisticsRequest.getNationCode()),
-                        osEquals(statisticsRequest.getOs()),
-                        urlEquals(statisticsRequest.getUrl()), browserEquals(statisticsRequest.getBrowser())
+                        nameEquals(boardRequest.getName()),
+                        typeEquals(boardRequest.getType()),
+                        fieldsEquals(boardRequest.getFields())
                 )
                 .fetch();
     }
 
-    private BooleanExpression osEquals(final String os) {
-        return checkIfEmpty(os) ? statistics.os.eq(os) : null;
+    private BooleanExpression typeEquals(final BoardType boardType) {
+        return checkIfEmpty(boardType) ? null : board.type.eq(boardType);
     }
 
-    private BooleanExpression nationCodeEquals(final String nationCode) {
-        return checkIfEmpty(nationCode) ? statistics.nationCode.eq(nationCode) : null;
+    private BooleanExpression nameEquals(final String name) {
+        return checkIfEmpty(name) ? null : board.name.eq(name);
     }
 
-    private BooleanExpression browserEquals(final String browser) {
-        return checkIfEmpty(browser) ? statistics.browser.eq(browser) : null;
+    private BooleanExpression fieldsEquals(final String fields) {
+        return checkIfEmpty(fields) ? null : board.fields.eq(fields);
     }
-
-    private BooleanExpression urlEquals(final String url) {
-        return checkIfEmpty(url) ? statistics.os.eq(url) : null;
-    }
-
 
     private boolean checkIfEmpty(final String input) {
         return input == null || input.isEmpty();
+    }
+
+    private boolean checkIfEmpty(final BoardType input) {
+        return input == null;
     }
 }

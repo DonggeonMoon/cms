@@ -1,14 +1,14 @@
 package com.dgmoonlabs.cms.domain.banner.repository;
 
-import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
-import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
+import com.dgmoonlabs.cms.domain.banner.dto.BannerRequest;
+import com.dgmoonlabs.cms.domain.banner.entity.Banner;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
 public interface BannerCustomRepository {
-    Page<Statistics> find(StatisticsRequest statisticsRequest, Pageable pageable);
+    Page<Banner> find(BannerRequest bannerRequest, Pageable pageable);
 
-    List<Statistics> find(StatisticsRequest statisticsRequest);
+    List<Banner> find(BannerRequest bannerRequest);
 }

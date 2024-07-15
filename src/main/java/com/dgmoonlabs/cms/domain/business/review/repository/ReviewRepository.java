@@ -1,8 +1,7 @@
 package com.dgmoonlabs.cms.domain.business.review.repository;
 
-import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
-import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsCustomRepository;
+import com.dgmoonlabs.cms.domain.business.review.entity.Review;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ReviewRepository extends JpaRepository<Statistics, Long>, StatisticsCustomRepository {
+public interface ReviewRepository extends JpaRepository<Review, Long>, ReviewCustomRepository {
 }

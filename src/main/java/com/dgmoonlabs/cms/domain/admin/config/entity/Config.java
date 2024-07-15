@@ -40,13 +40,4 @@ public class Config extends BaseEntity {
     @ColumnDefault("0")
     @Comment("숨김 여부")
     private boolean isHidden;
-
-    public Config(final Long id, final String key, final String value, final String description, final OptionType type, final boolean isHidden) {
-        this.id = id;
-        this.key = key;
-        this.value = value;
-        this.description = description;
-        this.type = type;
-        this.isHidden = isHidden;
-    }
 }

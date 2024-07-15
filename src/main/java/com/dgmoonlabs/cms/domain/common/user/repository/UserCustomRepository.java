@@ -1,14 +1,14 @@
 package com.dgmoonlabs.cms.domain.common.user.repository;
 
-import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
-import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
+import com.dgmoonlabs.cms.domain.common.user.dto.UsernameCheckRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.User;
 
 import java.util.List;
 
 public interface UserCustomRepository {
-    Page<Statistics> find(StatisticsRequest statisticsRequest, Pageable pageable);
+    Page<User> find(UsernameCheckRequest usernameCheckRequest, Pageable pageable);
 
-    List<Statistics> find(StatisticsRequest statisticsRequest);
+    List<User> find(UsernameCheckRequest usernameCheckRequest);
 }
