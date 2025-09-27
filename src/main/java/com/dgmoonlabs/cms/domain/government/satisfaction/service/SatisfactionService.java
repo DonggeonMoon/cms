@@ -27,7 +27,24 @@ public class SatisfactionService {
     }
 
     @Transactional(readOnly = true)
-    public Satisfaction getSatisfaction(long id) {
-        return satisfactionRepository.findById(id).orElseThrow(RuntimeException::new);
+    public Satisfaction getSatisfaction(Long menuId, Long userId) {
+        return satisfactionRepository.findByMenuIdAndUserId(menuId, userId).orElseThrow(RuntimeException::new);
+    }
+
+    @Transactional
+    public Long saveSatisfaction(SatisfactionRequest satisfactionRequest) {
+        return satisfactionRepository.save(satisfactionRequest.toEntity()).getId();
+    }
+
+    @Transactional
+    public void updateSatisfaction(SatisfactionRequest request) {
+        Satisfaction satisfaction = satisfactionRepository.findByMenuIdAndUserId(request.getMenuId(), request.getId())
+                .orElseThrow(RuntimeException::new);
+        satisfaction.update(request.getFivePoint(), request.getFourPoint(), request.getThreePoint(), request.getTwoPoint(), request.getOnePoint());
+    }
+
+    @Transactional
+    public void deleteSatisfaction(Long id) {
+        satisfactionRepository.deleteById(id);
     }
 }

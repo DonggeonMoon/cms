@@ -20,28 +20,39 @@ public class Satisfaction extends BaseEntity {
     @Comment("메뉴 ID")
     private Long menuId;
 
+    @Comment("사용자 고유식별번호")
+    private Long userId;
+
     @Column(nullable = false)
     @ColumnDefault("0")
     @Comment("5점")
-    private int fivePoint;
+    private Integer fivePoint;
 
     @Column(nullable = false)
     @ColumnDefault("0")
     @Comment("4점")
-    private int fourPoint;
+    private Integer fourPoint;
 
     @Column(nullable = false)
     @ColumnDefault("0")
     @Comment("3점")
-    private int threePoint;
+    private Integer threePoint;
 
     @Column(nullable = false)
     @ColumnDefault("0")
     @Comment("2점")
-    private int twoPoint;
+    private Integer twoPoint;
 
     @Column(nullable = false)
     @ColumnDefault("0")
     @Comment("1점")
-    private int onePoint;
+    private Integer onePoint;
+
+    public void update(Integer five, Integer four, Integer three, Integer two, Integer one) {
+        this.fivePoint = five;
+        this.fourPoint = four;
+        this.threePoint = three;
+        this.twoPoint = two;
+        this.onePoint = one;
+    }
 }
