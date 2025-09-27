@@ -21,9 +21,6 @@ public class ReportAnswer extends BaseEntity {
     @Comment("신고 ID")
     private String reportId;
 
-    @Comment("부모 댓글 ID")
-    private Long parentId;
-
     @Column(nullable = false)
     @ColumnDefault("0")
     @Comment("깊이")

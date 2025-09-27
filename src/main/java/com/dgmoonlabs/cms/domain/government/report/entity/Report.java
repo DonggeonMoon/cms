@@ -37,7 +37,7 @@ public class Report extends BaseEntity {
     private String fields;
 
     @Comment("사용자 고유식별번호")
-    private String uid;
+    private Long userId;
 
     @Comment("사용자 이메일")
     private String email;
