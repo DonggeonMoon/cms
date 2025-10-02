@@ -44,4 +44,14 @@ public class Report extends BaseEntity {
 
     @Comment("사용자 전화번호")
     private String phoneNumber;
+
+    public void update(final String title, final String contentText, final String contentHtml, final String fields, final Long userId, final String email, final String phoneNumber) {
+        this.title = title;
+        this.contentText = contentText;
+        this.contentHtml = contentHtml;
+        this.fields = fields;
+        this.userId = userId;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
+    }
 }
