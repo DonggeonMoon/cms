@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.common.code.entity;
 
+import com.dgmoonlabs.cms.domain.common.code.dto.CodeSaveRequest;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -42,4 +43,12 @@ public class Code extends BaseEntity {
     @ColumnDefault("true")
     @Comment("사용 여부")
     private boolean isUsing;
+
+    public void update(final CodeSaveRequest request) {
+        this.order = request.order();
+        this.name = request.name();
+        this.englishName = request.englishName();
+        this.description = request.description();
+        this.isUsing = request.isUsing();
+    }
 }

@@ -3,6 +3,7 @@ package com.dgmoonlabs.cms.domain.common.file.entity;
 import jakarta.persistence.Entity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Comment;
@@ -11,6 +12,7 @@ import org.hibernate.annotations.Comment;
 @SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Getter
 public class ImageFile extends File {
     @Comment("썸네일 경로")
     private String thumbnailPath;

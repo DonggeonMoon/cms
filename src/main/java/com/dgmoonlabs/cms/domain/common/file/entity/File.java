@@ -8,8 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
-import org.springframework.util.MimeType;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -35,7 +35,7 @@ public class File extends BaseEntity {
     private String extension;
 
     @Comment("MIME 타입")
-    private MimeType mimeType;
+    private String mimeType;
 
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
@@ -43,11 +43,17 @@ public class File extends BaseEntity {
     private MediaType mediaType;
 
     @Comment("파일 사이즈")
-    private Integer size;
+    private Long size;
 
     @Comment("대체 텍스트")
     private String alternativeText;
 
+    @Column(nullable = false)
+    @ColumnDefault("0")
     @Comment("다운로드 수")
-    private String downloadCount;
+    private int downloadCount;
+
+    public void increaseDownloadCount() {
+        this.downloadCount++;
+    }
 }

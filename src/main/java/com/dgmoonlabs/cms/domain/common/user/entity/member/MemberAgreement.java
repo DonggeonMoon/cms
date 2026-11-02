@@ -33,4 +33,10 @@ public class MemberAgreement {
     @ColumnDefault("false")
     @Comment("마케팅 활용 동의 여부")
     private boolean isMarketingUsageAgreed;
+
+    public void update(final boolean isMailReceptionAgreed, final boolean isSmsReceptionAgreed, final boolean isMarketingUsageAgreed) {
+        this.isMailReceptionAgreed = isMailReceptionAgreed;
+        this.isSmsReceptionAgreed = isSmsReceptionAgreed;
+        this.isMarketingUsageAgreed = isMarketingUsageAgreed;
+    }
 }

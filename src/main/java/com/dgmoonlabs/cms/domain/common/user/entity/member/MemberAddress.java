@@ -26,4 +26,10 @@ public class MemberAddress {
 
     @Comment("상세주소")
     private String detailAddress;
+
+    public void update(final String postalCode, final String address, final String detailAddress) {
+        this.postalCode = postalCode;
+        this.address = address;
+        this.detailAddress = detailAddress;
+    }
 }

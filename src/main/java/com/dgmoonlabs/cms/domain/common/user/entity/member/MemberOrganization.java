@@ -36,4 +36,13 @@ public class MemberOrganization {
 
     @Comment("직장 상세주소")
     private String officeDetailAddress;
+
+    public void update(final String officeName, final String officeDepartment, final String officePosition,
+                       final String officeAddress, final String officeDetailAddress) {
+        this.officeName = officeName;
+        this.officeDepartment = officeDepartment;
+        this.officePosition = officePosition;
+        this.officeAddress = officeAddress;
+        this.officeDetailAddress = officeDetailAddress;
+    }
 }

@@ -76,4 +76,25 @@ public class Admin extends BaseEntity {
 
     @Comment("휴대폰 번호")
     private String mobilePhoneName;
+
+    public void changePassword(final String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
+    public boolean isLocked(final int maxLoginTryCount) {
+        return loginTryCount >= maxLoginTryCount;
+    }
+
+    public void recordLoginSuccess() {
+        this.loginTryCount = 0;
+        this.lastLoginDateTime = LocalDateTime.now();
+    }
+
+    public void recordLoginFailure() {
+        this.loginTryCount++;
+    }
+
+    public void unlock() {
+        this.loginTryCount = 0;
+    }
 }

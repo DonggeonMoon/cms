@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 public class Member extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    private Long id;
 
     @Column(nullable = false)
     @Comment("회원 ID")
@@ -78,17 +78,36 @@ public class Member extends BaseEntity {
     @Comment("휴대폰 번호")
     private String mobilePhoneNumber;
 
-    public void update(MemberModifyRequest request) {
-        this.username = request.getUsername();
-        this.password = request.getPassword();
-        this.name = request.getName();
-        this.lastName = request.getLastName();
-        this.firstName = request.getFirstName();
-        this.isLunarBirthDate = request.getIsLunarBirthDate();
-        this.birthDate = request.getBirthDate();
-        this.gender = request.getGender();
-        this.email = request.getEmail();
-        this.telephoneNumber = request.getTelephoneName();
-        this.mobilePhoneNumber = request.getMobilePhoneNumber();
+    public void updateProfile(final MemberModifyRequest request) {
+        this.name = request.name();
+        this.lastName = request.lastName();
+        this.firstName = request.firstName();
+        this.birthDate = request.birthDate();
+        this.isLunarBirthDate = Boolean.TRUE.equals(request.isLunarBirthDate());
+        this.gender = request.gender();
+        this.email = request.email();
+        this.telephoneNumber = request.telephoneNumber();
+        this.mobilePhoneNumber = request.mobilePhoneNumber();
+    }
+
+    public void changePassword(final String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
+    public boolean isLocked(final int maxLoginTryCount) {
+        return loginTryCount >= maxLoginTryCount;
+    }
+
+    public void recordLoginSuccess() {
+        this.loginTryCount = 0;
+        this.lastLoginDateTime = LocalDateTime.now();
+    }
+
+    public void recordLoginFailure() {
+        this.loginTryCount++;
+    }
+
+    public void unlock() {
+        this.loginTryCount = 0;
     }
 }
