@@ -24,7 +24,6 @@ public class Review extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // rows written before program reviews existed get PRODUCT through the column default
     @Builder.Default
     @Column(nullable = false, columnDefinition = "varchar(20)")
     @ColumnDefault("'PRODUCT'")

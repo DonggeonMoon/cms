@@ -35,7 +35,6 @@ describe('login zones', () => {
         expect(meCalls).toContain('admin');
 
         await router.navigate('/');
-        // the admin login does not carry over: the visitor site shows the signed-out header
         const account = await screen.findByRole('navigation', {name: '계정'});
         expect(await within(account).findByRole('link', {name: '로그인'})).toBeInTheDocument();
         expect(meCalls.at(-1)).toBeNull();

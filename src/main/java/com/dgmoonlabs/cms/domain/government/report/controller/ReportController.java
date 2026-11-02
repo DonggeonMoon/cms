@@ -21,7 +21,6 @@ import java.util.Map;
 public class ReportController {
     private final ReportService reportService;
 
-    // the id is returned in the body too: guests need it (with their password) to look the report up later
     @PostMapping("/api/reports")
     public ResponseEntity<Map<String, Long>> create(@RequestBody @Valid final ReportCreateRequest request) {
         Long id = reportService.createReport(request);

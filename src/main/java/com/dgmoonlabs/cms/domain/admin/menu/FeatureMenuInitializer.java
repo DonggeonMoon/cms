@@ -15,8 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-// every feature that has its own pages gets a menu the admin can rename, reorder or switch off; missing ones are
-// added at startup, so a feature introduced later shows up in the menu admin without a migration
 @Component
 @RequiredArgsConstructor
 public class FeatureMenuInitializer implements ApplicationRunner {

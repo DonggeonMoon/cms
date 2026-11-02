@@ -23,7 +23,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final SecurityProperties securityProperties;
 
-    // the failed-attempt counter must survive the LOGIN_FAILED exception
     @Transactional(noRollbackFor = BusinessException.class)
     public LoginUser authenticate(final LoginRequest request) {
         return request.userTypeOrDefault() == UserType.ADMIN

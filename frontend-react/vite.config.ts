@@ -5,7 +5,6 @@ export default defineConfig({
     plugins: [react()],
     server: {
         port: 5173,
-        // same-origin proxy keeps the session cookie and XSRF-TOKEN cookie usable without CORS
         proxy: {
             '/api': 'http://localhost:8080',
         },

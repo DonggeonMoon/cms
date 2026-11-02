@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import java.util.Arrays;
 import java.util.List;
 
-// user-facing features that can be switched off per site; each owns the public and admin API paths it serves
 @Getter
 @RequiredArgsConstructor
 public enum SiteFeature {
@@ -26,7 +25,6 @@ public enum SiteFeature {
     private final List<String> pathPrefixes;
     private final List<String> adminPathPrefixes;
 
-    // a path shared by several features (payments, reviews) stays open while any of them is on
     public static List<SiteFeature> ofPath(final String path) {
         return Arrays.stream(values())
                 .filter(feature -> matches(feature.pathPrefixes, path) || matches(feature.adminPathPrefixes, path))

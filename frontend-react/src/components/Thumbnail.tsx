@@ -1,4 +1,3 @@
-// stands in for a missing image with a tinted tile and the item's initial, so listings without photos still look tidy
 export function Thumbnail({src, name}: { src: string | null | undefined; name: string }) {
     if (src) {
         return <img className="thumbnail" src={src} alt={name}/>;

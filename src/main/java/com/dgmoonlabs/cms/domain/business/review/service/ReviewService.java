@@ -56,7 +56,6 @@ public class ReviewService {
                 .map(review -> ReviewResponse.of(review, true));
     }
 
-    // only members who actually bought the product may review it, once
     @Transactional
     public Long createReview(final LoginUser member, final Long productId, final ReviewSaveRequest request,
                              final String ipAddress) {
@@ -70,7 +69,6 @@ public class ReviewService {
         return save(member, request, ipAddress, Review.builder().targetType(ReviewTargetType.PRODUCT).productId(productId));
     }
 
-    // only members with a confirmed reservation may review the program, once
     @Transactional
     public Long createProgramReview(final LoginUser member, final Long programId, final ReviewSaveRequest request,
                                     final String ipAddress) {

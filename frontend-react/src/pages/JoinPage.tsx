@@ -15,7 +15,6 @@ export function JoinPage() {
     return agreed ? <JoinForm/> : <ConsentStep onAgree={() => setAgreed(true)}/>;
 }
 
-// the collection/use consent has to be accepted before the sign-up form is shown
 function ConsentStep({onAgree}: { onAgree: () => void }) {
     const [policy, setPolicy] = useState<Policy | null>(null);
     const [error, setError] = useState<unknown>(null);

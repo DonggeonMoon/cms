@@ -42,7 +42,6 @@ public class GlobalExceptionHandler {
         return respond(ErrorCode.NOT_FOUND);
     }
 
-    // rethrown so Spring Security's ExceptionTranslationFilter still decides between 401 and 403
     @ExceptionHandler(AccessDeniedException.class)
     public void handleAccessDenied(final AccessDeniedException e) {
         throw e;

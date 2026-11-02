@@ -14,12 +14,9 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.List;
 
-// hiding a disabled feature in the UI is not enough: its API is closed too. Admins may still preview the public API,
-// but the admin API of a switched-off feature is closed to them as well
 @Component
 @RequiredArgsConstructor
 public class SiteFeatureInterceptor implements HandlerInterceptor {
-    // looked up lazily so web slice tests, which have no persistence layer, can still load this interceptor
     private final ObjectProvider<SiteService> siteService;
 
     @Override

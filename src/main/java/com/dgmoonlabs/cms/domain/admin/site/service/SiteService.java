@@ -74,7 +74,6 @@ public class SiteService {
         }
     }
 
-    // only one site may be the default one
     private void clearDefault() {
         siteRepository.findAllByIsDefaultTrueAndDeletedAtIsNull().forEach(Site::unmarkDefault);
     }

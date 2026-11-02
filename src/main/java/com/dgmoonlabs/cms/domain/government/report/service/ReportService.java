@@ -55,7 +55,6 @@ public class ReportService {
         return reportRepository.findAllByUserIdAndDeletedAtIsNullOrderByIdDesc(memberId, pageable).map(ReportSummary::from);
     }
 
-    // reports hold personal data, so only the reporter (member, or guest with the password) and admins can open one
     @Transactional(readOnly = true)
     public ReportDetail getReport(final Long id, final String password) {
         Report report = findReport(id);

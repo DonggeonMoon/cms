@@ -29,7 +29,6 @@ public final class MapDtos {
             @Size(max = 200) String officeBusinessHours,
             @Size(max = 5000) String officeDescription
     ) {
-        // "오시는 길" cannot be switched on without a place to point at
         public boolean hasOfficeLocation() {
             return officeAddress != null && !officeAddress.isBlank() && officeLatitude != null && officeLongitude != null;
         }
@@ -53,7 +52,6 @@ public final class MapDtos {
         }
     }
 
-    // public view: only the selected provider's (browser-side, domain-restricted) key and only the enabled tabs
     public record PublicMapResponse(MapProvider provider, String apiKey, Office directions, List<BranchResponse> branches) {
     }
 

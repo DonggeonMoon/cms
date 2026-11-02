@@ -37,7 +37,6 @@ const toSiteBody = (values: FormValues) => ({
 const loadSites = (query: Query) => adminApi.sites.search(query);
 
 export function SiteAdminPage() {
-    // the admin sidebar shows the default site's name, so it is refreshed after every change here
     const {reload} = useSite();
     const [contents, setContents] = useState<Content[]>([]);
     useEffect(() => {
@@ -122,7 +121,6 @@ const PERIOD_FIELDS: FieldSpec[] = [
     {name: 'endDateTime', label: '게시 종료', type: 'datetime'},
 ];
 
-// BANNER is the strip shown above the site header
 const TOP_BAR_FIELDS: FieldSpec[] = [
     {name: 'isUsing', label: '사용', type: 'checkbox', wide: true},
     {name: 'opensNewWindow', label: '새 창으로 열기', type: 'checkbox', wide: true, spaced: true},
@@ -228,7 +226,6 @@ const MENU_TYPES: { value: Menu['type']; label: string; feature?: SiteFeature }[
     {value: 'LINK', label: '링크'},
 ];
 
-// a switched-off feature cannot be chosen as a menu target (the server refuses it as well)
 const MENU_USING_FIELD: FieldSpec = {name: 'isUsing', label: '사용', type: 'checkbox', wide: true, spaced: true};
 
 const menuFields = (allowedTypes: typeof MENU_TYPES): FieldSpec[] => [
@@ -241,7 +238,6 @@ const menuFields = (allowedTypes: typeof MENU_TYPES): FieldSpec[] => [
     {name: 'sequence', label: '순서', type: 'number'},
 ];
 
-// a feature menu always leads to its feature; only its label, position and visibility are editable
 const FEATURE_MENU_FIELDS: FieldSpec[] = [
     MENU_USING_FIELD,
     {name: 'name', label: '메뉴 이름', required: true},

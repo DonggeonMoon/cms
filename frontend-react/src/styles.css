@@ -411,7 +411,6 @@ td.actions {
     }
 }
 
-/* ---- shared additions for the full CMS screens ---- */
 .small {
     font-size: 0.82rem;
 }
@@ -1074,7 +1073,6 @@ a.button.primary {
     margin: 0 0 8px;
 }
 
-/* ---------- home ---------- */
 .hero {
     padding: 32px 28px;
     margin-bottom: 20px;
@@ -1182,7 +1180,6 @@ a.button.primary {
     color: var(--primary);
 }
 
-/* ---------- product cards ---------- */
 .thumbnail {
     width: 100%;
     aspect-ratio: 1 / 1;
@@ -1226,7 +1223,6 @@ a.button.primary {
     align-self: flex-start;
 }
 
-/* ---------- "market" theme: a friendly second-hand marketplace look ---------- */
 .site[data-theme='market'] {
     --bg: #fbfaf7;
     --surface: #ffffff;
@@ -1364,7 +1360,6 @@ a.button.primary {
     }
 }
 
-/* ---------- landing content helpers (usable from a home content's class attributes) ---------- */
 .landing h1,
 .landing h2 {
     line-height: 1.3;

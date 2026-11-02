@@ -50,7 +50,6 @@ public class Site extends BaseEntity {
     @Comment("홈 화면으로 쓰는 컨텐츠 ID (없으면 기본 홈)")
     private Long homeContentId;
 
-    // the switched-off features are stored, so a feature added later starts out enabled
     @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "site_disabled_feature", joinColumns = @JoinColumn(name = "site_id"))

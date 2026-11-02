@@ -20,7 +20,6 @@ function SiteFrame() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // page views of the SPA are reported to the visit statistics; failures must never break navigation
     useEffect(() => {
         siteApi.trackVisit(location.pathname + location.search, document.referrer).catch(() => undefined);
     }, [location.pathname, location.search]);
@@ -86,7 +85,6 @@ const FEATURE_PATHS: Partial<Record<SiteFeature, string>> = {
 };
 const FEATURE_LISTING_PATHS: Partial<Record<SiteFeature, string>> = {CONTENT: '/contents', BOARD: '/boards', ARCHIVE: '/archives'};
 
-// a built-in feature menu: a plain link, or for contents/boards/archives a link listing each of them
 function FeatureMenu({menu, listings}: { menu: Menu; listings: Partial<Record<SiteFeature, { id: number; name: string }[]>> }) {
     const feature = menu.feature!;
     const listingPath = FEATURE_LISTING_PATHS[feature];
@@ -97,7 +95,6 @@ function FeatureMenu({menu, listings}: { menu: Menu; listings: Partial<Record<Si
     return path ? <NavLink to={path}>{menu.name}</NavLink> : null;
 }
 
-// contents, boards and archives show up in the header without having to be added as menus; one links directly, several drop down
 function ListingMenu({label, basePath, items}: { label: string; basePath: string; items: { id: number; name: string }[] }) {
     if (items.length === 0) {
         return null;

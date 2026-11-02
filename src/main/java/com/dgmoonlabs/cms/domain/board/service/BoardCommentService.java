@@ -30,7 +30,6 @@ public class BoardCommentService {
     private final BoardCommentRepository commentRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // threads ordered root-first: each root comment followed by its replies
     @Transactional(readOnly = true)
     public List<CommentResponse> getComments(final Long boardId, final Long articleId) {
         BoardConfig config = requireCommentable(boardId);
@@ -125,7 +124,6 @@ public class BoardCommentService {
                 .moderate();
     }
 
-    // UI hint only: guest comments show a delete button that then asks for the password
     private boolean canDelete(final BoardComment comment) {
         return isOwnerOrAdmin(comment) || comment.isWrittenByGuest();
     }

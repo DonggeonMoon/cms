@@ -1,4 +1,3 @@
-# Interpolates DB_* from the shared .env.development: docker compose --env-file .env.development up -d
 services:
   postgres:
     image: postgres:18
@@ -11,9 +10,7 @@ services:
       POSTGRES_USER: ${DB_USER:?}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?}
     volumes:
-      # postgres 18+ keeps PGDATA in a versioned subdirectory, so mount the parent
       - postgres-data:/var/lib/postgresql
-      # runs only when the volume is empty: a fresh database starts with the "중고천국" sample site
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]

@@ -41,7 +41,6 @@ public record SiteResponse(
         );
     }
 
-    // used before any site has been registered: everything enabled
     public static SiteResponse fallback() {
         return new SiteResponse(null, FALLBACK_NAME, null, null, null, null, null, true, null, features(Set.of()), null);
     }

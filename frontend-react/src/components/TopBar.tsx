@@ -6,7 +6,6 @@ import {dismissForDays, dismissLabel, isDismissed} from './dismissal';
 
 const STORAGE_KEY = 'cms.dismissedTopBars';
 
-// the "배너": a strip above the site header; the first active one (by order) that was not dismissed today is shown
 export function TopBar() {
     const [banner, setBanner] = useState<Banner | null>(null);
 

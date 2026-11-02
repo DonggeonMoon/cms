@@ -10,12 +10,6 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
 
-/**
- * Keeps the visitor site login and the admin console login apart inside one HTTP session, so signing in on one side
- * never signs you in (or out) on the other. A request belongs to the admin zone when it targets /api/admin/** or the
- * admin console marks it with the X-CMS-Zone header; the header only chooses which stored login is read, so it cannot
- * grant anything that was not authenticated in that zone before.
- */
 @Component
 public class ZonedSecurityContextRepository implements SecurityContextRepository {
     public static final String ZONE_HEADER = "X-CMS-Zone";
@@ -51,7 +45,6 @@ public class ZonedSecurityContextRepository implements SecurityContextRepository
         repositoryFor(zoneOf(request)).saveContext(context, request, response);
     }
 
-    // login decides the zone from the account type rather than from the request
     public void saveContext(final Zone zone, final SecurityContext context, final HttpServletRequest request,
                             final HttpServletResponse response) {
         repositoryFor(zone).saveContext(context, request, response);

@@ -8,7 +8,6 @@ interface MenuItem {
     label: string;
     end?: boolean;
     sub?: boolean;
-    // the item is listed while at least one of these site features is switched on
     features?: SiteFeature[];
 }
 

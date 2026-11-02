@@ -4,7 +4,6 @@ import type {Page} from './types';
 
 type Body = Record<string, unknown>;
 
-// the admin screens all speak the same search/get/create/update/remove shape
 export interface Resource<T> {
     search: (query: Query) => Promise<Page<T>>;
     get: (id: number) => Promise<T>;

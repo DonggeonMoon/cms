@@ -38,7 +38,6 @@ public class FileController {
         return serve(fileService.download(id), ContentDisposition.attachment());
     }
 
-    // inline display (e.g. <img src>) that does not count as a download
     @GetMapping("/{id}/view")
     public ResponseEntity<Resource> view(@PathVariable final Long id) {
         return serve(fileService.view(id), ContentDisposition.inline());

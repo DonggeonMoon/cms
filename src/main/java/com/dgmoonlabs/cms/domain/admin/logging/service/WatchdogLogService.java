@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class WatchdogLogService {
     private final WatchdogLogRepository watchdogLogRepository;
 
-    // a separate transaction keeps the audit row even when the audited request rolled back
     @EventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(final AdminAuditEvent event) {

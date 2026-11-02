@@ -44,7 +44,6 @@ public class AuthController {
         return ResponseEntity.ok(loginUser);
     }
 
-    // touching the token makes Spring Security issue the XSRF-TOKEN cookie before the first unsafe request
     @GetMapping("/csrf")
     public ResponseEntity<Void> csrf(final CsrfToken csrfToken) {
         csrfToken.getToken();

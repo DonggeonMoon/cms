@@ -21,7 +21,6 @@ public class SessionLoginHandler {
     private final ZonedSecurityContextRepository securityContextRepository;
     private final SecurityContextHolderStrategy holderStrategy = SecurityContextHolder.getContextHolderStrategy();
 
-    // admins sign in to the admin console only, members to the visitor site only
     public void login(final LoginUser loginUser, final HttpServletRequest request, final HttpServletResponse response) {
         Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(
                 loginUser, null, List.of(new SimpleGrantedAuthority(loginUser.role())));
@@ -36,7 +35,6 @@ public class SessionLoginHandler {
         securityContextRepository.saveContext(zone, context, request, response);
     }
 
-    // only the zone the request came from is signed out; the session (and the other zone's login) stays
     public void logout(final HttpServletRequest request, final HttpServletResponse response) {
         securityContextRepository.clear(ZonedSecurityContextRepository.zoneOf(request), request);
         holderStrategy.clearContext();

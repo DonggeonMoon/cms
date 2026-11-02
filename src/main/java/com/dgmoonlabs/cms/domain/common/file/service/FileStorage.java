@@ -53,7 +53,6 @@ public class FileStorage {
             int width = Math.max(1, (int) Math.round(original.getWidth() * scale));
             int height = Math.max(1, (int) Math.round(original.getHeight() * scale));
 
-            // jpg has no alpha channel, so draw onto RGB to avoid a broken (pink/black) thumbnail
             boolean keepsAlpha = !extension.equals("jpg") && !extension.equals("jpeg");
             BufferedImage thumbnail = new BufferedImage(width, height,
                     keepsAlpha ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB);

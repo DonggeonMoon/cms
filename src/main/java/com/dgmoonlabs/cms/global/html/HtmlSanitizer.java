@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.regex.Pattern;
 
-// user-written HTML is rendered as-is by the front end, so it is sanitized on the way in
 @Component
 public class HtmlSanitizer {
     private static final Pattern CLASS_NAMES = Pattern.compile("[A-Za-z0-9_\\- ]{1,200}");
@@ -20,7 +19,6 @@ public class HtmlSanitizer {
             .and(Sanitizers.TABLES)
             .and(Sanitizers.STYLES)
             .and(new HtmlPolicyBuilder().allowElements("hr", "pre", "code", "span", "figure", "figcaption").toFactory())
-            // landing pages are laid out with the site's CSS classes and mark where live blocks (new products, ...) go
             .and(new HtmlPolicyBuilder()
                     .allowElements("section", "header", "article", "aside", "nav", "div")
                     .allowAttributes("class").matching(CLASS_NAMES).globally()

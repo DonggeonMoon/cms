@@ -102,7 +102,6 @@ public class QuestionService {
         String html = htmlSanitizer.sanitize(request.contentHtml());
         String text = htmlSanitizer.toPlainText(html);
 
-        // a soft-deleted answer row is reused because question_ref_id is unique
         Optional<Answer> existing = answerRepository.findByQuestionId(questionId);
         if (existing.isPresent()) {
             existing.get().restore();

@@ -9,7 +9,6 @@ import org.apache.ibatis.annotations.Select;
 import java.time.LocalDate;
 import java.util.List;
 
-// "date" and "count" are quoted: both are keywords in some databases (H2 is used by the tests)
 @Mapper
 public interface StatisticsMapper {
     @Select("""

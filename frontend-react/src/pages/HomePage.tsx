@@ -20,7 +20,6 @@ export function HomePage() {
             setLanding('none');
             return;
         }
-        // a draft or deleted home content falls back to the built-in home page
         siteApi.content(homeContentId)
             .then((content) => setLanding({id: content.id, html: content.contentHtml}))
             .catch(() => setLanding('none'));
@@ -55,7 +54,6 @@ function DefaultHome() {
     );
 }
 
-// renders the landing content as written and mounts the live blocks into its <div data-block="..."> placeholders
 function LandingContent({html}: { html: string }) {
     const ref = useRef<HTMLDivElement>(null);
     const [slots, setSlots] = useState<{ element: Element; name: string }[]>([]);
@@ -77,7 +75,6 @@ function LandingContent({html}: { html: string }) {
 
 const POPUP_DISMISS_KEY = 'cms.dismissedPopups';
 
-// modeless popups float at their configured position; modal ones are shown one at a time over a dimmed page
 function PopupBanners() {
     const [popups, setPopups] = useState<Banner[]>([]);
 
@@ -112,7 +109,6 @@ function PopupBanners() {
 }
 
 function ModalPopup({popup, onClose}: { popup: Banner; onClose: (dismiss: boolean) => void }) {
-    // the page behind cannot be scrolled or clicked while a modal popup is open
     useEffect(() => {
         const previous = document.body.style.overflow;
         document.body.style.overflow = 'hidden';

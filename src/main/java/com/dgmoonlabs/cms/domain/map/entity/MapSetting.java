@@ -10,7 +10,6 @@ import org.hibernate.annotations.Comment;
 
 import java.math.BigDecimal;
 
-// a single row: map provider and keys, the two tab switches and the head office shown under "오시는 길"
 @Entity
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

@@ -44,7 +44,6 @@ public class BoardController {
         return ResponseEntity.ok(articleService.getArticle(boardId, articleId, null));
     }
 
-    // secret articles written by guests are opened with their password, which is kept out of the URL
     @PostMapping("/{boardId}/articles/{articleId}/access")
     public ResponseEntity<ArticleDetailResponse> accessArticle(@PathVariable final Long boardId,
                                                                @PathVariable final Long articleId,

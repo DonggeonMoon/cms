@@ -20,7 +20,6 @@ import static com.dgmoonlabs.cms.domain.board.entity.aritcle.QBoardArticle.board
 public class BoardArticleCustomRepositoryImpl implements BoardArticleCustomRepository {
     private final JPAQueryFactory queryFactory;
 
-    // active notices are listed separately on top, so the regular page leaves them out
     @Override
     public Page<BoardArticle> search(final Long boardId, final String keyword, final boolean includeHidden,
                                      final LocalDateTime now, final Pageable pageable) {

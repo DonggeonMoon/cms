@@ -17,7 +17,6 @@ class ReportRepositoryTest {
 
     @Test
     void dbTest() {
-        // CREATE
         Report saved = reportRepository.save(
                 Report.builder()
                         .title("테스트 제목")
@@ -32,12 +31,10 @@ class ReportRepositoryTest {
 
         assertThat(saved.getId()).isNotNull();
 
-        // READ
         Report found = reportRepository.findById(saved.getId())
                 .orElseThrow();
         assertThat(found.getTitle()).isEqualTo("테스트 제목");
 
-        // UPDATE
         found.update(
                 "수정된 제목",
                 "수정된 텍스트",
@@ -54,7 +51,6 @@ class ReportRepositoryTest {
         assertThat(updated.getTitle()).isEqualTo("수정된 제목");
         assertThat(updated.getContentText()).isEqualTo("수정된 텍스트");
 
-        // DELETE
         reportRepository.delete(updated);
         assertThat(reportRepository.findById(updated.getId())).isEmpty();
     }

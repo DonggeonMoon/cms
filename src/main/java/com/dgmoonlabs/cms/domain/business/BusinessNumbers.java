@@ -12,7 +12,6 @@ public final class BusinessNumbers {
     private BusinessNumbers() {
     }
 
-    // e.g. O20261102120000-4821; retried while the generated number is already taken
     public static String next(final String prefix, final Predicate<String> isTaken) {
         String number;
         do {

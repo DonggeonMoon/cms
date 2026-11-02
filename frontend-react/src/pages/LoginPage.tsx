@@ -49,7 +49,6 @@ export function LoginPage({userType}: { userType: UserType }) {
     );
 }
 
-// the admin console signs in on its own page, outside the visitor site's layout
 export function AdminLoginPage() {
     return (
         <main className="auth-page">

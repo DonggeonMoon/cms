@@ -63,7 +63,6 @@ public class MapService {
         return BranchResponse.from(findBranch(id));
     }
 
-    // branches are managed only while "지점 안내" is switched on
     @Transactional
     public Long createBranch(final BranchSaveRequest request) {
         requireBranchesEnabled();

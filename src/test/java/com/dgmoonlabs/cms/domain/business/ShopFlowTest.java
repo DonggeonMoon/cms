@@ -31,7 +31,6 @@ class ShopFlowTest extends ApiTestSupport {
                  "receiverName":"구매자","phoneNumber":"010-0000-0000","address":"서울"}
                 """.formatted(productId, optionId, discountId)).andExpect(status().isCreated()));
         long orderId = order.get("id").asLong();
-        // (10,000 + 2,000) x 2 = 24,000, minus 10% = 21,600
         assertThat(order.get("totalPrice").decimalValue()).isEqualByComparingTo("21600");
         assertThat(order.get("status").asString()).isEqualTo("PENDING_PAYMENT");
         getJson("/api/products/" + productId, null).andExpect(jsonPath("$.availableQuantity").value(3));

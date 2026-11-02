@@ -16,9 +16,7 @@ export interface FieldSpec {
     placeholder?: string;
     help?: string;
     wide?: boolean;
-    // leaves a blank line below the field, to set it apart from the ones that follow
     spaced?: boolean;
-    // fields sharing a group are boxed together below the ungrouped ones
     group?: string;
 }
 
@@ -34,7 +32,6 @@ interface Props {
     footer?: ReactNode;
 }
 
-// the API wants null for empty optional values, and LocalDateTime without a timezone
 export function normalizeValues(fields: FieldSpec[], values: FormValues): FormValues {
     const result: FormValues = {...values};
     for (const field of fields) {

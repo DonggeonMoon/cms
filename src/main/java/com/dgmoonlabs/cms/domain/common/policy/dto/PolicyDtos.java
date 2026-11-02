@@ -14,7 +14,6 @@ public final class PolicyDtos {
     public record PolicySaveRequest(@NotBlank @Size(max = 200_000) String contentHtml) {
     }
 
-    // version 0 means the built-in template is shown because nothing has been written yet
     public record PolicyResponse(PolicyType type, String title, String contentHtml, int version, String lastWorker,
                                  LocalDateTime modifiedAt) {
         public static PolicyResponse from(final Policy policy) {

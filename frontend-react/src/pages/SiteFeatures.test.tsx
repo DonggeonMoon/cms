@@ -20,7 +20,6 @@ const FEATURE_MENUS = Object.entries(FEATURE_NAMES).map(([feature, name], index)
     feature, isUsing: true, children: [],
 }));
 
-// the server creates a built-in menu per feature, so every /api/menus answer carries them after the stubbed ones
 function withFeatureMenus(handler: (url: string) => Promise<Response>, featureMenus: unknown[] = FEATURE_MENUS) {
     return vi.fn(async (url: string) => {
         const response = await handler(url);
@@ -152,7 +151,6 @@ describe('site features', () => {
         expect(within(sidebar).queryByRole('link', {name: /예약/})).not.toBeInTheDocument();
         expect(within(sidebar).queryByRole('link', {name: /할인/})).not.toBeInTheDocument();
         expect(within(sidebar).queryByRole('link', {name: '질문답변'})).not.toBeInTheDocument();
-        // payments span products and programs; with both switched off here, the menu goes too
         expect(within(sidebar).queryByRole('link', {name: '결제'})).not.toBeInTheDocument();
         expect(within(sidebar).getByRole('link', {name: '게시판'})).toBeInTheDocument();
         expect(within(sidebar).getByRole('link', {name: '사이트'})).toBeInTheDocument();

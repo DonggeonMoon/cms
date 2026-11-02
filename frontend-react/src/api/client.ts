@@ -7,7 +7,6 @@ const ZONE_HEADER = 'X-CMS-Zone';
 
 export type ApiZone = 'site' | 'admin';
 
-// the visitor site and the admin console hold separate logins on the server; this picks which one requests use
 let currentZone: ApiZone = 'site';
 
 export function setApiZone(zone: ApiZone) {

@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-// publishes an event instead of saving directly so web slice tests don't need the persistence layer
 @Component
 @RequiredArgsConstructor
 public class AdminAuditInterceptor implements HandlerInterceptor {

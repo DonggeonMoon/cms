@@ -88,7 +88,6 @@ public class ProductService {
         return productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(BusinessException::notFound);
     }
 
-    // options are snapshots: the old rows are soft-deleted (past orders still point at them) and the list is re-created
     private void syncOptions(final Long productId, final List<OptionRequest> requests) {
         optionRepository.findAllByProductIdAndDeletedAtIsNullOrderByIdAsc(productId).forEach(ProductOption::delete);
         for (OptionRequest request : requests) {

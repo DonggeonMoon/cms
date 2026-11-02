@@ -18,7 +18,6 @@ public class Config extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // key/value are reserved words in H2 (used by the tests), so the column names are quoted
     @Column(name = "`key`", nullable = false)
     @Comment("옵션 키")
     private String key;

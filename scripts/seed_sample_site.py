@@ -104,7 +104,6 @@ def seed(base_url, admin_password):
     if any(site['name'] == '중고천국' for site in admin.get('/api/admin/sites?size=100')['content']):
         sys.exit('중고천국 사이트가 이미 있습니다. 빈 데이터베이스에서 실행해 주세요.')
 
-    # --- site & settings -------------------------------------------------------------------
     site = {
         'name': '중고천국', 'domain': 'www.junggo-heaven.example', 'theme': 'market', 'locale': 'ko', 'isDefault': True,
         'description': '검수부터 안전결제까지, 믿고 사고파는 중고거래 플랫폼', 'disabledFeatures': [],
@@ -193,7 +192,6 @@ def seed(base_url, admin_password):
     admin.create('/api/admin/menus', {'parentId': about_menu, 'name': '안전거래 가이드', 'type': 'CONTENT',
                                       'targetId': guide, 'sequence': 0})
 
-    # --- boards ----------------------------------------------------------------------------
     board_defaults = {'type': 'NORMAL', 'isMemberAccessible': True, 'isMemberReadable': True, 'isGuestAccessible': True,
                       'isGuestReadable': True, 'supportsNotice': True, 'supportsComment': True, 'supportsLike': True,
                       'supportsAttachment': True, 'maximumFileCount': 5, 'pageSize': 10}
@@ -202,8 +200,6 @@ def seed(base_url, admin_password):
     free_board = admin.create('/api/admin/boards', {**board_defaults, 'name': '자유게시판', 'description': '중고 이야기 무엇이든',
                                                     'isMemberWritable': True, 'isGuestWritable': True, 'supportsSecret': True})
 
-    # notices are written only by the operator, so they live in an archive rather than a board; created first so
-    # the home page's "latest posts" box picks it up
     notices = admin.create('/api/admin/archives', {'name': '공지사항', 'description': '중고천국 소식과 운영 안내',
                                                    'type': 'NORMAL', 'supportsComment': False, 'pageSize': 10})
     for title, body, status in [
@@ -215,7 +211,6 @@ def seed(base_url, admin_password):
     ]:
         admin.create(f'/api/admin/archives/{notices}/articles', {'title': title, 'contentHtml': body, 'status': status})
 
-    # --- members -----------------------------------------------------------------------------
     members = [
         ('happybuyer', '김하늘', 'sky@example.com', '010-1234-5678', '서울특별시 마포구 월드컵북로 400', '101동 1203호'),
         ('retro_mania', '이도윤', 'doyun@example.com', '010-2345-6789', '부산광역시 부산진구 중앙대로 672', '3층'),
@@ -253,7 +248,6 @@ def seed(base_url, admin_password):
     doyun.create(f'/api/boards/{free_board}/articles', {'title': '판매자에게만 보이는 질문 (비밀글)',
         'contentHtml': p('직거래 장소를 바꿀 수 있을까요?'), 'isSecret': True})
 
-    # --- archive ---------------------------------------------------------------------------------
     archive = admin.create('/api/admin/archives', {'name': '거래 자료실', 'description': '거래에 필요한 양식과 가이드',
                                                    'type': 'NORMAL', 'supportsComment': True, 'pageSize': 10})
     for title, body in [
@@ -263,7 +257,6 @@ def seed(base_url, admin_password):
     ]:
         admin.create(f'/api/admin/archives/{archive}/articles', {'title': title, 'contentHtml': body, 'status': 'PUBLISHED'})
 
-    # --- map ---------------------------------------------------------------------------------------
     admin.put('/api/admin/map/settings', {
         'provider': 'KAKAO', 'directionsEnabled': True, 'branchesEnabled': True,
         'officeName': '중고천국 본사', 'officeAddress': '서울특별시 강남구 테헤란로 152', 'officeDetailAddress': '중고천국빌딩 5층',
@@ -281,7 +274,6 @@ def seed(base_url, admin_password):
                                                  'longitude': lng, 'phoneNumber': phone, 'businessHours': hours,
                                                  'description': desc, 'sequence': sequence, 'isUsing': True})
 
-    # --- products & discounts -----------------------------------------------------------------
     grade_options = [{'name': 'A급', 'description': '사용감 거의 없음', 'additionalPrice': 0},
                      {'name': 'S급', 'description': '미개봉 또는 리퍼 신품', 'additionalPrice': 0}]
     product_specs = [
@@ -344,7 +336,6 @@ def seed(base_url, admin_password):
     doyun.create(f'/api/products/{switch}/reviews', {'rating': 5, 'title': '아이랑 잘 쓰고 있어요',
                                                      'contentHtml': p('특가로 저렴하게 샀습니다. 조이콘 상태 최고!')})
 
-    # --- programs & reservations ------------------------------------------------------------------
     program_specs = [
         ('주말 플리마켓 셀러 모집 (성수)', '성수 픽업라운지 앞마당에서 열리는 주말 플리마켓 판매 부스', 20000, 30, 12, 14, 'flea-market.jpg',
          p('부스 1칸(2m×2m)과 테이블 1개를 제공합니다.', '당일 판매 수수료는 없습니다.')),
@@ -379,7 +370,6 @@ def seed(base_url, admin_password):
     minjun.create(f'/api/programs/{laptop_class}/reviews', {'rating': 5, 'title': '신청 전부터 기대돼요',
                                                             'contentHtml': p('사전 안내 메일이 친절했어요. 노트북 챙겨 갑니다!')})
 
-    # --- Q&A -----------------------------------------------------------------------------------------
     questions = [
         (sky, {'title': '검수 기간은 얼마나 걸리나요?', 'contentHtml': p('판매하려고 하는데 검수센터 도착 후 며칠이면 판매 등록되나요?')},
          '<p>검수센터 도착 후 영업일 기준 1~2일 안에 검수를 마치고 바로 판매 등록됩니다.</p>'),
@@ -393,7 +383,6 @@ def seed(base_url, admin_password):
         if answer:
             admin.put(f'/api/admin/questions/{question}/answer', {'contentHtml': answer})
 
-    # --- reports & satisfaction ------------------------------------------------------------------------
     report = doyun.create('/api/reports', {'title': '외부 메신저로 선입금 요구', 'reporterName': '이도윤', 'email': 'doyun@example.com',
                                            'phoneNumber': '010-2345-6789',
                                            'contentHtml': p('자유게시판에서 연락 온 사람이 카카오톡으로 옮겨 계좌이체를 요구했습니다.')})
@@ -407,14 +396,12 @@ def seed(base_url, admin_password):
                                    (seoyeon, 5, '')]:
         client.post('/api/satisfactions', {'menuId': about_menu, 'score': score, 'opinion': opinion})
 
-    # --- banners & popups --------------------------------------------------------------------------------
     admin.create('/api/admin/banners', {'type': 'BANNER', 'order': 0, 'name': '오픈 이벤트 띠배너', 'isUsing': True,
                                         'description': '🎉 중고천국 정식 오픈! 첫 구매 10% 할인 쿠폰을 드려요', 'link': '/products',
                                         'backgroundColor': '#0F766E', 'textColor': '#FFFFFF', 'dismissDays': 1})
     admin.create('/api/admin/banners', {'type': 'BANNER', 'order': 1, 'name': '점검 안내 (대기)', 'isUsing': False,
                                         'description': '11/12(목) 02:00~05:00 정기 점검이 있습니다.',
                                         'backgroundColor': '#B45309', 'textColor': '#FFFFFF', 'dismissDays': 1})
-    # modal popups are shown one at a time, in order
     admin.create('/api/admin/banners', {'type': 'POPUP', 'order': 0, 'name': '플리마켓 셀러 모집', 'isUsing': True, 'isModal': True,
                                         'description': '성수 주말 플리마켓 셀러를 모집합니다. 부스비 2만 원, 판매 수수료 0원!',
                                         'fileId': admin.upload('flea-market.jpg', '플리마켓 셀러 모집'),

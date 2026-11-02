@@ -91,7 +91,6 @@ export function ProductDetailPage() {
         shopApi.product(id).then(setProduct).catch(setError);
     }, [id]);
 
-    // mirrors the server's calculation; the server's amount is what is charged
     const estimate = useMemo(() => {
         if (!product) {
             return 0;
@@ -192,7 +191,6 @@ export function ProductDetailPage() {
     );
 }
 
-// products are reviewable by buyers, programs by participants with a confirmed reservation
 const REVIEW_TARGETS = {
     PRODUCT: {
         load: shopApi.reviews,

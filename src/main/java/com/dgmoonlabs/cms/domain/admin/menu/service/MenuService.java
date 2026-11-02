@@ -28,7 +28,6 @@ public class MenuService {
         return MenuResponse.tree(menuRepository.findAllByDeletedAtIsNull());
     }
 
-    // visitors only get menus in use; a menu that is switched off takes its children with it
     @Transactional(readOnly = true)
     public List<MenuResponse> getPublicMenuTree() {
         List<Menu> menus = menuRepository.findAllByDeletedAtIsNull();

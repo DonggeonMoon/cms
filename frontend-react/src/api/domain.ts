@@ -11,7 +11,6 @@ export interface Menu {
     sequence: number;
     link: string | null;
     targetId: number | null;
-    // set on FEATURE menus: the built-in menu of that feature
     feature: SiteFeature | null;
     isUsing: boolean;
     children: Menu[];

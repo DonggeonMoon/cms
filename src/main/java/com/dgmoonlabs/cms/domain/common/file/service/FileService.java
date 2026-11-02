@@ -52,7 +52,6 @@ public class FileService {
         }
 
         MediaType mediaType = MediaType.fromExtension(extension);
-        // the mime type is derived from the extension: the client-sent Content-Type is not trustworthy
         String mimeType = MediaTypeFactory.getMediaType(originalName)
                 .map(Object::toString)
                 .orElse(org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE);
@@ -83,7 +82,6 @@ public class FileService {
         return fileRepository.search(keyword, mediaType, pageable).map(FileResponse::from);
     }
 
-    // keeps the requested order and skips ids that are missing or deleted
     @Transactional(readOnly = true)
     public List<FileResponse> getFiles(final List<Long> ids) {
         if (ids.isEmpty()) {

@@ -74,7 +74,6 @@ export const EMPTY_PROFILE: MemberProfile = {
     isMarketingUsageAgreed: false,
 };
 
-// the API expects null rather than "" for an empty date
 export function normalizeProfile<T extends MemberProfile>(profile: T): T {
     return {...profile, birthDate: profile.birthDate || null};
 }

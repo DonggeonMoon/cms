@@ -20,7 +20,6 @@ const PRODUCT_FIELDS: FieldSpec[] = [
     {name: 'contentHtml', label: '상세 설명', type: 'html'},
 ];
 
-// options are edited as "name:price" lines to keep the generic form simple
 const toProductBody = (values: FormValues) => ({
     ...values,
     options: String(values.optionsText ?? '').split('\n').map((line) => line.trim()).filter(Boolean).map((line) => {

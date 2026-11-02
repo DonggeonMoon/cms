@@ -26,7 +26,6 @@ function loadScript(src: string): Promise<void> {
     });
 }
 
-// each provider/key pair is loaded once per page; a failed load is forgotten so it can be retried
 export function loadMapSdk(provider: MapProvider, apiKey: string): Promise<void> {
     const cacheKey = `${provider}:${apiKey}`;
     let promise = loading.get(cacheKey);
@@ -41,7 +40,6 @@ export function loadMapSdk(provider: MapProvider, apiKey: string): Promise<void>
     return promise;
 }
 
-// address -> coordinates with the provider's browser-side geocoder (needs the SDK loaded with the same key)
 export async function geocode(provider: MapProvider, apiKey: string, address: string): Promise<LatLng | null> {
     await loadMapSdk(provider, apiKey);
     if (provider === 'KAKAO') {
@@ -70,7 +68,6 @@ export interface Place {
     longitude: number;
 }
 
-// links that work without any API key, used as the fallback and as "open in app" shortcuts
 export function externalLinks(provider: MapProvider, place: Place): { label: string; href: string }[] {
     const name = encodeURIComponent(place.name);
     if (provider === 'KAKAO') {

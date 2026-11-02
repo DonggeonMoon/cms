@@ -14,7 +14,6 @@ public interface DiscountRepository extends JpaRepository<Discount, Long> {
 
     Page<Discount> findAllByDeletedAtIsNullOrderByIdDesc(Pageable pageable);
 
-    // discounts without a product apply to every product
     @Query("select d from Discount d where d.deletedAt is null and d.isUsing = true "
             + "and (d.productId is null or d.productId = :productId) order by d.rate desc")
     List<Discount> findApplicable(Long productId);

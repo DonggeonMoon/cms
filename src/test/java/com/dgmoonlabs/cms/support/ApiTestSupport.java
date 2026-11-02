@@ -86,7 +86,6 @@ public abstract class ApiTestSupport {
         return jsonMapper.readTree(result.andReturn().getResponse().getContentAsString());
     }
 
-    // a session holding an admin login talks to the API the way the admin console does: with the admin zone header
     private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder withSession(
             final org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder builder, final MockHttpSession session) {
         if (session == null) {

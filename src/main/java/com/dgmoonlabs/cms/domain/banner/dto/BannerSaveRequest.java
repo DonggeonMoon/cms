@@ -34,7 +34,6 @@ public record BannerSaveRequest(
         boolean isModal,
         @Min(0) @Max(365) Integer dismissDays
 ) {
-    // omitted means the usual "오늘 하루 보지 않기"
     public int dismissDaysOrDefault() {
         return dismissDays == null ? 1 : dismissDays;
     }

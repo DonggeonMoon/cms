@@ -8,7 +8,6 @@ const FALLBACK_NAME = 'cms';
 
 interface SiteState {
     site: Site | null;
-    // false until the first /api/site answer (or failure), so pages can wait instead of flashing defaults
     siteLoaded: boolean;
     name: string;
     menus: Menu[];
@@ -60,7 +59,6 @@ export function SiteProvider({children}: { children: ReactNode }) {
     }, [name]);
 
     const value = useMemo<SiteState>(() => {
-        // until the site has loaded every feature counts as enabled, so links don't flicker away and back
         const isEnabled = (feature: SiteFeature) => site?.features?.[feature] ?? true;
         return {
             site,
@@ -81,7 +79,6 @@ export function SiteProvider({children}: { children: ReactNode }) {
     return <SiteContext.Provider value={value}>{children}</SiteContext.Provider>;
 }
 
-// menus that lead to a switched-off feature are dropped; a parent goes with them, so its children disappear too
 const MENU_FEATURE: Partial<Record<Menu['type'], SiteFeature>> = {CONTENT: 'CONTENT', BOARD: 'BOARD'};
 
 function linksTo(menus: Menu[], href: string): boolean {
@@ -101,8 +98,6 @@ export function useSite() {
     return useContext(SiteContext);
 }
 
-// route guard for feature pages, on the site and in the admin console alike; a page shared by several features
-// (payments, reviews) stays open while any of them is on
 export function RequireFeature({feature}: { feature: SiteFeature | SiteFeature[] }) {
     const {isEnabled} = useSite();
     if (!(Array.isArray(feature) ? feature : [feature]).some(isEnabled)) {

@@ -42,7 +42,6 @@ export function MapView({provider, apiKey, places, focus, height = 380, onPick, 
         return () => {
             cancelled = true;
         };
-        // places/focus are compared by value through their keys
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [provider, apiKey, placesKey, focusKey]);
 

@@ -7,7 +7,6 @@ import {ProductCard} from '../pages/shop/ShopPages';
 import {formatDateTime} from './format';
 import {useSite} from './SiteContext';
 
-// the live parts of the home page; a landing content places them with <div data-block="name"></div>
 export const HOME_BLOCKS: Record<string, { label: string; render: () => ReactNode }> = {
     'product-search': {label: '상품 검색창', render: () => <ProductSearch/>},
     'greeting': {label: '로그인 안내·환영 문구', render: () => <Greeting/>},
@@ -136,7 +135,6 @@ interface LatestPost {
     createdAt: string;
 }
 
-// follows the first archive (usually the notices), or the first board when there is no archive
 export function LatestPosts() {
     const {isEnabled} = useSite();
     const [boards, setBoards] = useState<Board[]>([]);

@@ -39,7 +39,6 @@ public record MemberJoinRequest(
         String officeDetailAddress,
         boolean isPrivacyConsentAgreed
 ) {
-    // the consent date is kept as the member's term confirmation date
     public Member toEntity(final String encodedPassword) {
         return Member.builder()
                 .username(username)

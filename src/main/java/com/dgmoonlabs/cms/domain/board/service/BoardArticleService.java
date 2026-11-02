@@ -242,7 +242,6 @@ public class BoardArticleService {
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
     }
 
-    // the first attached image of each article becomes its gallery thumbnail
     private Map<Long, String> thumbnails(final List<BoardArticle> articles) {
         if (articles.isEmpty()) {
             return Map.of();

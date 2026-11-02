@@ -80,7 +80,6 @@ public class ArchiveService {
         findArchive(id).delete();
     }
 
-    // visitors only see published entries; admins also see drafts
     @Transactional(readOnly = true)
     public Page<ArchiveArticleSummary> getArticles(final Long archiveId, final String keyword, final int page) {
         Archive archive = findArchive(archiveId);

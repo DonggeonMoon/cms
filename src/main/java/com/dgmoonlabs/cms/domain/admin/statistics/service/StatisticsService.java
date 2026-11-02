@@ -32,7 +32,6 @@ public class StatisticsService {
     private static final int BREAKDOWN_LIMIT = 20;
     private static final String UNKNOWN_NATION = "";
 
-    // building the parser loads its regex definitions, so one instance is shared
     private final Parser userAgentParser = new Parser();
     private final StatisticsRepository statisticsRepository;
     private final StatisticsLogRepository statisticsLogRepository;
@@ -65,7 +64,6 @@ public class StatisticsService {
                 .build());
     }
 
-    // days without visits are filled with 0 so charts get a continuous series
     @Transactional(readOnly = true)
     public List<DailyRow> dailyVisits(final LocalDate from, final LocalDate to) {
         validateRange(from, to);

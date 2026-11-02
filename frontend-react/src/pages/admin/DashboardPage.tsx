@@ -22,7 +22,6 @@ export function DashboardPage() {
         return <p className="muted">불러오는 중…</p>;
     }
 
-    // tiles of switched-off features are left out; visits and members always apply
     const allTiles: { label: string; value: string; to: string; feature?: SiteFeature }[] = [
         {label: '회원', value: data.memberCount.toLocaleString('ko-KR'), to: '/admin/members'},
         {label: '게시글', value: data.articleCount.toLocaleString('ko-KR'), to: '/admin/boards', feature: 'BOARD'},

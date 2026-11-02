@@ -130,7 +130,6 @@ class AuthAndMemberApiTest {
         adminRepository.save(Admin.builder().username("root").password(passwordEncoder.encode("adminpass1")).name("관리자").build());
 
         MockHttpSession member = login("tester", "password123", "MEMBER");
-        // a member login lives in the site zone only, so the admin console sees nobody signed in
         mockMvc.perform(get("/api/admin/members").session(member))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));

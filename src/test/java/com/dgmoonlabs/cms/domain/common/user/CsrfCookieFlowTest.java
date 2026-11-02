@@ -15,8 +15,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// spring-security-test's csrf() swaps the CsrfFilter's token repository in a shared context,
-// so the real cookie round trip needs a context no other test has touched
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional

@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-// stand-in until a real PG is integrated: every request is approved and refunds always succeed
 @Slf4j
 @Component
 public class MockPaymentGateway {

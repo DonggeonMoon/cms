@@ -334,7 +334,6 @@ export function BoardWritePage() {
     const {board, error} = useBoard(boardId);
     const [initial, setInitial] = useState<Record<string, unknown> | null>(articleId ? null : {contentHtml: '', files: []});
     const [loadError, setLoadError] = useState<unknown>(null);
-    // a guest arrives from the detail page with the password they unlocked the article with
     const passedPassword = (location.state as { password?: string } | null)?.password ?? '';
 
     useEffect(() => {

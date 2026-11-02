@@ -6,7 +6,6 @@ import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
-// per-menu tally; individual votes live in SatisfactionVote so each member votes once
 @Entity
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

@@ -48,7 +48,6 @@ public class Discount extends BaseEntity {
         this.isUsing = isUsing;
     }
 
-    // amounts are KRW, so the discounted price is rounded to whole won
     public BigDecimal apply(final BigDecimal amount) {
         BigDecimal ratio = HUNDRED.subtract(rate).divide(HUNDRED, 4, RoundingMode.HALF_UP);
         return amount.multiply(ratio).setScale(0, RoundingMode.HALF_UP);

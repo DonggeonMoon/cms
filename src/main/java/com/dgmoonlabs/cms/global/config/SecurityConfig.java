@@ -43,7 +43,6 @@ public class SecurityConfig {
 
         http.securityContext(context -> context.securityContextRepository(securityContextRepository));
 
-        // spa(): readable XSRF-TOKEN cookie, accepted back as the X-XSRF-TOKEN header
         http.csrf(configurer -> configurer.spa());
 
         http.exceptionHandling(handling -> handling
