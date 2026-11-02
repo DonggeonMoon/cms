@@ -13,4 +13,9 @@ class XssRequestWrapperTest {
 
         assertThat(new XssRequestWrapper(request).getHeader("header")).isEqualTo("haha");
     }
+
+    @Test
+    void missingParameterStaysMissing() {
+        assertThat(new XssRequestWrapper(new MockHttpServletRequest()).getParameterValues("absent")).isNull();
+    }
 }

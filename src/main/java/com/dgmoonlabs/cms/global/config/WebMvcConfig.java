@@ -1,5 +1,7 @@
 package com.dgmoonlabs.cms.global.config;
 
+import com.dgmoonlabs.cms.domain.admin.logging.AdminAuditInterceptor;
+import com.dgmoonlabs.cms.domain.admin.site.SiteFeatureInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -10,9 +12,13 @@ import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
     private final LocaleChangeInterceptor localeChangeInterceptor;
+    private final AdminAuditInterceptor adminAuditInterceptor;
+    private final SiteFeatureInterceptor siteFeatureInterceptor;
 
     @Override
     public void addInterceptors(final InterceptorRegistry registry) {
         registry.addInterceptor(localeChangeInterceptor);
+        registry.addInterceptor(adminAuditInterceptor).addPathPatterns("/api/admin/**");
+        registry.addInterceptor(siteFeatureInterceptor).addPathPatterns("/api/**");
     }
 }

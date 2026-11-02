@@ -35,7 +35,7 @@ public class XssRequestWrapper extends HttpServletRequestWrapper {
 
     private String[] sanitize(String[] values) {
         if (values == null) {
-            return new String[]{};
+            return null;
         }
         return Arrays.stream(values)
                 .map(this::sanitize)

@@ -1,0 +1,22 @@
+package com.dgmoonlabs.cms.global.error;
+
+import lombok.Getter;
+
+@Getter
+public class BusinessException extends RuntimeException {
+    private final ErrorCode errorCode;
+
+    public BusinessException(final ErrorCode errorCode) {
+        super(errorCode.getMessage());
+        this.errorCode = errorCode;
+    }
+
+    public BusinessException(final ErrorCode errorCode, final Throwable cause) {
+        super(errorCode.getMessage(), cause);
+        this.errorCode = errorCode;
+    }
+
+    public static BusinessException notFound() {
+        return new BusinessException(ErrorCode.NOT_FOUND);
+    }
+}

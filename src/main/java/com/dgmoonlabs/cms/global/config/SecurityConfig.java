@@ -1,32 +1,70 @@
 package com.dgmoonlabs.cms.global.config;
 
+import com.dgmoonlabs.cms.global.error.ErrorCode;
+import com.dgmoonlabs.cms.global.security.JsonErrorWriter;
+import com.dgmoonlabs.cms.global.security.ZonedSecurityContextRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatchers;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 public class SecurityConfig {
+    private static final RequestMatcher API = PathPatternRequestMatcher.pathPattern("/api/**");
+
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(requests ->
-                requests.anyRequest().permitAll()
+    SecurityFilterChain securityFilterChain(final HttpSecurity http, final SecurityContextRepository securityContextRepository,
+                                            final JsonErrorWriter jsonErrorWriter) throws Exception {
+        http.authorizeHttpRequests(requests -> requests
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/members").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/members/username-availability").permitAll()
+                .requestMatchers("/api/members/me/**", "/api/members/me").hasRole("MEMBER")
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/files").authenticated()
+                .requestMatchers("/api/orders/**", "/api/orders", "/api/reservations/**", "/api/reservations",
+                        "/api/payments/**", "/api/payments").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.POST, "/api/products/*/reviews", "/api/programs/*/reviews").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.DELETE, "/api/reviews/*").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/satisfactions").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.GET, "/api/reports/me").hasRole("MEMBER")
+                .requestMatchers(API).permitAll()
+                .anyRequest().permitAll()
         );
 
-        http.csrf(configurer -> configurer
-                .ignoringRequestMatchers(RequestMatchers.anyOf(PathPatternRequestMatcher.pathPattern(HttpMethod.GET, "/**")))
-                .csrfTokenRepository(new CookieCsrfTokenRepository())
-                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+        http.securityContext(context -> context.securityContextRepository(securityContextRepository));
+
+        // spa(): readable XSRF-TOKEN cookie, accepted back as the X-XSRF-TOKEN header
+        http.csrf(configurer -> configurer.spa());
+
+        http.exceptionHandling(handling -> handling
+                .defaultAuthenticationEntryPointFor(
+                        (request, response, e) -> jsonErrorWriter.write(response, ErrorCode.UNAUTHENTICATED), API)
+                .defaultAccessDeniedHandlerFor(
+                        (request, response, e) -> jsonErrorWriter.write(response, ErrorCode.ACCESS_DENIED), API)
         );
 
         http.formLogin(Customizer.withDefaults());
 
         return http.build();
+    }
+
+    @Bean
+    SecurityContextRepository securityContextRepository(final ZonedSecurityContextRepository zonedRepository) {
+        return new DelegatingSecurityContextRepository(new RequestAttributeSecurityContextRepository(), zonedRepository);
+    }
+
+    @Bean
+    PasswordEncoder passwordEncoder() {
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 }
