@@ -11,9 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Getter
 public class MenuTemplate extends Menu {
-    private String menuHeader = "header.mustache";
+    private String menuHeader = "header.html";
 
     private String menuTemplate = "";
 
-    private String menuFooter = "footer.mustache";
+    private String menuFooter = "footer.html";
 }
