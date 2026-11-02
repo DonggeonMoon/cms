@@ -23,9 +23,9 @@ public class Question extends BaseEntity {
     @Comment("제목")
     private String title;
 
-    @Comment("내용 텍스트")
     @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
+    @Comment("내용 텍스트")
     private String contentText;
 
     @Column(nullable = false, columnDefinition = "text")
@@ -45,15 +45,18 @@ public class Question extends BaseEntity {
     @Comment("사용자 ID")
     private Long userId;
 
-    @Comment("질문자 이메일")
+    @Comment("작성자 이름")
+    private String authorName;
+
+    @Comment("이메일")
     private String email;
 
-    @ColumnDefault("false")
     @Column(nullable = false)
+    @ColumnDefault("false")
     @Comment("비밀글 여부")
     private boolean isSecret;
 
-    @Comment("비밀번호")
+    @Comment("비회원 비밀번호 (해시)")
     private String password;
 
     @Column(nullable = false)
@@ -66,7 +69,23 @@ public class Question extends BaseEntity {
     @Comment("추천/좋아요/하트 수")
     private int likes;
 
-    @Column(nullable = false)
     @Comment("IP 주소")
     private String ipAddress;
+
+    public void update(final String title, final String contentHtml, final String contentText, final String email,
+                       final boolean isSecret) {
+        this.title = title;
+        this.contentHtml = contentHtml;
+        this.contentText = contentText;
+        this.email = email;
+        this.isSecret = isSecret;
+    }
+
+    public void increaseHit() {
+        this.hit++;
+    }
+
+    public boolean isWrittenByGuest() {
+        return userType == UserType.GUEST;
+    }
 }

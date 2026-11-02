@@ -6,8 +6,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Builder
@@ -19,14 +17,9 @@ public class Answer extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "question_ref_id", nullable = false, unique = true)
     @Comment("질문 ID")
-    private String questionId;
-
-    @Column(nullable = false)
-    @ColumnDefault("'제목 없음'")
-    @Comment("제목")
-    private String title;
+    private Long questionId;
 
     @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
@@ -38,37 +31,21 @@ public class Answer extends BaseEntity {
     @Comment("내용 HTML")
     private String contentHtml;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Comment("추가 필드")
-    private String fields;
-
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("사용자 타입")
     private UserType userType;
 
-    @Comment("사용자 ID")
+    @Comment("답변자 ID")
     private Long userId;
 
-    @ColumnDefault("false")
-    @Column(nullable = false)
-    @Comment("비밀글 여부")
-    private boolean isSecret;
+    @Comment("답변자 이름")
+    private String authorName;
 
-    @Comment("비밀번호")
-    private String password;
-
-    @Column(nullable = false)
-    @ColumnDefault("0")
-    @Comment("조회 수")
-    private int hit;
-
-    @Column(nullable = false)
-    @ColumnDefault("0")
-    @Comment("추천/좋아요/하트 수")
-    private int likes;
-
-    @Column(nullable = false)
-    @Comment("IP 주소")
-    private String ipAddress;
+    public void update(final String contentHtml, final String contentText, final Long userId, final String authorName) {
+        this.contentHtml = contentHtml;
+        this.contentText = contentText;
+        this.userId = userId;
+        this.authorName = authorName;
+    }
 }

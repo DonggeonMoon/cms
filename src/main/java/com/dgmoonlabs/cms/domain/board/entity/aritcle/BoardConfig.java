@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.board.entity.aritcle;
 
+import com.dgmoonlabs.cms.domain.board.dto.BoardSaveRequest;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,8 +18,9 @@ public class BoardConfig extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Comment("권한")
-    private String authority;
+    @Column(nullable = false, unique = true)
+    @Comment("게시판 ID")
+    private Long boardId;
 
     @Column(nullable = false)
     @ColumnDefault("false")
@@ -72,39 +74,40 @@ public class BoardConfig extends BaseEntity {
 
     @Column(nullable = false)
     @ColumnDefault("false")
-    @Comment("썸네일 활성화 여부")
-    private boolean supportThumbnail;
-
-    @Column(nullable = false)
-    @ColumnDefault("false")
-    @Comment("썸네일 크롭 기능 활성화 여부")
-    private boolean supportsThumbnailCrop;
-
-    @Column(nullable = false)
-    @ColumnDefault("false")
-    @Comment("썸네일 가로 길이")
-    private boolean thumbnailWidth;
-
-    @Column(nullable = false)
-    @ColumnDefault("false")
-    @Comment("썸네일 세로 길이")
-    private boolean thumbnailHeight;
+    @Comment("첨부 파일 기능 활성화 여부")
+    private boolean supportsAttachment;
 
     @Builder.Default
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("5")
     @Comment("최대 첨부 파일 수")
     private int maximumFileCount = 5;
 
     @Builder.Default
     @Column(nullable = false)
-    @ColumnDefault("0")
-    @Comment("최대 파일 크기")
-    private int maximumFileSize = 10;
-
-    @Builder.Default
-    @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("10")
     @Comment("페이지 당 글 수")
     private int pageSize = 10;
+
+    public static BoardConfig of(final Long boardId, final BoardSaveRequest request) {
+        BoardConfig config = BoardConfig.builder().boardId(boardId).build();
+        config.update(request);
+        return config;
+    }
+
+    public void update(final BoardSaveRequest request) {
+        this.isMemberAccessible = request.isMemberAccessible();
+        this.isMemberReadable = request.isMemberReadable();
+        this.isMemberWritable = request.isMemberWritable();
+        this.isGuestAccessible = request.isGuestAccessible();
+        this.isGuestReadable = request.isGuestReadable();
+        this.isGuestWritable = request.isGuestWritable();
+        this.supportsNotice = request.supportsNotice();
+        this.supportsSecret = request.supportsSecret();
+        this.supportsComment = request.supportsComment();
+        this.supportsLike = request.supportsLike();
+        this.supportsAttachment = request.supportsAttachment();
+        this.maximumFileCount = request.maximumFileCount();
+        this.pageSize = request.pageSize();
+    }
 }

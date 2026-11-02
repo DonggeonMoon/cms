@@ -10,6 +10,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 @Entity
+@Table(indexes = @Index(name = "idx_archive_comment_article", columnList = "articleId"))
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -19,6 +20,10 @@ public class ArchiveComment extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    @Comment("아카이브 글 ID")
+    private Long articleId;
+
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("사용자 타입")
@@ -26,6 +31,9 @@ public class ArchiveComment extends BaseEntity {
 
     @Comment("사용자 ID")
     private Long userId;
+
+    @Comment("작성자 이름")
+    private String authorName;
 
     @Comment("부모 댓글 ID")
     private Long parentId;

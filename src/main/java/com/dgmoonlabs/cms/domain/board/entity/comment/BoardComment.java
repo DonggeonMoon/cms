@@ -10,6 +10,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 @Entity
+@Table(indexes = @Index(name = "idx_board_comment_article", columnList = "articleId"))
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -19,6 +20,10 @@ public class BoardComment extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    @Comment("게시글 ID")
+    private Long articleId;
+
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("사용자 타입")
@@ -26,6 +31,12 @@ public class BoardComment extends BaseEntity {
 
     @Comment("사용자 ID")
     private Long userId;
+
+    @Comment("작성자 이름")
+    private String authorName;
+
+    @Comment("비회원 비밀번호 (해시)")
+    private String password;
 
     @Comment("부모 댓글 ID")
     private Long parentId;
@@ -43,6 +54,7 @@ public class BoardComment extends BaseEntity {
     @Comment("제목")
     private String title;
 
+    @Column(columnDefinition = "text")
     @Comment("내용")
     private String content;
 
@@ -70,4 +82,12 @@ public class BoardComment extends BaseEntity {
 
     @Comment("조회 수")
     private int hit;
+
+    public boolean isWrittenByGuest() {
+        return userType == UserType.GUEST;
+    }
+
+    public void moderate() {
+        this.status = CommentStatus.MODERATED;
+    }
 }

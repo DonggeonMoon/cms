@@ -21,7 +21,7 @@ public class BoardArticle extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
+    @Column(nullable = false)
     @Comment("게시판 ID")
     private Long boardId;
 
@@ -67,12 +67,15 @@ public class BoardArticle extends BaseEntity {
     @Comment("사용자 ID")
     private Long userId;
 
+    @Comment("작성자 이름")
+    private String authorName;
+
     @ColumnDefault("false")
     @Column(nullable = false)
     @Comment("비밀글 여부")
     private boolean isSecret;
 
-    @Comment("비밀번호")
+    @Comment("비회원 비밀번호 (해시)")
     private String password;
 
     @Column(nullable = false)
@@ -88,4 +91,31 @@ public class BoardArticle extends BaseEntity {
     @Column(nullable = false)
     @Comment("IP 주소")
     private String ipAddress;
+
+    public void update(final String title, final String contentHtml, final String contentText, final boolean isSecret) {
+        this.title = title;
+        this.contentHtml = contentHtml;
+        this.contentText = contentText;
+        this.isSecret = isSecret;
+    }
+
+    public void updateAdminFlags(final boolean isNotice, final LocalDateTime noticeStartDateTime,
+                                 final LocalDateTime noticeEndDateTime, final boolean isHidden) {
+        this.isNotice = isNotice;
+        this.noticeStartDateTime = noticeStartDateTime;
+        this.noticeEndDateTime = noticeEndDateTime;
+        this.isHidden = isHidden;
+    }
+
+    public void increaseHit() {
+        this.hit++;
+    }
+
+    public void increaseLikes() {
+        this.likes++;
+    }
+
+    public boolean isWrittenByGuest() {
+        return userType == UserType.GUEST;
+    }
 }

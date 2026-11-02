@@ -20,11 +20,10 @@ public class ArchiveArticle extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
+    @Column(name = "board_id", nullable = false)
     @Comment("아카이브 ID")
-    private Long boardId;
+    private Long archiveId;
 
-    @Column
     @Comment("제목")
     private String title;
 
@@ -50,6 +49,9 @@ public class ArchiveArticle extends BaseEntity {
     @Comment("사용자 ID")
     private Long userId;
 
+    @Comment("작성자 이름")
+    private String authorName;
+
     @Column(nullable = false)
     @ColumnDefault("0")
     @Comment("조회 수")
@@ -62,10 +64,20 @@ public class ArchiveArticle extends BaseEntity {
 
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
-    @Comment("아카이브 상태")
+    @Comment("게시 상태")
     private ArchiveStatus status;
 
-    @Column(nullable = false)
     @Comment("IP 주소")
     private String ipAddress;
+
+    public void update(final String title, final String contentHtml, final String contentText, final ArchiveStatus status) {
+        this.title = title;
+        this.contentHtml = contentHtml;
+        this.contentText = contentText;
+        this.status = status;
+    }
+
+    public void increaseHit() {
+        this.hit++;
+    }
 }

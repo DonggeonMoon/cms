@@ -17,6 +17,9 @@ public class Content extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Comment("제목")
+    private String title;
+
     @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 텍스트")
@@ -44,4 +47,15 @@ public class Content extends BaseEntity {
     @ColumnDefault("''")
     @Comment("메모")
     private String memo;
+
+    public void update(final String title, final String contentHtml, final String contentText, final ContentStatus status,
+                       final String memo, final String worker) {
+        this.title = title;
+        this.contentHtml = contentHtml;
+        this.contentText = contentText;
+        this.status = status;
+        this.memo = memo;
+        this.lastWorker = worker;
+        this.version++;
+    }
 }
