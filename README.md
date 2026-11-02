@@ -41,6 +41,60 @@
 - 보안
 - 로깅
 
+## 구성
+
+| 영역 | 기술 |
+|---|---|
+| 백엔드 | Java 21, Spring Boot 4.1, Spring Security 7 (세션 + 쿠키 CSRF), JPA + Querydsl, MyBatis(통계 집계) |
+| DB | PostgreSQL 18 (개발용 `docker-compose.yml`), 테스트는 H2 |
+| 프론트엔드 | `frontend-react/` — React 19, React Router 8, Vite 8, TypeScript |
+| 화면 | React가 담당. Thymeleaf 의존성과 템플릿은 추후 구현을 위해 그대로 둠 |
+
+API는 모두 `/api/**` 아래에 있고, 관리자 API는 `/api/admin/**` (ADMIN 권한)입니다.
+
+## 개발 환경 실행
+
+```bash
+# 1. DB (값은 공용 .env.development 의 DB_* 사용)
+docker compose --env-file .env.development up -d
+
+# 2. 백엔드 (http://localhost:8080)
+./gradlew bootRun
+
+# 3. 프론트엔드 (http://localhost:5173, /api 는 8080 으로 프록시)
+cd frontend-react && npm install && npm run dev
+```
+
+- 관리자 테이블이 비어 있으면 시작 시 초기 관리자 `admin` 이 생성됩니다. 비밀번호는 `CMS_ADMIN_PASSWORD`
+  환경변수, 없으면 개발용 기본값을 씁니다(`application.yml` 의 `cms.security.initial-admin-password`).
+  관리자 로그인 화면은 `/admin/login` 입니다.
+- 업로드 파일은 `./uploads` 에 저장됩니다(gitignore).
+
+### 샘플 사이트 "중고천국"
+
+DB 볼륨이 비어 있는 상태로 처음 띄우면 `docker/postgres/init/01-junggo-heaven.sql` 이 실행되어 중고거래 샘플 사이트가
+기본 데이터로 들어갑니다(컨텐츠, 게시판, 아카이브, 질문답변, 지도·지점, 상품·할인·주문, 프로그램·예약, 신고, 만족도,
+배너·팝업, 개인정보 문구).
+
+- 관리자 `admin` / `admin1234!`, 회원 `happybuyer`, `retro_mania`, `camping_lee`, `gadget_kim` / `junggo1234!`
+- 상품·프로그램·팝업 사진 파일은 DB 덤프에 들어가지 않으므로 처음 한 번 복사합니다: `mkdir -p uploads && cp -R docker/sample-uploads/. uploads/`
+  (사진은 위키미디어 공용의 자유 라이선스 이미지이며, 출처는 `scripts/sample-images/credits.json` 과 사이트의 "사진 출처" 페이지에 있습니다.)
+- 이미 데이터가 있는 볼륨에는 적용되지 않습니다. 처음부터 다시 받으려면 `docker compose --env-file .env.development down -v` 후 다시 띄웁니다.
+- 샘플 데이터는 `scripts/seed_sample_site.py` 가 CMS API 로 만든 것입니다. 엔티티가 바뀌어 다시 만들 때는 빈 DB 에서
+  서버를 띄우고 스크립트를 실행한 뒤 `pg_dump --no-owner --no-privileges --schema=public` 결과로 SQL 파일을 교체합니다
+  (`CREATE SCHEMA public;` 줄은 지웁니다). 업로드된 사진도 `uploads/` 에서 `docker/sample-uploads/` 로 다시 복사합니다.
+- 사이트 테마는 관리자 > 사이트의 "테마"에서 고릅니다. 중고천국은 `market` 테마를 씁니다.
+
+## 테스트
+
+```bash
+./gradlew test                       # 백엔드 (H2)
+cd frontend-react && npm test        # 프론트엔드 (Vitest)
+cd frontend-react && npm run build   # 타입 체크 + 빌드
+```
+
 ## 비고
 
-비즈니스에 할인이랑 포인트 적립 추가 예정
+- 결제는 실제 PG 없이 목업(`MockPaymentGateway`)으로 처리합니다. 결제 요청은 금액 검증 후 즉시 승인되고, 취소 시 환불 처리됩니다.
+- 사용자가 작성한 HTML(게시글, 컨텐츠, 답변 등)은 저장 시 OWASP HTML Sanitizer로 정화됩니다.
+- 비즈니스에 포인트 적립 추가 예정
