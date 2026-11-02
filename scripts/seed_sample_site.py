@@ -137,37 +137,6 @@ def seed(base_url, admin_password):
             admin.create('/api/admin/codes', {'parentId': parent, 'order': child_order, 'name': child,
                                               'englishName': child_english, 'isUsing': True})
 
-    # --- contents & menus ----------------------------------------------------------------
-    about = admin.create('/api/admin/contents', {'title': '중고천국 소개', 'status': 'PUBLISHED', 'contentHtml': (
-        '<h2>버리기 아까운 물건에 두 번째 주인을</h2>'
-        + p('중고천국은 2026년에 문을 연 검수형 중고거래 플랫폼입니다. 전문 검수사가 상품 상태를 직접 확인하고 등급을 매겨, '
-            '사진만 보고 사는 중고거래의 불안을 줄였습니다.')
-        + '<ul><li><strong>전문 검수</strong> — 모든 상품을 검수센터에서 기능·외관 점검 후 S/A/B/C 등급으로 표시합니다.</li>'
-          '<li><strong>안전결제</strong> — 구매 확정 전까지 대금을 중고천국이 보관합니다.</li>'
-          '<li><strong>7일 환불</strong> — 검수 내용과 다르면 수령 후 7일 안에 환불해 드립니다.</li></ul>')})
-    guide = admin.create('/api/admin/contents', {'title': '안전거래 가이드', 'status': 'PUBLISHED', 'contentHtml': (
-        '<h2>안전한 중고거래를 위한 5가지 약속</h2>'
-        '<ol><li>판매자가 외부 메신저나 계좌 이체를 요구하면 거래를 중단하세요.</li>'
-        '<li>직거래는 사람이 많은 공공장소에서, 물건을 확인한 뒤 결제하세요.</li>'
-        '<li>시세보다 지나치게 싼 상품은 한 번 더 의심하세요.</li>'
-        '<li>택배 거래는 반드시 중고천국 안전결제를 이용하세요.</li>'
-        '<li>사기가 의심되면 즉시 <a href="/reports/new">사기 의심 신고</a>를 접수해 주세요.</li></ol>')})
-    admin.create('/api/admin/contents', {'title': '판매 수수료 안내', 'status': 'PUBLISHED', 'contentHtml': (
-        '<h2>판매 수수료</h2><table><thead><tr><th>판매 금액</th><th>수수료</th></tr></thead><tbody>'
-        '<tr><td>10만 원 미만</td><td>5%</td></tr><tr><td>10만 원 ~ 100만 원</td><td>3.5%</td></tr>'
-        '<tr><td>100만 원 이상</td><td>2.5%</td></tr></tbody></table>'
-        + p('검수비는 무료이며, 검수에서 반려된 상품은 왕복 택배비만 부담합니다.'))})
-    credits = json.loads((IMAGES / 'credits.json').read_text())
-    admin.create('/api/admin/contents', {'title': '사진 출처', 'status': 'PUBLISHED', 'contentHtml': (
-        '<h2>사진 출처</h2>' + p('샘플 상품·프로그램 사진은 위키미디어 공용의 자유 라이선스 이미지를 축소해 사용했습니다.')
-        + '<ul>' + ''.join(
-            f'<li><a href="{c["source"]}">{c["title"].removeprefix("File:")}</a> — {c["author"] or "작자 미상"}, '
-            + (f'<a href="{c["licenseUrl"]}">{c["license"]}</a>' if c.get('licenseUrl') else c['license']) + '</li>'
-            for c in credits.values()) + '</ul>')})
-    admin.create('/api/admin/contents', {'title': '채용 안내 (준비 중)', 'status': 'DRAFT',
-                                         'contentHtml': p('검수사 채용 공고를 준비하고 있습니다.'), 'memo': '공개 전 인사팀 검토 필요'})
-
-    # the landing page is a content too: theme classes for the layout, data-block placeholders for live parts
     home = admin.create('/api/admin/contents', {'title': '홈 (랜딩 페이지)', 'status': 'PUBLISHED', 'contentHtml': (
         '<section class="hero"><h1>버리기 아까운 물건에, 두 번째 주인을</h1>'
         '<p class="hero-description">전문 검수와 안전결제로 믿고 사고파는 중고천국</p>'
@@ -183,14 +152,49 @@ def seed(base_url, admin_password):
         'memo': '사이트 설정의 홈 화면 컨텐츠로 지정됨'})
     admin.put(f'/api/admin/sites/{site_id}', {**site, 'homeContentId': home})
 
-    # the built-in "소개" feature menu lists the contents not linked from a menu of their own; renamed so it does not
-    # read like the "중고천국 소개" menu right before it
-    content_menu = next(m for m in admin.get('/api/admin/menus') if m['type'] == 'FEATURE' and m['feature'] == 'CONTENT')
-    admin.put(f"/api/admin/menus/{content_menu['id']}", {**content_menu, 'name': '이용 안내'})
+    about = admin.create('/api/admin/contents', {'title': '중고천국 소개', 'status': 'PUBLISHED', 'contentHtml': (
+        '<h2>버리기 아까운 물건에 두 번째 주인을</h2>'
+        + p('중고천국은 2026년에 문을 연 검수형 중고거래 플랫폼입니다. 전문 검수사가 상품 상태를 직접 확인하고 등급을 매겨, '
+            '사진만 보고 사는 중고거래의 불안을 줄였습니다.')
+        + '<ul><li><strong>전문 검수</strong> — 모든 상품을 검수센터에서 기능·외관 점검 후 S/A/B/C 등급으로 표시합니다.</li>'
+          '<li><strong>안전결제</strong> — 구매 확정 전까지 대금을 중고천국이 보관합니다.</li>'
+          '<li><strong>7일 환불</strong> — 검수 내용과 다르면 수령 후 7일 안에 환불해 드립니다.</li></ul>')})
+    guide = admin.create('/api/admin/contents', {'title': '안전거래 가이드', 'status': 'PUBLISHED', 'contentHtml': (
+        '<h2>안전한 중고거래를 위한 5가지 약속</h2>'
+        '<ol><li>판매자가 외부 메신저나 계좌 이체를 요구하면 거래를 중단하세요.</li>'
+        '<li>직거래는 사람이 많은 공공장소에서, 물건을 확인한 뒤 결제하세요.</li>'
+        '<li>시세보다 지나치게 싼 상품은 한 번 더 의심하세요.</li>'
+        '<li>택배 거래는 반드시 중고천국 안전결제를 이용하세요.</li>'
+        '<li>사기가 의심되면 즉시 <a href="/reports/new">사기 의심 신고</a>를 접수해 주세요.</li></ol>')})
+    fee = admin.create('/api/admin/contents', {'title': '판매 수수료 안내', 'status': 'PUBLISHED', 'contentHtml': (
+        '<h2>판매 수수료</h2><table><thead><tr><th>판매 금액</th><th>수수료</th></tr></thead><tbody>'
+        '<tr><td>10만 원 미만</td><td>5%</td></tr><tr><td>10만 원 ~ 100만 원</td><td>3.5%</td></tr>'
+        '<tr><td>100만 원 이상</td><td>2.5%</td></tr></tbody></table>'
+        + p('검수비는 무료이며, 검수에서 반려된 상품은 왕복 택배비만 부담합니다.'))})
+    credits = json.loads((IMAGES / 'credits.json').read_text())
+    photo_credits = admin.create('/api/admin/contents', {'title': '사진 출처', 'status': 'PUBLISHED', 'contentHtml': (
+        '<h2>사진 출처</h2>' + p('샘플 상품·프로그램 사진은 위키미디어 공용의 자유 라이선스 이미지를 축소해 사용했습니다.')
+        + '<ul>' + ''.join(
+            f'<li><a href="{c["source"]}">{c["title"].removeprefix("File:")}</a> — {c["author"] or "작자 미상"}, '
+            + (f'<a href="{c["licenseUrl"]}">{c["license"]}</a>' if c.get('licenseUrl') else c['license']) + '</li>'
+            for c in credits.values()) + '</ul>')})
+    admin.create('/api/admin/contents', {'title': '채용 안내 (준비 중)', 'status': 'DRAFT',
+                                         'contentHtml': p('검수사 채용 공고를 준비하고 있습니다.'), 'memo': '공개 전 인사팀 검토 필요'})
 
-    about_menu = admin.create('/api/admin/menus', {'name': '중고천국 소개', 'type': 'CONTENT', 'targetId': about, 'sequence': 0})
+    about_menu = admin.create('/api/admin/menus', {'name': '소개', 'type': 'CONTENT', 'targetId': about, 'sequence': 0})
+    top_menus = admin.get('/api/admin/menus')
+    for menu in top_menus:
+        renamed = {'BOARD': '커뮤니티', 'ARCHIVE': '공지사항'}.get(menu.get('feature'))
+        if renamed:
+            admin.put(f"/api/admin/menus/{menu['id']}", {**menu, 'name': renamed})
+    admin.put('/api/admin/menus/order',
+              {'parentId': None, 'ids': [about_menu, *(m['id'] for m in top_menus if m['id'] != about_menu)]})
     admin.create('/api/admin/menus', {'parentId': about_menu, 'name': '안전거래 가이드', 'type': 'CONTENT',
                                       'targetId': guide, 'sequence': 0})
+    admin.create('/api/admin/menus', {'parentId': about_menu, 'name': '판매 수수료 안내', 'type': 'CONTENT',
+                                      'targetId': fee, 'sequence': 1})
+    admin.create('/api/admin/menus', {'parentId': about_menu, 'name': '사진 출처', 'type': 'CONTENT',
+                                      'targetId': photo_credits, 'sequence': 2})
 
     board_defaults = {'type': 'NORMAL', 'isMemberAccessible': True, 'isMemberReadable': True, 'isGuestAccessible': True,
                       'isGuestReadable': True, 'supportsNotice': True, 'supportsComment': True, 'supportsLike': True,
