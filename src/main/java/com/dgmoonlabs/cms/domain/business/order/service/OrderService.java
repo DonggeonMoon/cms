@@ -35,6 +35,16 @@ public class OrderService {
 
     @Transactional
     public OrderResponse createOrder(final Long memberId, final OrderCreateRequest request) {
+        return create(UserType.MEMBER, memberId, request, false);
+    }
+
+    @Transactional
+    public OrderResponse createAdminOrder(final Long adminId, final OrderCreateRequest request, final boolean paid) {
+        return create(UserType.ADMIN, adminId, request, paid);
+    }
+
+    private OrderResponse create(final UserType userType, final Long userId, final OrderCreateRequest request,
+                                 final boolean paid) {
         Product product = productRepository.findForUpdate(request.productId())
                 .filter(Product::isOnSale)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_AVAILABLE));
@@ -53,15 +63,15 @@ public class OrderService {
         product.decreaseStock(request.quantity());
         Order order = orderRepository.save(Order.builder()
                 .orderNumber(BusinessNumbers.next("O", orderRepository::existsByOrderNumber))
-                .userType(UserType.MEMBER)
-                .userId(memberId)
+                .userType(userType)
+                .userId(userId)
                 .productId(product.getId())
                 .productOptionId(request.productOptionId())
                 .productName(productName)
                 .quantity(request.quantity())
                 .discountId(request.discountId())
                 .totalPrice(total)
-                .status(OrderStatus.PENDING_PAYMENT)
+                .status(paid ? OrderStatus.PAID : OrderStatus.PENDING_PAYMENT)
                 .canDeliver(request.address() != null && !request.address().isBlank())
                 .receiverName(request.receiverName())
                 .phoneNumber(request.phoneNumber())
@@ -74,22 +84,27 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Page<OrderResponse> getMyOrders(final Long memberId, final Pageable pageable) {
-        return orderRepository.findAllByUserIdOrderByIdDesc(memberId, pageable).map(OrderResponse::from);
+        return orderRepository.findAllByUserTypeAndUserIdOrderByIdDesc(UserType.MEMBER, memberId, pageable).map(OrderResponse::from);
     }
 
     @Transactional(readOnly = true)
     public OrderResponse getMyOrder(final Long memberId, final Long orderId) {
-        return OrderResponse.from(orderRepository.findByIdAndUserId(orderId, memberId).orElseThrow(BusinessException::notFound));
+        return OrderResponse.from(orderRepository.findByIdAndUserTypeAndUserId(orderId, UserType.MEMBER, memberId).orElseThrow(BusinessException::notFound));
     }
 
     @Transactional
     public void cancelMyOrder(final Long memberId, final Long orderId) {
-        cancel(orderRepository.findByIdAndUserId(orderId, memberId).orElseThrow(BusinessException::notFound));
+        cancel(orderRepository.findByIdAndUserTypeAndUserId(orderId, UserType.MEMBER, memberId).orElseThrow(BusinessException::notFound));
     }
 
     @Transactional(readOnly = true)
     public Page<OrderResponse> searchOrders(final OrderStatus status, final String keyword, final Pageable pageable) {
         return orderRepository.search(status, keyword == null ? "" : keyword.trim(), pageable).map(OrderResponse::from);
+    }
+
+    @Transactional
+    public void markPaid(final Long orderId) {
+        orderRepository.findById(orderId).orElseThrow(BusinessException::notFound).markPaid();
     }
 
     @Transactional

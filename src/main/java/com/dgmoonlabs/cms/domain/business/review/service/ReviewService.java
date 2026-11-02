@@ -60,7 +60,7 @@ public class ReviewService {
     public Long createReview(final LoginUser member, final Long productId, final ReviewSaveRequest request,
                              final String ipAddress) {
         productService.findProduct(productId);
-        if (!orderRepository.existsByUserIdAndProductIdAndStatusIn(member.id(), productId, PURCHASED)) {
+        if (!orderRepository.existsByUserTypeAndUserIdAndProductIdAndStatusIn(UserType.MEMBER, member.id(), productId, PURCHASED)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
         if (reviewRepository.existsByProductIdAndUserIdAndDeletedAtIsNull(productId, member.id())) {
@@ -73,7 +73,7 @@ public class ReviewService {
     public Long createProgramReview(final LoginUser member, final Long programId, final ReviewSaveRequest request,
                                     final String ipAddress) {
         programRepository.findByIdAndDeletedAtIsNull(programId).orElseThrow(BusinessException::notFound);
-        if (!reservationRepository.existsByUserIdAndProgramIdAndStatus(member.id(), programId, ReservationStatus.CONFIRMED)) {
+        if (!reservationRepository.existsByUserTypeAndUserIdAndProgramIdAndStatus(UserType.MEMBER, member.id(), programId, ReservationStatus.CONFIRMED)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
         if (reviewRepository.existsByProgramIdAndUserIdAndDeletedAtIsNull(programId, member.id())) {

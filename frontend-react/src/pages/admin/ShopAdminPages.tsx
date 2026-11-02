@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import type {Query} from '../../api/client';
 import type {Discount, Order, OrderStatus, Payment, ProductSummary, Program, Reservation, Review, ReviewTargetType} from '../../api/domain';
@@ -90,12 +90,49 @@ export function DiscountAdminPage() {
 const NEXT_ORDER_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {PAID: 'SHIPPING', SHIPPING: 'DELIVERED'};
 const loadOrders = (query: Query) => adminApi.orders.search(query);
 
+const PLEASE_CHOOSE = {value: '', label: '선택하세요'};
+const PAID_FIELD: FieldSpec = {name: 'paid', label: '결제 완료로 등록', type: 'checkbox', wide: true,
+    help: '현장·계좌이체 등으로 이미 받은 경우 체크합니다. 체크하지 않으면 결제 대기로 등록되고, 목록에서 결제 완료 처리할 수 있습니다.'};
+
+async function loadProductChoices() {
+    const products = await adminApi.products.search({size: 100});
+    const details = await Promise.all(products.content.map((p) => adminApi.products.get(p.id)));
+    return details.flatMap((p) => [
+        {value: String(p.id), label: `${p.name} · ${won(p.price)}`},
+        ...p.options.map((o) => ({value: `${p.id}:${o.id}`, label: `${p.name} (${o.name}) · ${won(p.price + o.additionalPrice)}`})),
+    ]);
+}
+
+const orderFields = (productChoices: { value: string; label: string }[]): FieldSpec[] => [
+    {name: 'product', label: '상품', type: 'select', required: true, options: [PLEASE_CHOOSE, ...productChoices]},
+    {name: 'quantity', label: '수량', type: 'number', required: true},
+    {name: 'receiverName', label: '수령인', required: true},
+    {name: 'phoneNumber', label: '연락처', required: true},
+    {name: 'postalCode', label: '우편번호'},
+    {name: 'address', label: '주소', help: '비워 두면 배송 없는 주문(현장 수령)으로 등록됩니다.'},
+    {name: 'detailAddress', label: '상세 주소'},
+    PAID_FIELD,
+];
+
+function createOrder({product, paid, ...rest}: FormValues) {
+    const [productId, productOptionId] = String(product).split(':').map(Number);
+    return adminApi.orders.create({...rest, productId, productOptionId: productOptionId ?? null}, Boolean(paid)).then(() => undefined);
+}
+
 export function OrderAdminPage() {
     const [status, setStatus] = useState('');
+    const [productChoices, setProductChoices] = useState<{ value: string; label: string }[]>([]);
+    useEffect(() => {
+        loadProductChoices().then(setProductChoices).catch(() => setProductChoices([]));
+    }, []);
     return (
         <AdminCrudPage<Order>
             title="주문"
+            description="관리자가 전화·방문 주문을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다."
             load={loadOrders}
+            fields={orderFields(productChoices)}
+            emptyForm={{product: '', quantity: 1, paid: false}}
+            create={createOrder}
             extraQuery={{status}}
             filters={
                 <select aria-label="주문 상태" value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -113,6 +150,13 @@ export function OrderAdminPage() {
             ]}
             actions={(o, reload) => (
                 <>
+                    {o.status === 'PENDING_PAYMENT' && (
+                        <button type="button" onClick={() => {
+                            if (window.confirm('결제를 받은 것으로 처리할까요? 결제 내역에는 기록되지 않습니다.')) {
+                                void adminApi.orders.markPaid(o.id).then(reload);
+                            }
+                        }}>결제 완료 처리</button>
+                    )}
                     {NEXT_ORDER_STATUS[o.status] && (
                         <button type="button" onClick={() => adminApi.orders.changeStatus(o.id, NEXT_ORDER_STATUS[o.status]!).then(reload)}>
                             {ORDER_STATUS[NEXT_ORDER_STATUS[o.status]!]} 처리
@@ -172,13 +216,39 @@ export function ProgramAdminPage() {
 
 const loadReservations = (query: Query) => adminApi.reservations.search(query);
 
+const reservationFields = (programChoices: { value: string; label: string }[]): FieldSpec[] => [
+    {name: 'programId', label: '프로그램', type: 'select', required: true, options: [PLEASE_CHOOSE, ...programChoices],
+        help: '신청 기간이 지났거나 비공개인 프로그램도 예약할 수 있습니다. 정원은 넘길 수 없습니다.'},
+    {name: 'quantity', label: '인원', type: 'number', required: true},
+    {name: 'applicantName', label: '신청자', required: true},
+    {name: 'phoneNumber', label: '연락처', required: true},
+    {...PAID_FIELD, help: '무료 프로그램은 체크하지 않아도 바로 확정됩니다. 체크하지 않은 유료 예약은 결제 대기로 등록되고, 목록에서 확정 처리할 수 있습니다.'},
+];
+
+function createReservation({programId, paid, ...rest}: FormValues) {
+    return adminApi.reservations.create({...rest, programId: Number(programId)}, Boolean(paid)).then(() => undefined);
+}
+
 export function ReservationAdminPage() {
     const [status, setStatus] = useState('');
+    const [programChoices, setProgramChoices] = useState<{ value: string; label: string }[]>([]);
+    useEffect(() => {
+        adminApi.programs.search({size: 100})
+            .then((page) => setProgramChoices(page.content.map((p) => ({
+                value: String(p.id),
+                label: `${p.name} · ${won(p.price)}${p.maximumPerson ? ` · 잔여 ${p.availablePerson}/${p.maximumPerson}` : ''}`,
+            }))))
+            .catch(() => setProgramChoices([]));
+    }, []);
     return (
         <AdminCrudPage<Reservation>
             title="예약"
+            description="관리자가 전화·현장 예약을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다."
             searchable={false}
             load={loadReservations}
+            fields={reservationFields(programChoices)}
+            emptyForm={{programId: '', quantity: 1, paid: false}}
+            create={createReservation}
             extraQuery={{status}}
             filters={
                 <select aria-label="예약 상태" value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -194,12 +264,23 @@ export function ReservationAdminPage() {
                 {label: '신청자', render: (r) => `${r.applicantName} (${r.phoneNumber})`},
                 {label: '상태', render: (r) => RESERVATION_STATUS[r.status]},
             ]}
-            actions={(r, reload) => r.status !== 'CANCELED' && (
-                <button type="button" className="danger" onClick={() => {
-                    if (window.confirm('예약을 취소할까요?')) {
-                        void adminApi.reservations.cancel(r.id).then(reload);
-                    }
-                }}>취소</button>
+            actions={(r, reload) => (
+                <>
+                    {r.status === 'PENDING_PAYMENT' && (
+                        <button type="button" onClick={() => {
+                            if (window.confirm('결제를 받은 것으로 보고 예약을 확정할까요? 결제 내역에는 기록되지 않습니다.')) {
+                                void adminApi.reservations.confirm(r.id).then(reload);
+                            }
+                        }}>확정 처리</button>
+                    )}
+                    {r.status !== 'CANCELED' && (
+                        <button type="button" className="danger" onClick={() => {
+                            if (window.confirm('예약을 취소할까요?')) {
+                                void adminApi.reservations.cancel(r.id).then(reload);
+                            }
+                        }}>취소</button>
+                    )}
+                </>
             )}
         />
     );

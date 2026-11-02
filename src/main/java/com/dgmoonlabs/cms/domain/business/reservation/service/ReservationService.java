@@ -99,15 +99,27 @@ public class ReservationService {
         Program program = programRepository.findForUpdate(request.programId())
                 .filter(found -> found.isOpenAt(LocalDateTime.now()))
                 .orElseThrow(() -> new BusinessException(ErrorCode.PROGRAM_NOT_OPEN));
+        return create(UserType.MEMBER, memberId, program, request, false);
+    }
+
+    @Transactional
+    public ReservationResponse reserveAsAdmin(final Long adminId, final ReservationCreateRequest request, final boolean paid) {
+        Program program = programRepository.findForUpdate(request.programId())
+                .filter(found -> found.getDeletedAt() == null)
+                .orElseThrow(BusinessException::notFound);
+        return create(UserType.ADMIN, adminId, program, request, paid);
+    }
+
+    private ReservationResponse create(final UserType userType, final Long userId, final Program program,
+                                       final ReservationCreateRequest request, final boolean paid) {
         program.reserve(request.quantity());
 
         BigDecimal total = program.getPrice().multiply(BigDecimal.valueOf(request.quantity()));
-        // free programs need no payment step
-        ReservationStatus status = total.signum() == 0 ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING_PAYMENT;
+        ReservationStatus status = paid || total.signum() == 0 ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING_PAYMENT;
         Reservation reservation = reservationRepository.save(Reservation.builder()
                 .reservationNumber(BusinessNumbers.next("R", reservationRepository::existsByReservationNumber))
-                .userType(UserType.MEMBER)
-                .userId(memberId)
+                .userType(userType)
+                .userId(userId)
                 .programId(program.getId())
                 .programName(program.getName())
                 .quantity(request.quantity())
@@ -121,18 +133,23 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public Page<ReservationResponse> getMyReservations(final Long memberId, final Pageable pageable) {
-        return reservationRepository.findAllByUserIdOrderByIdDesc(memberId, pageable).map(ReservationResponse::from);
+        return reservationRepository.findAllByUserTypeAndUserIdOrderByIdDesc(UserType.MEMBER, memberId, pageable).map(ReservationResponse::from);
     }
 
     @Transactional
     public void cancelMyReservation(final Long memberId, final Long reservationId) {
-        cancel(reservationRepository.findByIdAndUserId(reservationId, memberId).orElseThrow(BusinessException::notFound));
+        cancel(reservationRepository.findByIdAndUserTypeAndUserId(reservationId, UserType.MEMBER, memberId).orElseThrow(BusinessException::notFound));
     }
 
     @Transactional(readOnly = true)
     public Page<ReservationResponse> searchReservations(final Long programId, final ReservationStatus status,
                                                         final Pageable pageable) {
         return reservationRepository.search(programId, status, pageable).map(ReservationResponse::from);
+    }
+
+    @Transactional
+    public void confirmReservation(final Long reservationId) {
+        reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound).confirm();
     }
 
     @Transactional

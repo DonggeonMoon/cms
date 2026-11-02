@@ -138,4 +138,54 @@ class ShopFlowTest extends ApiTestSupport {
         postJson("/api/reservations/" + reservation.get("id").asLong() + "/cancel", member, "").andExpect(status().isNoContent());
         getJson("/api/programs/" + freeProgram, null).andExpect(jsonPath("$.availablePerson").value(2));
     }
+
+    @Test
+    void adminTakesOrdersPaidOrPendingAndMembersCannotSeeThem() throws Exception {
+        MockHttpSession admin = admin();
+        long productId = createdId(postJson("/api/admin/products", admin, """
+                {"name":"전화 주문 상품","price":7000,"availableQuantity":5,"isEnabled":true}
+                """));
+        String body = """
+                {"productId":%d,"quantity":1,"receiverName":"전화 고객","phoneNumber":"010-1111-2222"}
+                """.formatted(productId);
+
+        JsonNode paid = body(postJson("/api/admin/orders?paid=true", admin, body).andExpect(status().isCreated()));
+        assertThat(paid.get("status").asString()).isEqualTo("PAID");
+        JsonNode pending = body(postJson("/api/admin/orders", admin, body).andExpect(status().isCreated()));
+        assertThat(pending.get("status").asString()).isEqualTo("PENDING_PAYMENT");
+        getJson("/api/products/" + productId, null).andExpect(jsonPath("$.availableQuantity").value(3));
+
+        postJson("/api/admin/orders/" + pending.get("id").asLong() + "/pay", admin, "").andExpect(status().isNoContent());
+        postJson("/api/admin/orders/" + pending.get("id").asLong() + "/pay", admin, "")
+                .andExpect(jsonPath("$.code").value("INVALID_STATUS_TRANSITION"));
+        getJson("/api/admin/orders?status=PAID", admin).andExpect(jsonPath("$.page.totalElements").value(2));
+
+        MockHttpSession member = member("phonebuyer");
+        getJson("/api/orders/me", member).andExpect(jsonPath("$.page.totalElements").value(0));
+        postJson("/api/orders", null, body).andExpect(status().isUnauthorized());
+        postJson("/api/admin/orders", member, body).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void adminBooksOutsideTheApplicationPeriodButNotBeyondCapacity() throws Exception {
+        MockHttpSession admin = admin();
+        long programId = createdId(postJson("/api/admin/programs", admin, """
+                {"name":"마감된 유료 강좌","price":30000,"maximumPerson":2,"isEnabled":true,"applicationEndDateTime":"%s"}
+                """.formatted(LocalDateTime.now().minusDays(1))));
+
+        JsonNode pending = body(postJson("/api/admin/reservations", admin, """
+                {"programId":%d,"quantity":1,"applicantName":"현장 접수","phoneNumber":"010"}
+                """.formatted(programId)).andExpect(status().isCreated()));
+        assertThat(pending.get("status").asString()).isEqualTo("PENDING_PAYMENT");
+        postJson("/api/admin/reservations/" + pending.get("id").asLong() + "/confirm", admin, "").andExpect(status().isNoContent());
+
+        postJson("/api/admin/reservations?paid=true", admin, """
+                {"programId":%d,"quantity":1,"applicantName":"현장 접수","phoneNumber":"010"}
+                """.formatted(programId)).andExpect(jsonPath("$.status").value("CONFIRMED"));
+        postJson("/api/admin/reservations", admin, """
+                {"programId":%d,"quantity":1,"applicantName":"초과","phoneNumber":"010"}
+                """.formatted(programId)).andExpect(jsonPath("$.code").value("PROGRAM_FULL"));
+        getJson("/api/admin/reservations?status=CONFIRMED&programId=" + programId, admin)
+                .andExpect(jsonPath("$.page.totalElements").value(2));
+    }
 }

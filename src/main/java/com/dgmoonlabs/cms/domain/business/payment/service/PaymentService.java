@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.business.payment.service;
 
+import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.domain.business.order.entity.Order;
 import com.dgmoonlabs.cms.domain.business.order.repository.OrderRepository;
 import com.dgmoonlabs.cms.domain.business.payment.MockPaymentGateway;
@@ -35,12 +36,12 @@ public class PaymentService {
         BigDecimal expected;
         Runnable onApproved;
         if (request.targetType() == PaymentTargetType.ORDER) {
-            Order order = orderRepository.findByIdAndUserId(request.targetId(), memberId)
+            Order order = orderRepository.findByIdAndUserTypeAndUserId(request.targetId(), UserType.MEMBER, memberId)
                     .orElseThrow(BusinessException::notFound);
             expected = order.getTotalPrice();
             onApproved = order::markPaid;
         } else {
-            Reservation reservation = reservationRepository.findByIdAndUserId(request.targetId(), memberId)
+            Reservation reservation = reservationRepository.findByIdAndUserTypeAndUserId(request.targetId(), UserType.MEMBER, memberId)
                     .orElseThrow(BusinessException::notFound);
             expected = reservation.getTotalPrice();
             onApproved = reservation::confirm;

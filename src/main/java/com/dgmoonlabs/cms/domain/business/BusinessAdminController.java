@@ -4,6 +4,7 @@ import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountResp
 import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountSaveRequest;
 import com.dgmoonlabs.cms.domain.business.discount.service.DiscountService;
 import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderCreateRequest;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderResponse;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderStatusRequest;
 import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.ProductSaveRequest;
@@ -13,17 +14,20 @@ import com.dgmoonlabs.cms.domain.business.payment.dto.PaymentDtos.PaymentRespons
 import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ProgramSaveRequest;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationCreateRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationResponse;
 import com.dgmoonlabs.cms.domain.business.reservation.service.ReservationService;
 import com.dgmoonlabs.cms.domain.business.review.constant.ReviewTargetType;
 import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewResponse;
 import com.dgmoonlabs.cms.domain.business.review.service.ReviewService;
+import com.dgmoonlabs.cms.global.security.LoginUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -85,6 +89,20 @@ public class BusinessAdminController {
         return ResponseEntity.ok(new PagedModel<>(orderService.searchOrders(status, keyword, pageable)));
     }
 
+    @PostMapping("/orders")
+    public ResponseEntity<OrderResponse> createOrder(@AuthenticationPrincipal final LoginUser admin,
+                                                     @RequestBody @Valid final OrderCreateRequest request,
+                                                     @RequestParam(defaultValue = "false") final boolean paid) {
+        OrderResponse order = orderService.createAdminOrder(admin.id(), request, paid);
+        return ResponseEntity.created(URI.create("/api/admin/orders/" + order.id())).body(order);
+    }
+
+    @PostMapping("/orders/{id}/pay")
+    public ResponseEntity<Void> markOrderPaid(@PathVariable final Long id) {
+        orderService.markPaid(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/orders/{id}/status")
     public ResponseEntity<Void> changeOrderStatus(@PathVariable final Long id, @RequestBody @Valid final OrderStatusRequest request) {
         orderService.changeStatus(id, request.status());
@@ -113,6 +131,20 @@ public class BusinessAdminController {
                                                                         @RequestParam(required = false) final ReservationStatus status,
                                                                         @PageableDefault(size = 20) final Pageable pageable) {
         return ResponseEntity.ok(new PagedModel<>(reservationService.searchReservations(programId, status, pageable)));
+    }
+
+    @PostMapping("/reservations")
+    public ResponseEntity<ReservationResponse> createReservation(@AuthenticationPrincipal final LoginUser admin,
+                                                                 @RequestBody @Valid final ReservationCreateRequest request,
+                                                                 @RequestParam(defaultValue = "false") final boolean paid) {
+        ReservationResponse reservation = reservationService.reserveAsAdmin(admin.id(), request, paid);
+        return ResponseEntity.created(URI.create("/api/admin/reservations/" + reservation.id())).body(reservation);
+    }
+
+    @PostMapping("/reservations/{id}/confirm")
+    public ResponseEntity<Void> confirmReservation(@PathVariable final Long id) {
+        reservationService.confirmReservation(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/reservations/{id}/cancel")

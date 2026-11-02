@@ -88,11 +88,16 @@ export const adminApi = {
     },
     orders: {
         search: (query: Query) => request<Page<D.Order>>('/api/admin/orders', {query}),
+        create: (body: Body, paid: boolean) => request<D.Order>('/api/admin/orders', {method: 'POST', body, query: {paid}}),
+        markPaid: (id: number) => request<void>(`/api/admin/orders/${id}/pay`, {method: 'POST'}),
         changeStatus: (id: number, status: D.OrderStatus) =>
             request<void>(`/api/admin/orders/${id}/status`, {method: 'PUT', body: {status}}),
     },
     reservations: {
         search: (query: Query) => request<Page<D.Reservation>>('/api/admin/reservations', {query}),
+        create: (body: Body, paid: boolean) =>
+            request<D.Reservation>('/api/admin/reservations', {method: 'POST', body, query: {paid}}),
+        confirm: (id: number) => request<void>(`/api/admin/reservations/${id}/confirm`, {method: 'POST'}),
         cancel: (id: number) => request<void>(`/api/admin/reservations/${id}/cancel`, {method: 'POST'}),
     },
     payments: (query: Query) => request<Page<D.Payment>>('/api/admin/payments', {query}),
