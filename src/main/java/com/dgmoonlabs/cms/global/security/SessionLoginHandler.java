@@ -32,11 +32,18 @@ public class SessionLoginHandler {
         request.getSession(true);
         request.changeSessionId();
         Zone zone = loginUser.userType() == UserType.ADMIN ? Zone.ADMIN : Zone.SITE;
+        if (zone == Zone.ADMIN) {
+            AdminReauthentication.revoke(request);
+        }
         securityContextRepository.saveContext(zone, context, request, response);
     }
 
     public void logout(final HttpServletRequest request, final HttpServletResponse response) {
-        securityContextRepository.clear(ZonedSecurityContextRepository.zoneOf(request), request);
+        Zone zone = ZonedSecurityContextRepository.zoneOf(request);
+        if (zone == Zone.ADMIN) {
+            AdminReauthentication.revoke(request);
+        }
+        securityContextRepository.clear(zone, request);
         holderStrategy.clearContext();
     }
 }

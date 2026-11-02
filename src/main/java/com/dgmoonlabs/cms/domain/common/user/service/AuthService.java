@@ -57,4 +57,19 @@ public class AuthService {
         admin.recordLoginSuccess();
         return new LoginUser(admin.getId(), admin.getUsername(), admin.getName(), UserType.ADMIN);
     }
+
+    @Transactional(noRollbackFor = BusinessException.class)
+    public void verifyAdminPassword(final Long adminId, final String password) {
+        Admin admin = adminRepository.findById(adminId)
+                .filter(found -> found.getDeletedAt() == null)
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED));
+        if (admin.isLocked(securityProperties.maxLoginTryCount())) {
+            throw new BusinessException(ErrorCode.ACCOUNT_LOCKED);
+        }
+        if (password == null || !passwordEncoder.matches(password, admin.getPassword())) {
+            admin.recordLoginFailure();
+            throw new BusinessException(ErrorCode.REAUTHENTICATION_FAILED);
+        }
+        admin.recordLoginSuccess();
+    }
 }

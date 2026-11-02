@@ -48,6 +48,7 @@ export const adminApi = {
         updateSettings: (body: Body) => request<D.MapSetting>('/api/admin/map/settings', {method: 'PUT', body}),
         branches: resource<D.Branch>('/api/admin/map/branches'),
     },
+    reauthenticate: (password: string) => request<void>('/api/admin/reauthenticate', {method: 'POST', body: {password}}),
     configs: resource<D.Config>('/api/admin/configs'),
     banners: resource<D.Banner>('/api/admin/banners'),
     contents: resource<D.Content>('/api/admin/contents'),

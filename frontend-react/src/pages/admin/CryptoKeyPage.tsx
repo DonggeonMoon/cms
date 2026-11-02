@@ -3,6 +3,7 @@ import type {CryptoAlgorithm, CryptoKey, ReencryptResult} from '../../api/domain
 import {adminApi} from '../../api/endpoints';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatDateTime} from '../../components/format';
+import {ReauthGate, type ReauthGuard} from '../../components/ReauthGate';
 
 const ALGORITHMS: { value: CryptoAlgorithm; label: string }[] = [
     {value: 'AES', label: 'AES (국제 표준)'},
@@ -11,6 +12,10 @@ const ALGORITHMS: { value: CryptoAlgorithm; label: string }[] = [
 ];
 
 export function CryptoKeyPage() {
+    return <ReauthGate title="암호화 키 관리">{(guard) => <CryptoKeyPanel guard={guard}/>}</ReauthGate>;
+}
+
+function CryptoKeyPanel({guard}: { guard: ReauthGuard }) {
     const [key, setKey] = useState<CryptoKey | null>(null);
     const [algorithm, setAlgorithm] = useState<CryptoAlgorithm>('AES');
     const [shown, setShown] = useState(false);
@@ -24,15 +29,15 @@ export function CryptoKeyPage() {
     };
 
     useEffect(() => {
-        adminApi.cryptoKey.get().then(apply).catch(setError);
-    }, []);
+        guard(adminApi.cryptoKey.get()).then(apply).catch(setError);
+    }, [guard]);
 
     const run = async (action: () => Promise<ReencryptResult>, done: string) => {
         setBusy(true);
         setError(null);
         setNotice(null);
         try {
-            const result = await action();
+            const result = await guard(action());
             apply(result.key);
             setNotice(`${done} 저장된 개인정보 ${result.reencryptedValues.toLocaleString('ko-KR')}건을 다시 암호화했습니다.`);
         } catch (e) {

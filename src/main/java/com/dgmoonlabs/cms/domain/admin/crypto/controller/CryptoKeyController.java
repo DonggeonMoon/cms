@@ -4,6 +4,7 @@ import com.dgmoonlabs.cms.domain.admin.crypto.dto.CryptoKeyDtos.CryptoAlgorithmR
 import com.dgmoonlabs.cms.domain.admin.crypto.dto.CryptoKeyDtos.CryptoKeyResponse;
 import com.dgmoonlabs.cms.domain.admin.crypto.dto.CryptoKeyDtos.ReencryptResponse;
 import com.dgmoonlabs.cms.domain.admin.crypto.service.CryptoKeyService;
+import com.dgmoonlabs.cms.global.security.RequiresReauthentication;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/admin/crypto-key")
 @RequiredArgsConstructor
+@RequiresReauthentication
 public class CryptoKeyController {
     private final CryptoKeyService cryptoKeyService;
 

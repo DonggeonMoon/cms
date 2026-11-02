@@ -19,6 +19,8 @@ public enum ErrorCode {
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호 확인이 일치하지 않습니다."),
     PRIVACY_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "개인정보 수집·이용에 동의해야 가입할 수 있습니다."),
     WRONG_PASSWORD(HttpStatus.BAD_REQUEST, "현재 비밀번호가 올바르지 않습니다."),
+    REAUTHENTICATION_REQUIRED(HttpStatus.FORBIDDEN, "보안을 위해 비밀번호를 다시 입력해 주세요."),
+    REAUTHENTICATION_FAILED(HttpStatus.BAD_REQUEST, "비밀번호가 올바르지 않습니다."),
 
     CODE_HAS_CHILDREN(HttpStatus.CONFLICT, "하위 코드가 있어 삭제할 수 없습니다."),
     MENU_HAS_CHILDREN(HttpStatus.CONFLICT, "하위 메뉴가 있어 삭제할 수 없습니다."),

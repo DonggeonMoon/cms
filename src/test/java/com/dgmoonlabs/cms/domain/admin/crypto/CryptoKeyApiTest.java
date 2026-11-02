@@ -17,7 +17,7 @@ class CryptoKeyApiTest extends ApiTestSupport {
 
     @Test
     void theFirstAdminLoginCreatesAnAesKeyAndPersonalDataIsStoredEncrypted() throws Exception {
-        MockHttpSession admin = admin();
+        MockHttpSession admin = verified(admin());
         JsonNode key = body(getJson("/api/admin/crypto-key", admin).andExpect(status().isOk()));
         assertThat(key.get("initialized").asBoolean()).isTrue();
         assertThat(key.get("algorithm").asString()).isEqualTo("AES");
@@ -32,7 +32,7 @@ class CryptoKeyApiTest extends ApiTestSupport {
 
     @Test
     void regeneratingTheKeyReencryptsEverythingUnderTheNewOne() throws Exception {
-        MockHttpSession admin = admin();
+        MockHttpSession admin = verified(admin());
         MockHttpSession member = member("cryptotwo");
         String before = rawName("cryptotwo");
         String oldKey = body(getJson("/api/admin/crypto-key", admin)).get("key").asString();
@@ -49,7 +49,7 @@ class CryptoKeyApiTest extends ApiTestSupport {
 
     @Test
     void changingTheAlgorithmReencryptsWithSeedOrAria() throws Exception {
-        MockHttpSession admin = admin();
+        MockHttpSession admin = verified(admin());
         MockHttpSession member = member("cryptothree");
 
         putJson("/api/admin/crypto-key/algorithm", admin, """
@@ -66,10 +66,45 @@ class CryptoKeyApiTest extends ApiTestSupport {
     }
 
     @Test
+    void thePageNeedsThePasswordAgainEvenRightAfterLogin() throws Exception {
+        MockHttpSession admin = admin();
+        getJson("/api/admin/crypto-key", admin).andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("REAUTHENTICATION_REQUIRED"));
+        postJson("/api/admin/crypto-key/regenerate", admin, "").andExpect(status().isForbidden());
+        putJson("/api/admin/crypto-key/algorithm", admin, """
+                {"algorithm":"SEED"}
+                """).andExpect(status().isForbidden());
+
+        postJson("/api/admin/reauthenticate", admin, """
+                {"password":"wrongpass"}
+                """).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("REAUTHENTICATION_FAILED"));
+        getJson("/api/admin/crypto-key", admin).andExpect(status().isForbidden());
+
+        verified(admin);
+        getJson("/api/admin/crypto-key", admin).andExpect(status().isOk());
+    }
+
+    @Test
+    void loggingOutDropsTheReauthentication() throws Exception {
+        MockHttpSession admin = verified(admin());
+        postJson("/api/auth/logout", admin, "").andExpect(status().isNoContent());
+
+        MockHttpSession again = admin();
+        getJson("/api/admin/crypto-key", again).andExpect(status().isForbidden());
+    }
+
+    @Test
     void onlyAdminsSeeTheKey() throws Exception {
         admin();
         getJson("/api/admin/crypto-key", member("cryptofour")).andExpect(status().isUnauthorized());
         getJson("/api/admin/crypto-key", null).andExpect(status().isUnauthorized());
+    }
+
+    private MockHttpSession verified(final MockHttpSession admin) throws Exception {
+        postJson("/api/admin/reauthenticate", admin, """
+                {"password":"adminpass1"}
+                """).andExpect(status().isNoContent());
+        return admin;
     }
 
     private String rawName(final String username) {
