@@ -39,3 +39,9 @@ out/
 /src/main/resources/
 !/src/main/resources/static/**
 !/src/main/resources/templates/**
+
+### CMS uploaded files ###
+/uploads/
+
+### Claude Code personal settings ###
+.claude/settings.local.json*
