@@ -39,7 +39,7 @@ export function MemberListPage() {
         <section className="card">
             <h1>회원 관리</h1>
             <form className="toolbar" onSubmit={handleSearch}>
-                <input aria-label="검색어" placeholder="아이디, 이름, 이메일" value={input}
+                <input aria-label="검색어" placeholder="아이디" value={input}
                        onChange={(e) => setInput(e.target.value)}/>
                 <button type="submit">검색</button>
             </form>

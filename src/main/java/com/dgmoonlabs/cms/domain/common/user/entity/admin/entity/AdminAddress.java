@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.common.user.entity.admin.entity;
 
+import com.dgmoonlabs.cms.global.crypto.EncryptedStringConverter;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
@@ -19,11 +20,17 @@ public class AdminAddress {
     private Long adminId;
 
     @Comment("우편번호")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String postalCode;
 
     @Comment("주소")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String address;
 
     @Comment("상세주소")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String detailAddress;
 }

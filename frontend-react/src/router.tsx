@@ -5,6 +5,7 @@ import {AdminLayout} from './components/AdminLayout';
 import {RequireFeature} from './components/SiteContext';
 import {SiteLayout} from './components/SiteLayout';
 import {CodePage} from './pages/admin/CodePage';
+import {CryptoKeyPage} from './pages/admin/CryptoKeyPage';
 import {
     ArchiveAdminPage,
     ArchiveArticleAdminPage,
@@ -215,6 +216,7 @@ export const routes = [
                             {path: 'codes', element: <CodePage/>},
                             {path: 'files', element: <FilePage/>},
                             {path: 'audit-logs', element: <AuditLogPage/>},
+                            {path: 'crypto-key', element: <CryptoKeyPage/>},
                         ],
                     },
                 ],

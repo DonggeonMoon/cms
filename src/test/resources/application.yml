@@ -16,3 +16,5 @@ cms:
     max-login-try-count: 3
   file:
     upload-dir: ./build/test-uploads
+  crypto:
+    master-key: test-master-key

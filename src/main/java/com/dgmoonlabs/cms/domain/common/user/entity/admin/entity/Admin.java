@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.common.user.entity.admin.entity;
 
+import com.dgmoonlabs.cms.global.crypto.EncryptedStringConverter;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -49,12 +50,18 @@ public class Admin extends BaseEntity {
     private LocalDate termExpirationDate;
 
     @Comment("이름")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String name;
 
     @Comment("성")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String lastName;
 
     @Comment("이름만")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String firstName;
 
     @Comment("생년월일")
@@ -66,15 +73,23 @@ public class Admin extends BaseEntity {
     private boolean isLunarBirthDate;
 
     @Comment("성별")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String gender;
 
     @Comment("이메일")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String email;
 
     @Comment("전화번호")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String telephoneName;
 
     @Comment("휴대폰 번호")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String mobilePhoneName;
 
     public void changePassword(final String encodedPassword) {

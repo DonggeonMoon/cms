@@ -101,6 +101,12 @@ export const adminApi = {
         cancel: (id: number) => request<void>(`/api/admin/reservations/${id}/cancel`, {method: 'POST'}),
     },
     payments: (query: Query) => request<Page<D.Payment>>('/api/admin/payments', {query}),
+    cryptoKey: {
+        get: () => request<D.CryptoKey>('/api/admin/crypto-key'),
+        regenerate: () => request<D.ReencryptResult>('/api/admin/crypto-key/regenerate', {method: 'POST'}),
+        changeAlgorithm: (algorithm: D.CryptoAlgorithm) =>
+            request<D.ReencryptResult>('/api/admin/crypto-key/algorithm', {method: 'PUT', body: {algorithm}}),
+    },
     reviews: (query: Query) => request<Page<D.Review>>('/api/admin/reviews', {query}),
     reports: {
         search: (query: Query) => request<Page<D.ReportSummary>>('/api/admin/reports', {query}),

@@ -901,6 +901,32 @@ a.button.primary {
     margin-bottom: 0;
 }
 
+.key-details {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 8px 16px;
+    margin: 0 0 16px;
+}
+
+.key-details dt {
+    color: var(--muted);
+}
+
+.key-details dd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    word-break: break-all;
+}
+
+.notice {
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
 .push-right {
     margin-left: auto;
 }

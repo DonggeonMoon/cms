@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.business.reservation.entity;
 
+import com.dgmoonlabs.cms.global.crypto.EncryptedStringConverter;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
@@ -61,9 +62,13 @@ public class Reservation extends BaseEntity {
     private ReservationStatus status;
 
     @Comment("신청자 이름")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String applicantName;
 
     @Comment("연락처")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String phoneNumber;
 
     @JdbcTypeCode(SqlTypes.JSON)

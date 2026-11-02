@@ -454,3 +454,18 @@ export interface Policy {
     lastWorker: string | null;
     modifiedAt: string | null;
 }
+
+export type CryptoAlgorithm = 'AES' | 'SEED' | 'ARIA';
+
+export interface CryptoKey {
+    initialized: boolean;
+    algorithm: CryptoAlgorithm | null;
+    key: string | null;
+    createdAt: string | null;
+    modifiedAt: string | null;
+}
+
+export interface ReencryptResult {
+    key: CryptoKey;
+    reencryptedValues: number;
+}

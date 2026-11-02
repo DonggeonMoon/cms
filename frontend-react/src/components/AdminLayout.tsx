@@ -68,6 +68,12 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
             {to: '/admin/audit-logs', label: '작업 로그'},
         ],
     },
+    {
+        title: '보안',
+        items: [
+            {to: '/admin/crypto-key', label: '암호화 키 관리'},
+        ],
+    },
 ];
 
 export function AdminLayout() {

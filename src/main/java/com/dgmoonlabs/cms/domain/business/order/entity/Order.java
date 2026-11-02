@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.business.order.entity;
 
+import com.dgmoonlabs.cms.global.crypto.EncryptedStringConverter;
 import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
@@ -70,18 +71,28 @@ public class Order extends BaseEntity {
     private boolean canDeliver;
 
     @Comment("수령인")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String receiverName;
 
     @Comment("연락처")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String phoneNumber;
 
     @Comment("우편번호")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String postalCode;
 
     @Comment("주소")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String address;
 
     @Comment("상세 주소")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String detailAddress;
 
     @JdbcTypeCode(SqlTypes.JSON)

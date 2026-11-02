@@ -1,5 +1,7 @@
 package com.dgmoonlabs.cms.domain.common.user.controller;
 
+import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
+import com.dgmoonlabs.cms.domain.admin.crypto.service.CryptoKeyService;
 import com.dgmoonlabs.cms.domain.common.user.dto.LoginRequest;
 import com.dgmoonlabs.cms.domain.common.user.service.AuthService;
 import com.dgmoonlabs.cms.global.error.BusinessException;
@@ -21,11 +23,15 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     private final AuthService authService;
     private final SessionLoginHandler sessionLoginHandler;
+    private final CryptoKeyService cryptoKeyService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginUser> login(@RequestBody @Valid final LoginRequest request,
                                            final HttpServletRequest httpRequest, final HttpServletResponse httpResponse) {
         LoginUser loginUser = authService.authenticate(request);
+        if (loginUser.userType() == UserType.ADMIN) {
+            cryptoKeyService.initializeIfMissing();
+        }
         sessionLoginHandler.login(loginUser, httpRequest, httpResponse);
         return ResponseEntity.ok(loginUser);
     }

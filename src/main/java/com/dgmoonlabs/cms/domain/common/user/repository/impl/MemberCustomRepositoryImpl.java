@@ -38,8 +38,6 @@ public class MemberCustomRepositoryImpl implements MemberCustomRepository {
         if (keyword == null || keyword.isBlank()) {
             return null;
         }
-        return member.username.containsIgnoreCase(keyword)
-                .or(member.name.containsIgnoreCase(keyword))
-                .or(member.email.containsIgnoreCase(keyword));
+        return member.username.containsIgnoreCase(keyword);
     }
 }

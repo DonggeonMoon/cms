@@ -25,6 +25,7 @@ repositories {
 
 dependencies {
 	implementation 'com.github.ua-parser:uap-java:1.6.1'
+	implementation 'org.bouncycastle:bcprov-jdk18on:1.79'
 	implementation 'com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer:20240325.1'
 	implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
 	annotationProcessor "com.querydsl:querydsl-apt:5.1.0:jakarta"
