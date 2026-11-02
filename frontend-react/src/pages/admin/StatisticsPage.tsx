@@ -35,11 +35,12 @@ export function StatisticsPage() {
     return (
         <section className="card">
             <h1>방문 통계</h1>
-            <div className="toolbar">
-                <label>시작 <input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)}/></label>
-                <label>종료 <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)}/></label>
-                <span className="muted">기간 합계 {total.toLocaleString('ko-KR')}회</span>
+            <div className="toolbar date-range">
+                <input type="date" aria-label="시작일" value={from} max={to} onChange={(e) => setFrom(e.target.value)}/>
+                <span aria-hidden="true">~</span>
+                <input type="date" aria-label="종료일" value={to} min={from} onChange={(e) => setTo(e.target.value)}/>
             </div>
+            <p className="muted">기간 합계 {total.toLocaleString('ko-KR')}회</p>
             <ErrorBanner error={error}/>
             <VisitBars data={daily}/>
             <h2>항목별</h2>

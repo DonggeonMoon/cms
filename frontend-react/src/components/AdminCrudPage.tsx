@@ -82,7 +82,7 @@ export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
     return (
         <section className="card">
             <h1>{title}</h1>
-            {description && <div className="muted">{description}</div>}
+            {description && <div className="muted page-description">{description}</div>}
             <div className="toolbar list-toolbar">
                 {searchable && (
                     <form className="toolbar inline" onSubmit={handleSearch}>

@@ -100,7 +100,7 @@ function AdminFrame() {
                 <Link to="/admin" className="brand">{name} 관리자</Link>
                 <div className="admin-account">
                     <span className="muted">{user?.name}</span>
-                    <Link to="/">사이트로</Link>
+                    <Link to="/">사이트로 이동</Link>
                     <button type="button" onClick={handleLogout}>로그아웃</button>
                 </div>
             </header>

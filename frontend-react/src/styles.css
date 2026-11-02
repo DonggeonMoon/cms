@@ -79,7 +79,8 @@ h2 {
     align-items: center;
     gap: 16px;
     flex-wrap: wrap;
-    padding: 12px 24px;
+    min-height: 72px;
+    padding: 16px 24px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
 }
@@ -304,6 +305,11 @@ button.danger {
     margin-bottom: 12px;
 }
 
+.toolbar.date-range {
+    align-items: center;
+    margin-bottom: 4px;
+}
+
 .inline-form {
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -354,10 +360,22 @@ td.actions {
 
 .pagination {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 4px;
     margin-top: 16px;
+}
+
+.pagination button {
+    min-width: 36px;
+}
+
+.pagination button.current {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--primary-text);
+    font-weight: 600;
 }
 
 .breadcrumb {
@@ -767,6 +785,13 @@ a.button.primary {
 .main-nav {
     flex: 1;
     flex-wrap: wrap;
+    gap: 24px;
+    margin-left: 40px;
+    font-size: 1.05rem;
+}
+
+.site-header .brand {
+    font-size: 1.3rem;
 }
 
 .dropdown {
@@ -789,7 +814,7 @@ a.button.primary {
 }
 
 .dropdown:hover .dropdown-menu,
-.dropdown:focus-within .dropdown-menu {
+.main-nav:not(:hover) .dropdown:focus-within .dropdown-menu {
     display: flex;
 }
 
@@ -862,6 +887,18 @@ a.button.primary {
 
 .list-toolbar {
     align-items: center;
+}
+
+.page-description {
+    margin: 8px 4px 16px;
+}
+
+.page-description p {
+    margin: 0 0 6px;
+}
+
+.page-description p:last-child {
+    margin-bottom: 0;
 }
 
 .push-right {
@@ -1253,13 +1290,14 @@ a.button.primary {
     position: sticky;
     top: 0;
     z-index: 10;
-    padding: 14px 32px;
+    min-height: 80px;
+    padding: 18px 32px;
     border-bottom: 1px solid var(--border);
     box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 4%, transparent);
 }
 
 .site[data-theme='market'] .brand {
-    font-size: 1.35rem;
+    font-size: 1.6rem;
     font-weight: 800;
     letter-spacing: -0.02em;
     color: var(--primary);
@@ -1348,7 +1386,12 @@ a.button.primary {
 
 @media (max-width: 640px) {
     .site[data-theme='market'] .site-header {
+        min-height: 0;
         padding: 12px 16px;
+    }
+
+    .main-nav {
+        margin-left: 0;
     }
 
     .site[data-theme='market'] .hero {

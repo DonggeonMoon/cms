@@ -68,7 +68,7 @@ export function CodePage() {
                 ))}
             </nav>
             <div className="toolbar">
-                <button type="button" className="primary" onClick={() => setEditing('new')}>
+                <button type="button" className="primary push-right" onClick={() => setEditing('new')}>
                     {parent ? `'${parent.name}' 하위 코드 추가` : '최상위 코드 추가'}
                 </button>
             </div>

@@ -4,6 +4,7 @@ import {describe, expect, it, vi} from 'vitest';
 import type {Menu} from '../api/domain';
 import type {Page} from '../api/types';
 import {AdminCrudPage} from './AdminCrudPage';
+import {Pagination} from './Pagination';
 import {normalizeValues} from './SchemaForm';
 import {menuHref} from './SiteContext';
 
@@ -68,5 +69,31 @@ describe('AdminCrudPage', () => {
         expect(create).toHaveBeenCalledWith({name: '두 번째'});
         expect(await screen.findByText('두 번째')).toBeInTheDocument();
         await waitFor(() => expect(load).toHaveBeenCalledTimes(2));
+    });
+});
+
+describe('Pagination', () => {
+    it('shows the ten pages of the current block and jumps between blocks', async () => {
+        const onChange = vi.fn();
+        render(<Pagination page={12} totalPages={25} onChange={onChange}/>);
+
+        expect(screen.getByRole('button', {name: '13'})).toHaveAttribute('aria-current', 'page');
+        expect(screen.getByRole('button', {name: '11'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '20'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '10'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '21'})).not.toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole('button', {name: '이전 10페이지'}));
+        expect(onChange).toHaveBeenLastCalledWith(9);
+        await userEvent.click(screen.getByRole('button', {name: '다음 10페이지'}));
+        expect(onChange).toHaveBeenLastCalledWith(20);
+        await userEvent.click(screen.getByRole('button', {name: '15'}));
+        expect(onChange).toHaveBeenLastCalledWith(14);
+    });
+
+    it('hides the arrows when every page fits in one block', () => {
+        render(<Pagination page={0} totalPages={3} onChange={vi.fn()}/>);
+
+        expect(screen.getAllByRole('button')).toHaveLength(3);
     });
 });

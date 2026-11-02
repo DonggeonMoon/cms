@@ -134,7 +134,7 @@ function UploadForm({onUploaded}: { onUploaded: () => void }) {
     return (
         <form className="inline-form" onSubmit={handleSubmit}>
             <h2>파일 업로드</h2>
-            <div className="row align-end">
+            <div className="row align-center">
                 <input ref={inputRef} type="file" aria-label="업로드할 파일" required/>
                 <input aria-label="대체 텍스트" placeholder="대체 텍스트 (이미지)" value={alternativeText}
                        onChange={(e) => setAlternativeText(e.target.value)}/>

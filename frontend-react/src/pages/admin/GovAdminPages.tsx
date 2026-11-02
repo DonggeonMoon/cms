@@ -123,7 +123,7 @@ export function SatisfactionAdminPage() {
     return (
         <section className="card">
             <h1>만족도 조사</h1>
-            <p className="muted">메뉴별 만족도 집계입니다. 회원은 메뉴마다 한 번만 참여할 수 있습니다.</p>
+            <p className="muted page-description">메뉴별 만족도 집계입니다. 회원은 메뉴마다 한 번만 참여할 수 있습니다.</p>
             <ErrorBanner error={error}/>
             <div className="table-wrap">
                 <table>

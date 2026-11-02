@@ -23,15 +23,15 @@ export function DashboardPage() {
     }
 
     const allTiles: { label: string; value: string; to: string; feature?: SiteFeature }[] = [
-        {label: '회원', value: data.memberCount.toLocaleString('ko-KR'), to: '/admin/members'},
+        {label: '오늘 방문', value: data.todayVisits.toLocaleString('ko-KR'), to: '/admin/statistics'},
         {label: '게시글', value: data.articleCount.toLocaleString('ko-KR'), to: '/admin/boards', feature: 'BOARD'},
-        {label: '최근 30일 매출', value: won(data.revenueLast30Days), to: '/admin/payments', feature: 'PRODUCT'},
+        {label: '질문', value: data.questionCount.toLocaleString('ko-KR'), to: '/admin/questions', feature: 'QNA'},
         {label: '결제 대기 주문', value: data.pendingPaymentOrders.toLocaleString('ko-KR'), to: '/admin/orders', feature: 'PRODUCT'},
         {label: '결제 완료 주문', value: data.paidOrders.toLocaleString('ko-KR'), to: '/admin/orders', feature: 'PRODUCT'},
         {label: '확정 예약', value: data.confirmedReservations.toLocaleString('ko-KR'), to: '/admin/reservations', feature: 'PROGRAM'},
-        {label: '질문', value: data.questionCount.toLocaleString('ko-KR'), to: '/admin/questions', feature: 'QNA'},
+        {label: '최근 30일 매출', value: won(data.revenueLast30Days), to: '/admin/payments', feature: 'PRODUCT'},
         {label: '미처리 신고', value: data.receivedReports.toLocaleString('ko-KR'), to: '/admin/reports', feature: 'REPORT'},
-        {label: '오늘 방문', value: data.todayVisits.toLocaleString('ko-KR'), to: '/admin/statistics'},
+        {label: '회원', value: data.memberCount.toLocaleString('ko-KR'), to: '/admin/members'},
     ];
     const tiles = allTiles.filter((tile) => !tile.feature || isEnabled(tile.feature));
 

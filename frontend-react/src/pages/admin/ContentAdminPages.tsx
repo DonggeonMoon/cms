@@ -19,17 +19,17 @@ const BOARD_FIELDS: FieldSpec[] = [
     {name: 'description', label: '설명', wide: true},
     {name: 'pageSize', label: '페이지당 글 수', type: 'number', required: true},
     {name: 'maximumFileCount', label: '최대 첨부 수', type: 'number', required: true},
-    {name: 'isMemberAccessible', label: '회원 목록 보기', type: 'checkbox'},
-    {name: 'isMemberReadable', label: '회원 글 읽기', type: 'checkbox'},
-    {name: 'isMemberWritable', label: '회원 글 쓰기', type: 'checkbox'},
-    {name: 'isGuestAccessible', label: '비회원 목록 보기', type: 'checkbox'},
-    {name: 'isGuestReadable', label: '비회원 글 읽기', type: 'checkbox'},
-    {name: 'isGuestWritable', label: '비회원 글 쓰기', type: 'checkbox'},
-    {name: 'supportsNotice', label: '공지 기능', type: 'checkbox'},
-    {name: 'supportsSecret', label: '비밀글 기능', type: 'checkbox'},
-    {name: 'supportsComment', label: '댓글 기능', type: 'checkbox'},
-    {name: 'supportsLike', label: '추천 기능', type: 'checkbox'},
-    {name: 'supportsAttachment', label: '첨부파일 기능', type: 'checkbox'},
+    {name: 'isMemberAccessible', label: '회원 목록 보기', type: 'checkbox', group: '기능'},
+    {name: 'isMemberReadable', label: '회원 글 읽기', type: 'checkbox', group: '기능'},
+    {name: 'isMemberWritable', label: '회원 글 쓰기', type: 'checkbox', group: '기능'},
+    {name: 'isGuestAccessible', label: '비회원 목록 보기', type: 'checkbox', group: '기능'},
+    {name: 'isGuestReadable', label: '비회원 글 읽기', type: 'checkbox', group: '기능'},
+    {name: 'isGuestWritable', label: '비회원 글 쓰기', type: 'checkbox', group: '기능'},
+    {name: 'supportsNotice', label: '공지 기능', type: 'checkbox', group: '기능'},
+    {name: 'supportsSecret', label: '비밀글 기능', type: 'checkbox', group: '기능'},
+    {name: 'supportsComment', label: '댓글 기능', type: 'checkbox', group: '기능'},
+    {name: 'supportsLike', label: '추천 기능', type: 'checkbox', group: '기능'},
+    {name: 'supportsAttachment', label: '첨부파일 기능', type: 'checkbox', group: '기능'},
 ];
 
 const BOARD_DEFAULTS = {
@@ -124,7 +124,7 @@ const ARCHIVE_FIELDS: FieldSpec[] = [
             {value: 'NORMAL', label: '일반'}, {value: 'GALLERY', label: '갤러리'}]},
     {name: 'description', label: '설명', wide: true},
     {name: 'pageSize', label: '페이지당 글 수', type: 'number', required: true},
-    {name: 'supportsComment', label: '회원 댓글 허용', type: 'checkbox'},
+    {name: 'supportsComment', label: '회원 댓글 허용', type: 'checkbox', group: '기능'},
 ];
 
 const loadArchives = () => adminApi.archives.list();
