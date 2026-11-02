@@ -8,6 +8,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 @Entity
+@Table(indexes = @Index(name = "idx_report_answer_report", columnList = "report_ref_id"))
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -17,9 +18,9 @@ public class ReportAnswer extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "report_ref_id", nullable = false)
     @Comment("신고 ID")
-    private String reportId;
+    private Long reportId;
 
     @Column(nullable = false)
     @ColumnDefault("0")
@@ -45,6 +46,9 @@ public class ReportAnswer extends BaseEntity {
     @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;
+
+    @Comment("답변자 이름")
+    private String authorName;
 
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)

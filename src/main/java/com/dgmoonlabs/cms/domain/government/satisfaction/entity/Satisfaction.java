@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
+// per-menu tally; individual votes live in SatisfactionVote so each member votes once
 @Entity
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -48,11 +49,38 @@ public class Satisfaction extends BaseEntity {
     @Comment("1점")
     private Integer onePoint;
 
+    public static Satisfaction empty(final Long menuId) {
+        return Satisfaction.builder().menuId(menuId).fivePoint(0).fourPoint(0).threePoint(0).twoPoint(0).onePoint(0).build();
+    }
+
     public void update(Integer five, Integer four, Integer three, Integer two, Integer one) {
         this.fivePoint = five;
         this.fourPoint = four;
         this.threePoint = three;
         this.twoPoint = two;
         this.onePoint = one;
+    }
+
+    public void add(final int score) {
+        switch (score) {
+            case 5 -> fivePoint++;
+            case 4 -> fourPoint++;
+            case 3 -> threePoint++;
+            case 2 -> twoPoint++;
+            case 1 -> onePoint++;
+            default -> throw new IllegalArgumentException("score must be 1..5");
+        }
+    }
+
+    public int total() {
+        return fivePoint + fourPoint + threePoint + twoPoint + onePoint;
+    }
+
+    public double average() {
+        int total = total();
+        if (total == 0) {
+            return 0;
+        }
+        return (5.0 * fivePoint + 4.0 * fourPoint + 3.0 * threePoint + 2.0 * twoPoint + onePoint) / total;
     }
 }

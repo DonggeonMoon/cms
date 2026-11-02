@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.government.report.entity;
 
+import com.dgmoonlabs.cms.domain.government.report.constant.ReportStatus;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -37,11 +38,23 @@ public class Report extends BaseEntity {
     @Comment("사용자 고유식별번호")
     private Long userId;
 
+    @Comment("신고자 이름")
+    private String reporterName;
+
+    @Comment("비회원 조회 비밀번호 (해시)")
+    private String password;
+
     @Comment("사용자 이메일")
     private String email;
 
     @Comment("사용자 전화번호")
     private String phoneNumber;
+
+    @Builder.Default
+    @Column(columnDefinition = "varchar(255)")
+    @Enumerated(EnumType.STRING)
+    @Comment("처리 상태")
+    private ReportStatus status = ReportStatus.RECEIVED;
 
     public void update(final String title, final String contentText, final String contentHtml, final String fields, final Long userId, final String email, final String phoneNumber) {
         this.title = title;
@@ -51,5 +64,9 @@ public class Report extends BaseEntity {
         this.userId = userId;
         this.email = email;
         this.phoneNumber = phoneNumber;
+    }
+
+    public void changeStatus(final ReportStatus status) {
+        this.status = status;
     }
 }
