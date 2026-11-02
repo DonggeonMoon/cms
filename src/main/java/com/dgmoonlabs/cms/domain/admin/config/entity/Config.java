@@ -1,6 +1,7 @@
 package com.dgmoonlabs.cms.domain.admin.config.entity;
 
 import com.dgmoonlabs.cms.domain.admin.config.constant.OptionType;
+import com.dgmoonlabs.cms.domain.admin.config.dto.ConfigSaveRequest;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,11 +18,12 @@ public class Config extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    // key/value are reserved words in H2 (used by the tests), so the column names are quoted
+    @Column(name = "`key`", nullable = false)
     @Comment("옵션 키")
     private String key;
 
-    @Column(nullable = false)
+    @Column(name = "`value`", nullable = false)
     @ColumnDefault("''")
     @Comment("옵션 값")
     private String value;
@@ -40,4 +42,11 @@ public class Config extends BaseEntity {
     @ColumnDefault("false")
     @Comment("숨김 여부")
     private boolean isHidden;
+
+    public void update(final ConfigSaveRequest request) {
+        this.value = request.valueOrEmpty();
+        this.description = request.descriptionOrEmpty();
+        this.type = request.type();
+        this.isHidden = request.isHidden();
+    }
 }

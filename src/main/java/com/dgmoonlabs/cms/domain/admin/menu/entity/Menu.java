@@ -1,6 +1,8 @@
 package com.dgmoonlabs.cms.domain.admin.menu.entity;
 
 import com.dgmoonlabs.cms.domain.admin.menu.constant.MenuType;
+import com.dgmoonlabs.cms.domain.admin.menu.dto.MenuSaveRequest;
+import com.dgmoonlabs.cms.domain.admin.site.constant.SiteFeature;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -25,7 +27,7 @@ public class Menu extends BaseEntity {
     @Column(columnDefinition = "varchar(255)")
     private MenuType type;
 
-    @Comment("부모 댓글 ID")
+    @Comment("부모 메뉴 ID")
     private Long parentId;
 
     @Column(nullable = false)
@@ -41,5 +43,34 @@ public class Menu extends BaseEntity {
     @Comment("링크")
     private String link;
 
+    @Comment("연결 대상 ID (CONTENT: 컨텐츠 ID, BOARD: 게시판 ID)")
+    private Long targetId;
 
+    @Comment("기능 메뉴가 가리키는 기능 (FEATURE 메뉴만)")
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "varchar(50)")
+    private SiteFeature feature;
+
+    @Column(nullable = false)
+    @ColumnDefault("true")
+    @Comment("사용 여부")
+    @Builder.Default
+    private boolean isUsing = true;
+
+    public boolean isFeatureMenu() {
+        return type == MenuType.FEATURE;
+    }
+
+    // a feature menu keeps what it points at; only its label, position and visibility change
+    public void update(final MenuSaveRequest request) {
+        this.name = request.name();
+        this.sequence = request.sequence();
+        this.isUsing = request.isUsingOrDefault();
+        if (isFeatureMenu()) {
+            return;
+        }
+        this.type = request.type();
+        this.link = request.link();
+        this.targetId = request.targetId();
+    }
 }

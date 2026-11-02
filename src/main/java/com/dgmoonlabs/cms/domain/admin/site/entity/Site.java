@@ -1,11 +1,16 @@
 package com.dgmoonlabs.cms.domain.admin.site.entity;
 
 import com.dgmoonlabs.cms.domain.admin.menu.constant.MenuType;
+import com.dgmoonlabs.cms.domain.admin.site.constant.SiteFeature;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
+
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Builder
@@ -42,7 +47,19 @@ public class Site extends BaseEntity {
     @Comment("기본 사이트 여부")
     private boolean isDefault;
 
-    public void update(String name, String description, String domain, String theme, MenuType type, String locale, boolean isDefault) {
+    @Comment("홈 화면으로 쓰는 컨텐츠 ID (없으면 기본 홈)")
+    private Long homeContentId;
+
+    // the switched-off features are stored, so a feature added later starts out enabled
+    @Builder.Default
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "site_disabled_feature", joinColumns = @JoinColumn(name = "site_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "feature", columnDefinition = "varchar(50)")
+    private Set<SiteFeature> disabledFeatures = new HashSet<>();
+
+    public void update(String name, String description, String domain, String theme, MenuType type, String locale,
+                       boolean isDefault, Long homeContentId, Set<SiteFeature> disabledFeatures) {
         this.name = name;
         this.description = description;
         this.domain = domain;
@@ -50,5 +67,22 @@ public class Site extends BaseEntity {
         this.type = type;
         this.locale = locale;
         this.isDefault = isDefault;
+        this.homeContentId = homeContentId;
+        this.disabledFeatures.clear();
+        this.disabledFeatures.addAll(disabledFeatures);
+    }
+
+    public void unmarkDefault() {
+        this.isDefault = false;
+    }
+
+    public boolean isEnabled(final SiteFeature feature) {
+        return !disabledFeatures.contains(feature);
+    }
+
+    public Set<SiteFeature> enabledFeatures() {
+        Set<SiteFeature> enabled = EnumSet.allOf(SiteFeature.class);
+        enabled.removeAll(disabledFeatures);
+        return enabled;
     }
 }

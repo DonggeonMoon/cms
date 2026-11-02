@@ -1,60 +1,85 @@
 package com.dgmoonlabs.cms.domain.admin.site.service;
 
-import com.dgmoonlabs.cms.domain.admin.site.dto.SiteRequest;
+import com.dgmoonlabs.cms.domain.admin.site.constant.SiteFeature;
 import com.dgmoonlabs.cms.domain.admin.site.dto.SiteResponse;
+import com.dgmoonlabs.cms.domain.admin.site.dto.SiteSaveRequest;
 import com.dgmoonlabs.cms.domain.admin.site.entity.Site;
 import com.dgmoonlabs.cms.domain.admin.site.repository.SiteRepository;
+import com.dgmoonlabs.cms.domain.content.repository.ContentRepository;
+import com.dgmoonlabs.cms.global.error.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class SiteService {
     private final SiteRepository siteRepository;
+    private final ContentRepository contentRepository;
 
-    public Long saveSite(SiteRequest request) {
+    @Transactional(readOnly = true)
+    public Page<SiteResponse> searchSites(final String keyword, final Pageable pageable) {
+        return siteRepository.search(keyword, pageable).map(SiteResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public SiteResponse getSite(final Long id) {
+        return SiteResponse.from(findSite(id));
+    }
+
+    @Transactional(readOnly = true)
+    public SiteResponse getDefaultSite() {
+        return siteRepository.findFirstByIsDefaultTrueAndDeletedAtIsNullOrderByIdAsc()
+                .map(SiteResponse::from)
+                .orElseGet(SiteResponse::fallback);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isEnabled(final SiteFeature feature) {
+        return siteRepository.findFirstByIsDefaultTrueAndDeletedAtIsNullOrderByIdAsc()
+                .map(site -> site.isEnabled(feature))
+                .orElse(true);
+    }
+
+    @Transactional
+    public Long createSite(final SiteSaveRequest request) {
+        validateHomeContent(request);
+        if (request.isDefault()) {
+            clearDefault();
+        }
         return siteRepository.save(request.toEntity()).getId();
     }
 
-    @Transactional(readOnly = true)
-    public Page<SiteResponse> getSite(SiteRequest request, Pageable pageable) {
-        return siteRepository.find(request, pageable).map(SiteResponse::from);
+    @Transactional
+    public void updateSite(final Long id, final SiteSaveRequest request) {
+        validateHomeContent(request);
+        Site site = findSite(id);
+        if (request.isDefault() && !site.isDefault()) {
+            clearDefault();
+        }
+        site.update(request.name(), request.description(), request.domain(), request.theme(),
+                request.type(), request.locale(), request.isDefault(), request.homeContentId(), request.disabledFeaturesOrEmpty());
     }
 
-    @Transactional(readOnly = true)
-    public List<Site> getSitesWithoutPaging(SiteRequest siteRequest) {
-        return siteRepository.find(siteRequest);
+    @Transactional
+    public void deleteSite(final Long id) {
+        findSite(id).delete();
     }
 
-    @Transactional(readOnly = true)
-    public Site getSiteById(long id) {
-        return siteRepository.findById(id)
-                .orElseThrow(RuntimeException::new);
+    private void validateHomeContent(final SiteSaveRequest request) {
+        if (request.homeContentId() != null && contentRepository.findByIdAndDeletedAtIsNull(request.homeContentId()).isEmpty()) {
+            throw BusinessException.notFound();
+        }
     }
 
-    public void updateSite(SiteRequest request) {
-        Site site = siteRepository.findById(request.getId()).orElseThrow(RuntimeException::new);
-        site.update(
-                request.getName(),
-                request.getDescription(),
-                request.getDomain(),
-                request.getTheme(),
-                request.getType(),
-                request.getLocale(),
-                request.getIsDefault()
-        );
+    // only one site may be the default one
+    private void clearDefault() {
+        siteRepository.findAllByIsDefaultTrueAndDeletedAtIsNull().forEach(Site::unmarkDefault);
     }
 
-    public void deleteSiteById(Long id) {
-        siteRepository.deleteById(id);
-    }
-
-    public void deleteSitesByIds(List<Long> ids) {
-        siteRepository.deleteAllById(ids);
+    private Site findSite(final Long id) {
+        return siteRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(BusinessException::notFound);
     }
 }
