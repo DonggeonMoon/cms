@@ -1,6 +1,6 @@
 import {createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState} from 'react';
 import {Outlet} from 'react-router';
-import type {Archive, Board, ContentSummary, Menu, Site, SiteFeature} from '../api/domain';
+import type {Archive, Board, Menu, Site, SiteFeature} from '../api/domain';
 import {archiveApi, boardApi, siteApi} from '../api/endpoints';
 import {NotFoundPage} from '../pages/HomePage';
 
@@ -11,8 +11,6 @@ interface SiteState {
     siteLoaded: boolean;
     name: string;
     menus: Menu[];
-    // contents, boards and archives not already reachable through an admin-defined menu; the header lists them on its own
-    unlistedContents: ContentSummary[];
     unlistedBoards: Board[];
     unlistedArchives: Archive[];
     configs: Record<string, string>;
@@ -25,7 +23,6 @@ const SiteContext = createContext<SiteState>({
     siteLoaded: false,
     name: FALLBACK_NAME,
     menus: [],
-    unlistedContents: [],
     unlistedBoards: [],
     unlistedArchives: [],
     configs: {},
@@ -37,7 +34,6 @@ export function SiteProvider({children}: { children: ReactNode }) {
     const [site, setSite] = useState<Site | null>(null);
     const [siteLoaded, setSiteLoaded] = useState(false);
     const [menus, setMenus] = useState<Menu[]>([]);
-    const [contents, setContents] = useState<ContentSummary[]>([]);
     const [boards, setBoards] = useState<Board[]>([]);
     const [archives, setArchives] = useState<Archive[]>([]);
     const [configs, setConfigs] = useState<Record<string, string>>({});
@@ -46,7 +42,6 @@ export function SiteProvider({children}: { children: ReactNode }) {
         siteApi.current().then((loaded) => setSite(loaded ?? null)).catch(() => setSite(null)).finally(() => setSiteLoaded(true));
         siteApi.menus().then((loaded) => setMenus(Array.isArray(loaded) ? loaded : [])).catch(() => setMenus([]));
         siteApi.configs().then((loaded) => setConfigs(loaded ?? {})).catch(() => setConfigs({}));
-        siteApi.contents().then((loaded) => setContents(Array.isArray(loaded) ? loaded : [])).catch(() => setContents([]));
         boardApi.list().then((loaded) => setBoards(Array.isArray(loaded) ? loaded : [])).catch(() => setBoards([]));
         archiveApi.list().then((loaded) => setArchives(Array.isArray(loaded) ? loaded : [])).catch(() => setArchives([]));
     }, []);
@@ -65,16 +60,13 @@ export function SiteProvider({children}: { children: ReactNode }) {
             siteLoaded,
             name,
             menus: visibleMenus(menus, isEnabled),
-            unlistedContents: isEnabled('CONTENT')
-                ? contents.filter((content) => content.id !== site?.homeContentId && !linksTo(menus, `/contents/${content.id}`))
-                : [],
             unlistedBoards: isEnabled('BOARD') ? boards.filter((board) => !linksTo(menus, `/boards/${board.id}`)) : [],
             unlistedArchives: isEnabled('ARCHIVE') ? archives.filter((archive) => !linksTo(menus, `/archives/${archive.id}`)) : [],
             configs,
             isEnabled,
             reload,
         };
-    }, [site, siteLoaded, name, menus, contents, boards, archives, configs, reload]);
+    }, [site, siteLoaded, name, menus, boards, archives, configs, reload]);
 
     return <SiteContext.Provider value={value}>{children}</SiteContext.Provider>;
 }

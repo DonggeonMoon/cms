@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.admin.menu.controller;
 
+import com.dgmoonlabs.cms.domain.admin.menu.dto.MenuOrderRequest;
 import com.dgmoonlabs.cms.domain.admin.menu.dto.MenuResponse;
 import com.dgmoonlabs.cms.domain.admin.menu.dto.MenuSaveRequest;
 import com.dgmoonlabs.cms.domain.admin.menu.service.MenuService;
@@ -34,6 +35,12 @@ public class MenuController {
     @PostMapping("/api/admin/menus")
     public ResponseEntity<Void> create(@RequestBody @Valid final MenuSaveRequest request) {
         return ResponseEntity.created(URI.create("/api/admin/menus/" + menuService.createMenu(request))).build();
+    }
+
+    @PutMapping("/api/admin/menus/order")
+    public ResponseEntity<Void> reorder(@RequestBody @Valid final MenuOrderRequest request) {
+        menuService.reorderMenus(request);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/api/admin/menus/{id}")

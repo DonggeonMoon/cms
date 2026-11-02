@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,11 +19,9 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class FeatureMenuInitializer implements ApplicationRunner {
-    private static final int FIRST_SEQUENCE = 100;
     private static final Map<SiteFeature, String> DEFAULT_NAMES = new LinkedHashMap<>();
 
     static {
-        DEFAULT_NAMES.put(SiteFeature.CONTENT, "소개");
         DEFAULT_NAMES.put(SiteFeature.BOARD, "게시판");
         DEFAULT_NAMES.put(SiteFeature.ARCHIVE, "아카이브");
         DEFAULT_NAMES.put(SiteFeature.PRODUCT, "상품");
@@ -37,21 +36,29 @@ public class FeatureMenuInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(final ApplicationArguments args) {
-        Set<SiteFeature> existing = menuRepository.findAllByDeletedAtIsNull().stream()
+        List<Menu> menus = menuRepository.findAllByDeletedAtIsNull();
+        menus.stream()
+                .filter(menu -> menu.isFeatureMenu() && !DEFAULT_NAMES.containsKey(menu.getFeature()))
+                .forEach(Menu::delete);
+        menus = menus.stream().filter(menu -> menu.getDeletedAt() == null).toList();
+        Set<SiteFeature> existing = menus.stream()
                 .filter(Menu::isFeatureMenu)
                 .map(Menu::getFeature)
                 .collect(Collectors.toSet());
-        int sequence = FIRST_SEQUENCE;
+        int sequence = menus.stream()
+                .filter(menu -> menu.getParentId() == null)
+                .mapToInt(menu -> menu.getSequence() + 1)
+                .max()
+                .orElse(0);
         for (Map.Entry<SiteFeature, String> entry : DEFAULT_NAMES.entrySet()) {
             if (!existing.contains(entry.getKey())) {
                 menuRepository.save(Menu.builder()
                         .name(entry.getValue())
                         .type(MenuType.FEATURE)
                         .feature(entry.getKey())
-                        .sequence(sequence)
+                        .sequence(sequence++)
                         .build());
             }
-            sequence++;
         }
     }
 }

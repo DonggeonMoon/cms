@@ -16,7 +16,7 @@ export function SiteLayout() {
 
 function SiteFrame() {
     const {user, logout} = useAuth();
-    const {site, name, menus, unlistedContents, unlistedBoards, unlistedArchives, configs, isEnabled} = useSite();
+    const {site, name, menus, unlistedBoards, unlistedArchives, configs, isEnabled} = useSite();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -37,7 +37,6 @@ function SiteFrame() {
                 <nav className="site-nav main-nav" aria-label="주 메뉴">
                     {menus.map((menu) => menu.type === 'FEATURE'
                         ? <FeatureMenu key={menu.id} menu={menu} listings={{
-                            CONTENT: unlistedContents.map((content) => ({id: content.id, name: content.title})),
                             BOARD: unlistedBoards,
                             ARCHIVE: unlistedArchives,
                         }}/>
@@ -83,7 +82,7 @@ function SiteFrame() {
 const FEATURE_PATHS: Partial<Record<SiteFeature, string>> = {
     PRODUCT: '/products', PROGRAM: '/programs', QNA: '/qna', REPORT: '/reports/new', MAP: '/map',
 };
-const FEATURE_LISTING_PATHS: Partial<Record<SiteFeature, string>> = {CONTENT: '/contents', BOARD: '/boards', ARCHIVE: '/archives'};
+const FEATURE_LISTING_PATHS: Partial<Record<SiteFeature, string>> = {BOARD: '/boards', ARCHIVE: '/archives'};
 
 function FeatureMenu({menu, listings}: { menu: Menu; listings: Partial<Record<SiteFeature, { id: number; name: string }[]>> }) {
     const feature = menu.feature!;

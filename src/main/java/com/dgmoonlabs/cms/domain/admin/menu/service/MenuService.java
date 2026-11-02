@@ -1,6 +1,7 @@
 package com.dgmoonlabs.cms.domain.admin.menu.service;
 
 import com.dgmoonlabs.cms.domain.admin.menu.constant.MenuType;
+import com.dgmoonlabs.cms.domain.admin.menu.dto.MenuOrderRequest;
 import com.dgmoonlabs.cms.domain.admin.menu.dto.MenuResponse;
 import com.dgmoonlabs.cms.domain.admin.menu.dto.MenuSaveRequest;
 import com.dgmoonlabs.cms.domain.admin.menu.entity.Menu;
@@ -14,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -85,7 +88,19 @@ public class MenuService {
         menu.update(request);
     }
 
-    // a menu cannot be pointed at a switched-off feature; it would only lead visitors to a closed page
+    @Transactional
+    public void reorderMenus(final MenuOrderRequest request) {
+        Map<Long, Menu> siblings = menuRepository.findAllByDeletedAtIsNull().stream()
+                .filter(menu -> Objects.equals(menu.getParentId(), request.parentId()))
+                .collect(Collectors.toMap(Menu::getId, Function.identity()));
+        if (request.ids().size() != siblings.size() || !siblings.keySet().equals(Set.copyOf(request.ids()))) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        for (int i = 0; i < request.ids().size(); i++) {
+            siblings.get(request.ids().get(i)).moveTo(i);
+        }
+    }
+
     private void requireFeatureEnabled(final MenuType type) {
         if (type != null && type.feature().filter(feature -> !siteService.isEnabled(feature)).isPresent()) {
             throw new BusinessException(ErrorCode.MENU_FEATURE_DISABLED);

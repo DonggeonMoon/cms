@@ -60,6 +60,8 @@ export const adminApi = {
         tree: () => request<D.Menu[]>('/api/admin/menus'),
         create: (body: Body) => request<void>('/api/admin/menus', {method: 'POST', body}),
         update: (id: number, body: Body) => request<void>(`/api/admin/menus/${id}`, {method: 'PUT', body}),
+        reorder: (parentId: number | null, ids: number[]) =>
+            request<void>('/api/admin/menus/order', {method: 'PUT', body: {parentId, ids}}),
         remove: (id: number) => request<void>(`/api/admin/menus/${id}`, {method: 'DELETE'}),
     },
     boards: {

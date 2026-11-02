@@ -61,7 +61,10 @@ public class Menu extends BaseEntity {
         return type == MenuType.FEATURE;
     }
 
-    // a feature menu keeps what it points at; only its label, position and visibility change
+    public void moveTo(final int sequence) {
+        this.sequence = sequence;
+    }
+
     public void update(final MenuSaveRequest request) {
         this.name = request.name();
         this.sequence = request.sequence();

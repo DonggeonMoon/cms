@@ -244,7 +244,7 @@ const FEATURE_MENU_FIELDS: FieldSpec[] = [
     {name: 'sequence', label: '순서', type: 'number', help: '숫자가 작을수록 앞에 표시됩니다.'},
 ];
 
-const LISTING_FEATURES: SiteFeature[] = ['CONTENT', 'BOARD', 'ARCHIVE'];
+const LISTING_FEATURES: SiteFeature[] = ['BOARD', 'ARCHIVE'];
 
 const featureLabel = (feature: SiteFeature | null) => SITE_FEATURES.find((f) => f.value === feature)?.label ?? feature;
 
@@ -273,7 +273,20 @@ export function MenuAdminPage() {
         }
     };
 
-    const renderNode = (menu: Menu) => {
+    const move = async (siblings: Menu[], index: number, offset: -1 | 1) => {
+        const ids = siblings.map((m) => m.id);
+        [ids[index], ids[index + offset]] = [ids[index + offset], ids[index]];
+        try {
+            await adminApi.menus.reorder(siblings[0].parentId, ids);
+            reload();
+        } catch (e) {
+            setError(e);
+        }
+    };
+
+    const nextSequence = (siblings: Menu[]) => siblings.reduce((max, m) => Math.max(max, m.sequence + 1), 0);
+
+    const renderNode = (menu: Menu, index: number, siblings: Menu[]) => {
         const isFeatureMenu = menu.type === 'FEATURE';
         const feature = isFeatureMenu ? menu.feature : MENU_TYPES.find((type) => type.value === menu.type)?.feature;
         return (
@@ -281,7 +294,7 @@ export function MenuAdminPage() {
             <div className="tree-row">
                 <strong>{menu.name}</strong>
                 <span className="badge">
-                    {isFeatureMenu ? `기능 · ${featureLabel(menu.feature)}` : MENU_TYPES.find((type) => type.value === menu.type)?.label ?? menu.type}
+                    {isFeatureMenu ? featureLabel(menu.feature) : MENU_TYPES.find((type) => type.value === menu.type)?.label ?? menu.type}
                 </span>
                 {!menu.isUsing && <span className="badge">사용 안 함</span>}
                 {feature && !isEnabled(feature) && <span className="badge danger">기능 꺼짐 · 사용자 화면에서 숨김</span>}
@@ -291,15 +304,19 @@ export function MenuAdminPage() {
                         : menu.type === 'LINK' ? menu.link : `대상 #${menu.targetId}`}
                 </span>
                 <span className="actions">
+                    <button type="button" aria-label={`${menu.name} 위로`} disabled={index === 0}
+                            onClick={() => move(siblings, index, -1)}>↑</button>
+                    <button type="button" aria-label={`${menu.name} 아래로`} disabled={index === siblings.length - 1}
+                            onClick={() => move(siblings, index, 1)}>↓</button>
                     {!isFeatureMenu && (
                         <button type="button" onClick={() => setEditing({menu: null, parentId: menu.id,
-                            values: {type: defaultType, sequence: 0, isUsing: true}})}>하위 추가</button>
+                            values: {type: defaultType, sequence: nextSequence(menu.children), isUsing: true}})}>하위 추가</button>
                     )}
                     <button type="button" onClick={() => setEditing({menu, parentId: menu.parentId, values: {...menu}})}>수정</button>
                     {!isFeatureMenu && <button type="button" className="danger" onClick={() => remove(menu)}>삭제</button>}
                 </span>
             </div>
-            {menu.children.length > 0 && <ul className="tree">{menu.children.map(renderNode)}</ul>}
+            {menu.children.length > 0 && <ul className="tree">{menu.children.map((child, i) => renderNode(child, i, menu.children))}</ul>}
         </li>
         );
     };
@@ -307,15 +324,15 @@ export function MenuAdminPage() {
     return (
         <section className="card">
             <h1>메뉴</h1>
-            <div className="muted">
-                <p>사이트 상단 내비게이션에 순서대로 표시됩니다. 하위 메뉴가 있는 메뉴는 삭제할 수 없습니다.</p>
-                <p><strong>기능 메뉴</strong>(소개, 게시판, 아카이브, 상품 등)는 자동으로 만들어지며 이름·순서·사용 여부만 바꿀 수 있습니다.
-                    소개·게시판·아카이브 메뉴에는 등록된 컨텐츠·게시판·아카이브가 하위 목록으로 자동으로 붙고,
+            <div className="muted page-description">
+                <p>사이트 상단 내비게이션에 순서대로 표시되며, ↑/↓ 버튼으로 같은 단계 안의 순서를 바꿀 수 있습니다. 하위 메뉴가 있는 메뉴는 삭제할 수 없습니다.</p>
+                <p><strong>기능 메뉴</strong>(게시판, 아카이브, 상품 등)는 자동으로 만들어지며 이름·순서·사용 여부만 바꿀 수 있습니다.
+                    게시판·아카이브 메뉴에는 등록된 게시판·아카이브가 하위 목록으로 자동으로 붙고,
                     따로 메뉴로 연결한 항목은 빠집니다. 기능 자체를 끄면 사용 여부와 관계없이 숨겨집니다.</p>
             </div>
             <div className="toolbar">
-                <button type="button" className="primary" onClick={() => setEditing({menu: null, parentId: null,
-                    values: {type: defaultType, sequence: 0, isUsing: true}})}>최상위 메뉴 추가</button>
+                <button type="button" className="primary push-right" onClick={() => setEditing({menu: null, parentId: null,
+                    values: {type: defaultType, sequence: nextSequence(menus), isUsing: true}})}>최상위 메뉴 추가</button>
             </div>
             {editing && (
                 <SchemaForm
@@ -333,7 +350,7 @@ export function MenuAdminPage() {
                 />
             )}
             <ErrorBanner error={error}/>
-            {menus.length === 0 ? <p className="muted">메뉴가 없습니다.</p> : <ul className="tree">{menus.map(renderNode)}</ul>}
+            {menus.length === 0 ? <p className="muted">메뉴가 없습니다.</p> : <ul className="tree">{menus.map((menu, i) => renderNode(menu, i, menus))}</ul>}
         </section>
     );
 }

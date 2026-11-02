@@ -156,10 +156,36 @@ class AdminApiTest extends ApiTestSupport {
                 """).andExpect(status().isBadRequest());
 
         getJson("/api/menus", null)
-                .andExpect(jsonPath("$[0].name").value("소개"))
-                .andExpect(jsonPath("$[0].children[0].name").value("오시는 길"))
-                .andExpect(jsonPath("$[0].children[0].depth").value(1));
+                .andExpect(jsonPath("$[?(@.id == %d)].children[0].name".formatted(root)).value(hasItem("오시는 길")))
+                .andExpect(jsonPath("$[?(@.id == %d)].children[0].depth".formatted(root)).value(hasItem(1)));
         deleteJson("/api/admin/menus/" + root, admin, null).andExpect(jsonPath("$.code").value("MENU_HAS_CHILDREN"));
+    }
+
+    @Test
+    void siblingMenusCanBeReorderedAtOnce() throws Exception {
+        MockHttpSession admin = admin();
+        long parent = createdId(postJson("/api/admin/menus", admin, """
+                {"name":"부모","type":"LINK","link":"/p","sequence":0}
+                """));
+        long first = createdId(postJson("/api/admin/menus", admin, """
+                {"parentId":%d,"name":"첫째","type":"LINK","link":"/1","sequence":0}
+                """.formatted(parent)));
+        long second = createdId(postJson("/api/admin/menus", admin, """
+                {"parentId":%d,"name":"둘째","type":"LINK","link":"/2","sequence":1}
+                """.formatted(parent)));
+
+        putJson("/api/admin/menus/order", admin, """
+                {"parentId":%d,"ids":[%d,%d]}
+                """.formatted(parent, second, first)).andExpect(status().isNoContent());
+        getJson("/api/admin/menus/" + second, admin).andExpect(jsonPath("$.sequence").value(0));
+        getJson("/api/admin/menus/" + first, admin).andExpect(jsonPath("$.sequence").value(1));
+
+        putJson("/api/admin/menus/order", admin, """
+                {"parentId":%d,"ids":[%d]}
+                """.formatted(parent, first)).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        putJson("/api/admin/menus/order", admin, """
+                {"parentId":%d,"ids":[%d,%d]}
+                """.formatted(parent, first, first)).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
     @Test
@@ -179,8 +205,7 @@ class AdminApiTest extends ApiTestSupport {
                 """).andExpect(status().isNoContent());
 
         getJson("/api/menus", null)
-                .andExpect(jsonPath("$[0].name").value("중고 상품"))
-                .andExpect(jsonPath("$[0].feature").value("PRODUCT"))
+                .andExpect(jsonPath("$[?(@.feature == 'PRODUCT')].name").value(hasItem("중고 상품")))
                 .andExpect(jsonPath("$[?(@.feature == 'QNA')]").isEmpty());
         getJson("/api/admin/menus", admin).andExpect(jsonPath("$[?(@.feature == 'QNA')].isUsing").value(hasItem(false)));
 

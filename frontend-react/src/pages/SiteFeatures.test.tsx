@@ -14,7 +14,7 @@ function respond(status: number, body?: unknown) {
     return new Response(body === undefined ? null : JSON.stringify(body), {status});
 }
 
-const FEATURE_NAMES = {CONTENT: '소개', BOARD: '게시판', ARCHIVE: '아카이브', PRODUCT: '상품', PROGRAM: '프로그램', QNA: '질문답변', REPORT: '신고', MAP: '지도'};
+const FEATURE_NAMES = {BOARD: '게시판', ARCHIVE: '아카이브', PRODUCT: '상품', PROGRAM: '프로그램', QNA: '질문답변', REPORT: '신고', MAP: '지도'};
 const FEATURE_MENUS = Object.entries(FEATURE_NAMES).map(([feature, name], index) => ({
     id: 100 + index, parentId: null, name, type: 'FEATURE', depth: 0, sequence: 100 + index, link: null, targetId: null,
     feature, isUsing: true, children: [],
@@ -185,7 +185,7 @@ describe('site features', () => {
         expect(within(nav).queryByRole('link', {name: '공지사항'})).not.toBeInTheDocument();
     });
 
-    it('lists published contents and archives in the header while their features are on', async () => {
+    it('lists archives in the header but not contents without a menu of their own', async () => {
         const archives = [{id: 3, name: '자료실'}];
         const contents = [{id: 5, title: '기관 소개'}, {id: 6, title: '연혁'}];
         vi.stubGlobal('fetch', withFeatureMenus(async (url: string) => {
@@ -204,8 +204,8 @@ describe('site features', () => {
 
         const nav = await screen.findByRole('navigation', {name: '주 메뉴'});
         expect(await within(nav).findByRole('link', {name: '아카이브'})).toHaveAttribute('href', '/archives/3');
-        expect(await within(nav).findByRole('link', {name: '소개'})).toHaveAttribute('href', '/contents/5');
-        expect(within(nav).getByRole('link', {name: '연혁'})).toHaveAttribute('href', '/contents/6');
+        expect(within(nav).queryByRole('link', {name: '기관 소개'})).not.toBeInTheDocument();
+        expect(within(nav).queryByRole('link', {name: '연혁'})).not.toBeInTheDocument();
     });
 
     it('hides the archive header menu once the feature is switched off', async () => {
@@ -346,8 +346,6 @@ describe('site features', () => {
         expect(await screen.findByRole('link', {name: /닌텐도 스위치/})).toBeInTheDocument();
         expect(screen.getByLabelText('상품 검색')).toBeInTheDocument();
         expect(screen.queryByRole('heading', {name: '우리 기관'})).not.toBeInTheDocument();
-        // the home content is not listed again as an intro menu
-        expect(within(screen.getByRole('navigation', {name: '주 메뉴'})).queryByRole('link', {name: '소개'})).not.toBeInTheDocument();
     });
 
     it('uses the names and visibility set on the feature menus', async () => {
