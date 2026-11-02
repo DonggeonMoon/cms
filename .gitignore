@@ -45,3 +45,9 @@ out/
 
 ### Claude Code personal settings ###
 .claude/settings.local.json*
+
+### Env ###
+.env.development
+
+### Python ###
+__pycache__/
