@@ -21,6 +21,7 @@ public class Menu extends BaseEntity {
     private String name;
 
     @Comment("메뉴 종류")
+    @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "varchar(255)")
     private MenuType type;
 
