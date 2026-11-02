@@ -1,0 +1,363 @@
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import type {Query} from '../../api/client';
+import {type Banner, type Config, type Content, type Menu, type Site, SITE_FEATURES, type SiteFeature} from '../../api/domain';
+import {adminApi} from '../../api/endpoints';
+import {AdminCrudPage, YesNo} from '../../components/AdminCrudPage';
+import {ErrorBanner} from '../../components/ErrorBanner';
+import {formatDateTime} from '../../components/format';
+import {type FieldSpec, type FormValues, SchemaForm} from '../../components/SchemaForm';
+import {useSite} from '../../components/SiteContext';
+
+const featureField = (feature: SiteFeature) => `feature_${feature}`;
+
+const SITE_FIELDS: FieldSpec[] = [
+    {name: 'isDefault', label: '기본 사이트', type: 'checkbox', wide: true, spaced: true},
+    {name: 'name', label: '사이트 이름', required: true, help: '사용자 화면의 헤더와 홈에 표시됩니다.'},
+    {name: 'domain', label: '도메인', placeholder: 'www.example.com'},
+    {name: 'description', label: '설명', wide: true, help: '홈 화면에 소개 문구로 표시됩니다.'},
+    {name: 'theme', label: '테마', type: 'select', options: [{value: 'market', label: '마켓 (중고거래·쇼핑몰)'}],
+        help: '선택 안 함이면 기본 테마를 씁니다.'},
+    {name: 'locale', label: '로케일', placeholder: 'ko'},
+    ...SITE_FEATURES.map((feature): FieldSpec => ({name: featureField(feature.value), label: feature.label, type: 'checkbox', group: '기능'})),
+];
+
+const ALL_FEATURES_ON = Object.fromEntries(SITE_FEATURES.map((feature) => [featureField(feature.value), true]));
+
+const siteToForm = (site: Site): FormValues => ({
+    ...site,
+    ...Object.fromEntries(SITE_FEATURES.map((feature) => [featureField(feature.value), site.features[feature.value] ?? true])),
+});
+
+const toSiteBody = (values: FormValues) => ({
+    ...values,
+    homeContentId: values.homeContentId ? Number(values.homeContentId) : null,
+    disabledFeatures: SITE_FEATURES.filter((feature) => !values[featureField(feature.value)]).map((feature) => feature.value),
+});
+
+const loadSites = (query: Query) => adminApi.sites.search(query);
+
+export function SiteAdminPage() {
+    // the admin sidebar shows the default site's name, so it is refreshed after every change here
+    const {reload} = useSite();
+    const [contents, setContents] = useState<Content[]>([]);
+    useEffect(() => {
+        adminApi.contents.search({size: 200}).then((page) => setContents(page?.content ?? [])).catch(() => setContents([]));
+    }, []);
+    const fields = useMemo<FieldSpec[]>(() => SITE_FIELDS.flatMap((field) => field.name !== 'locale' ? [field] : [field, {
+        name: 'homeContentId', label: '홈 화면 컨텐츠', type: 'select', wide: true,
+        options: contents.map((content) => ({
+            value: String(content.id), label: `${content.title}${content.status === 'PUBLISHED' ? '' : ' (비공개 - 홈에 쓰이지 않음)'}`,
+        })),
+        help: '고르면 홈 화면에 이 컨텐츠를 보여 줍니다. 선택 안 함이면 기본 홈 화면을 씁니다. 컨텐츠 화면에서 홈을 꾸미는 방법을 볼 수 있습니다.',
+    }]), [contents]);
+    return (
+        <AdminCrudPage<Site>
+            title="사이트"
+            description={
+                <>
+                    <p>기본 사이트의 이름이 사용자 화면에 표시되고, 기본 사이트에서 끈 기능은 사용자 메뉴와 관리자 메뉴에서 빠지며
+                        해당 화면과 API도 닫힙니다.</p>
+                    <p>기본 사이트는 하나만 지정할 수 있습니다. 새로 기본으로 지정하면 기존 기본 사이트는 해제됩니다.</p>
+                </>
+            }
+            load={loadSites}
+            fields={fields}
+            emptyForm={{isDefault: true, locale: 'ko', ...ALL_FEATURES_ON}}
+            toForm={siteToForm}
+            columns={[
+                {label: '이름', render: (s) => s.name},
+                {label: '도메인', render: (s) => s.domain ?? '-'},
+                {label: '기본', render: (s) => <YesNo value={s.isDefault}/>},
+                {label: '켜진 기능', render: (s) => {
+                    const on = SITE_FEATURES.filter((feature) => s.features[feature.value] !== false);
+                    return on.length ? on.map((feature) => feature.label).join(', ') : <span className="muted">없음</span>;
+                }},
+            ]}
+            create={(v) => adminApi.sites.create(toSiteBody(v)).then(reload)}
+            update={(s, v) => adminApi.sites.update(s.id, toSiteBody(v)).then(reload)}
+            remove={(s) => adminApi.sites.remove(s.id).then(reload)}
+        />
+    );
+}
+
+const CONFIG_FIELDS: FieldSpec[] = [
+    {name: 'key', label: '키', required: true, placeholder: 'site.footer', help: '영문, 숫자, _ . - 만 사용합니다.'},
+    {name: 'type', label: '입력 형식', type: 'select', required: true, options: [
+            {value: 'TEXT', label: '텍스트'}, {value: 'TEXTAREA', label: '여러 줄'},
+            {value: 'RADIO', label: '단일 선택'}, {value: 'CHECKBOX', label: '체크박스'}]},
+    {name: 'value', label: '값', type: 'textarea'},
+    {name: 'description', label: '설명', wide: true},
+    {name: 'isHidden', label: '공개 API에서 숨김', type: 'checkbox'},
+];
+
+const loadConfigs = (query: Query) => adminApi.configs.search(query);
+
+export function ConfigAdminPage() {
+    return (
+        <AdminCrudPage<Config>
+            title="설정"
+            description="숨김이 아닌 설정은 /api/configs 로 사이트 화면에 공개됩니다."
+            load={loadConfigs}
+            fields={CONFIG_FIELDS}
+            emptyForm={{type: 'TEXT', isHidden: false}}
+            columns={[
+                {label: '키', render: (c) => <code>{c.key}</code>},
+                {label: '값', render: (c) => <span className="truncate">{c.value}</span>},
+                {label: '설명', render: (c) => c.description || '-'},
+                {label: '숨김', render: (c) => <YesNo value={c.isHidden}/>},
+            ]}
+            create={(v) => adminApi.configs.create(v)}
+            update={(c, v) => adminApi.configs.update(c.id, v)}
+            remove={(c) => adminApi.configs.remove(c.id)}
+        />
+    );
+}
+
+const DISMISS_FIELD: FieldSpec = {
+    name: 'dismissDays', label: '보지 않기 기간(일)', type: 'number', required: true,
+    help: '방문자가 "보지 않기"로 닫으면 이 기간 동안 다시 보이지 않습니다. 1이면 "오늘 하루 보지 않기", 0이면 버튼을 표시하지 않습니다.',
+};
+const PERIOD_FIELDS: FieldSpec[] = [
+    {name: 'startDateTime', label: '게시 시작', type: 'datetime'},
+    {name: 'endDateTime', label: '게시 종료', type: 'datetime'},
+];
+
+// BANNER is the strip shown above the site header
+const TOP_BAR_FIELDS: FieldSpec[] = [
+    {name: 'isUsing', label: '사용', type: 'checkbox', wide: true},
+    {name: 'opensNewWindow', label: '새 창으로 열기', type: 'checkbox', wide: true, spaced: true},
+    {name: 'name', label: '관리용 이름', required: true},
+    {name: 'order', label: '순서', type: 'number', help: '여러 개가 게시 중이면 순서가 가장 앞선 배너가 표시됩니다.'},
+    {name: 'description', label: '표시 문구', required: true, wide: true, placeholder: '11월 3일 02:00~04:00 서비스 점검이 있습니다.'},
+    {name: 'link', label: '링크', placeholder: 'https:// 또는 /boards/1'},
+    {name: 'backgroundColor', label: '배경색', type: 'color'},
+    {name: 'textColor', label: '글자색', type: 'color'},
+    DISMISS_FIELD,
+    ...PERIOD_FIELDS,
+];
+
+const POPUP_FIELDS: FieldSpec[] = [
+    {name: 'isUsing', label: '사용', type: 'checkbox', wide: true},
+    {name: 'opensNewWindow', label: '새 창으로 열기', type: 'checkbox', wide: true, spaced: true},
+    {name: 'name', label: '제목', required: true},
+    {name: 'popupMode', label: '표시 방식', type: 'select', required: true, options: [
+            {value: 'MODELESS', label: '모달리스 (배경 클릭 가능)'},
+            {value: 'MODAL', label: '모달 (배경 클릭 불가)'}],
+        help: '모달은 화면 가운데에 어두운 배경과 함께 뜨고, 닫기 전에는 뒤 화면을 사용할 수 없습니다.'},
+    {name: 'order', label: '순서', type: 'number'},
+    {name: 'fileId', label: '이미지', type: 'image'},
+    {name: 'description', label: '내용 (이미지가 없을 때 표시)', type: 'textarea'},
+    {name: 'link', label: '클릭 시 이동할 링크', placeholder: 'https://'},
+    {name: 'width', label: '가로(px)', type: 'number'},
+    {name: 'height', label: '세로(px)', type: 'number'},
+    {name: 'top', label: '위치 top(px)', type: 'number', help: '모달리스일 때만 사용합니다.'},
+    {name: 'left', label: '위치 left(px)', type: 'number', help: '모달리스일 때만 사용합니다.'},
+    DISMISS_FIELD,
+    ...PERIOD_FIELDS,
+];
+
+const toBannerBody = (type: 'BANNER' | 'POPUP', values: FormValues) => ({
+    ...values,
+    type,
+    isModal: type === 'POPUP' && values.popupMode === 'MODAL',
+});
+
+const bannerToForm = (banner: Banner): FormValues => ({...banner, popupMode: banner.isModal ? 'MODAL' : 'MODELESS'});
+
+const loadBanners = (query: Query) => adminApi.banners.search(query);
+
+const BANNER_TABS = [
+    {value: 'BANNER', label: '배너 (상단 띠배너)'},
+    {value: 'POPUP', label: '팝업'},
+] as const;
+
+export function BannerAdminPage() {
+    const [type, setType] = useState<'BANNER' | 'POPUP'>('BANNER');
+    const isTopBar = type === 'BANNER';
+    return (
+        <>
+            <div className="tabs" role="tablist" aria-label="배너 종류">
+                {BANNER_TABS.map((tab) => (
+                    <button key={tab.value} type="button" role="tab" aria-selected={type === tab.value}
+                            className={type === tab.value ? 'tab active' : 'tab'} onClick={() => setType(tab.value)}>
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+            <AdminCrudPage<Banner>
+                key={type}
+                title={isTopBar ? '배너' : '팝업'}
+                description={isTopBar
+                    ? '사용자 화면 헤더 위에 띠 형태로 표시됩니다. 방문자는 "보지 않기"로 정한 기간 동안 닫아 둘 수 있습니다.'
+                    : '사용자 홈 화면에 표시됩니다. 표시 방식으로 모달/모달리스를 고를 수 있습니다.'}
+                load={loadBanners}
+                extraQuery={{type}}
+                fields={isTopBar ? TOP_BAR_FIELDS : POPUP_FIELDS}
+                emptyForm={isTopBar
+                    ? {order: 0, isUsing: true, opensNewWindow: false, dismissDays: 1, backgroundColor: '#1D4ED8', textColor: '#FFFFFF'}
+                    : {order: 0, isUsing: true, opensNewWindow: false, dismissDays: 1, popupMode: 'MODELESS'}}
+                toForm={bannerToForm}
+                columns={isTopBar ? [
+                    {label: '미리보기', render: (b) => (
+                        <span className="top-bar-preview" style={{background: b.backgroundColor ?? undefined, color: b.textColor ?? undefined}}>
+                            {b.description || b.name}
+                        </span>
+                    )},
+                    {label: '순서', render: (b) => b.order},
+                    {label: '기간', render: (b) => `${formatDateTime(b.startDateTime)} ~ ${formatDateTime(b.endDateTime)}`},
+                    {label: '사용', render: (b) => <YesNo value={b.isUsing}/>},
+                ] : [
+                    {label: '이미지', render: (b) => b.imageUrl ? <img className="thumb" src={b.imageUrl} alt={b.name}/> : '-'},
+                    {label: '제목', render: (b) => b.name},
+                    {label: '표시 방식', render: (b) => (b.isModal ? '모달' : '모달리스')},
+                    {label: '순서', render: (b) => b.order},
+                    {label: '기간', render: (b) => `${formatDateTime(b.startDateTime)} ~ ${formatDateTime(b.endDateTime)}`},
+                    {label: '사용', render: (b) => <YesNo value={b.isUsing}/>},
+                ]}
+                create={(v) => adminApi.banners.create(toBannerBody(type, v))}
+                update={(b, v) => adminApi.banners.update(b.id, toBannerBody(type, v))}
+                remove={(b) => adminApi.banners.remove(b.id)}
+            />
+        </>
+    );
+}
+
+const MENU_TYPES: { value: Menu['type']; label: string; feature?: SiteFeature }[] = [
+    {value: 'CONTENT', label: '컨텐츠', feature: 'CONTENT'},
+    {value: 'BOARD', label: '게시판', feature: 'BOARD'},
+    {value: 'LINK', label: '링크'},
+];
+
+// a switched-off feature cannot be chosen as a menu target (the server refuses it as well)
+const MENU_USING_FIELD: FieldSpec = {name: 'isUsing', label: '사용', type: 'checkbox', wide: true, spaced: true};
+
+const menuFields = (allowedTypes: typeof MENU_TYPES): FieldSpec[] => [
+    MENU_USING_FIELD,
+    {name: 'name', label: '메뉴 이름', required: true},
+    {name: 'type', label: '종류', type: 'select', required: true, options: allowedTypes.map(({value, label}) => ({value, label})),
+        help: allowedTypes.length < MENU_TYPES.length ? '사용 중지된 기능은 메뉴 종류로 선택할 수 없습니다.' : undefined},
+    {name: 'targetId', label: '연결 대상 ID', type: 'number', help: '컨텐츠 메뉴는 컨텐츠 ID, 게시판 메뉴는 게시판 ID'},
+    {name: 'link', label: '링크', help: '링크 메뉴일 때 이동할 주소'},
+    {name: 'sequence', label: '순서', type: 'number'},
+];
+
+// a feature menu always leads to its feature; only its label, position and visibility are editable
+const FEATURE_MENU_FIELDS: FieldSpec[] = [
+    MENU_USING_FIELD,
+    {name: 'name', label: '메뉴 이름', required: true},
+    {name: 'sequence', label: '순서', type: 'number', help: '숫자가 작을수록 앞에 표시됩니다.'},
+];
+
+const LISTING_FEATURES: SiteFeature[] = ['CONTENT', 'BOARD', 'ARCHIVE'];
+
+const featureLabel = (feature: SiteFeature | null) => SITE_FEATURES.find((f) => f.value === feature)?.label ?? feature;
+
+export function MenuAdminPage() {
+    const {isEnabled} = useSite();
+    const allowedTypes = MENU_TYPES.filter((type) => !type.feature || isEnabled(type.feature));
+    const defaultType = allowedTypes[0].value;
+    const [menus, setMenus] = useState<Menu[]>([]);
+    const [editing, setEditing] = useState<{ menu: Menu | null; parentId: number | null; values: FormValues } | null>(null);
+    const [error, setError] = useState<unknown>(null);
+
+    const reload = useCallback(() => {
+        adminApi.menus.tree().then(setMenus).catch(setError);
+    }, []);
+    useEffect(reload, [reload]);
+
+    const remove = async (menu: Menu) => {
+        if (!window.confirm(`'${menu.name}' 메뉴를 삭제할까요?`)) {
+            return;
+        }
+        try {
+            await adminApi.menus.remove(menu.id);
+            reload();
+        } catch (e) {
+            setError(e);
+        }
+    };
+
+    const renderNode = (menu: Menu) => {
+        const isFeatureMenu = menu.type === 'FEATURE';
+        const feature = isFeatureMenu ? menu.feature : MENU_TYPES.find((type) => type.value === menu.type)?.feature;
+        return (
+        <li key={menu.id}>
+            <div className="tree-row">
+                <strong>{menu.name}</strong>
+                <span className="badge">
+                    {isFeatureMenu ? `기능 · ${featureLabel(menu.feature)}` : MENU_TYPES.find((type) => type.value === menu.type)?.label ?? menu.type}
+                </span>
+                {!menu.isUsing && <span className="badge">사용 안 함</span>}
+                {feature && !isEnabled(feature) && <span className="badge danger">기능 꺼짐 · 사용자 화면에서 숨김</span>}
+                <span className="muted small">
+                    {isFeatureMenu
+                        ? (LISTING_FEATURES.includes(menu.feature!) ? '하위 목록은 등록된 항목으로 자동 구성' : '')
+                        : menu.type === 'LINK' ? menu.link : `대상 #${menu.targetId}`}
+                </span>
+                <span className="actions">
+                    {!isFeatureMenu && (
+                        <button type="button" onClick={() => setEditing({menu: null, parentId: menu.id,
+                            values: {type: defaultType, sequence: 0, isUsing: true}})}>하위 추가</button>
+                    )}
+                    <button type="button" onClick={() => setEditing({menu, parentId: menu.parentId, values: {...menu}})}>수정</button>
+                    {!isFeatureMenu && <button type="button" className="danger" onClick={() => remove(menu)}>삭제</button>}
+                </span>
+            </div>
+            {menu.children.length > 0 && <ul className="tree">{menu.children.map(renderNode)}</ul>}
+        </li>
+        );
+    };
+
+    return (
+        <section className="card">
+            <h1>메뉴</h1>
+            <div className="muted">
+                <p>사이트 상단 내비게이션에 순서대로 표시됩니다. 하위 메뉴가 있는 메뉴는 삭제할 수 없습니다.</p>
+                <p><strong>기능 메뉴</strong>(소개, 게시판, 아카이브, 상품 등)는 자동으로 만들어지며 이름·순서·사용 여부만 바꿀 수 있습니다.
+                    소개·게시판·아카이브 메뉴에는 등록된 컨텐츠·게시판·아카이브가 하위 목록으로 자동으로 붙고,
+                    따로 메뉴로 연결한 항목은 빠집니다. 기능 자체를 끄면 사용 여부와 관계없이 숨겨집니다.</p>
+            </div>
+            <div className="toolbar">
+                <button type="button" className="primary" onClick={() => setEditing({menu: null, parentId: null,
+                    values: {type: defaultType, sequence: 0, isUsing: true}})}>최상위 메뉴 추가</button>
+            </div>
+            {editing && (
+                <SchemaForm
+                    key={editing.menu?.id ?? `new-${editing.parentId}`}
+                    title={editing.menu ? '메뉴 수정' : '메뉴 추가'}
+                    fields={editing.menu?.type === 'FEATURE' ? FEATURE_MENU_FIELDS : menuFields(allowedTypes)}
+                    initial={editing.values}
+                    onCancel={() => setEditing(null)}
+                    onSubmit={async (values) => {
+                        const body = {...values, parentId: editing.parentId};
+                        await (editing.menu ? adminApi.menus.update(editing.menu.id, body) : adminApi.menus.create(body));
+                        setEditing(null);
+                        reload();
+                    }}
+                />
+            )}
+            <ErrorBanner error={error}/>
+            {menus.length === 0 ? <p className="muted">메뉴가 없습니다.</p> : <ul className="tree">{menus.map(renderNode)}</ul>}
+        </section>
+    );
+}
+
+const loadAuditLogs = (query: Query) => adminApi.auditLogs(query);
+
+export function AuditLogPage() {
+    return (
+        <AdminCrudPage
+            title="관리자 작업 로그"
+            description="관리자 API의 등록·수정·삭제 요청이 기록됩니다."
+            load={loadAuditLogs}
+            columns={[
+                {label: '일시', render: (l) => formatDateTime(l.createdAt)},
+                {label: '관리자', render: (l) => l.username},
+                {label: '요청', render: (l) => <code>{l.uri}</code>},
+                {label: '처리기', render: (l) => <span className="muted small">{l.handler}</span>},
+                {label: '결과', render: (l) => l.content},
+                {label: 'IP', render: (l) => l.ipAddress},
+            ]}
+        />
+    );
+}
