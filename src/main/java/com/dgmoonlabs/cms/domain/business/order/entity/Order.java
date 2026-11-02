@@ -48,7 +48,7 @@ public class Order extends BaseEntity {
     @Comment("총 가격")
     private BigDecimal totalPrice;
 
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Column(nullable = false)
     @Comment("배송 가능 여부")
     private boolean canDeliver;

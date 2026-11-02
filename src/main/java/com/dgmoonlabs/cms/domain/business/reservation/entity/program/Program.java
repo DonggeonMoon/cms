@@ -52,14 +52,12 @@ public class Program extends BaseEntity {
     @Comment("신청 종료 일시")
     private LocalDateTime applicationEndDateTime;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 텍스트")
     private String contentText;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;
@@ -69,7 +67,7 @@ public class Program extends BaseEntity {
     private String fields;
 
     @Column(nullable = false)
-    @ColumnDefault("1")
+    @ColumnDefault("true")
     @Comment("예약 가능 여부")
     private boolean isEnabled;
 }

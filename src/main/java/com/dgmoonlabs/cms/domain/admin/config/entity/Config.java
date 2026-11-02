@@ -37,7 +37,7 @@ public class Config extends BaseEntity {
     private OptionType type;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Comment("숨김 여부")
     private boolean isHidden;
 }

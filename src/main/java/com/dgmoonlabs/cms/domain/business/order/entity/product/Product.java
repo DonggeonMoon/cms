@@ -36,14 +36,12 @@ public class Product extends BaseEntity {
     @Comment("주문/구매 가능 수량")
     private Integer availableQuantity;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 텍스트")
     private String contentText;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;
@@ -53,7 +51,7 @@ public class Product extends BaseEntity {
     private String fields;
 
     @Column(nullable = false)
-    @ColumnDefault("1")
+    @ColumnDefault("true")
     @Comment("주문 가능 여부")
     private boolean isEnabled;
 }

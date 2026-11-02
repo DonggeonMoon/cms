@@ -36,7 +36,7 @@ public class Archive extends BaseEntity {
     private String fields;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Comment("댓글 기능 활성화 여부")
     private boolean supportsComment;
 

@@ -27,12 +27,12 @@ public class Role extends BaseEntity {
     private String description;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Comment("기본 역할 여부")
     private boolean isDefault;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Comment("관리자 여부")
     private boolean isAdmin;
 }

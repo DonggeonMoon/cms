@@ -17,14 +17,12 @@ public class Content extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 텍스트")
     private String contentText;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;

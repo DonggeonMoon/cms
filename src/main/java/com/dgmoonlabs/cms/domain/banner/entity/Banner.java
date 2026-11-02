@@ -38,7 +38,7 @@ public class Banner extends BaseEntity {
     private String link;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Comment("새창 열기 여부")
     private boolean opensNewWindow;
 
@@ -49,7 +49,7 @@ public class Banner extends BaseEntity {
     private LocalDateTime endDateTime;
 
     @Column(nullable = false)
-    @ColumnDefault("1")
+    @ColumnDefault("true")
     @Comment("사용 여부")
     private boolean isUsing;
 

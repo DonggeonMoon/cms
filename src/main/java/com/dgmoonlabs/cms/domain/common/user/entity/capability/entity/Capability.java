@@ -24,7 +24,7 @@ public class Capability extends BaseEntity {
     private String description;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Comment("기본 여부")
     private boolean isDefault;
 

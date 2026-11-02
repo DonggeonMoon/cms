@@ -43,8 +43,7 @@ public class ArchiveComment extends BaseEntity {
     @Comment("제목")
     private String title;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용")
     private String content;

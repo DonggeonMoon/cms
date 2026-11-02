@@ -20,17 +20,17 @@ public class MemberAgreement {
     private Long memberId;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Comment("메일 수신 동의 여부")
     private boolean isMailReceptionAgreed;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Comment("SMS 수신 동의 여부")
     private boolean isSmsReceptionAgreed;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Comment("마케팅 활용 동의 여부")
     private boolean isMarketingUsageAgreed;
 }

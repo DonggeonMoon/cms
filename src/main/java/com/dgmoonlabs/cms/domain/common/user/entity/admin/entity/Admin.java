@@ -61,7 +61,7 @@ public class Admin extends BaseEntity {
     private LocalDate birthDate;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Comment("음력 여부")
     private boolean isLunarBirthDate;
 

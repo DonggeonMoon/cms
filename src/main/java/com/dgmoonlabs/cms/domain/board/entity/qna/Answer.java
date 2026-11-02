@@ -28,14 +28,12 @@ public class Answer extends BaseEntity {
     @Comment("제목")
     private String title;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 텍스트")
     private String contentText;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;
@@ -52,7 +50,7 @@ public class Answer extends BaseEntity {
     @Comment("사용자 ID")
     private Long userId;
 
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Column(nullable = false)
     @Comment("비밀글 여부")
     private boolean isSecret;

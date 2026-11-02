@@ -28,14 +28,12 @@ public class ArchiveArticle extends BaseEntity {
     @Comment("제목")
     private String title;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 텍스트")
     private String contentText;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;

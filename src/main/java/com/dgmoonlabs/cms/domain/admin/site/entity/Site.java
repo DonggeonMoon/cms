@@ -38,7 +38,7 @@ public class Site extends BaseEntity {
     private String locale;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Comment("기본 사이트 여부")
     private boolean isDefault;
 

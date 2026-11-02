@@ -29,14 +29,12 @@ public class BoardArticle extends BaseEntity {
     @Comment("제목")
     private String title;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 텍스트")
     private String contentText;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "text")
     @ColumnDefault("''")
     @Comment("내용 HTML")
     private String contentHtml;
@@ -45,7 +43,7 @@ public class BoardArticle extends BaseEntity {
     @Comment("추가 필드")
     private String fields;
 
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Column(nullable = false)
     @Comment("공지 여부")
     private boolean isNotice;
@@ -56,7 +54,7 @@ public class BoardArticle extends BaseEntity {
     @Comment("공지 종료 일시")
     private LocalDateTime noticeEndDateTime;
 
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Column(nullable = false)
     @Comment("비공개 여부")
     private boolean isHidden;
@@ -69,7 +67,7 @@ public class BoardArticle extends BaseEntity {
     @Comment("사용자 ID")
     private Long userId;
 
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Column(nullable = false)
     @Comment("비밀글 여부")
     private boolean isSecret;
