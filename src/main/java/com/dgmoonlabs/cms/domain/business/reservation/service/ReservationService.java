@@ -1,77 +1,161 @@
 package com.dgmoonlabs.cms.domain.business.reservation.service;
 
-import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
-import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
-import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsRepository;
-import jakarta.servlet.http.HttpServletRequest;
+import com.dgmoonlabs.cms.domain.business.BusinessNumbers;
+import com.dgmoonlabs.cms.domain.business.payment.constant.PaymentTargetType;
+import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
+import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.*;
+import com.dgmoonlabs.cms.domain.business.reservation.entity.Reservation;
+import com.dgmoonlabs.cms.domain.business.reservation.entity.program.Program;
+import com.dgmoonlabs.cms.domain.business.reservation.repository.ProgramRepository;
+import com.dgmoonlabs.cms.domain.business.reservation.repository.ReservationRepository;
+import com.dgmoonlabs.cms.domain.business.review.repository.ReviewRepository;
+import com.dgmoonlabs.cms.domain.common.file.service.FileService;
+import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
+import com.dgmoonlabs.cms.global.error.BusinessException;
+import com.dgmoonlabs.cms.global.error.ErrorCode;
+import com.dgmoonlabs.cms.global.html.HtmlSanitizer;
+import com.dgmoonlabs.cms.global.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ua_parser.Client;
-import ua_parser.Parser;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ReservationService {
-    private final StatisticsRepository statisticsRepository;
+    private final ProgramRepository programRepository;
+    private final ReservationRepository reservationRepository;
+    private final ReviewRepository reviewRepository;
+    private final PaymentService paymentService;
+    private final FileService fileService;
+    private final HtmlSanitizer htmlSanitizer;
 
     @Transactional(readOnly = true)
-    public Page<Statistics> getStatistics(StatisticsRequest statistics, Pageable pageable) {
-        return statisticsRepository.find(statistics, pageable);
+    public Page<ProgramResponse> getPrograms(final String keyword, final Pageable pageable) {
+        String term = keyword == null ? "" : keyword;
+        LocalDateTime now = LocalDateTime.now();
+        Page<Program> programs = CurrentUser.isAdmin()
+                ? programRepository.findAllByDeletedAtIsNullAndNameContainingIgnoreCaseOrderByIdDesc(term, pageable)
+                : programRepository.findAllByIsEnabledTrueAndDeletedAtIsNullAndNameContainingIgnoreCaseOrderByIdDesc(term, pageable);
+        return programs.map(program -> ProgramResponse.of(program, program.isOpenAt(now)));
     }
 
     @Transactional(readOnly = true)
-    public Page<Statistics> getStatisticsWithoutPaging(Statistics statistics, Pageable pageable) {
-        return statisticsRepository.findAll(pageable);
-    }
-
-    @Transactional(readOnly = true)
-    public Statistics getStatistics(long id) {
-        return statisticsRepository.findById(id).orElseThrow(RuntimeException::new);
+    public ProgramResponse getProgram(final Long id) {
+        Program program = findProgram(id);
+        if (!program.isEnabled() && !CurrentUser.isAdmin()) {
+            throw BusinessException.notFound();
+        }
+        return ProgramResponse.of(program, program.isOpenAt(LocalDateTime.now()), reviewRepository.averageProgramRating(id));
     }
 
     @Transactional
-    public void updateStatistics(HttpServletRequest request) {
-        String userAgent = request.getHeader("USER-AGENT");
+    public Long createProgram(final ProgramSaveRequest request) {
+        validate(request);
+        String html = htmlSanitizer.sanitize(request.contentHtml());
+        return programRepository.save(Program.builder()
+                .name(request.name())
+                .description(request.description())
+                .imageFileId(request.imageFileId())
+                .price(request.price())
+                .maximumPerson(request.maximumPerson())
+                .availablePerson(request.maximumPerson())
+                .startDateTime(request.startDateTime())
+                .endDateTime(request.endDateTime())
+                .applicationStartDateTime(request.applicationStartDateTime())
+                .applicationEndDateTime(request.applicationEndDateTime())
+                .contentHtml(html)
+                .contentText(htmlSanitizer.toPlainText(html))
+                .isEnabled(request.isEnabled())
+                .build()).getId();
+    }
 
-        Parser uaParser = new Parser();
-        Client client = uaParser.parse(userAgent);
+    @Transactional
+    public void updateProgram(final Long id, final ProgramSaveRequest request) {
+        validate(request);
+        String html = htmlSanitizer.sanitize(request.contentHtml());
+        programRepository.findForUpdate(id)
+                .filter(program -> program.getDeletedAt() == null)
+                .orElseThrow(BusinessException::notFound)
+                .update(request.name(), request.description(), request.imageFileId(), request.price(),
+                        request.maximumPerson(), request.startDateTime(), request.endDateTime(),
+                        request.applicationStartDateTime(), request.applicationEndDateTime(), html,
+                        htmlSanitizer.toPlainText(html), request.isEnabled());
+    }
 
-        String nationCode = "";
-        String os = client.os.family;
-        String browser = client.userAgent.family;
-        String url = request.getRequestURI();
+    @Transactional
+    public void deleteProgram(final Long id) {
+        findProgram(id).delete();
+    }
 
-        List<Statistics> results = statisticsRepository.find(
-                StatisticsRequest.builder()
-                        .date(LocalDate.now())
-                        .nationCode(nationCode)
-                        .os(os)
-                        .browser(browser)
-                        .url(url)
-                        .build()
-        );
+    @Transactional
+    public ReservationResponse reserve(final Long memberId, final ReservationCreateRequest request) {
+        Program program = programRepository.findForUpdate(request.programId())
+                .filter(found -> found.isOpenAt(LocalDateTime.now()))
+                .orElseThrow(() -> new BusinessException(ErrorCode.PROGRAM_NOT_OPEN));
+        program.reserve(request.quantity());
 
-        if (results.isEmpty()) {
-            statisticsRepository.save(
-                    Statistics.builder()
-                            .date(LocalDate.now())
-                            .nationCode(nationCode)
-                            .os(os)
-                            .browser(browser)
-                            .url(url)
-                            .count(1)
-                            .build()
-            );
-            return;
+        BigDecimal total = program.getPrice().multiply(BigDecimal.valueOf(request.quantity()));
+        // free programs need no payment step
+        ReservationStatus status = total.signum() == 0 ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING_PAYMENT;
+        Reservation reservation = reservationRepository.save(Reservation.builder()
+                .reservationNumber(BusinessNumbers.next("R", reservationRepository::existsByReservationNumber))
+                .userType(UserType.MEMBER)
+                .userId(memberId)
+                .programId(program.getId())
+                .programName(program.getName())
+                .quantity(request.quantity())
+                .totalPrice(total)
+                .status(status)
+                .applicantName(request.applicantName())
+                .phoneNumber(request.phoneNumber())
+                .build());
+        return ReservationResponse.from(reservation);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReservationResponse> getMyReservations(final Long memberId, final Pageable pageable) {
+        return reservationRepository.findAllByUserIdOrderByIdDesc(memberId, pageable).map(ReservationResponse::from);
+    }
+
+    @Transactional
+    public void cancelMyReservation(final Long memberId, final Long reservationId) {
+        cancel(reservationRepository.findByIdAndUserId(reservationId, memberId).orElseThrow(BusinessException::notFound));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReservationResponse> searchReservations(final Long programId, final ReservationStatus status,
+                                                        final Pageable pageable) {
+        return reservationRepository.search(programId, status, pageable).map(ReservationResponse::from);
+    }
+
+    @Transactional
+    public void cancelReservation(final Long reservationId) {
+        cancel(reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound));
+    }
+
+    private void cancel(final Reservation reservation) {
+        reservation.cancel();
+        programRepository.findForUpdate(reservation.getProgramId()).ifPresent(program -> program.release(reservation.getQuantity()));
+        paymentService.refundIfPaid(PaymentTargetType.RESERVATION, reservation.getId());
+    }
+
+    private void validate(final ProgramSaveRequest request) {
+        if (!request.hasValidPeriods()) {
+            throw new BusinessException(ErrorCode.INVALID_PERIOD);
         }
+        if (request.imageFileId() != null) {
+            fileService.requireFilesExist(List.of(request.imageFileId()));
+        }
+    }
 
-        Statistics result = results.get(0);
-        result.increaseCount();
+    private Program findProgram(final Long id) {
+        return programRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(BusinessException::notFound);
     }
 }

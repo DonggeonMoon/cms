@@ -1,77 +1,110 @@
 package com.dgmoonlabs.cms.domain.business.order.service;
 
-import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
-import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
-import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsRepository;
-import jakarta.servlet.http.HttpServletRequest;
+import com.dgmoonlabs.cms.domain.business.BusinessNumbers;
+import com.dgmoonlabs.cms.domain.business.discount.service.DiscountService;
+import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderCreateRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderResponse;
+import com.dgmoonlabs.cms.domain.business.order.entity.Order;
+import com.dgmoonlabs.cms.domain.business.order.entity.product.Product;
+import com.dgmoonlabs.cms.domain.business.order.entity.product.ProductOption;
+import com.dgmoonlabs.cms.domain.business.order.repository.OrderRepository;
+import com.dgmoonlabs.cms.domain.business.order.repository.ProductOptionRepository;
+import com.dgmoonlabs.cms.domain.business.order.repository.ProductRepository;
+import com.dgmoonlabs.cms.domain.business.payment.constant.PaymentTargetType;
+import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
+import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
+import com.dgmoonlabs.cms.global.error.BusinessException;
+import com.dgmoonlabs.cms.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ua_parser.Client;
-import ua_parser.Parser;
 
-import java.time.LocalDate;
-import java.util.List;
+import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
-    private final StatisticsRepository statisticsRepository;
+    private final OrderRepository orderRepository;
+    private final ProductRepository productRepository;
+    private final ProductOptionRepository optionRepository;
+    private final DiscountService discountService;
+    private final PaymentService paymentService;
 
-    @Transactional(readOnly = true)
-    public Page<Statistics> getStatistics(StatisticsRequest statistics, Pageable pageable) {
-        return statisticsRepository.find(statistics, pageable);
+    @Transactional
+    public OrderResponse createOrder(final Long memberId, final OrderCreateRequest request) {
+        Product product = productRepository.findForUpdate(request.productId())
+                .filter(Product::isOnSale)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_AVAILABLE));
+
+        BigDecimal unitPrice = product.getPrice();
+        String productName = product.getName();
+        if (request.productOptionId() != null) {
+            ProductOption option = optionRepository.findByIdAndProductIdAndDeletedAtIsNull(request.productOptionId(), product.getId())
+                    .orElseThrow(BusinessException::notFound);
+            unitPrice = unitPrice.add(option.getAdditionalPrice());
+            productName = productName + " (" + option.getName() + ")";
+        }
+        BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(request.quantity()));
+        BigDecimal total = discountService.applyTo(request.discountId(), product.getId(), subtotal);
+
+        product.decreaseStock(request.quantity());
+        Order order = orderRepository.save(Order.builder()
+                .orderNumber(BusinessNumbers.next("O", orderRepository::existsByOrderNumber))
+                .userType(UserType.MEMBER)
+                .userId(memberId)
+                .productId(product.getId())
+                .productOptionId(request.productOptionId())
+                .productName(productName)
+                .quantity(request.quantity())
+                .discountId(request.discountId())
+                .totalPrice(total)
+                .status(OrderStatus.PENDING_PAYMENT)
+                .canDeliver(request.address() != null && !request.address().isBlank())
+                .receiverName(request.receiverName())
+                .phoneNumber(request.phoneNumber())
+                .postalCode(request.postalCode())
+                .address(request.address())
+                .detailAddress(request.detailAddress())
+                .build());
+        return OrderResponse.from(order);
     }
 
     @Transactional(readOnly = true)
-    public Page<Statistics> getStatisticsWithoutPaging(Statistics statistics, Pageable pageable) {
-        return statisticsRepository.findAll(pageable);
+    public Page<OrderResponse> getMyOrders(final Long memberId, final Pageable pageable) {
+        return orderRepository.findAllByUserIdOrderByIdDesc(memberId, pageable).map(OrderResponse::from);
     }
 
     @Transactional(readOnly = true)
-    public Statistics getStatistics(long id) {
-        return statisticsRepository.findById(id).orElseThrow(RuntimeException::new);
+    public OrderResponse getMyOrder(final Long memberId, final Long orderId) {
+        return OrderResponse.from(orderRepository.findByIdAndUserId(orderId, memberId).orElseThrow(BusinessException::notFound));
     }
 
     @Transactional
-    public void updateStatistics(HttpServletRequest request) {
-        String userAgent = request.getHeader("USER-AGENT");
+    public void cancelMyOrder(final Long memberId, final Long orderId) {
+        cancel(orderRepository.findByIdAndUserId(orderId, memberId).orElseThrow(BusinessException::notFound));
+    }
 
-        Parser uaParser = new Parser();
-        Client client = uaParser.parse(userAgent);
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> searchOrders(final OrderStatus status, final String keyword, final Pageable pageable) {
+        return orderRepository.search(status, keyword == null ? "" : keyword.trim(), pageable).map(OrderResponse::from);
+    }
 
-        String nationCode = "";
-        String os = client.os.family;
-        String browser = client.userAgent.family;
-        String url = request.getRequestURI();
-
-        List<Statistics> results = statisticsRepository.find(
-                StatisticsRequest.builder()
-                        .date(LocalDate.now())
-                        .nationCode(nationCode)
-                        .os(os)
-                        .browser(browser)
-                        .url(url)
-                        .build()
-        );
-
-        if (results.isEmpty()) {
-            statisticsRepository.save(
-                    Statistics.builder()
-                            .date(LocalDate.now())
-                            .nationCode(nationCode)
-                            .os(os)
-                            .browser(browser)
-                            .url(url)
-                            .count(1)
-                            .build()
-            );
-            return;
+    @Transactional
+    public void changeStatus(final Long orderId, final OrderStatus status) {
+        Order order = orderRepository.findById(orderId).orElseThrow(BusinessException::notFound);
+        if (status == OrderStatus.CANCELED) {
+            cancel(order);
+        } else {
+            order.moveTo(status);
         }
+    }
 
-        Statistics result = results.get(0);
-        result.increaseCount();
+    private void cancel(final Order order) {
+        order.cancel();
+        productRepository.findForUpdate(order.getProductId()).ifPresent(product -> product.increaseStock(order.getQuantity()));
+        paymentService.refundIfPaid(PaymentTargetType.ORDER, order.getId());
     }
 }

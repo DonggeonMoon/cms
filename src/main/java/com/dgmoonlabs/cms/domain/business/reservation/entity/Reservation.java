@@ -1,7 +1,10 @@
 package com.dgmoonlabs.cms.domain.business.reservation.entity;
 
+import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
+import com.dgmoonlabs.cms.global.error.BusinessException;
+import com.dgmoonlabs.cms.global.error.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
@@ -20,10 +23,11 @@ public class Reservation extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     @Comment("예약 번호")
     private String reservationNumber;
 
-    @Comment("예약 시퀀스")
+    @Comment("예약 순번")
     private String reservationSequence;
 
     @Column(columnDefinition = "varchar(255)")
@@ -34,19 +38,49 @@ public class Reservation extends BaseEntity {
     @Comment("사용자 ID")
     private Long userId;
 
-    @Comment("제품 ID")
-    private Long productId;
+    @Column(name = "product_id")
+    @Comment("프로그램 ID")
+    private Long programId;
 
-    @Comment("수량")
+    @Comment("예약 당시 프로그램명")
+    private String programName;
+
+    @Comment("인원")
     private Integer quantity;
 
     @Comment("할인 ID")
     private Long discountId;
 
-    @Comment("총 가격")
+    @Column(precision = 15, scale = 2)
+    @Comment("총 금액")
     private BigDecimal totalPrice;
+
+    @Column(columnDefinition = "varchar(255)")
+    @Enumerated(EnumType.STRING)
+    @Comment("예약 상태")
+    private ReservationStatus status;
+
+    @Comment("신청자 이름")
+    private String applicantName;
+
+    @Comment("연락처")
+    private String phoneNumber;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Comment("추가 필드")
     private String fields;
+
+    public void confirm() {
+        if (status != ReservationStatus.PENDING_PAYMENT) {
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        this.status = ReservationStatus.CONFIRMED;
+    }
+
+    public void cancel() {
+        if (!status.isCancelable()) {
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        this.status = ReservationStatus.CANCELED;
+    }
 }

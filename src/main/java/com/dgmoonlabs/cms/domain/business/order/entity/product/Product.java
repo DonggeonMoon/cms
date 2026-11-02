@@ -1,6 +1,8 @@
 package com.dgmoonlabs.cms.domain.business.order.entity.product;
 
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
+import com.dgmoonlabs.cms.global.error.BusinessException;
+import com.dgmoonlabs.cms.global.error.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -20,20 +22,20 @@ public class Product extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    @Comment("이름")
+    @Comment("상품명")
     private String name;
 
-    @Comment("설명")
+    @Comment("상품 설명")
     private String description;
 
-    @Comment("이미지 ID")
+    @Comment("대표 이미지 파일 ID")
     private Long imageFileId;
 
+    @Column(nullable = false, precision = 15, scale = 2)
     @Comment("가격")
     private BigDecimal price;
 
-    @Comment("주문/구매 가능 수량")
+    @Comment("재고 수량 (null: 무제한)")
     private Integer availableQuantity;
 
     @Column(nullable = false, columnDefinition = "text")
@@ -52,6 +54,39 @@ public class Product extends BaseEntity {
 
     @Column(nullable = false)
     @ColumnDefault("true")
-    @Comment("주문 가능 여부")
+    @Comment("판매 여부")
     private boolean isEnabled;
+
+    public void update(final String name, final String description, final Long imageFileId, final BigDecimal price,
+                       final Integer availableQuantity, final String contentHtml, final String contentText,
+                       final boolean isEnabled) {
+        this.name = name;
+        this.description = description;
+        this.imageFileId = imageFileId;
+        this.price = price;
+        this.availableQuantity = availableQuantity;
+        this.contentHtml = contentHtml;
+        this.contentText = contentText;
+        this.isEnabled = isEnabled;
+    }
+
+    public void decreaseStock(final int quantity) {
+        if (availableQuantity == null) {
+            return;
+        }
+        if (availableQuantity < quantity) {
+            throw new BusinessException(ErrorCode.OUT_OF_STOCK);
+        }
+        availableQuantity -= quantity;
+    }
+
+    public void increaseStock(final int quantity) {
+        if (availableQuantity != null) {
+            availableQuantity += quantity;
+        }
+    }
+
+    public boolean isOnSale() {
+        return isEnabled && getDeletedAt() == null;
+    }
 }

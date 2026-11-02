@@ -1,0 +1,135 @@
+package com.dgmoonlabs.cms.domain.business;
+
+import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountResponse;
+import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountSaveRequest;
+import com.dgmoonlabs.cms.domain.business.discount.service.DiscountService;
+import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderResponse;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderStatusRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.ProductSaveRequest;
+import com.dgmoonlabs.cms.domain.business.order.service.OrderService;
+import com.dgmoonlabs.cms.domain.business.order.service.ProductService;
+import com.dgmoonlabs.cms.domain.business.payment.dto.PaymentDtos.PaymentResponse;
+import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
+import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ProgramSaveRequest;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationResponse;
+import com.dgmoonlabs.cms.domain.business.reservation.service.ReservationService;
+import com.dgmoonlabs.cms.domain.business.review.constant.ReviewTargetType;
+import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewResponse;
+import com.dgmoonlabs.cms.domain.business.review.service.ReviewService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedModel;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
+
+@RestController
+@RequestMapping("/api/admin")
+@RequiredArgsConstructor
+public class BusinessAdminController {
+    private final ProductService productService;
+    private final DiscountService discountService;
+    private final OrderService orderService;
+    private final ReservationService reservationService;
+    private final PaymentService paymentService;
+    private final ReviewService reviewService;
+
+    @PostMapping("/products")
+    public ResponseEntity<Void> createProduct(@RequestBody @Valid final ProductSaveRequest request) {
+        return ResponseEntity.created(URI.create("/api/products/" + productService.createProduct(request))).build();
+    }
+
+    @PutMapping("/products/{id}")
+    public ResponseEntity<Void> updateProduct(@PathVariable final Long id, @RequestBody @Valid final ProductSaveRequest request) {
+        productService.updateProduct(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/products/{id}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable final Long id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/discounts")
+    public ResponseEntity<PagedModel<DiscountResponse>> discounts(@PageableDefault(size = 20) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(discountService.getDiscounts(pageable)));
+    }
+
+    @PostMapping("/discounts")
+    public ResponseEntity<Void> createDiscount(@RequestBody @Valid final DiscountSaveRequest request) {
+        return ResponseEntity.created(URI.create("/api/admin/discounts/" + discountService.createDiscount(request))).build();
+    }
+
+    @PutMapping("/discounts/{id}")
+    public ResponseEntity<Void> updateDiscount(@PathVariable final Long id, @RequestBody @Valid final DiscountSaveRequest request) {
+        discountService.updateDiscount(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/discounts/{id}")
+    public ResponseEntity<Void> deleteDiscount(@PathVariable final Long id) {
+        discountService.deleteDiscount(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/orders")
+    public ResponseEntity<PagedModel<OrderResponse>> orders(@RequestParam(required = false) final OrderStatus status,
+                                                            @RequestParam(required = false) final String keyword,
+                                                            @PageableDefault(size = 20) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(orderService.searchOrders(status, keyword, pageable)));
+    }
+
+    @PutMapping("/orders/{id}/status")
+    public ResponseEntity<Void> changeOrderStatus(@PathVariable final Long id, @RequestBody @Valid final OrderStatusRequest request) {
+        orderService.changeStatus(id, request.status());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/programs")
+    public ResponseEntity<Void> createProgram(@RequestBody @Valid final ProgramSaveRequest request) {
+        return ResponseEntity.created(URI.create("/api/programs/" + reservationService.createProgram(request))).build();
+    }
+
+    @PutMapping("/programs/{id}")
+    public ResponseEntity<Void> updateProgram(@PathVariable final Long id, @RequestBody @Valid final ProgramSaveRequest request) {
+        reservationService.updateProgram(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/programs/{id}")
+    public ResponseEntity<Void> deleteProgram(@PathVariable final Long id) {
+        reservationService.deleteProgram(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/reservations")
+    public ResponseEntity<PagedModel<ReservationResponse>> reservations(@RequestParam(required = false) final Long programId,
+                                                                        @RequestParam(required = false) final ReservationStatus status,
+                                                                        @PageableDefault(size = 20) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(reservationService.searchReservations(programId, status, pageable)));
+    }
+
+    @PostMapping("/reservations/{id}/cancel")
+    public ResponseEntity<Void> cancelReservation(@PathVariable final Long id) {
+        reservationService.cancelReservation(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/payments")
+    public ResponseEntity<PagedModel<PaymentResponse>> payments(@PageableDefault(size = 20) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(paymentService.getPayments(pageable)));
+    }
+
+    @GetMapping("/reviews")
+    public ResponseEntity<PagedModel<ReviewResponse>> reviews(
+            @RequestParam(defaultValue = "PRODUCT") final ReviewTargetType targetType,
+            @PageableDefault(size = 20) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(reviewService.getAllReviews(targetType, pageable)));
+    }
+}

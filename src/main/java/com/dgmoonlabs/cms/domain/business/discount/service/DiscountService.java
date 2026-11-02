@@ -1,77 +1,68 @@
 package com.dgmoonlabs.cms.domain.business.discount.service;
 
-import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsRequest;
-import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
-import com.dgmoonlabs.cms.domain.admin.statistics.repository.StatisticsRepository;
-import jakarta.servlet.http.HttpServletRequest;
+import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountResponse;
+import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountSaveRequest;
+import com.dgmoonlabs.cms.domain.business.discount.entity.Discount;
+import com.dgmoonlabs.cms.domain.business.discount.repository.DiscountRepository;
+import com.dgmoonlabs.cms.global.error.BusinessException;
+import com.dgmoonlabs.cms.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ua_parser.Client;
-import ua_parser.Parser;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class DiscountService {
-    private final StatisticsRepository statisticsRepository;
+    private final DiscountRepository discountRepository;
 
     @Transactional(readOnly = true)
-    public Page<Statistics> getStatistics(StatisticsRequest statistics, Pageable pageable) {
-        return statisticsRepository.find(statistics, pageable);
+    public Page<DiscountResponse> getDiscounts(final Pageable pageable) {
+        return discountRepository.findAllByDeletedAtIsNullOrderByIdDesc(pageable).map(DiscountResponse::from);
     }
 
     @Transactional(readOnly = true)
-    public Page<Statistics> getStatisticsWithoutPaging(Statistics statistics, Pageable pageable) {
-        return statisticsRepository.findAll(pageable);
-    }
-
-    @Transactional(readOnly = true)
-    public Statistics getStatistics(long id) {
-        return statisticsRepository.findById(id).orElseThrow(RuntimeException::new);
+    public List<DiscountResponse> getApplicable(final Long productId) {
+        return discountRepository.findApplicable(productId).stream().map(DiscountResponse::from).toList();
     }
 
     @Transactional
-    public void updateStatistics(HttpServletRequest request) {
-        String userAgent = request.getHeader("USER-AGENT");
+    public Long createDiscount(final DiscountSaveRequest request) {
+        return discountRepository.save(Discount.builder()
+                .productId(request.productId())
+                .name(request.name())
+                .description(request.description())
+                .rate(request.rate())
+                .isUsing(request.isUsing())
+                .build()).getId();
+    }
 
-        Parser uaParser = new Parser();
-        Client client = uaParser.parse(userAgent);
+    @Transactional
+    public void updateDiscount(final Long id, final DiscountSaveRequest request) {
+        findDiscount(id).update(request.productId(), request.name(), request.description(), request.rate(), request.isUsing());
+    }
 
-        String nationCode = "";
-        String os = client.os.family;
-        String browser = client.userAgent.family;
-        String url = request.getRequestURI();
+    @Transactional
+    public void deleteDiscount(final Long id) {
+        findDiscount(id).delete();
+    }
 
-        List<Statistics> results = statisticsRepository.find(
-                StatisticsRequest.builder()
-                        .date(LocalDate.now())
-                        .nationCode(nationCode)
-                        .os(os)
-                        .browser(browser)
-                        .url(url)
-                        .build()
-        );
-
-        if (results.isEmpty()) {
-            statisticsRepository.save(
-                    Statistics.builder()
-                            .date(LocalDate.now())
-                            .nationCode(nationCode)
-                            .os(os)
-                            .browser(browser)
-                            .url(url)
-                            .count(1)
-                            .build()
-            );
-            return;
+    public BigDecimal applyTo(final Long discountId, final Long productId, final BigDecimal amount) {
+        if (discountId == null) {
+            return amount;
         }
+        Discount discount = findDiscount(discountId);
+        if (!discount.isApplicableTo(productId)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        return discount.apply(amount);
+    }
 
-        Statistics result = results.get(0);
-        result.increaseCount();
+    private Discount findDiscount(final Long id) {
+        return discountRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(BusinessException::notFound);
     }
 }
