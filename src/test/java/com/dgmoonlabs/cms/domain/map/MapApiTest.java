@@ -29,9 +29,19 @@ class MapApiTest extends ApiTestSupport {
                 {"provider":"KAKAO","directionsEnabled":true,"officeName":"본점"}
                 """).andExpect(jsonPath("$.code").value("MAP_LOCATION_REQUIRED"));
 
+        postJson("/api/admin/reauthenticate", admin, """
+                {"password":"adminpass1"}
+                """).andExpect(status().isNoContent());
+        long kakaoKey = createdId(postJson("/api/admin/api-keys", admin, """
+                {"name":"카카오맵 JS 키","value":"kakao-key"}
+                """));
+        long naverKey = createdId(postJson("/api/admin/api-keys", admin, """
+                {"name":"네이버 지도 Client ID","value":"naver-id"}
+                """));
         putJson("/api/admin/map/settings", admin, """
-                {"provider":"NAVER","kakaoAppKey":"kakao-key","naverClientId":"naver-id","directionsEnabled":true,%s}
-                """.formatted(HEAD_OFFICE)).andExpect(status().isOk());
+                {"provider":"NAVER","kakaoApiKeyId":%d,"naverApiKeyId":%d,"directionsEnabled":true,%s}
+                """.formatted(kakaoKey, naverKey, HEAD_OFFICE)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.naverApiKeyId").value(naverKey));
 
         getJson("/api/map", null)
                 .andExpect(jsonPath("$.provider").value("NAVER"))

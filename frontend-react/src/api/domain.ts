@@ -45,6 +45,19 @@ export interface Site {
 
 export type OptionType = 'TEXT' | 'RADIO' | 'CHECKBOX' | 'TEXTAREA';
 
+export interface ApiKeyOption {
+    id: number;
+    name: string;
+}
+
+export interface ApiKey {
+    id: number;
+    name: string;
+    value: string;
+    description: string;
+    modifiedAt: string;
+}
+
 export interface Config {
     id: number;
     key: string;
@@ -437,8 +450,9 @@ export interface PublicMap {
 
 export interface MapSetting {
     provider: MapProvider;
-    kakaoAppKey: string | null;
-    naverClientId: string | null;
+    kakaoApiKeyId: number | null;
+    naverApiKeyId: number | null;
+    apiKey: string | null;
     directionsEnabled: boolean;
     branchesEnabled: boolean;
     office: Office;

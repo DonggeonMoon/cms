@@ -50,6 +50,10 @@ export const adminApi = {
     },
     reauthenticate: (password: string) => request<void>('/api/admin/reauthenticate', {method: 'POST', body: {password}}),
     configs: resource<D.Config>('/api/admin/configs'),
+    apiKeys: {
+        ...resource<D.ApiKey>('/api/admin/api-keys'),
+        options: () => request<D.ApiKeyOption[]>('/api/admin/api-keys/options'),
+    },
     banners: resource<D.Banner>('/api/admin/banners'),
     contents: resource<D.Content>('/api/admin/contents'),
     discounts: resource<D.Discount>('/api/admin/discounts'),

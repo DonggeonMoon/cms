@@ -1,5 +1,6 @@
 import {type FormEvent, useCallback, useEffect, useState} from 'react';
-import type {Branch, MapProvider, MapSetting} from '../../api/domain';
+import {Link} from 'react-router';
+import type {ApiKeyOption, Branch, MapProvider, MapSetting} from '../../api/domain';
 import {adminApi} from '../../api/endpoints';
 import type {Page} from '../../api/types';
 import {YesNo} from '../../components/AdminCrudPage';
@@ -13,8 +14,8 @@ type Tab = 'directions' | 'branches';
 
 interface SettingForm {
     provider: MapProvider;
-    kakaoAppKey: string;
-    naverClientId: string;
+    kakaoApiKeyId: string;
+    naverApiKeyId: string;
     directionsEnabled: boolean;
     branchesEnabled: boolean;
     officeName: string;
@@ -29,8 +30,8 @@ interface SettingForm {
 
 const toForm = (setting: MapSetting): SettingForm => ({
     provider: setting.provider,
-    kakaoAppKey: setting.kakaoAppKey ?? '',
-    naverClientId: setting.naverClientId ?? '',
+    kakaoApiKeyId: setting.kakaoApiKeyId?.toString() ?? '',
+    naverApiKeyId: setting.naverApiKeyId?.toString() ?? '',
     directionsEnabled: setting.directionsEnabled,
     branchesEnabled: setting.branchesEnabled,
     officeName: setting.office.name ?? '',
@@ -48,12 +49,14 @@ const toNumber = (value: string) => (value.trim() === '' ? null : Number(value))
 export function MapAdminPage() {
     const [saved, setSaved] = useState<MapSetting | null>(null);
     const [form, setForm] = useState<SettingForm | null>(null);
+    const [apiKeys, setApiKeys] = useState<ApiKeyOption[]>([]);
     const [tab, setTab] = useState<Tab>('directions');
     const [error, setError] = useState<unknown>(null);
     const [message, setMessage] = useState('');
 
     useEffect(() => {
-        adminApi.map.settings().then((setting) => {
+        Promise.all([adminApi.map.settings(), adminApi.apiKeys.options()]).then(([setting, keys]) => {
+            setApiKeys(keys);
             setSaved(setting);
             setForm(toForm(setting));
         }).catch(setError);
@@ -64,7 +67,10 @@ export function MapAdminPage() {
     }
 
     const set = <K extends keyof SettingForm>(key: K, value: SettingForm[K]) => setForm({...form, [key]: value});
-    const apiKey = (form.provider === 'KAKAO' ? form.kakaoAppKey : form.naverClientId).trim() || null;
+    const keyField = form.provider === 'KAKAO' ? 'kakaoApiKeyId' : 'naverApiKeyId';
+    const apiKey = form.provider === saved.provider && form[keyField] === (saved[keyField]?.toString() ?? '')
+        ? saved.apiKey
+        : null;
 
     const save = async (event?: FormEvent) => {
         event?.preventDefault();
@@ -73,6 +79,8 @@ export function MapAdminPage() {
         try {
             const updated = await adminApi.map.updateSettings({
                 ...form,
+                kakaoApiKeyId: toNumber(form.kakaoApiKeyId),
+                naverApiKeyId: toNumber(form.naverApiKeyId),
                 officeLatitude: toNumber(form.officeLatitude),
                 officeLongitude: toNumber(form.officeLongitude),
             });
@@ -87,7 +95,7 @@ export function MapAdminPage() {
     return (
         <section className="card">
             <h1>지도</h1>
-            <p className="muted">사용자 화면의 지도 페이지(/map)에 표시됩니다. 켜진 탭만 사용자에게 보입니다.</p>
+            <p className="muted page-description">사용자 화면의 지도 페이지(/map)에 표시됩니다. 켜진 탭만 사용자에게 보입니다.</p>
 
             <form className="inline-form" onSubmit={save}>
                 <h2>지도 설정</h2>
@@ -98,18 +106,21 @@ export function MapAdminPage() {
                         <option value="NAVER">네이버 지도</option>
                     </select>
                 </div>
-                {form.provider === 'KAKAO' ? (
-                    <Field label="카카오맵 JavaScript 키" name="kakaoAppKey" value={form.kakaoAppKey}
-                           onChange={(e) => set('kakaoAppKey', e.target.value)}/>
-                ) : (
-                    <Field label="네이버 지도 Client ID (ncpKeyId)" name="naverClientId" value={form.naverClientId}
-                           onChange={(e) => set('naverClientId', e.target.value)}/>
-                )}
+                <div className="field">
+                    <label htmlFor={keyField}>
+                        {form.provider === 'KAKAO' ? '카카오맵 JavaScript 키' : '네이버 지도 Client ID (ncpKeyId)'}
+                    </label>
+                    <select id={keyField} value={form[keyField]} onChange={(e) => set(keyField, e.target.value)}>
+                        <option value="">사용 안 함</option>
+                        {apiKeys.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
+                    </select>
+                </div>
                 <p className="muted small">
                     {form.provider === 'KAKAO'
-                        ? 'Kakao Developers에서 앱을 만들고 JavaScript 키를 입력하세요. 플랫폼 > Web 에 사이트 도메인을 등록해야 지도가 표시됩니다.'
-                        : '네이버 클라우드 플랫폼 Maps에서 Application을 만들고 Client ID를 입력하세요. 서비스 URL 등록과 Dynamic Map·Geocoding 사용 설정이 필요합니다.'}
-                    {' '}키를 입력하지 않으면 사용자 화면에는 지도 대신 지도 앱 링크가 표시됩니다.
+                        ? 'Kakao Developers에서 앱을 만들고 JavaScript 키를 발급받으세요. 플랫폼 > Web 에 사이트 도메인을 등록해야 지도가 표시됩니다.'
+                        : '네이버 클라우드 플랫폼 Maps에서 Application을 만들고 Client ID를 발급받으세요. 서비스 URL 등록과 Dynamic Map·Geocoding 사용 설정이 필요합니다.'}
+                    {' '}키는 <Link to="/admin/api-keys">API 키 관리</Link>에서 먼저 등록한 뒤 이름으로 고릅니다.
+                    키를 고르지 않으면 사용자 화면에는 지도 대신 지도 앱 링크가 표시됩니다.
                 </p>
                 <div className="toolbar form-actions">
                     <button type="submit" className="primary">저장</button>
@@ -209,7 +220,7 @@ function LocationEditor({provider, apiKey, name, onChange, ...location}: Locatio
     const findCoordinates = async () => {
         setError('');
         if (!apiKey) {
-            setError('지도 키를 먼저 입력하고 저장해야 주소로 좌표를 찾을 수 있습니다. 위도·경도를 직접 입력해도 됩니다.');
+            setError('지도 키를 먼저 고르고 저장해야 주소로 좌표를 찾을 수 있습니다. 위도·경도를 직접 입력해도 됩니다.');
             return;
         }
         try {
@@ -248,7 +259,7 @@ function LocationEditor({provider, apiKey, name, onChange, ...location}: Locatio
                 places={hasPosition ? [{name, address: location.address, latitude: lat, longitude: lng}] : []}
                 focus={hasPosition ? {lat, lng} : null}
                 onPick={(position) => onChange({...location, latitude: position.lat.toFixed(7), longitude: position.lng.toFixed(7)})}
-                missingKeyMessage="지도 키를 입력하고 저장하면 여기서 위치를 미리 보고 클릭으로 지정할 수 있습니다."
+                missingKeyMessage="지도 키를 고르고 저장하면 여기서 위치를 미리 보고 클릭으로 지정할 수 있습니다."
             />
         </div>
     );
@@ -376,7 +387,7 @@ function BranchManager({provider, apiKey}: { provider: MapProvider; apiKey: stri
                          places={branches.filter((b) => b.isUsing).map((b) => ({
                              name: b.name, address: b.address, latitude: Number(b.latitude), longitude: Number(b.longitude),
                          }))}
-                         missingKeyMessage="지도 키를 입력하면 지점 위치를 지도에서 확인할 수 있습니다."/>
+                         missingKeyMessage="지도 키를 고르고 저장하면 지점 위치를 지도에서 확인할 수 있습니다."/>
             )}
             <div className="table-wrap">
                 <table>

@@ -26,11 +26,11 @@ public class MapSetting extends BaseEntity {
     @Comment("지도 제공자")
     private MapProvider provider = MapProvider.KAKAO;
 
-    @Comment("카카오맵 JavaScript 키")
-    private String kakaoAppKey;
+    @Comment("카카오맵 JavaScript 키 (API 키 관리의 키 ID)")
+    private Long kakaoApiKeyId;
 
-    @Comment("네이버 지도 Client ID (ncpKeyId)")
-    private String naverClientId;
+    @Comment("네이버 지도 Client ID (API 키 관리의 키 ID)")
+    private Long naverApiKeyId;
 
     @Column(nullable = false)
     @ColumnDefault("false")
@@ -75,8 +75,8 @@ public class MapSetting extends BaseEntity {
 
     public void update(final MapSettingRequest request) {
         this.provider = request.provider();
-        this.kakaoAppKey = blankToNull(request.kakaoAppKey());
-        this.naverClientId = blankToNull(request.naverClientId());
+        this.kakaoApiKeyId = request.kakaoApiKeyId();
+        this.naverApiKeyId = request.naverApiKeyId();
         this.directionsEnabled = request.directionsEnabled();
         this.branchesEnabled = request.branchesEnabled();
         this.officeName = request.officeName();
@@ -89,11 +89,11 @@ public class MapSetting extends BaseEntity {
         this.officeDescription = request.officeDescription();
     }
 
-    public String apiKey() {
-        return provider == MapProvider.NAVER ? naverClientId : kakaoAppKey;
+    public Long apiKeyId() {
+        return provider == MapProvider.NAVER ? naverApiKeyId : kakaoApiKeyId;
     }
 
-    private static String blankToNull(final String value) {
-        return value == null || value.isBlank() ? null : value.trim();
+    public boolean uses(final Long apiKeyId) {
+        return apiKeyId.equals(kakaoApiKeyId) || apiKeyId.equals(naverApiKeyId);
     }
 }

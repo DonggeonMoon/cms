@@ -1,4 +1,4 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createMemoryRouter, RouterProvider} from 'react-router';
 import {afterEach, describe, expect, it, vi} from 'vitest';
@@ -12,6 +12,12 @@ const OFFICE = {
 const BRANCH = {
     id: 1, name: '강남점', address: '서울 강남구 테헤란로 1', detailAddress: null, latitude: 37.498, longitude: 127.027,
     phoneNumber: null, businessHours: null, description: null, sequence: 0, isUsing: true,
+};
+
+const API_KEYS = [{id: 7, name: '카카오맵 운영 키'}, {id: 8, name: '네이버 지도 키'}];
+const EMPTY_OFFICE = {
+    name: null, address: null, detailAddress: null, latitude: null, longitude: null, phoneNumber: null,
+    businessHours: null, description: null,
 };
 
 function respond(status: number, body?: unknown) {
@@ -28,6 +34,9 @@ function stub(map: unknown, user: unknown = null, adminSettings?: unknown) {
         }
         if (url === '/api/admin/map/settings') {
             return respond(200, adminSettings);
+        }
+        if (url === '/api/admin/api-keys/options') {
+            return respond(200, API_KEYS);
         }
         return respond(200, url === '/api/menus' ? [] : {});
     }));
@@ -76,14 +85,26 @@ describe('map page', () => {
 
     it('tells the admin to switch branch guidance on before registering branches', async () => {
         stub(null, {id: 1, username: 'admin', name: '관리자', userType: 'ADMIN'}, {
-            provider: 'KAKAO', kakaoAppKey: null, naverClientId: null, directionsEnabled: false, branchesEnabled: false,
-            office: {name: null, address: null, detailAddress: null, latitude: null, longitude: null, phoneNumber: null,
-                businessHours: null, description: null},
+            provider: 'KAKAO', kakaoApiKeyId: null, naverApiKeyId: null, apiKey: null, directionsEnabled: false, branchesEnabled: false,
+            office: EMPTY_OFFICE,
         });
         renderAt('/admin/map');
 
         await userEvent.click(await screen.findByRole('tab', {name: /지점 안내/}));
         expect(screen.getByText('지점 안내를 켜고 저장하면 지점을 등록할 수 있습니다.')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '지점 등록'})).not.toBeInTheDocument();
+    });
+
+    it('lets the admin pick the map key by the name registered in API key management', async () => {
+        stub(null, {id: 1, username: 'admin', name: '관리자', userType: 'ADMIN'}, {
+            provider: 'KAKAO', kakaoApiKeyId: 7, naverApiKeyId: null, apiKey: null, directionsEnabled: false, branchesEnabled: false,
+            office: EMPTY_OFFICE,
+        });
+        renderAt('/admin/map');
+
+        const select = await screen.findByLabelText('카카오맵 JavaScript 키');
+        expect(select).toHaveDisplayValue('카카오맵 운영 키');
+        expect(screen.getByRole('option', {name: '네이버 지도 키'})).toBeInTheDocument();
+        expect(within(select.closest('form')!).getByRole('link', {name: 'API 키 관리'})).toHaveAttribute('href', '/admin/api-keys');
     });
 });

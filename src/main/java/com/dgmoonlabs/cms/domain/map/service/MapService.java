@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.map.service;
 
+import com.dgmoonlabs.cms.domain.admin.apikey.service.ApiKeyService;
 import com.dgmoonlabs.cms.domain.map.dto.MapDtos.*;
 import com.dgmoonlabs.cms.domain.map.entity.Branch;
 import com.dgmoonlabs.cms.domain.map.entity.MapSetting;
@@ -20,6 +21,7 @@ import java.util.List;
 public class MapService {
     private final MapSettingRepository settingRepository;
     private final BranchRepository branchRepository;
+    private final ApiKeyService apiKeyService;
 
     @Transactional(readOnly = true)
     public PublicMapResponse getPublicMap() {
@@ -30,7 +32,7 @@ public class MapService {
                 : null;
         return new PublicMapResponse(
                 setting.getProvider(),
-                setting.apiKey(),
+                apiKeyService.valueOf(setting.apiKeyId()),
                 setting.isDirectionsEnabled() ? Office.from(setting) : null,
                 branches
         );
@@ -38,7 +40,7 @@ public class MapService {
 
     @Transactional(readOnly = true)
     public MapSettingResponse getSetting() {
-        return MapSettingResponse.from(currentSetting());
+        return toResponse(currentSetting());
     }
 
     @Transactional
@@ -46,10 +48,12 @@ public class MapService {
         if (request.directionsEnabled() && !request.hasOfficeLocation()) {
             throw new BusinessException(ErrorCode.MAP_LOCATION_REQUIRED);
         }
+        apiKeyService.requireExists(request.kakaoApiKeyId());
+        apiKeyService.requireExists(request.naverApiKeyId());
         MapSetting setting = settingRepository.findFirstByOrderByIdAsc()
                 .orElseGet(() -> settingRepository.save(MapSetting.empty()));
         setting.update(request);
-        return MapSettingResponse.from(setting);
+        return toResponse(setting);
     }
 
     @Transactional(readOnly = true)
@@ -84,6 +88,10 @@ public class MapService {
         if (!currentSetting().isBranchesEnabled()) {
             throw new BusinessException(ErrorCode.BRANCHES_DISABLED);
         }
+    }
+
+    private MapSettingResponse toResponse(final MapSetting setting) {
+        return MapSettingResponse.from(setting, apiKeyService.valueOf(setting.apiKeyId()));
     }
 
     private MapSetting currentSetting() {

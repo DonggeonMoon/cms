@@ -16,8 +16,8 @@ public final class MapDtos {
     @Builder
     public record MapSettingRequest(
             @NotNull MapProvider provider,
-            @Size(max = 200) String kakaoAppKey,
-            @Size(max = 200) String naverClientId,
+            Long kakaoApiKeyId,
+            Long naverApiKeyId,
             boolean directionsEnabled,
             boolean branchesEnabled,
             @Size(max = 100) String officeName,
@@ -34,12 +34,11 @@ public final class MapDtos {
         }
     }
 
-    // admin view: every field, both keys
-    public record MapSettingResponse(MapProvider provider, String kakaoAppKey, String naverClientId,
+    public record MapSettingResponse(MapProvider provider, Long kakaoApiKeyId, Long naverApiKeyId, String apiKey,
                                      boolean directionsEnabled, boolean branchesEnabled, Office office) {
-        public static MapSettingResponse from(final MapSetting setting) {
-            return new MapSettingResponse(setting.getProvider(), setting.getKakaoAppKey(), setting.getNaverClientId(),
-                    setting.isDirectionsEnabled(), setting.isBranchesEnabled(), Office.from(setting));
+        public static MapSettingResponse from(final MapSetting setting, final String apiKey) {
+            return new MapSettingResponse(setting.getProvider(), setting.getKakaoApiKeyId(), setting.getNaverApiKeyId(),
+                    apiKey, setting.isDirectionsEnabled(), setting.isBranchesEnabled(), Office.from(setting));
         }
     }
 

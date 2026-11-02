@@ -5,6 +5,7 @@ import {AdminLayout} from './components/AdminLayout';
 import {RequireFeature} from './components/SiteContext';
 import {SiteLayout} from './components/SiteLayout';
 import {CodePage} from './pages/admin/CodePage';
+import {ApiKeyPage} from './pages/admin/ApiKeyPage';
 import {CryptoKeyPage} from './pages/admin/CryptoKeyPage';
 import {
     ArchiveAdminPage,
@@ -217,6 +218,7 @@ export const routes = [
                             {path: 'files', element: <FilePage/>},
                             {path: 'audit-logs', element: <AuditLogPage/>},
                             {path: 'crypto-key', element: <CryptoKeyPage/>},
+                            {path: 'api-keys', element: <ApiKeyPage/>},
                         ],
                     },
                 ],
