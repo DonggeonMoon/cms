@@ -2431,6 +2431,15 @@ input[type='checkbox'], input[type='radio'] {
     white-space: pre-wrap;
 }
 
+/* :where 로 우선순위를 낮춰 .top-bar a 등 명시 규칙이 이기게 한다. */
+:where(.site) a {
+    text-decoration: none;
+}
+
+.site .html-content a {
+    text-decoration: underline;
+}
+
 .media-cover {
     position: relative;
 }
