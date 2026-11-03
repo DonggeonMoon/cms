@@ -71,12 +71,12 @@ class ShopFlowTest extends ApiTestSupport {
                 """).andExpect(status().isCreated()));
 
         postJson("/api/orders", null, """
-                {"productId":%d,"quantity":1,"receiverName":"a","phoneNumber":"1"}
+                {"productId":%d,"quantity":1,"receiverName":"a","phoneNumber":"010-1234-5678"}
                 """.formatted(productId)).andExpect(status().isUnauthorized());
 
         MockHttpSession buyer = member("stock");
         postJson("/api/orders", buyer, """
-                {"productId":%d,"quantity":2,"receiverName":"a","phoneNumber":"1"}
+                {"productId":%d,"quantity":2,"receiverName":"a","phoneNumber":"010-1234-5678"}
                 """.formatted(productId)).andExpect(jsonPath("$.code").value("OUT_OF_STOCK"));
     }
 
@@ -92,7 +92,7 @@ class ShopFlowTest extends ApiTestSupport {
                 {"rating":5,"title":"예약 전"}
                 """).andExpect(status().isForbidden());
         postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,"applicantName":"요가","phoneNumber":"010"}
+                {"programId":%d,"quantity":1,"applicantName":"요가","phoneNumber":"010-1234-5678"}
                 """.formatted(programId)).andExpect(status().isCreated());
 
         postJson("/api/programs/" + programId + "/reviews", member, """
@@ -124,15 +124,15 @@ class ShopFlowTest extends ApiTestSupport {
 
         MockHttpSession member = member("student");
         JsonNode reservation = body(postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":2,"applicantName":"학생","phoneNumber":"010"}
+                {"programId":%d,"quantity":2,"applicantName":"학생","phoneNumber":"010-1234-5678"}
                 """.formatted(freeProgram)).andExpect(status().isCreated()));
         assertThat(reservation.get("status").asString()).isEqualTo("CONFIRMED");
 
         postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,"applicantName":"학생","phoneNumber":"010"}
+                {"programId":%d,"quantity":1,"applicantName":"학생","phoneNumber":"010-1234-5678"}
                 """.formatted(freeProgram)).andExpect(jsonPath("$.code").value("PROGRAM_FULL"));
         postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,"applicantName":"학생","phoneNumber":"010"}
+                {"programId":%d,"quantity":1,"applicantName":"학생","phoneNumber":"010-1234-5678"}
                 """.formatted(closedProgram)).andExpect(jsonPath("$.code").value("PROGRAM_NOT_OPEN"));
 
         postJson("/api/reservations/" + reservation.get("id").asLong() + "/cancel", member, "").andExpect(status().isNoContent());
@@ -174,16 +174,16 @@ class ShopFlowTest extends ApiTestSupport {
                 """.formatted(LocalDateTime.now().minusDays(1))));
 
         JsonNode pending = body(postJson("/api/admin/reservations", admin, """
-                {"programId":%d,"quantity":1,"applicantName":"현장 접수","phoneNumber":"010"}
+                {"programId":%d,"quantity":1,"applicantName":"현장 접수","phoneNumber":"010-1234-5678"}
                 """.formatted(programId)).andExpect(status().isCreated()));
         assertThat(pending.get("status").asString()).isEqualTo("PENDING_PAYMENT");
         postJson("/api/admin/reservations/" + pending.get("id").asLong() + "/confirm", admin, "").andExpect(status().isNoContent());
 
         postJson("/api/admin/reservations?paid=true", admin, """
-                {"programId":%d,"quantity":1,"applicantName":"현장 접수","phoneNumber":"010"}
+                {"programId":%d,"quantity":1,"applicantName":"현장 접수","phoneNumber":"010-1234-5678"}
                 """.formatted(programId)).andExpect(jsonPath("$.status").value("CONFIRMED"));
         postJson("/api/admin/reservations", admin, """
-                {"programId":%d,"quantity":1,"applicantName":"초과","phoneNumber":"010"}
+                {"programId":%d,"quantity":1,"applicantName":"초과","phoneNumber":"010-1234-5678"}
                 """.formatted(programId)).andExpect(jsonPath("$.code").value("PROGRAM_FULL"));
         getJson("/api/admin/reservations?status=CONFIRMED&programId=" + programId, admin)
                 .andExpect(jsonPath("$.page.totalElements").value(2));

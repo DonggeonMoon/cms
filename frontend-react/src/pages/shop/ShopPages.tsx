@@ -9,9 +9,11 @@ import {ErrorBanner} from '../../components/ErrorBanner';
 import {Field} from '../../components/Field';
 import {formatDateTime} from '../../components/format';
 import {HtmlView} from '../../components/HtmlView';
+import {ListSearch, pageParams} from '../../components/ListSearch';
 import {ORDER_STATUS, RESERVATION_STATUS} from '../../components/labels';
 import {Pagination} from '../../components/Pagination';
 import {Thumbnail} from '../../components/Thumbnail';
+import {StableLabel} from '../../components/StableLabel';
 
 export function ProductCard({product}: { product: ProductSummary }) {
     return (
@@ -41,29 +43,17 @@ export function ProductListPage() {
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
     const keyword = params.get('keyword') ?? '';
-    const [input, setInput] = useState(keyword);
     const [data, setData] = useState<Page<ProductSummary> | null>(null);
     const [error, setError] = useState<unknown>(null);
 
     useEffect(() => {
-        setInput(keyword);
         shopApi.products(keyword, page).then(setData).catch(setError);
     }, [keyword, page]);
 
-    const search = (event: FormEvent) => {
-        event.preventDefault();
-        setParams(input.trim() ? {keyword: input.trim()} : {});
-    };
-
     return (
         <section className="card">
-            <div className="row space-between align-center">
-                <h1>상품</h1>
-                <form className="row align-center" role="search" onSubmit={search}>
-                    <input aria-label="상품 검색" placeholder="상품명 검색" value={input} onChange={(e) => setInput(e.target.value)}/>
-                    <button type="submit">검색</button>
-                </form>
-            </div>
+            <h1>상품</h1>
+            <ListSearch label="상품 검색" placeholder="상품명 검색"/>
             <ErrorBanner error={error}/>
             <div className="product-grid">
                 {data?.content.map((product) => <ProductCard key={product.id} product={product}/>)}
@@ -76,6 +66,13 @@ export function ProductListPage() {
     );
 }
 
+function estimateOrder(product: ProductDetail, optionId: string, discountId: string, quantity: number): number {
+    const option = product.options.find((o) => String(o.id) === optionId);
+    const subtotal = (Number(product.price) + Number(option?.additionalPrice ?? 0)) * quantity;
+    const discount = product.discounts.find((d) => String(d.id) === discountId);
+    return discount ? Math.round(subtotal * (100 - Number(discount.rate)) / 100) : subtotal;
+}
+
 export function ProductDetailPage() {
     const id = Number(useParams().id);
     const navigate = useNavigate();
@@ -84,38 +81,25 @@ export function ProductDetailPage() {
     const [optionId, setOptionId] = useState('');
     const [discountId, setDiscountId] = useState('');
     const [quantity, setQuantity] = useState(1);
-    const [receiver, setReceiver] = useState({receiverName: '', phoneNumber: '', postalCode: '', address: '', detailAddress: ''});
     const [error, setError] = useState<unknown>(null);
 
     useEffect(() => {
         shopApi.product(id).then(setProduct).catch(setError);
     }, [id]);
 
-    const estimate = useMemo(() => {
-        if (!product) {
-            return 0;
-        }
-        const option = product.options.find((o) => String(o.id) === optionId);
-        const subtotal = (Number(product.price) + Number(option?.additionalPrice ?? 0)) * quantity;
-        const discount = product.discounts.find((d) => String(d.id) === discountId);
-        return discount ? Math.round(subtotal * (100 - Number(discount.rate)) / 100) : subtotal;
-    }, [product, optionId, discountId, quantity]);
+    const estimate = useMemo(() => (product ? estimateOrder(product, optionId, discountId, quantity) : 0),
+        [product, optionId, discountId, quantity]);
 
-    const order = async (event: FormEvent) => {
+    const order = (event: FormEvent) => {
         event.preventDefault();
-        try {
-            setError(null);
-            const created = await shopApi.order({
-                productId: id,
-                productOptionId: optionId ? Number(optionId) : null,
-                discountId: discountId ? Number(discountId) : null,
-                quantity,
-                ...receiver,
-            });
-            navigate(`/checkout/ORDER/${created.id}`);
-        } catch (e) {
-            setError(e);
+        const query = new URLSearchParams({productId: String(id), quantity: String(quantity)});
+        if (optionId) {
+            query.set('optionId', optionId);
         }
+        if (discountId) {
+            query.set('discountId', discountId);
+        }
+        navigate(`/orders/new?${query}`);
     };
 
     if (error && !product) {
@@ -161,21 +145,13 @@ export function ProductDetailPage() {
                             )}
                             <Field label="수량" name="quantity" type="number" min={1} value={quantity}
                                    onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}/>
-                            <div className="row">
-                                <Field label="수령인" name="receiverName" required value={receiver.receiverName}
-                                       onChange={(e) => setReceiver({...receiver, receiverName: e.target.value})}/>
-                                <Field label="연락처" name="phoneNumber" required value={receiver.phoneNumber}
-                                       onChange={(e) => setReceiver({...receiver, phoneNumber: e.target.value})}/>
-                            </div>
-                            <Field label="우편번호" name="postalCode" value={receiver.postalCode}
-                                   onChange={(e) => setReceiver({...receiver, postalCode: e.target.value})}/>
-                            <Field label="주소" name="address" value={receiver.address}
-                                   onChange={(e) => setReceiver({...receiver, address: e.target.value})}/>
-                            <Field label="상세 주소" name="detailAddress" value={receiver.detailAddress}
-                                   onChange={(e) => setReceiver({...receiver, detailAddress: e.target.value})}/>
-                            <p className="price">예상 결제 금액 {won(estimate)}</p>
+                            <p className="price align-right">예상 결제 금액 {won(estimate)}</p>
                             <ErrorBanner error={error}/>
-                            <button type="submit" className="primary" disabled={soldOut}>{soldOut ? '품절' : '주문하기'}</button>
+                            <div className="toolbar form-actions">
+                                <button type="submit" className="primary" disabled={soldOut}>
+                                    <StableLabel current={soldOut ? '품절' : '주문하기'} labels={['품절', '주문하기']}/>
+                                </button>
+                            </div>
                         </form>
                     ) : (
                         <p className="muted"><Link to="/login" state={{from: `/products/${id}`}}>로그인</Link> 후 주문할 수 있습니다.</p>
@@ -247,16 +223,22 @@ function Reviews({target, targetId}: { target: ReviewTargetType; targetId: numbe
                     }
                 }}>
                     <p className="muted small">{hint}</p>
-                    <div className="row">
-                        <select aria-label="평점" value={form.rating} onChange={(e) => setForm({...form, rating: Number(e.target.value)})}>
+                    <div className="field">
+                        <label htmlFor="review-rating">평점</label>
+                        <select id="review-rating" value={form.rating} onChange={(e) => setForm({...form, rating: Number(e.target.value)})}>
                             {[5, 4, 3, 2, 1].map((r) => <option key={r} value={r}>{'★'.repeat(r)}</option>)}
                         </select>
-                        <input aria-label="리뷰 제목" placeholder="제목" required value={form.title}
-                               onChange={(e) => setForm({...form, title: e.target.value})}/>
                     </div>
-                    <textarea aria-label="리뷰 내용" rows={3} value={form.contentHtml}
-                              onChange={(e) => setForm({...form, contentHtml: e.target.value})}/>
-                    <button type="submit" className="primary">리뷰 등록</button>
+                    <Field label="리뷰 제목" name="reviewTitle" required value={form.title}
+                           onChange={(e) => setForm({...form, title: e.target.value})}/>
+                    <div className="field">
+                        <label htmlFor="review-content">리뷰 내용</label>
+                        <textarea id="review-content" rows={3} value={form.contentHtml}
+                                  onChange={(e) => setForm({...form, contentHtml: e.target.value})}/>
+                    </div>
+                    <div className="toolbar form-actions">
+                        <button type="submit" className="primary">리뷰 등록</button>
+                    </div>
                 </form>
             )}
             <ErrorBanner error={error}/>
@@ -271,22 +253,24 @@ function escapeHtml(text: string) {
 export function ProgramListPage() {
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
+    const keyword = params.get('keyword') ?? '';
     const [data, setData] = useState<Page<Program> | null>(null);
     const [error, setError] = useState<unknown>(null);
 
     useEffect(() => {
-        shopApi.programs('', page).then(setData).catch(setError);
-    }, [page]);
+        shopApi.programs(keyword, page).then(setData).catch(setError);
+    }, [keyword, page]);
 
     return (
         <section className="card">
             <h1>프로그램 신청</h1>
+            <ListSearch label="프로그램 검색" placeholder="프로그램명 검색"/>
             <ErrorBanner error={error}/>
             <div className="product-grid">
                 {data?.content.map((program) => <ProgramCard key={program.id} program={program}/>)}
             </div>
-            {data?.content.length === 0 && <p className="muted">신청 가능한 프로그램이 없습니다.</p>}
-            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={(next) => setParams({page: String(next)})}/>}
+            {data?.content.length === 0 && <p className="muted">{keyword ? '검색 결과가 없습니다.' : '신청 가능한 프로그램이 없습니다.'}</p>}
+            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={(next) => setParams(pageParams(keyword, next))}/>}
         </section>
     );
 }
@@ -296,22 +280,16 @@ export function ProgramDetailPage() {
     const navigate = useNavigate();
     const {user} = useAuth();
     const [program, setProgram] = useState<Program | null>(null);
-    const [form, setForm] = useState({quantity: 1, applicantName: '', phoneNumber: ''});
+    const [quantity, setQuantity] = useState(1);
     const [error, setError] = useState<unknown>(null);
 
     useEffect(() => {
         shopApi.program(id).then(setProgram).catch(setError);
     }, [id]);
 
-    const reserve = async (event: FormEvent) => {
+    const reserve = (event: FormEvent) => {
         event.preventDefault();
-        try {
-            setError(null);
-            const reservation = await shopApi.reserve({programId: id, ...form});
-            navigate(reservation.status === 'PENDING_PAYMENT' ? `/checkout/RESERVATION/${reservation.id}` : '/mypage/reservations');
-        } catch (e) {
-            setError(e);
-        }
+        navigate(`/reservations/new?${new URLSearchParams({programId: String(id), quantity: String(quantity)})}`);
     };
 
     if (error && !program) {
@@ -322,7 +300,11 @@ export function ProgramDetailPage() {
     }
     return (
         <>
-            <section className="card">
+            <section className="card product-detail">
+                <div className="product-media">
+                    <Thumbnail src={program.imageUrl} name={program.name}/>
+                </div>
+                <div>
                 <h1>{program.name}</h1>
                 {program.description && <p className="muted">{program.description}</p>}
                 <dl className="meta">
@@ -345,21 +327,18 @@ export function ProgramDetailPage() {
                     <p className="badge">지금은 신청할 수 없습니다.</p>
                 ) : user?.userType === 'MEMBER' ? (
                     <form onSubmit={reserve}>
-                        <div className="row">
-                            <Field label="인원" name="quantity" type="number" min={1} value={form.quantity}
-                                   onChange={(e) => setForm({...form, quantity: Math.max(1, Number(e.target.value))})}/>
-                            <Field label="신청자" name="applicantName" required value={form.applicantName}
-                                   onChange={(e) => setForm({...form, applicantName: e.target.value})}/>
-                            <Field label="연락처" name="phoneNumber" required value={form.phoneNumber}
-                                   onChange={(e) => setForm({...form, phoneNumber: e.target.value})}/>
-                        </div>
-                        <p className="price">결제 금액 {won(Number(program.price) * form.quantity)}</p>
+                        <Field label="인원" name="quantity" type="number" min={1} value={quantity}
+                               onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}/>
+                        <p className="price align-right">결제 금액 {won(Number(program.price) * quantity)}</p>
                         <ErrorBanner error={error}/>
-                        <button type="submit" className="primary">신청하기</button>
+                        <div className="toolbar form-actions">
+                            <button type="submit" className="primary">신청하기</button>
+                        </div>
                     </form>
                 ) : (
                     <p className="muted"><Link to="/login" state={{from: `/programs/${id}`}}>로그인</Link> 후 신청할 수 있습니다.</p>
                 )}
+                </div>
             </section>
             <section className="card">
                 <HtmlView html={program.contentHtml}/>
@@ -465,7 +444,7 @@ export function MyOrdersPage() {
             <ErrorBanner error={error}/>
             <div className="table-wrap">
                 <table>
-                    <thead><tr><th>주문번호</th><th>상품</th><th>금액</th><th>상태</th><th>주문일</th><th/></tr></thead>
+                    <thead><tr><th>주문번호</th><th>상품</th><th>금액</th><th>상태</th><th>주문일</th><th>결제</th><th>취소</th></tr></thead>
                     <tbody>
                     {data?.content.map((order) => (
                         <tr key={order.id}>
@@ -474,8 +453,10 @@ export function MyOrdersPage() {
                             <td>{won(order.totalPrice)}</td>
                             <td>{ORDER_STATUS[order.status]}</td>
                             <td>{formatDateTime(order.createdAt)}</td>
-                            <td className="actions">
+                            <td className="button-cell">
                                 {order.status === 'PENDING_PAYMENT' && <Link className="button primary" to={`/checkout/ORDER/${order.id}`}>결제</Link>}
+                            </td>
+                            <td className="button-cell">
                                 {(order.status === 'PENDING_PAYMENT' || order.status === 'PAID') && (
                                     <button type="button" className="danger" onClick={() => {
                                         if (window.confirm('주문을 취소할까요?')) {
@@ -486,7 +467,7 @@ export function MyOrdersPage() {
                             </td>
                         </tr>
                     ))}
-                    {data?.content.length === 0 && <tr><td colSpan={6} className="muted">주문 내역이 없습니다.</td></tr>}
+                    {data?.content.length === 0 && <tr><td colSpan={7} className="muted">주문 내역이 없습니다.</td></tr>}
                     </tbody>
                 </table>
             </div>
@@ -510,7 +491,7 @@ export function MyReservationsPage() {
             <ErrorBanner error={error}/>
             <div className="table-wrap">
                 <table>
-                    <thead><tr><th>예약번호</th><th>프로그램</th><th>인원</th><th>금액</th><th>상태</th><th/></tr></thead>
+                    <thead><tr><th>예약번호</th><th>프로그램</th><th>인원</th><th>금액</th><th>상태</th><th>결제</th><th>취소</th></tr></thead>
                     <tbody>
                     {data?.content.map((reservation) => (
                         <tr key={reservation.id}>
@@ -519,10 +500,12 @@ export function MyReservationsPage() {
                             <td>{reservation.quantity}명</td>
                             <td>{won(reservation.totalPrice)}</td>
                             <td>{RESERVATION_STATUS[reservation.status]}</td>
-                            <td className="actions">
+                            <td className="button-cell">
                                 {reservation.status === 'PENDING_PAYMENT' && (
                                     <Link className="button primary" to={`/checkout/RESERVATION/${reservation.id}`}>결제</Link>
                                 )}
+                            </td>
+                            <td className="button-cell">
                                 {reservation.status !== 'CANCELED' && (
                                     <button type="button" className="danger" onClick={() => {
                                         if (window.confirm('예약을 취소할까요?')) {
@@ -533,7 +516,7 @@ export function MyReservationsPage() {
                             </td>
                         </tr>
                     ))}
-                    {data?.content.length === 0 && <tr><td colSpan={6} className="muted">예약 내역이 없습니다.</td></tr>}
+                    {data?.content.length === 0 && <tr><td colSpan={7} className="muted">예약 내역이 없습니다.</td></tr>}
                     </tbody>
                 </table>
             </div>

@@ -9,12 +9,12 @@ import {ORDER_STATUS, RESERVATION_STATUS, toOptions} from '../../components/labe
 import type {FieldSpec, FormValues} from '../../components/SchemaForm';
 
 const PRODUCT_FIELDS: FieldSpec[] = [
-    {name: 'name', label: '상품명', required: true},
-    {name: 'price', label: '가격(원)', type: 'number', required: true},
-    {name: 'availableQuantity', label: '재고', type: 'number', help: '비워두면 무제한'},
-    {name: 'isEnabled', label: '판매 중', type: 'checkbox'},
+    {name: 'name', label: '상품명', required: true, wide: true},
+    {name: 'price', label: '가격(원)', type: 'number', required: true, wide: true},
+    {name: 'availableQuantity', label: '재고', type: 'number', help: '비워두면 무제한', wide: true},
+    {name: 'isEnabled', label: '판매 중', type: 'checkbox', wide: true},
     {name: 'description', label: '요약 설명', wide: true},
-    {name: 'imageFileId', label: '대표 이미지', type: 'image'},
+    {name: 'imageFileId', label: '대표 이미지', type: 'image', wide: true},
     {name: 'optionsText', label: '옵션', type: 'textarea',
         help: '한 줄에 하나씩 "옵션명:추가금액" 형식으로 입력합니다. 예) 대형:2000'},
     {name: 'contentHtml', label: '상세 설명', type: 'html'},
@@ -43,7 +43,7 @@ export function ProductAdminPage() {
                 {label: '상품명', render: (p) => <Link to={`/products/${p.id}`}>{p.name}</Link>},
                 {label: '가격', render: (p) => won(p.price)},
                 {label: '재고', render: (p) => p.availableQuantity ?? '무제한'},
-                {label: '판매', render: (p) => <YesNo value={p.isEnabled}/>},
+                {label: '판매 중', render: (p) => <YesNo value={p.isEnabled}/>},
             ]}
             toForm={(p) => adminApi.products.get(p.id).then((full) => ({
                 ...full,
@@ -56,32 +56,42 @@ export function ProductAdminPage() {
     );
 }
 
-const DISCOUNT_FIELDS: FieldSpec[] = [
-    {name: 'name', label: '할인명', required: true},
-    {name: 'rate', label: '할인율(%)', type: 'number', required: true},
-    {name: 'productId', label: '상품 ID', type: 'number', help: '비워두면 모든 상품에 적용'},
-    {name: 'isUsing', label: '사용', type: 'checkbox'},
+const discountFields = (products: { value: string; label: string }[]): FieldSpec[] => [
+    {name: 'name', label: '할인명', required: true, wide: true},
+    {name: 'rate', label: '할인율(%)', type: 'number', required: true, wide: true},
+    {name: 'productId', label: '대상 상품', type: 'select', options: products, wide: true,
+        help: '선택 안 함이면 모든 상품에 적용됩니다.'},
+    {name: 'isUsing', label: '사용', type: 'checkbox', wide: true},
     {name: 'description', label: '설명', wide: true},
 ];
+
+const toDiscountBody = (values: FormValues) => ({...values, productId: values.productId ? Number(values.productId) : null});
 
 const loadDiscounts = (query: Query) => adminApi.discounts.search(query);
 
 export function DiscountAdminPage() {
+    const [products, setProducts] = useState<{ value: string; label: string }[]>([]);
+    useEffect(() => {
+        adminApi.products.search({size: 200})
+            .then((page) => setProducts(page.content.map((p) => ({value: String(p.id), label: p.name}))))
+            .catch(() => setProducts([]));
+    }, []);
+    const productName = (id: number) => products.find((p) => p.value === String(id))?.label ?? `상품 #${id}`;
     return (
         <AdminCrudPage<Discount>
             title="할인"
             searchable={false}
             load={loadDiscounts}
-            fields={DISCOUNT_FIELDS}
+            fields={discountFields(products)}
             emptyForm={{isUsing: true}}
             columns={[
                 {label: '할인명', render: (d) => d.name},
                 {label: '할인율', render: (d) => `${d.rate}%`},
-                {label: '대상', render: (d) => (d.productId ? `상품 #${d.productId}` : '전체 상품')},
-                {label: '사용', render: (d) => <YesNo value={d.isUsing}/>},
+                {label: '대상', render: (d) => (d.productId ? productName(d.productId) : '전체 상품')},
+                {label: '사용 여부', render: (d) => <YesNo value={d.isUsing}/>},
             ]}
-            create={(v) => adminApi.discounts.create(v)}
-            update={(d, v) => adminApi.discounts.update(d.id, v)}
+            create={(v) => adminApi.discounts.create(toDiscountBody(v))}
+            update={(d, v) => adminApi.discounts.update(d.id, toDiscountBody(v))}
             remove={(d) => adminApi.discounts.remove(d.id)}
         />
     );
@@ -104,13 +114,13 @@ async function loadProductChoices() {
 }
 
 const orderFields = (productChoices: { value: string; label: string }[]): FieldSpec[] => [
-    {name: 'product', label: '상품', type: 'select', required: true, options: [PLEASE_CHOOSE, ...productChoices]},
-    {name: 'quantity', label: '수량', type: 'number', required: true},
-    {name: 'receiverName', label: '수령인', required: true},
-    {name: 'phoneNumber', label: '연락처', required: true},
-    {name: 'postalCode', label: '우편번호'},
-    {name: 'address', label: '주소', help: '비워 두면 배송 없는 주문(현장 수령)으로 등록됩니다.'},
-    {name: 'detailAddress', label: '상세 주소'},
+    {name: 'product', label: '상품', type: 'select', required: true, options: [PLEASE_CHOOSE, ...productChoices], wide: true},
+    {name: 'quantity', label: '수량', type: 'number', required: true, wide: true},
+    {name: 'receiverName', label: '수령인', required: true, wide: true},
+    {name: 'phoneNumber', label: '연락처', required: true, wide: true},
+    {name: 'postalCode', label: '우편번호', wide: true},
+    {name: 'address', label: '주소', help: '비워 두면 배송 없는 주문(현장 수령)으로 등록됩니다.', wide: true},
+    {name: 'detailAddress', label: '상세 주소', wide: true},
     PAID_FIELD,
 ];
 
@@ -147,45 +157,45 @@ export function OrderAdminPage() {
                 {label: '수령인', render: (o) => `${o.receiverName} (${o.phoneNumber})`},
                 {label: '상태', render: (o) => ORDER_STATUS[o.status]},
                 {label: '주문일', render: (o) => formatDateTime(o.createdAt)},
+                {label: '상태 처리', className: 'button-cell', render: (o, reload) => (
+                    <>
+                        {o.status === 'PENDING_PAYMENT' && (
+                            <button type="button" onClick={() => {
+                                if (window.confirm('결제를 받은 것으로 처리할까요? 결제 내역에는 기록되지 않습니다.')) {
+                                    void adminApi.orders.markPaid(o.id).then(reload);
+                                }
+                            }}>결제 완료 처리</button>
+                        )}
+                        {NEXT_ORDER_STATUS[o.status] && (
+                            <button type="button" onClick={() => adminApi.orders.changeStatus(o.id, NEXT_ORDER_STATUS[o.status]!).then(reload)}>
+                                {ORDER_STATUS[NEXT_ORDER_STATUS[o.status]!]} 처리
+                            </button>
+                        )}
+                    </>
+                )},
+                {label: '취소', className: 'button-cell', render: (o, reload) => (o.status === 'PENDING_PAYMENT' || o.status === 'PAID') && (
+                    <button type="button" className="danger" onClick={() => {
+                        if (window.confirm('주문을 취소할까요? 결제된 주문은 환불 처리됩니다.')) {
+                            void adminApi.orders.changeStatus(o.id, 'CANCELED').then(reload);
+                        }
+                    }}>취소</button>
+                )},
             ]}
-            actions={(o, reload) => (
-                <>
-                    {o.status === 'PENDING_PAYMENT' && (
-                        <button type="button" onClick={() => {
-                            if (window.confirm('결제를 받은 것으로 처리할까요? 결제 내역에는 기록되지 않습니다.')) {
-                                void adminApi.orders.markPaid(o.id).then(reload);
-                            }
-                        }}>결제 완료 처리</button>
-                    )}
-                    {NEXT_ORDER_STATUS[o.status] && (
-                        <button type="button" onClick={() => adminApi.orders.changeStatus(o.id, NEXT_ORDER_STATUS[o.status]!).then(reload)}>
-                            {ORDER_STATUS[NEXT_ORDER_STATUS[o.status]!]} 처리
-                        </button>
-                    )}
-                    {(o.status === 'PENDING_PAYMENT' || o.status === 'PAID') && (
-                        <button type="button" className="danger" onClick={() => {
-                            if (window.confirm('주문을 취소할까요? 결제된 주문은 환불 처리됩니다.')) {
-                                void adminApi.orders.changeStatus(o.id, 'CANCELED').then(reload);
-                            }
-                        }}>취소</button>
-                    )}
-                </>
-            )}
         />
     );
 }
 
 const PROGRAM_FIELDS: FieldSpec[] = [
-    {name: 'name', label: '프로그램명', required: true},
-    {name: 'price', label: '1인 참가비(원)', type: 'number', required: true},
-    {name: 'maximumPerson', label: '정원', type: 'number', help: '비워두면 제한 없음'},
-    {name: 'isEnabled', label: '공개', type: 'checkbox'},
-    {name: 'startDateTime', label: '진행 시작', type: 'datetime'},
-    {name: 'endDateTime', label: '진행 종료', type: 'datetime'},
-    {name: 'applicationStartDateTime', label: '신청 시작', type: 'datetime'},
-    {name: 'applicationEndDateTime', label: '신청 마감', type: 'datetime'},
+    {name: 'name', label: '프로그램명', required: true, wide: true},
+    {name: 'price', label: '1인 참가비(원)', type: 'number', required: true, wide: true},
+    {name: 'maximumPerson', label: '정원', type: 'number', help: '비워두면 제한 없음', wide: true},
+    {name: 'isEnabled', label: '공개', type: 'checkbox', wide: true},
+    {name: 'startDateTime', label: '진행 시작', type: 'datetime', wide: true},
+    {name: 'endDateTime', label: '진행 종료', type: 'datetime', wide: true},
+    {name: 'applicationStartDateTime', label: '신청 시작', type: 'datetime', wide: true},
+    {name: 'applicationEndDateTime', label: '신청 마감', type: 'datetime', wide: true},
     {name: 'description', label: '요약 설명', wide: true},
-    {name: 'imageFileId', label: '대표 이미지', type: 'image'},
+    {name: 'imageFileId', label: '대표 이미지', type: 'image', wide: true},
     {name: 'contentHtml', label: '상세 설명', type: 'html'},
 ];
 
@@ -204,7 +214,7 @@ export function ProgramAdminPage() {
                 {label: '참가비', render: (p) => won(p.price)},
                 {label: '잔여/정원', render: (p) => (p.maximumPerson ? `${p.availablePerson}/${p.maximumPerson}` : '제한 없음')},
                 {label: '신청 기간', render: (p) => `${formatDateTime(p.applicationStartDateTime)} ~ ${formatDateTime(p.applicationEndDateTime)}`},
-                {label: '접수', render: (p) => <YesNo value={p.isOpen}/>},
+                {label: '접수 중', render: (p) => <YesNo value={p.isOpen}/>},
             ]}
             toForm={(p) => adminApi.programs.get(p.id).then((full) => ({...full}))}
             create={(v) => adminApi.programs.create(v)}
@@ -218,10 +228,10 @@ const loadReservations = (query: Query) => adminApi.reservations.search(query);
 
 const reservationFields = (programChoices: { value: string; label: string }[]): FieldSpec[] => [
     {name: 'programId', label: '프로그램', type: 'select', required: true, options: [PLEASE_CHOOSE, ...programChoices],
-        help: '신청 기간이 지났거나 비공개인 프로그램도 예약할 수 있습니다. 정원은 넘길 수 없습니다.'},
-    {name: 'quantity', label: '인원', type: 'number', required: true},
-    {name: 'applicantName', label: '신청자', required: true},
-    {name: 'phoneNumber', label: '연락처', required: true},
+        help: '신청 기간이 지났거나 비공개인 프로그램도 예약할 수 있습니다. 정원은 넘길 수 없습니다.', wide: true},
+    {name: 'quantity', label: '인원', type: 'number', required: true, wide: true},
+    {name: 'applicantName', label: '신청자', required: true, wide: true},
+    {name: 'phoneNumber', label: '연락처', required: true, wide: true},
     {...PAID_FIELD, help: '무료 프로그램은 체크하지 않아도 바로 확정됩니다. 체크하지 않은 유료 예약은 결제 대기로 등록되고, 목록에서 확정 처리할 수 있습니다.'},
 ];
 
@@ -263,25 +273,21 @@ export function ReservationAdminPage() {
                 {label: '금액', render: (r) => won(r.totalPrice)},
                 {label: '신청자', render: (r) => `${r.applicantName} (${r.phoneNumber})`},
                 {label: '상태', render: (r) => RESERVATION_STATUS[r.status]},
+                {label: '상태 처리', className: 'button-cell', render: (r, reload) => r.status === 'PENDING_PAYMENT' && (
+                    <button type="button" onClick={() => {
+                        if (window.confirm('결제를 받은 것으로 보고 예약을 확정할까요? 결제 내역에는 기록되지 않습니다.')) {
+                            void adminApi.reservations.confirm(r.id).then(reload);
+                        }
+                    }}>확정 처리</button>
+                )},
+                {label: '취소', className: 'button-cell', render: (r, reload) => r.status !== 'CANCELED' && (
+                    <button type="button" className="danger" onClick={() => {
+                        if (window.confirm('예약을 취소할까요?')) {
+                            void adminApi.reservations.cancel(r.id).then(reload);
+                        }
+                    }}>취소</button>
+                )},
             ]}
-            actions={(r, reload) => (
-                <>
-                    {r.status === 'PENDING_PAYMENT' && (
-                        <button type="button" onClick={() => {
-                            if (window.confirm('결제를 받은 것으로 보고 예약을 확정할까요? 결제 내역에는 기록되지 않습니다.')) {
-                                void adminApi.reservations.confirm(r.id).then(reload);
-                            }
-                        }}>확정 처리</button>
-                    )}
-                    {r.status !== 'CANCELED' && (
-                        <button type="button" className="danger" onClick={() => {
-                            if (window.confirm('예약을 취소할까요?')) {
-                                void adminApi.reservations.cancel(r.id).then(reload);
-                            }
-                        }}>취소</button>
-                    )}
-                </>
-            )}
         />
     );
 }
