@@ -4,10 +4,12 @@ import {siteApi} from '../api/endpoints';
 import {ErrorBanner} from '../components/ErrorBanner';
 import {externalLinks, type LatLng} from '../components/map/mapSdk';
 import {MapView} from '../components/map/MapView';
+import {useFeatureMenuName} from '../components/SiteContext';
 
 type Tab = 'directions' | 'branches';
 
 export function MapPage() {
+    const title = useFeatureMenuName('MAP', '지도');
     const [map, setMap] = useState<PublicMap | null>(null);
     const [tab, setTab] = useState<Tab | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -33,7 +35,7 @@ export function MapPage() {
 
     return (
         <section className="card">
-            <h1>지도</h1>
+            <h1>{title}</h1>
             {tabs.length === 0 && <p className="muted">준비 중입니다.</p>}
             {tabs.length > 1 && (
                 <div className="tabs" role="tablist" aria-label="지도 안내">

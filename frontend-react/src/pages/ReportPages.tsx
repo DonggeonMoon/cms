@@ -11,8 +11,10 @@ import {HtmlView} from '../components/HtmlView';
 import {MemberOnlyNotice} from '../components/MemberOnlyNotice';
 import {REPORT_STATUS} from '../components/labels';
 import {type FieldSpec, SchemaForm} from '../components/SchemaForm';
+import {useFeatureMenuName} from '../components/SiteContext';
 
 export function ReportWritePage() {
+    const title = useFeatureMenuName('REPORT', '신고 접수');
     const {user} = useAuth();
     const [guest, setGuest] = useState<GuestPostingPolicy>({allowed: true, collectPhone: true, collectEmail: false});
     useEffect(() => {
@@ -35,7 +37,7 @@ export function ReportWritePage() {
     return (
         <>
             <section className="card">
-                <h1>신고 접수</h1>
+                <h1>{title}</h1>
                 <p className="muted">접수된 내용은 담당자 확인 후 답변드립니다. 개인정보는 처리 목적 외에 사용하지 않습니다.</p>
                 {!user && !guest.allowed
                     ? <MemberOnlyNotice message="신고는 회원만 접수할 수 있습니다."/>

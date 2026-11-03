@@ -14,6 +14,7 @@ import {ORDER_STATUS, RESERVATION_STATUS} from '../../components/labels';
 import {Pagination} from '../../components/Pagination';
 import {Thumbnail} from '../../components/Thumbnail';
 import {StableLabel} from '../../components/StableLabel';
+import {useFeatureMenuName} from '../../components/SiteContext';
 
 export function ProductCard({product}: { product: ProductSummary }) {
     return (
@@ -40,6 +41,7 @@ export function ProgramCard({program}: { program: Program }) {
 }
 
 export function ProductListPage() {
+    const productTitle = useFeatureMenuName('PRODUCT', '상품');
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
     const keyword = params.get('keyword') ?? '';
@@ -52,7 +54,7 @@ export function ProductListPage() {
 
     return (
         <section className="card">
-            <h1>상품</h1>
+            <h1>{productTitle}</h1>
             <ListSearch label="상품 검색" placeholder="상품명 검색"/>
             <ErrorBanner error={error}/>
             <div className="product-grid">
@@ -251,6 +253,7 @@ function escapeHtml(text: string) {
 }
 
 export function ProgramListPage() {
+    const programTitle = useFeatureMenuName('PROGRAM', '프로그램 신청');
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
     const keyword = params.get('keyword') ?? '';
@@ -263,7 +266,7 @@ export function ProgramListPage() {
 
     return (
         <section className="card">
-            <h1>프로그램 신청</h1>
+            <h1>{programTitle}</h1>
             <ListSearch label="프로그램 검색" placeholder="프로그램명 검색"/>
             <ErrorBanner error={error}/>
             <div className="product-grid">

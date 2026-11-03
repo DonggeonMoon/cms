@@ -12,8 +12,10 @@ import {formatDate, formatDateTime, rowNumber} from '../../components/format';
 import {HtmlView} from '../../components/HtmlView';
 import {Pagination} from '../../components/Pagination';
 import {type FieldSpec, SchemaForm} from '../../components/SchemaForm';
+import {useFeatureMenuName} from '../../components/SiteContext';
 
 export function QnaListPage() {
+    const title = useFeatureMenuName('QNA', '질문답변');
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
     const keyword = params.get('keyword') ?? '';
@@ -26,7 +28,7 @@ export function QnaListPage() {
 
     return (
         <section className="card">
-            <h1>질문답변</h1>
+            <h1>{title}</h1>
             <div className="list-toolbar-row">
                 <ListSearch label="검색어" placeholder="제목 검색"/>
                 <Link className="button primary" to="/qna/write">질문하기</Link>
