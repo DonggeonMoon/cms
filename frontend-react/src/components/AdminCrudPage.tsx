@@ -1,4 +1,4 @@
-import {type FormEvent, type ReactNode, useCallback, useEffect, useState} from 'react';
+import {type FormEvent, Fragment, type ReactNode, useCallback, useEffect, useState} from 'react';
 import type {Query} from '../api/client';
 import type {Page} from '../api/types';
 import {ErrorBanner} from './ErrorBanner';
@@ -7,7 +7,8 @@ import {type FieldSpec, type FormValues, SchemaForm} from './SchemaForm';
 
 export interface Column<T> {
     label: string;
-    render: (item: T) => ReactNode;
+    render: (item: T, reload: () => void) => ReactNode;
+    className?: string;
 }
 
 interface Props<T extends { id: number }> {
@@ -24,6 +25,7 @@ interface Props<T extends { id: number }> {
     extraQuery?: Query;
     filters?: ReactNode;
     actions?: (item: T, reload: () => void) => ReactNode;
+    expandedRow?: (item: T, reload: () => void) => ReactNode;
     description?: ReactNode;
 }
 
@@ -35,7 +37,7 @@ function asPage<T>(result: Page<T> | T[]): Page<T> {
 
 export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
     const {title, columns, fields, load, emptyForm, toForm, create, update, remove, searchable = true,
-        extraQuery, filters, actions, description} = props;
+        extraQuery, filters, actions, expandedRow, description} = props;
     const [keyword, setKeyword] = useState('');
     const [input, setInput] = useState('');
     const [page, setPage] = useState(0);
@@ -129,16 +131,26 @@ export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
                             </tr>
                             </thead>
                             <tbody>
-                            {result.content.map((item) => (
-                                <tr key={item.id}>
-                                    {columns.map((column) => <td key={column.label}>{column.render(item)}</td>)}
-                                    <td className="actions">
-                                        {actions?.(item, reload)}
-                                        {update && fields && <button type="button" onClick={() => startEdit(item)}>수정</button>}
-                                        {remove && <button type="button" className="danger" onClick={() => handleRemove(item)}>삭제</button>}
-                                    </td>
-                                </tr>
-                            ))}
+                            {result.content.map((item) => {
+                                const expanded = expandedRow?.(item, reload);
+                                return (
+                                    <Fragment key={item.id}>
+                                        <tr>
+                                            {columns.map((column) => <td key={column.label} className={column.className}>{column.render(item, reload)}</td>)}
+                                            <td className="actions">
+                                                {actions?.(item, reload)}
+                                                {update && fields && <button type="button" onClick={() => startEdit(item)}>수정</button>}
+                                                {remove && <button type="button" className="danger" onClick={() => handleRemove(item)}>삭제</button>}
+                                            </td>
+                                        </tr>
+                                        {expanded && (
+                                            <tr className="expanded-row">
+                                                <td colSpan={columns.length + 1}>{expanded}</td>
+                                            </tr>
+                                        )}
+                                    </Fragment>
+                                );
+                            })}
                             {result.content.length === 0 && (
                                 <tr>
                                     <td colSpan={columns.length + 1} className="muted">데이터가 없습니다.</td>

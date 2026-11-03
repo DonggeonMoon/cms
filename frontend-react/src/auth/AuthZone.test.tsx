@@ -22,7 +22,7 @@ describe('login zones', () => {
             }
             if (url === '/api/admin/dashboard') {
                 return respond(200, {
-                    memberCount: 0, articleCount: 0, questionCount: 0, pendingPaymentOrders: 0, paidOrders: 0,
+                    memberCount: 0, articleCount: 0, unansweredQuestions: 0, pendingPaymentOrders: 0, paidOrders: 0,
                     revenueLast30Days: 0, confirmedReservations: 0, receivedReports: 0, todayVisits: 0, last7DaysVisits: [],
                 });
             }

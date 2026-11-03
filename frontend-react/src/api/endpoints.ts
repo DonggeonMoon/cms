@@ -1,6 +1,6 @@
 import {type Query, request} from './client';
 import type * as D from './domain';
-import type {Page} from './types';
+import type {MediaType, Page} from './types';
 
 type Body = Record<string, unknown>;
 
@@ -40,8 +40,8 @@ export const adminApi = {
     sites: resource<D.Site>('/api/admin/sites'),
     policies: {
         get: (type: D.PolicyType) => request<D.Policy>(`/api/admin/policies/${type}`),
-        save: (type: D.PolicyType, contentHtml: string) =>
-            request<D.Policy>(`/api/admin/policies/${type}`, {method: 'PUT', body: {contentHtml}}),
+        save: (type: D.PolicyType, contentHtml: string, isUsing = true) =>
+            request<D.Policy>(`/api/admin/policies/${type}`, {method: 'PUT', body: {contentHtml, isUsing}}),
     },
     map: {
         settings: () => request<D.MapSetting>('/api/admin/map/settings'),
@@ -50,6 +50,7 @@ export const adminApi = {
     },
     reauthenticate: (password: string) => request<void>('/api/admin/reauthenticate', {method: 'POST', body: {password}}),
     configs: resource<D.Config>('/api/admin/configs'),
+    media: {
     chatbot: {
         get: () => request<D.ChatbotSetting>('/api/admin/chatbot'),
         save: (body: Omit<D.ChatbotSetting, 'defaultInstructions'>) =>
@@ -95,6 +96,8 @@ export const adminApi = {
         answer: (id: number, contentHtml: string) =>
             request<void>(`/api/admin/questions/${id}/answer`, {method: 'PUT', body: {contentHtml}}),
         deleteAnswer: (id: number) => request<void>(`/api/admin/questions/${id}/answer`, {method: 'DELETE'}),
+        setGuestPosting: (body: D.GuestPostingPolicy) =>
+            request<D.GuestPostingPolicy>('/api/admin/questions/guest-posting', {method: 'PUT', body}),
     },
     orders: {
         search: (query: Query) => request<Page<D.Order>>('/api/admin/orders', {query}),
@@ -120,6 +123,8 @@ export const adminApi = {
     reviews: (query: Query) => request<Page<D.Review>>('/api/admin/reviews', {query}),
     reports: {
         search: (query: Query) => request<Page<D.ReportSummary>>('/api/admin/reports', {query}),
+        setGuestPosting: (body: D.GuestPostingPolicy) =>
+            request<D.GuestPostingPolicy>('/api/admin/reports/guest-posting', {method: 'PUT', body}),
         get: (id: number) => request<D.ReportDetail>(`/api/reports/${id}`),
         changeStatus: (id: number, status: D.ReportStatus) =>
             request<void>(`/api/admin/reports/${id}/status`, {method: 'PUT', body: {status}}),
@@ -138,6 +143,8 @@ export const adminApi = {
     dashboard: () => request<D.Dashboard>('/api/admin/dashboard'),
     statistics: {
         daily: (from: string, to: string) => request<D.DailyVisits[]>('/api/admin/statistics/daily', {query: {from, to}}),
+        series: (unit: D.PeriodUnit, from: string, to: string) =>
+            request<D.DailyVisits[]>('/api/admin/statistics/series', {query: {unit, from, to}}),
         breakdown: (dimension: 'BROWSER' | 'OS' | 'URL', from: string, to: string) =>
             request<{ label: string; visits: number }[]>('/api/admin/statistics/breakdown', {query: {dimension, from, to}}),
     },
@@ -163,13 +170,16 @@ export const boardApi = {
     comments: (boardId: number, id: number) => request<D.Comment[]>(`/api/boards/${boardId}/articles/${id}/comments`),
     addComment: (boardId: number, id: number, body: Body) =>
         request<void>(`/api/boards/${boardId}/articles/${id}/comments`, {method: 'POST', body}),
+    editComment: (boardId: number, id: number, commentId: number, content: string, password?: string) =>
+        request<void>(`/api/boards/${boardId}/articles/${id}/comments/${commentId}`, {method: 'PUT', body: {content, password}}),
     removeComment: (boardId: number, id: number, commentId: number, password?: string) =>
         request<void>(`/api/boards/${boardId}/articles/${id}/comments/${commentId}`, {method: 'DELETE', body: {password}}),
 };
 
 export const qnaApi = {
-    list: (keyword: string, page: number) =>
-        request<Page<D.QuestionSummary>>('/api/questions', {query: {keyword, page, size: 10}}),
+    guestPosting: () => request<D.GuestPostingPolicy>('/api/questions/guest-posting'),
+    list: (keyword: string, page: number, unanswered = false) =>
+        request<Page<D.QuestionSummary>>('/api/questions', {query: {keyword, page, size: 10, unanswered}}),
     get: (id: number) => request<D.QuestionDetail>(`/api/questions/${id}`),
     access: (id: number, password: string) =>
         request<D.QuestionDetail>(`/api/questions/${id}/access`, {method: 'POST', body: {password}}),
@@ -183,12 +193,16 @@ export const archiveApi = {
     get: (id: number) => request<D.Archive>(`/api/archives/${id}`),
     articles: (id: number, keyword: string, page: number) =>
         request<Page<D.ArchiveArticleSummary>>(`/api/archives/${id}/articles`, {query: {keyword, page}}),
+    like: (id: number, articleId: number) =>
+        request<{ likes: number }>(`/api/archives/${id}/articles/${articleId}/likes`, {method: 'POST'}),
     article: (id: number, articleId: number) =>
         request<D.ArchiveArticleDetail>(`/api/archives/${id}/articles/${articleId}`),
     comments: (id: number, articleId: number) =>
         request<D.ArchiveComment[]>(`/api/archives/${id}/articles/${articleId}/comments`),
-    addComment: (id: number, articleId: number, content: string) =>
-        request<void>(`/api/archives/${id}/articles/${articleId}/comments`, {method: 'POST', body: {content}}),
+    addComment: (id: number, articleId: number, content: string, parentId: number | null = null) =>
+        request<void>(`/api/archives/${id}/articles/${articleId}/comments`, {method: 'POST', body: {content, parentId}}),
+    editComment: (id: number, articleId: number, commentId: number, content: string) =>
+        request<void>(`/api/archives/${id}/articles/${articleId}/comments/${commentId}`, {method: 'PUT', body: {content}}),
     removeComment: (id: number, articleId: number, commentId: number) =>
         request<void>(`/api/archives/${id}/articles/${articleId}/comments/${commentId}`, {method: 'DELETE'}),
 };
@@ -218,6 +232,7 @@ export const shopApi = {
 
 export const govApi = {
     createReport: (body: Body) => request<{ id: number }>('/api/reports', {method: 'POST', body}),
+    reportGuestPosting: () => request<D.GuestPostingPolicy>('/api/reports/guest-posting'),
     myReports: (page: number) => request<Page<D.ReportSummary>>('/api/reports/me', {query: {page}}),
     report: (id: number) => request<D.ReportDetail>(`/api/reports/${id}`),
     accessReport: (id: number, password: string) =>
@@ -226,6 +241,7 @@ export const govApi = {
     vote: (menuId: number, score: number, opinion: string) =>
         request<D.Satisfaction>('/api/satisfactions', {method: 'POST', body: {menuId, score, opinion}}),
 };
+
 export const chatbotApi = {
     status: () => request<{ enabled: boolean; welcomeMessage: string | null }>('/api/chatbot'),
     send: (messages: D.ChatMessage[]) =>

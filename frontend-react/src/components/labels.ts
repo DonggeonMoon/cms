@@ -28,3 +28,4 @@ export const PUBLISH_STATUS: Record<PublishStatus, string> = {
 
 export const toOptions = (labels: Record<string, string>) =>
     Object.entries(labels).map(([value, label]) => ({value, label}));
+

@@ -5,7 +5,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {routes} from '../router';
 
 const base = {
-    order: 0, link: null, opensNewWindow: false, startDateTime: null, endDateTime: null, isUsing: true,
+    order: 1, link: null, opensNewWindow: false, startDateTime: null, endDateTime: null, isUsing: true,
     width: null, height: null, top: null, left: null, fileId: null, imageUrl: null,
     backgroundColor: null, textColor: null, isModal: false, dismissDays: 1,
 };

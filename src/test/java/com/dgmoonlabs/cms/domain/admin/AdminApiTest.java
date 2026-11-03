@@ -165,10 +165,10 @@ class AdminApiTest extends ApiTestSupport {
     void siblingMenusCanBeReorderedAtOnce() throws Exception {
         MockHttpSession admin = admin();
         long parent = createdId(postJson("/api/admin/menus", admin, """
-                {"name":"부모","type":"LINK","link":"/p","sequence":0}
+                {"name":"부모","type":"LINK","link":"/p","sequence":1}
                 """));
         long first = createdId(postJson("/api/admin/menus", admin, """
-                {"parentId":%d,"name":"첫째","type":"LINK","link":"/1","sequence":0}
+                {"parentId":%d,"name":"첫째","type":"LINK","link":"/1","sequence":1}
                 """.formatted(parent)));
         long second = createdId(postJson("/api/admin/menus", admin, """
                 {"parentId":%d,"name":"둘째","type":"LINK","link":"/2","sequence":1}
@@ -177,8 +177,8 @@ class AdminApiTest extends ApiTestSupport {
         putJson("/api/admin/menus/order", admin, """
                 {"parentId":%d,"ids":[%d,%d]}
                 """.formatted(parent, second, first)).andExpect(status().isNoContent());
-        getJson("/api/admin/menus/" + second, admin).andExpect(jsonPath("$.sequence").value(0));
-        getJson("/api/admin/menus/" + first, admin).andExpect(jsonPath("$.sequence").value(1));
+        getJson("/api/admin/menus/" + second, admin).andExpect(jsonPath("$.sequence").value(1));
+        getJson("/api/admin/menus/" + first, admin).andExpect(jsonPath("$.sequence").value(2));
 
         putJson("/api/admin/menus/order", admin, """
                 {"parentId":%d,"ids":[%d]}
@@ -189,25 +189,32 @@ class AdminApiTest extends ApiTestSupport {
     }
 
     @Test
-    void featureMenusCanBeRenamedAndHiddenButNotDeleted() throws Exception {
+    void featureMenusAreAddedByAdminsAndFollowSiteFeatures() throws Exception {
         MockHttpSession admin = admin();
-        String menus = getJson("/api/admin/menus", admin)
-                .andExpect(jsonPath("$[?(@.feature == 'PRODUCT')].name").value(hasItem("상품")))
-                .andReturn().getResponse().getContentAsString();
-        long productMenu = com.jayway.jsonpath.JsonPath.<java.util.List<Integer>>read(menus, "$[?(@.feature == 'PRODUCT')].id").get(0);
-        long qnaMenu = com.jayway.jsonpath.JsonPath.<java.util.List<Integer>>read(menus, "$[?(@.feature == 'QNA')].id").get(0);
+        getJson("/api/admin/menus", admin).andExpect(jsonPath("$[?(@.type == 'FEATURE')]").isEmpty());
+
+        long productMenu = createdId(postJson("/api/admin/menus", admin, """
+                {"name":"상품","type":"FEATURE","feature":"PRODUCT","sequence":1}
+                """).andExpect(status().isCreated()));
+        long qnaMenu = createdId(postJson("/api/admin/menus", admin, """
+                {"name":"질문답변","type":"FEATURE","feature":"QNA","sequence":2}
+                """).andExpect(status().isCreated()));
+        postJson("/api/admin/menus", admin, """
+                {"name":"기능 없음","type":"FEATURE"}
+                """).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        postJson("/api/admin/menus", admin, """
+                {"name":"만족도","type":"FEATURE","feature":"SATISFACTION"}
+                """).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
 
         putJson("/api/admin/menus/" + productMenu, admin, """
-                {"name":"중고 상품","type":"FEATURE","sequence":1,"isUsing":true}
+                {"name":"중고 상품","type":"FEATURE","feature":"PRODUCT","sequence":1,"isUsing":true}
                 """).andExpect(status().isNoContent());
         putJson("/api/admin/menus/" + qnaMenu, admin, """
-                {"name":"질문답변","type":"FEATURE","sequence":105,"isUsing":false}
+                {"name":"질문답변","type":"FEATURE","feature":"QNA","sequence":2,"isUsing":false}
                 """).andExpect(status().isNoContent());
-
         getJson("/api/menus", null)
                 .andExpect(jsonPath("$[?(@.feature == 'PRODUCT')].name").value(hasItem("중고 상품")))
                 .andExpect(jsonPath("$[?(@.feature == 'QNA')]").isEmpty());
-        getJson("/api/admin/menus", admin).andExpect(jsonPath("$[?(@.feature == 'QNA')].isUsing").value(hasItem(false)));
 
         postJson("/api/admin/menus", admin, """
                 {"parentId":%d,"name":"하위","type":"LINK","link":"/x"}

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 @Builder
 public record BannerSaveRequest(
         @NotNull BannerType type,
-        @PositiveOrZero int order,
+        @Positive Integer order,
         @NotBlank @Size(max = 100) String name,
         @Size(max = 255) String description,
         @Size(max = 500) String link,
@@ -34,6 +35,10 @@ public record BannerSaveRequest(
         boolean isModal,
         @Min(0) @Max(365) Integer dismissDays
 ) {
+    public BannerSaveRequest {
+        order = order == null ? 1 : order;
+    }
+
     public int dismissDaysOrDefault() {
         return dismissDays == null ? 1 : dismissDays;
     }

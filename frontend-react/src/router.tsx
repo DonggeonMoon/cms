@@ -19,6 +19,7 @@ import {FilePage} from './pages/admin/FilePage';
 import {MapAdminPage} from './pages/admin/MapAdminPage';
 import {ReportAdminPage, SatisfactionAdminPage} from './pages/admin/GovAdminPages';
 import {MemberDetailPage} from './pages/admin/MemberDetailPage';
+import {MemberJoinSettingPage} from './pages/admin/MemberJoinSettingPage';
 import {ChatbotAdminPage} from './pages/admin/ChatbotAdminPage';
 import {MemberListPage} from './pages/admin/MemberListPage';
 import {PolicyAdminPage} from './pages/admin/PolicyAdminPage';
@@ -37,6 +38,7 @@ import {BoardArticlePage, BoardListPage, BoardWritePage} from './pages/board/Boa
 import {QnaDetailPage, QnaListPage, QnaWritePage} from './pages/board/QnaPages';
 import {ArchiveArticlePage, ArchiveListPage, ContentPage} from './pages/ContentPages';
 import {HomePage, NotFoundPage} from './pages/HomePage';
+import {OrderFormPage, ReservationFormPage} from './pages/shop/CheckoutFormPages';
 import {JoinPage} from './pages/JoinPage';
 import {AdminLoginPage, LoginPage} from './pages/LoginPage';
 import {MapPage} from './pages/MapPage';
@@ -112,6 +114,7 @@ export const routes = [
                         ],
                     },
                     {
+                    {
                         element: <RequireFeature feature="REPORT"/>,
                         children: [
                             {path: '/reports/new', element: <ReportWritePage/>},
@@ -122,18 +125,27 @@ export const routes = [
                         element: <RequireRole role="MEMBER"/>,
                         children: [
                             {path: '/mypage', element: <MyPage/>},
+                            {path: '/mypage/password', element: <PasswordChangePage/>},
+                            {path: '/mypage/quit', element: <QuitPage/>},
                             {
                                 element: <RequireFeature feature="PRODUCT"/>,
-                                children: [{path: '/mypage/orders', element: <MyOrdersPage/>}],
+                                children: [
+                                    {path: '/mypage/orders', element: <MyOrdersPage/>},
+                                    {path: '/orders/new', element: <OrderFormPage/>},
+                                ],
                             },
                             {
                                 element: <RequireFeature feature="PROGRAM"/>,
-                                children: [{path: '/mypage/reservations', element: <MyReservationsPage/>}],
+                                children: [
+                                    {path: '/mypage/reservations', element: <MyReservationsPage/>},
+                                    {path: '/reservations/new', element: <ReservationFormPage/>},
+                                ],
                             },
                             {
                                 element: <RequireFeature feature="REPORT"/>,
                                 children: [{path: '/mypage/reports', element: <MyReportsPage/>}],
                             },
+                            {
                             {path: '/checkout/:type/:id', element: <CheckoutPage/>},
                         ],
                     },
@@ -197,6 +209,7 @@ export const routes = [
                                     {path: 'reservations', element: <ReservationAdminPage/>},
                                 ],
                             },
+                            {
                             {
                                 element: <RequireFeature feature={['PRODUCT', 'PROGRAM']}/>,
                                 children: [

@@ -4,6 +4,7 @@ import {adminApi} from '../../api/endpoints';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatDateTime} from '../../components/format';
 import {ReauthGate, type ReauthGuard} from '../../components/ReauthGate';
+import {StableLabel} from '../../components/StableLabel';
 
 const ALGORITHMS: { value: CryptoAlgorithm; label: string }[] = [
     {value: 'AES', label: 'AES (국제 표준)'},
@@ -63,10 +64,9 @@ function CryptoKeyPanel({guard}: { guard: ReauthGuard }) {
         <section className="card">
             <h1>암호화 키 관리</h1>
             <div className="muted page-description">
-                <p>회원·관리자·비회원의 이름, 이메일, 연락처, 주소와 주문·예약의 수령인·신청자 정보는 이 키로 암호화되어 저장됩니다.
-                    로그인 아이디는 검색과 로그인을 위해 암호화하지 않습니다.</p>
-                <p>키는 관리자가 처음 로그인할 때 무작위 UUID로 만들어지고, 서버 환경변수의 마스터키로 한 번 더 감싸 보관됩니다.
-                    키를 다시 만들거나 알고리즘을 바꾸면 저장된 값을 모두 복호화한 뒤 새 설정으로 다시 암호화합니다.</p>
+                <p>회원·관리자·비회원의 이름, 이메일, 연락처, 주소와 주문·예약의 수령인·신청자 정보는 이 키로 암호화되어 저장됩니다. 로그인 아이디는 검색과 로그인을 위해 암호화하지 않습니다.</p>
+                <br />
+                <p>키는 관리자가 처음 로그인할 때 무작위 UUID로 만들어지고, 서버 환경변수의 마스터키로 한 번 더 감싸 보관됩니다. 키를 다시 만들거나 알고리즘을 바꾸면 저장된 값을 모두 복호화한 뒤 새 설정으로 다시 암호화합니다.</p>
             </div>
             <ErrorBanner error={error}/>
             {notice && <p className="notice" role="status">{notice}</p>}
@@ -85,7 +85,7 @@ function CryptoKeyPanel({guard}: { guard: ReauthGuard }) {
                         <dd>
                             <code>{shown ? key.key : '••••••••-••••-••••-••••-••••••••••••'}</code>
                             <button type="button" className="link-button" onClick={() => setShown((v) => !v)}>
-                                {shown ? '숨기기' : '보기'}
+                                <StableLabel current={shown ? '숨기기' : '보기'} labels={['숨기기', '보기']}/>
                             </button>
                         </dd>
                         <dt>처음 생성</dt>
@@ -102,7 +102,7 @@ function CryptoKeyPanel({guard}: { guard: ReauthGuard }) {
                             알고리즘 변경
                         </button>
                         <button type="button" className="danger push-right" disabled={busy} onClick={regenerate}>
-                            {busy ? '처리 중…' : '키 재생성'}
+                            <StableLabel current={busy ? '처리 중…' : '키 재생성'} labels={['처리 중…', '키 재생성']}/>
                         </button>
                     </div>
                 </>

@@ -4,10 +4,12 @@ import type {FileInfo, MediaType, Page} from '../../api/types';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatBytes, formatDateTime} from '../../components/format';
 import {Pagination} from '../../components/Pagination';
+import {StableLabel} from '../../components/StableLabel';
 
 const MEDIA_LABELS: Record<MediaType, string> = {DOCUMENT: '문서', IMAGE: '이미지', VIDEO: '영상', ETC: '기타'};
 
 export function FilePage() {
+    const [uploadOpen, setUploadOpen] = useState(false);
     const [keyword, setKeyword] = useState('');
     const [mediaType, setMediaType] = useState<MediaType | ''>('');
     const [page, setPage] = useState(0);
@@ -35,11 +37,14 @@ export function FilePage() {
     return (
         <section className="card">
             <h1>파일</h1>
-            <UploadForm onUploaded={() => {
-                setPage(0);
-                load();
-            }}/>
-            <div className="toolbar">
+            {uploadOpen && (
+                <UploadForm onCancel={() => setUploadOpen(false)} onUploaded={() => {
+                    setUploadOpen(false);
+                    setPage(0);
+                    load();
+                }}/>
+            )}
+            <div className="toolbar list-toolbar">
                 <input aria-label="파일명 검색" placeholder="파일명" value={keyword}
                        onChange={(e) => {
                            setKeyword(e.target.value);
@@ -55,6 +60,9 @@ export function FilePage() {
                         <option key={value} value={value}>{label}</option>
                     ))}
                 </select>
+                {!uploadOpen && (
+                    <button type="button" className="primary push-right" onClick={() => setUploadOpen(true)}>업로드</button>
+                )}
             </div>
             <ErrorBanner error={error}/>
             {result && (
@@ -103,7 +111,7 @@ export function FilePage() {
     );
 }
 
-function UploadForm({onUploaded}: { onUploaded: () => void }) {
+function UploadForm({onUploaded, onCancel}: { onUploaded: () => void; onCancel: () => void }) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [alternativeText, setAlternativeText] = useState('');
     const [error, setError] = useState<unknown>(null);
@@ -134,13 +142,20 @@ function UploadForm({onUploaded}: { onUploaded: () => void }) {
     return (
         <form className="inline-form" onSubmit={handleSubmit}>
             <h2>파일 업로드</h2>
-            <div className="row align-center">
+            <div className="field">
                 <input ref={inputRef} type="file" aria-label="업로드할 파일" required/>
+            </div>
+            <div className="field">
                 <input aria-label="대체 텍스트" placeholder="대체 텍스트 (이미지)" value={alternativeText}
                        onChange={(e) => setAlternativeText(e.target.value)}/>
-                <button type="submit" className="primary" disabled={uploading}>{uploading ? '업로드 중…' : '업로드'}</button>
             </div>
             <ErrorBanner error={error}/>
+            <div className="toolbar form-actions">
+                <button type="submit" className="primary" disabled={uploading}>
+                    <StableLabel current={uploading ? '업로드 중…' : '업로드'} labels={['업로드 중…', '업로드']}/>
+                </button>
+                <button type="button" onClick={onCancel}>취소</button>
+            </div>
         </form>
     );
 }

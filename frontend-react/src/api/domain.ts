@@ -1,6 +1,6 @@
-import type {FileInfo} from './types';
+import type {FileInfo, MediaType} from './types';
 
-export type MenuType = 'CONTENT' | 'BOARD' | 'LINK' | 'FEATURE';
+export type MenuType = 'CONTENT' | 'BOARD' | 'ARCHIVE' | 'LINK' | 'FEATURE';
 
 export interface Menu {
     id: number;
@@ -45,6 +45,12 @@ export interface Site {
 }
 
 export type OptionType = 'TEXT' | 'RADIO' | 'CHECKBOX' | 'TEXTAREA';
+
+export interface GuestPostingPolicy {
+    allowed: boolean;
+    collectPhone: boolean;
+    collectEmail: boolean;
+}
 
 export type ChatbotProvider = 'OPENAI' | 'GEMINI' | 'CLAUDE';
 
@@ -185,6 +191,7 @@ export interface Comment {
     authorType: 'ADMIN' | 'MEMBER' | 'GUEST';
     deleted: boolean;
     canDelete: boolean;
+    canEdit: boolean;
     createdAt: string;
 }
 
@@ -236,6 +243,7 @@ export interface Archive {
     description: string | null;
     type: BoardType;
     supportsComment: boolean;
+    supportsLike: boolean;
     pageSize: number;
 }
 
@@ -257,6 +265,7 @@ export interface ArchiveArticleDetail {
     authorName: string;
     status: PublishStatus;
     hit: number;
+    likes: number;
     files: FileInfo[];
     createdAt: string;
     modifiedAt: string;
@@ -264,9 +273,13 @@ export interface ArchiveArticleDetail {
 
 export interface ArchiveComment {
     id: number;
+    parentId: number | null;
+    depth: number;
     content: string;
-    authorName: string;
+    authorName: string | null;
+    deleted: boolean;
     canDelete: boolean;
+    canEdit: boolean;
     createdAt: string;
 }
 
@@ -415,6 +428,8 @@ export interface Satisfaction {
     myScore: number | null;
 }
 
+export type PeriodUnit = 'DAY' | 'WEEK' | 'MONTH';
+
 export interface DailyVisits {
     date: string;
     visits: number;
@@ -423,7 +438,7 @@ export interface DailyVisits {
 export interface Dashboard {
     memberCount: number;
     articleCount: number;
-    questionCount: number;
+    unansweredQuestions: number;
     pendingPaymentOrders: number;
     paidOrders: number;
     revenueLast30Days: number;
@@ -477,12 +492,14 @@ export interface MapSetting {
     office: Office;
 }
 
-export type PolicyType = 'PRIVACY_CONSENT' | 'PRIVACY_POLICY';
+export type PolicyType = 'PRIVACY_CONSENT' | 'PRIVACY_POLICY' | 'MAIL_RECEPTION' | 'SMS_RECEPTION' | 'MARKETING_USAGE';
 
 export interface Policy {
     type: PolicyType;
     title: string;
     contentHtml: string;
+    isUsing: boolean;
+    optional: boolean;
     version: number;
     lastWorker: string | null;
     modifiedAt: string | null;

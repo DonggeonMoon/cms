@@ -11,7 +11,8 @@
     --radius: 8px;
     --admin-header-height: 57px;
     color-scheme: light;
-    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard', 'Segoe UI', sans-serif;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
     color: var(--text);
     background: var(--bg);
 }
@@ -207,8 +208,14 @@ legend {
     min-width: 0;
 }
 
-.field label {
+.field label,
+.field-label {
     font-size: 0.9rem;
+}
+
+.date-selects select {
+    flex: 1;
+    min-width: 0;
 }
 
 .required {
@@ -259,6 +266,7 @@ input[aria-invalid='true'] {
 }
 
 button {
+    white-space: nowrap;
     padding: 8px 14px;
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -337,12 +345,59 @@ th, td {
 th {
     color: var(--muted);
     font-weight: 600;
+    white-space: nowrap;
 }
 
 td.actions {
-    display: flex;
-    gap: 6px;
-    justify-content: flex-end;
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+}
+
+td.actions > * + * {
+    margin-left: 6px;
+}
+
+.post-table .col-no,
+.post-table .col-fit {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.post-table .col-no {
+    text-align: center;
+}
+
+.post-table .col-title {
+    word-break: break-all;
+}
+
+td.button-cell {
+    width: 1%;
+    white-space: nowrap;
+}
+
+td.button-cell > * + * {
+    margin-left: 6px;
+}
+
+td.button-cell > :only-child {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.stable-label {
+    display: inline-grid;
+}
+
+.stable-label > span {
+    grid-area: 1 / 1;
+}
+
+.stable-label > .stable-label-ghost {
+    visibility: hidden;
 }
 
 .badge {
@@ -487,6 +542,12 @@ a.button.primary {
     align-items: center;
 }
 
+.settings-bar {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
 .truncate {
     display: inline-block;
     max-width: 240px;
@@ -519,6 +580,20 @@ a.button.primary {
     margin-bottom: 1.5em;
 }
 
+.schema-grid .new-row {
+    grid-column-start: 1;
+}
+
+.schema-grid .inline-check {
+    align-self: end;
+    margin-bottom: 12px;
+}
+
+.schema-grid .inline-check .checkbox {
+    min-height: calc(1lh + 18px);
+    margin: 0;
+}
+
 .field-head {
     display: flex;
     justify-content: space-between;
@@ -530,6 +605,85 @@ a.button.primary {
     border-radius: 6px;
     padding: 12px;
     min-height: 120px;
+}
+
+.rich-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rich-text-modes {
+    display: flex;
+    gap: 4px;
+}
+
+.rich-text-modes button,
+.rich-text-toolbar button {
+    padding: 4px 10px;
+    font-size: 0.85rem;
+}
+
+.rich-text-modes button.active,
+.rich-text-toolbar button.active {
+    background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.rich-text-editor {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+}
+
+.rich-text-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+.rich-text-divider {
+    width: 1px;
+    align-self: stretch;
+    margin: 0 4px;
+    background: var(--border);
+}
+
+.rich-text-content {
+    min-height: 200px;
+    padding: 10px 12px;
+    outline: none;
+}
+
+.rich-text-content:focus-visible {
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.rich-text-content img {
+    max-width: 100%;
+}
+
+.rich-text-content img.ProseMirror-selectednode {
+    outline: 2px solid var(--primary);
+}
+
+.rich-text-content table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.rich-text-content th,
+.rich-text-content td {
+    border: 1px solid var(--border);
+    min-width: 40px;
+}
+
+.rich-text-content .selectedCell {
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 .html-content {
@@ -594,6 +748,10 @@ a.button.primary {
     margin-left: auto;
     display: flex;
     gap: 6px;
+}
+
+.tree-row .actions .placeholder {
+    visibility: hidden;
 }
 
 .tiles,
@@ -753,8 +911,8 @@ a.button.primary {
     border-radius: 0 6px 6px 0;
 }
 
-.answer-editor {
-    min-width: 420px;
+.expanded-row > td {
+    padding: 12px 8px 20px;
 }
 
 .list {
@@ -820,11 +978,18 @@ a.button.primary {
 
 .sub-nav {
     display: flex;
+    flex-wrap: wrap;
     gap: 16px;
-    max-width: 960px;
+    max-width: 1120px;
     width: 100%;
     margin: 0 auto;
-    padding: 12px 16px 0;
+    padding: 16px 24px 0;
+}
+
+@media (max-width: 640px) {
+    .sub-nav {
+        padding: 12px 16px 0;
+    }
 }
 
 .sub-nav a {
@@ -866,10 +1031,6 @@ a.button.primary {
 @media (max-width: 720px) {
     .product-detail {
         grid-template-columns: 1fr;
-    }
-
-    .answer-editor {
-        min-width: 0;
     }
 
     .admin-sidebar {
@@ -925,6 +1086,15 @@ a.button.primary {
     padding: 8px 12px;
     border-radius: 6px;
     background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.comment-actions {
+    justify-content: flex-end;
+    margin-bottom: 0;
+}
+
+.align-right {
+    text-align: right;
 }
 
 .push-right {
@@ -1337,11 +1507,6 @@ a.button.primary {
     max-width: 1080px;
 }
 
-.site[data-theme='market'] .card {
-    border: none;
-    box-shadow: 0 1px 3px color-mix(in srgb, var(--text) 8%, transparent);
-}
-
 .site[data-theme='market'] button.primary,
 .site[data-theme='market'] a.button.primary {
     border-radius: 10px;
@@ -1397,17 +1562,9 @@ a.button.primary {
 }
 
 .site[data-theme='market'] .home-columns .home-section {
-    padding: 20px 22px;
+    padding: 24px;
     border-radius: var(--radius);
-    background: var(--surface);
-    box-shadow: 0 1px 3px color-mix(in srgb, var(--text) 8%, transparent);
-}
-
-.site[data-theme='market'] .site-footer {
-    margin-top: 24px;
-    padding: 28px 16px;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
+    background: var(--subtle);
 }
 
 @media (max-width: 640px) {
@@ -1462,6 +1619,7 @@ a.button.primary {
     border: none;
     background: color-mix(in srgb, var(--primary) 7%, var(--surface));
 }
+
 .chatbot {
     position: fixed;
     right: 20px;

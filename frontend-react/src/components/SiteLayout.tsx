@@ -17,7 +17,7 @@ export function SiteLayout() {
 
 function SiteFrame() {
     const {user, logout} = useAuth();
-    const {site, name, menus, unlistedBoards, unlistedArchives, configs, isEnabled} = useSite();
+    const {site, name, menus, configs, isEnabled} = useSite();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -36,12 +36,7 @@ function SiteFrame() {
             <header className="site-header">
                 <Link to="/" className="brand">{name}</Link>
                 <nav className="site-nav main-nav" aria-label="주 메뉴">
-                    {menus.map((menu) => menu.type === 'FEATURE'
-                        ? <FeatureMenu key={menu.id} menu={menu} listings={{
-                            BOARD: unlistedBoards,
-                            ARCHIVE: unlistedArchives,
-                        }}/>
-                        : <MenuItem key={menu.id} menu={menu}/>)}
+                    {menus.map((menu) => <MenuNode key={menu.id} menu={menu}/>)}
                 </nav>
                 <nav className="site-nav" aria-label="계정">
                     {user?.userType === 'MEMBER' && (
@@ -51,12 +46,7 @@ function SiteFrame() {
                             <button type="button" className="link-button" onClick={handleLogout}>로그아웃</button>
                         </>
                     )}
-                    {!user && (
-                        <>
-                            <NavLink to="/login">로그인</NavLink>
-                            <NavLink to="/join">회원가입</NavLink>
-                        </>
-                    )}
+                    {!user && <NavLink to="/login">로그인</NavLink>}
                 </nav>
             </header>
             {user?.userType === 'MEMBER' && location.pathname.startsWith('/mypage') && (
@@ -81,12 +71,15 @@ function SiteFrame() {
     );
 }
 
-const FEATURE_PATHS: Partial<Record<SiteFeature, string>> = {
-    PRODUCT: '/products', PROGRAM: '/programs', QNA: '/qna', REPORT: '/reports/new', MAP: '/map',
-};
 const FEATURE_LISTING_PATHS: Partial<Record<SiteFeature, string>> = {BOARD: '/boards', ARCHIVE: '/archives'};
 
-function FeatureMenu({menu, listings}: { menu: Menu; listings: Partial<Record<SiteFeature, { id: number; name: string }[]>> }) {
+function MenuNode({menu}: { menu: Menu }) {
+    return menu.type === 'FEATURE' ? <FeatureMenu menu={menu}/> : <MenuItem menu={menu}/>;
+}
+
+function FeatureMenu({menu}: { menu: Menu }) {
+    const {unlistedBoards, unlistedArchives} = useSite();
+    const listings: Partial<Record<SiteFeature, { id: number; name: string }[]>> = {BOARD: unlistedBoards, ARCHIVE: unlistedArchives};
     const feature = menu.feature!;
     const listingPath = FEATURE_LISTING_PATHS[feature];
     if (listingPath) {
@@ -126,7 +119,7 @@ function MenuItem({menu}: { menu: Menu }) {
         <div className="dropdown">
             {link}
             <div className="dropdown-menu">
-                {menu.children.map((child) => <MenuItem key={child.id} menu={child}/>)}
+                {menu.children.map((child) => <MenuNode key={child.id} menu={child}/>)}
             </div>
         </div>
     );

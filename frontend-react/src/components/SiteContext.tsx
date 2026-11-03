@@ -104,6 +104,10 @@ export function menuHref(menu: Menu): string {
             return `/contents/${menu.targetId}?menuId=${menu.id}`;
         case 'BOARD':
             return `/boards/${menu.targetId}`;
+        case 'ARCHIVE':
+            return `/archives/${menu.targetId}`;
+        case 'FEATURE':
+            return (menu.feature && FEATURE_PATHS[menu.feature]) ?? '#';
         default:
             return menu.link ?? '#';
     }

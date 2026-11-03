@@ -80,10 +80,10 @@ export function SiteAdminPage() {
 }
 
 const CONFIG_FIELDS: FieldSpec[] = [
-    {name: 'key', label: '키', required: true, placeholder: 'site.footer', help: '영문, 숫자, _ . - 만 사용합니다.'},
     {name: 'type', label: '입력 형식', type: 'select', required: true, options: [
             {value: 'TEXT', label: '텍스트'}, {value: 'TEXTAREA', label: '여러 줄'},
             {value: 'RADIO', label: '단일 선택'}, {value: 'CHECKBOX', label: '체크박스'}]},
+    {name: 'key', label: '키', required: true, placeholder: 'site.footer', help: '영문, 숫자, _ . - 만 사용합니다.', newRow: true},
     {name: 'value', label: '값', type: 'textarea'},
     {name: 'description', label: '설명', wide: true},
     {name: 'isHidden', label: '공개 API에서 숨김', type: 'checkbox'},
@@ -122,16 +122,16 @@ const PERIOD_FIELDS: FieldSpec[] = [
 ];
 
 const TOP_BAR_FIELDS: FieldSpec[] = [
-    {name: 'isUsing', label: '사용', type: 'checkbox', wide: true},
-    {name: 'opensNewWindow', label: '새 창으로 열기', type: 'checkbox', wide: true, spaced: true},
+    {name: 'isUsing', label: '사용', type: 'checkbox', wide: true, spaced: true},
     {name: 'name', label: '관리용 이름', required: true},
-    {name: 'order', label: '순서', type: 'number', help: '여러 개가 게시 중이면 순서가 가장 앞선 배너가 표시됩니다.'},
+    {name: 'order', label: '순서', type: 'number', required: true, min: 1, help: '여러 개가 게시 중이면 순서가 가장 앞선 배너가 표시됩니다.'},
     {name: 'description', label: '표시 문구', required: true, wide: true, placeholder: '11월 3일 02:00~04:00 서비스 점검이 있습니다.'},
-    {name: 'link', label: '링크', placeholder: 'https:// 또는 /boards/1'},
-    {name: 'backgroundColor', label: '배경색', type: 'color'},
+    {name: 'backgroundColor', label: '배경색', type: 'color', newRow: true},
     {name: 'textColor', label: '글자색', type: 'color'},
-    DISMISS_FIELD,
-    ...PERIOD_FIELDS,
+    {name: 'link', label: '링크', placeholder: 'https:// 또는 /boards/1', newRow: true},
+    {name: 'opensNewWindow', label: '새 창으로 열기', type: 'checkbox'},
+    {...DISMISS_FIELD, newRow: true},
+    ...PERIOD_FIELDS.map((field, index) => (index === 0 ? {...field, newRow: true} : field)),
 ];
 
 const POPUP_FIELDS: FieldSpec[] = [
@@ -142,7 +142,7 @@ const POPUP_FIELDS: FieldSpec[] = [
             {value: 'MODELESS', label: '모달리스 (배경 클릭 가능)'},
             {value: 'MODAL', label: '모달 (배경 클릭 불가)'}],
         help: '모달은 화면 가운데에 어두운 배경과 함께 뜨고, 닫기 전에는 뒤 화면을 사용할 수 없습니다.'},
-    {name: 'order', label: '순서', type: 'number'},
+    {name: 'order', label: '순서', type: 'number', required: true, min: 1},
     {name: 'fileId', label: '이미지', type: 'image'},
     {name: 'description', label: '내용 (이미지가 없을 때 표시)', type: 'textarea'},
     {name: 'link', label: '클릭 시 이동할 링크', placeholder: 'https://'},
@@ -165,7 +165,7 @@ const bannerToForm = (banner: Banner): FormValues => ({...banner, popupMode: ban
 const loadBanners = (query: Query) => adminApi.banners.search(query);
 
 const BANNER_TABS = [
-    {value: 'BANNER', label: '배너 (상단 띠배너)'},
+    {value: 'BANNER', label: '배너(상단 띠 배너)'},
     {value: 'POPUP', label: '팝업'},
 ] as const;
 
@@ -192,25 +192,26 @@ export function BannerAdminPage() {
                 extraQuery={{type}}
                 fields={isTopBar ? TOP_BAR_FIELDS : POPUP_FIELDS}
                 emptyForm={isTopBar
-                    ? {order: 0, isUsing: true, opensNewWindow: false, dismissDays: 1, backgroundColor: '#1D4ED8', textColor: '#FFFFFF'}
-                    : {order: 0, isUsing: true, opensNewWindow: false, dismissDays: 1, popupMode: 'MODELESS'}}
+                    ? {order: 1, isUsing: true, opensNewWindow: false, dismissDays: 1, backgroundColor: '#1D4ED8', textColor: '#FFFFFF'}
+                    : {order: 1, isUsing: true, opensNewWindow: false, dismissDays: 1, popupMode: 'MODELESS'}}
                 toForm={bannerToForm}
                 columns={isTopBar ? [
+                    {label: '이름', render: (b) => b.name},
                     {label: '미리보기', render: (b) => (
                         <span className="top-bar-preview" style={{background: b.backgroundColor ?? undefined, color: b.textColor ?? undefined}}>
                             {b.description || b.name}
                         </span>
                     )},
+                    {label: '사용 여부', render: (b) => <YesNo value={b.isUsing}/>},
                     {label: '순서', render: (b) => b.order},
                     {label: '기간', render: (b) => `${formatDateTime(b.startDateTime)} ~ ${formatDateTime(b.endDateTime)}`},
-                    {label: '사용', render: (b) => <YesNo value={b.isUsing}/>},
                 ] : [
                     {label: '이미지', render: (b) => b.imageUrl ? <img className="thumb" src={b.imageUrl} alt={b.name}/> : '-'},
                     {label: '제목', render: (b) => b.name},
                     {label: '표시 방식', render: (b) => (b.isModal ? '모달' : '모달리스')},
                     {label: '순서', render: (b) => b.order},
                     {label: '기간', render: (b) => `${formatDateTime(b.startDateTime)} ~ ${formatDateTime(b.endDateTime)}`},
-                    {label: '사용', render: (b) => <YesNo value={b.isUsing}/>},
+                    {label: '사용 여부', render: (b) => <YesNo value={b.isUsing}/>},
                 ]}
                 create={(v) => adminApi.banners.create(toBannerBody(type, v))}
                 update={(b, v) => adminApi.banners.update(b.id, toBannerBody(type, v))}
@@ -226,23 +227,23 @@ const MENU_TYPES: { value: Menu['type']; label: string; feature?: SiteFeature }[
     {value: 'LINK', label: '링크'},
 ];
 
-const MENU_USING_FIELD: FieldSpec = {name: 'isUsing', label: '사용', type: 'checkbox', wide: true, spaced: true};
+const kindOf = (menu: Pick<Menu, 'type' | 'feature'>) => menu.type === 'FEATURE' ? `FEATURE:${menu.feature}` : menu.type;
+const findKind = (menu: Pick<Menu, 'type' | 'feature'>) => MENU_KINDS.find((kind) => kind.value === kindOf(menu));
 
-const menuFields = (allowedTypes: typeof MENU_TYPES): FieldSpec[] => [
-    MENU_USING_FIELD,
+const menuFields = (allowedKinds: MenuKind[]): FieldSpec[] => [
+    {name: 'isUsing', label: '사용', type: 'checkbox', wide: true, spaced: true},
     {name: 'name', label: '메뉴 이름', required: true},
-    {name: 'type', label: '종류', type: 'select', required: true, options: allowedTypes.map(({value, label}) => ({value, label})),
-        help: allowedTypes.length < MENU_TYPES.length ? '사용 중지된 기능은 메뉴 종류로 선택할 수 없습니다.' : undefined},
-    {name: 'targetId', label: '연결 대상 ID', type: 'number', help: '컨텐츠 메뉴는 컨텐츠 ID, 게시판 메뉴는 게시판 ID'},
+    {name: 'kind', label: '종류', type: 'select', required: true, options: allowedKinds.map(({value, label}) => ({value, label})),
+        help: allowedKinds.length < MENU_KINDS.length ? '사용 중지된 기능은 메뉴 종류로 선택할 수 없습니다.' : undefined},
+    {name: 'targetId', label: '연결 대상 ID', type: 'number', help: '컨텐츠는 컨텐츠 ID, 게시판·아카이브 (하나 지정)는 게시판·아카이브 ID'},
     {name: 'link', label: '링크', help: '링크 메뉴일 때 이동할 주소'},
-    {name: 'sequence', label: '순서', type: 'number'},
+    {name: 'sequence', label: '순서', type: 'number', required: true, min: 1},
 ];
 
-const FEATURE_MENU_FIELDS: FieldSpec[] = [
-    MENU_USING_FIELD,
-    {name: 'name', label: '메뉴 이름', required: true},
-    {name: 'sequence', label: '순서', type: 'number', help: '숫자가 작을수록 앞에 표시됩니다.'},
-];
+const toMenuBody = ({kind, ...values}: FormValues, parentId: number | null) => {
+    const selected = MENU_KINDS.find((k) => k.value === kind);
+    return {...values, parentId, type: selected?.type, feature: selected?.type === 'FEATURE' ? selected.feature : null};
+};
 
 const LISTING_FEATURES: SiteFeature[] = ['BOARD', 'ARCHIVE'];
 
@@ -250,8 +251,8 @@ const featureLabel = (feature: SiteFeature | null) => SITE_FEATURES.find((f) => 
 
 export function MenuAdminPage() {
     const {isEnabled} = useSite();
-    const allowedTypes = MENU_TYPES.filter((type) => !type.feature || isEnabled(type.feature));
-    const defaultType = allowedTypes[0].value;
+    const allowedKinds = MENU_KINDS.filter((kind) => !kind.feature || isEnabled(kind.feature));
+    const defaultKind = allowedKinds[0].value;
     const [menus, setMenus] = useState<Menu[]>([]);
     const [editing, setEditing] = useState<{ menu: Menu | null; parentId: number | null; values: FormValues } | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -288,13 +289,14 @@ export function MenuAdminPage() {
 
     const renderNode = (menu: Menu, index: number, siblings: Menu[]) => {
         const isFeatureMenu = menu.type === 'FEATURE';
-        const feature = isFeatureMenu ? menu.feature : MENU_TYPES.find((type) => type.value === menu.type)?.feature;
+        const kind = findKind(menu);
+        const feature = kind?.feature ?? menu.feature;
         return (
         <li key={menu.id}>
             <div className="tree-row">
                 <strong>{menu.name}</strong>
                 <span className="badge">
-                    {isFeatureMenu ? featureLabel(menu.feature) : MENU_TYPES.find((type) => type.value === menu.type)?.label ?? menu.type}
+                    {kind?.label ?? (isFeatureMenu ? featureLabel(menu.feature) : menu.type)}
                 </span>
                 {!menu.isUsing && <span className="badge">사용 안 함</span>}
                 {feature && !isEnabled(feature) && <span className="badge danger">기능 꺼짐 · 사용자 화면에서 숨김</span>}
@@ -308,12 +310,12 @@ export function MenuAdminPage() {
                             onClick={() => move(siblings, index, -1)}>↑</button>
                     <button type="button" aria-label={`${menu.name} 아래로`} disabled={index === siblings.length - 1}
                             onClick={() => move(siblings, index, 1)}>↓</button>
-                    {!isFeatureMenu && (
-                        <button type="button" onClick={() => setEditing({menu: null, parentId: menu.id,
-                            values: {type: defaultType, sequence: nextSequence(menu.children), isUsing: true}})}>하위 추가</button>
-                    )}
-                    <button type="button" onClick={() => setEditing({menu, parentId: menu.parentId, values: {...menu}})}>수정</button>
-                    {!isFeatureMenu && <button type="button" className="danger" onClick={() => remove(menu)}>삭제</button>}
+                    {isFeatureMenu
+                        ? <button type="button" className="placeholder" tabIndex={-1} aria-hidden="true">하위 추가</button>
+                        : <button type="button" onClick={() => setEditing({menu: null, parentId: menu.id,
+                            values: {kind: defaultKind, sequence: nextSequence(menu.children), isUsing: true}})}>하위 추가</button>}
+                    <button type="button" onClick={() => setEditing({menu, parentId: menu.parentId, values: {...menu, kind: kindOf(menu)}})}>수정</button>
+                    <button type="button" className="danger" onClick={() => remove(menu)}>삭제</button>
                 </span>
             </div>
             {menu.children.length > 0 && <ul className="tree">{menu.children.map((child, i) => renderNode(child, i, menu.children))}</ul>}
@@ -332,7 +334,7 @@ export function MenuAdminPage() {
             </div>
             <div className="toolbar">
                 <button type="button" className="primary push-right" onClick={() => setEditing({menu: null, parentId: null,
-                    values: {type: defaultType, sequence: nextSequence(menus), isUsing: true}})}>최상위 메뉴 추가</button>
+                    values: {kind: defaultKind, sequence: nextSequence(menus), isUsing: true}})}>최상위 메뉴 추가</button>
             </div>
             {editing && (
                 <SchemaForm

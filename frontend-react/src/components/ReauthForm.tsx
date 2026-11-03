@@ -2,6 +2,7 @@ import {type FormEvent, useState} from 'react';
 import {useAuth} from '../auth/AuthContext';
 import {ErrorBanner} from './ErrorBanner';
 import {Field} from './Field';
+import {StableLabel} from './StableLabel';
 
 interface Props {
     title: string;
@@ -41,7 +42,7 @@ export function ReauthForm({title, verify, onVerified, reason}: Props) {
                        required autoFocus onChange={(e) => setPassword(e.target.value)}/>
                 <ErrorBanner error={error}/>
                 <button type="submit" className="primary" disabled={submitting}>
-                    {submitting ? '확인 중…' : '확인'}
+                    <StableLabel current={submitting ? '확인 중…' : '확인'} labels={['확인 중…', '확인']}/>
                 </button>
             </form>
         </section>

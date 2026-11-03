@@ -20,9 +20,9 @@ const FEATURE_MENUS = Object.entries(FEATURE_NAMES).map(([feature, name], index)
     feature, isUsing: true, children: [],
 }));
 
-function withFeatureMenus(handler: (url: string) => Promise<Response>, featureMenus: unknown[] = FEATURE_MENUS) {
-    return vi.fn(async (url: string) => {
-        const response = await handler(url);
+function withFeatureMenus(handler: (url: string, init?: RequestInit) => Promise<Response>, featureMenus: unknown[] = FEATURE_MENUS) {
+    return vi.fn(async (url: string, init?: RequestInit) => {
+        const response = await handler(url, init);
         if (url !== '/api/menus') {
             return response;
         }
@@ -56,6 +56,58 @@ function renderAt(path: string) {
 describe('site features', () => {
     afterEach(() => vi.unstubAllGlobals());
 
+    it('asks guests for the chosen contact and a matching lookup password before reporting', async () => {
+        const posts: string[] = [];
+        vi.stubGlobal('fetch', withFeatureMenus(async (url: string, init?: RequestInit) => {
+            if (url === '/api/site') {
+                return respond(200, SITE);
+            }
+            if (url === '/api/reports/guest-posting') {
+                return respond(200, {allowed: true, collectPhone: false, collectEmail: true});
+            }
+            if (url === '/api/reports' && init?.method === 'POST') {
+                posts.push(String(init.body));
+                return respond(201, {id: 1});
+            }
+            if (url === '/api/auth/me') {
+                return respond(401, {code: 'UNAUTHENTICATED'});
+            }
+            return respond(200, url === '/api/configs' ? {} : []);
+        }));
+        renderAt('/reports/new');
+
+        expect(await screen.findByLabelText(/이메일/)).toBeRequired();
+        expect(screen.queryByLabelText(/연락처/)).not.toBeInTheDocument();
+        await userEvent.type(screen.getByLabelText(/^이름/), '시민');
+        await userEvent.type(screen.getByLabelText(/^조회 비밀번호 \*/), 'pw1234');
+        await userEvent.type(screen.getByLabelText(/조회 비밀번호 확인/), 'pw9999');
+        await userEvent.type(screen.getByLabelText(/이메일/), 'a@example.com');
+        await userEvent.type(screen.getByRole('textbox', {name: /^제목/}), '가로등');
+        await userEvent.click(screen.getByRole('button', {name: '접수하기'}));
+
+        expect(await screen.findByText('조회 비밀번호 확인이 일치하지 않습니다.')).toBeInTheDocument();
+        expect(posts).toHaveLength(0);
+    });
+
+    it('asks guests to log in when guest reports are turned off', async () => {
+        vi.stubGlobal('fetch', withFeatureMenus(async (url: string) => {
+            if (url === '/api/site') {
+                return respond(200, SITE);
+            }
+            if (url === '/api/reports/guest-posting') {
+                return respond(200, {allowed: false});
+            }
+            if (url === '/api/auth/me') {
+                return respond(401, {code: 'UNAUTHENTICATED'});
+            }
+            return respond(200, url === '/api/configs' ? {} : []);
+        }));
+        renderAt('/reports/new');
+
+        expect(await screen.findByText(/신고는 회원만 접수할 수 있습니다/)).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '접수하기'})).not.toBeInTheDocument();
+    });
+
     it('shows the site name and only the enabled features in the header', async () => {
         stubApi();
         renderAt('/');
@@ -71,7 +123,7 @@ describe('site features', () => {
 
     it('hides content menus such as the intro page when content is switched off', async () => {
         const menus = [
-            {id: 1, parentId: null, name: '소개', type: 'CONTENT', depth: 0, sequence: 0, link: null, targetId: 1, children: []},
+            {id: 1, parentId: null, name: '소개', type: 'CONTENT', depth: 0, sequence: 1, link: null, targetId: 1, children: []},
             {id: 2, parentId: null, name: '외부 링크', type: 'LINK', depth: 0, sequence: 1, link: '/qna', targetId: null, children: []},
         ];
         vi.stubGlobal('fetch', withFeatureMenus(async (url: string) => {
@@ -106,7 +158,7 @@ describe('site features', () => {
 
     it('leaves dashboard tiles of switched-off features out', async () => {
         const dashboard = {
-            memberCount: 3, articleCount: 4, questionCount: 5, pendingPaymentOrders: 1, paidOrders: 2,
+            memberCount: 3, articleCount: 4, unansweredQuestions: 5, pendingPaymentOrders: 1, paidOrders: 2,
             revenueLast30Days: 10000, confirmedReservations: 6, receivedReports: 7, todayVisits: 8,
             last7DaysVisits: [{date: '2026-11-02', visits: 8}],
         };
@@ -123,7 +175,7 @@ describe('site features', () => {
 
         expect(await screen.findByText('확정 예약')).toBeInTheDocument();
         expect(screen.getByText('게시글')).toBeInTheDocument();
-        expect(screen.queryByText('질문')).not.toBeInTheDocument();
+        expect(screen.queryByText('미답변 질문')).not.toBeInTheDocument();
         expect(screen.queryByText('결제 대기 주문')).not.toBeInTheDocument();
         expect(screen.queryByText('최근 30일 매출')).not.toBeInTheDocument();
     });
@@ -138,7 +190,7 @@ describe('site features', () => {
             }
             if (url === '/api/admin/dashboard') {
                 return respond(200, {
-                    memberCount: 0, articleCount: 0, questionCount: 0, pendingPaymentOrders: 0, paidOrders: 0,
+                    memberCount: 0, articleCount: 0, unansweredQuestions: 0, pendingPaymentOrders: 0, paidOrders: 0,
                     revenueLast30Days: 0, confirmedReservations: 0, receivedReports: 0, todayVisits: 0, last7DaysVisits: [],
                 });
             }
@@ -172,7 +224,7 @@ describe('site features', () => {
                 return respond(200, boards);
             }
             if (url === '/api/menus') {
-                return respond(200, [{id: 9, parentId: null, name: '공지', type: 'BOARD', depth: 0, sequence: 0, link: null,
+                return respond(200, [{id: 9, parentId: null, name: '공지', type: 'BOARD', depth: 0, sequence: 1, link: null,
                     targetId: 2, children: []}]);
             }
             return respond(200, []);

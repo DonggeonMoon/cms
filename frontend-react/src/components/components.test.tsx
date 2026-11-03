@@ -4,6 +4,7 @@ import {describe, expect, it, vi} from 'vitest';
 import type {Menu} from '../api/domain';
 import type {Page} from '../api/types';
 import {AdminCrudPage} from './AdminCrudPage';
+import {CommentEditor} from './CommentEditor';
 import {Pagination} from './Pagination';
 import {normalizeValues} from './SchemaForm';
 import {menuHref} from './SiteContext';
@@ -25,7 +26,7 @@ describe('normalizeValues', () => {
 });
 
 describe('menuHref', () => {
-    const base: Menu = {id: 7, parentId: null, name: 'm', type: 'LINK', depth: 0, sequence: 0, link: null, targetId: null, feature: null, isUsing: true, children: []};
+    const base: Menu = {id: 7, parentId: null, name: 'm', type: 'LINK', depth: 0, sequence: 1, link: null, targetId: null, feature: null, isUsing: true, children: []};
 
     it('maps each menu type to its route', () => {
         expect(menuHref({...base, type: 'CONTENT', targetId: 3})).toBe('/contents/3?menuId=7');
@@ -95,5 +96,20 @@ describe('Pagination', () => {
         render(<Pagination page={0} totalPages={3} onChange={vi.fn()}/>);
 
         expect(screen.getAllByRole('button')).toHaveLength(3);
+    });
+});
+
+describe('CommentEditor', () => {
+    it('saves the edited text with the guest password', async () => {
+        const onSave = vi.fn(async () => undefined);
+        render(<CommentEditor initial="처음 댓글" needsPassword onSave={onSave} onCancel={() => undefined}/>);
+
+        const box = screen.getByRole('textbox', {name: '댓글 수정 내용'});
+        await userEvent.clear(box);
+        await userEvent.type(box, '고친 댓글');
+        await userEvent.type(screen.getByLabelText('댓글 비밀번호'), 'pw1234');
+        await userEvent.click(screen.getByRole('button', {name: '저장'}));
+
+        expect(onSave).toHaveBeenCalledWith('고친 댓글', 'pw1234');
     });
 });
