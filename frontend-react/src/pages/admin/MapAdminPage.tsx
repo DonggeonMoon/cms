@@ -16,6 +16,7 @@ interface SettingForm {
     provider: MapProvider;
     kakaoApiKeyId: string;
     naverApiKeyId: string;
+    googleApiKeyId: string;
     directionsEnabled: boolean;
     branchesEnabled: boolean;
     officeName: string;
@@ -32,6 +33,7 @@ const toForm = (setting: MapSetting): SettingForm => ({
     provider: setting.provider,
     kakaoApiKeyId: setting.kakaoApiKeyId?.toString() ?? '',
     naverApiKeyId: setting.naverApiKeyId?.toString() ?? '',
+    googleApiKeyId: setting.googleApiKeyId?.toString() ?? '',
     directionsEnabled: setting.directionsEnabled,
     branchesEnabled: setting.branchesEnabled,
     officeName: setting.office.name ?? '',
@@ -45,6 +47,20 @@ const toForm = (setting: MapSetting): SettingForm => ({
 });
 
 const toNumber = (value: string) => (value.trim() === '' ? null : Number(value));
+
+const KEY_FIELDS = {KAKAO: 'kakaoApiKeyId', NAVER: 'naverApiKeyId', GOOGLE: 'googleApiKeyId'} as const;
+
+const KEY_LABELS: Record<MapProvider, string> = {
+    KAKAO: '카카오맵 JavaScript 키',
+    NAVER: '네이버 지도 Client ID (ncpKeyId)',
+    GOOGLE: '구글 지도 API 키',
+};
+
+const KEY_HELP: Record<MapProvider, string> = {
+    KAKAO: 'Kakao Developers에서 앱을 만들고 JavaScript 키를 발급받으세요. 플랫폼 > Web 에 사이트 도메인을 등록해야 지도가 표시됩니다.',
+    NAVER: '네이버 클라우드 플랫폼 Maps에서 Application을 만들고 Client ID를 발급받으세요. 서비스 URL 등록과 Dynamic Map·Geocoding 사용 설정이 필요합니다.',
+    GOOGLE: 'Google Cloud 콘솔에서 Maps JavaScript API와 Geocoding API를 사용 설정하고 API 키를 만드세요. 키 제한(HTTP 리퍼러)에 사이트 도메인을 등록하고 결제 계정을 연결해야 지도가 표시됩니다.',
+};
 
 export function MapAdminPage() {
     const [saved, setSaved] = useState<MapSetting | null>(null);
@@ -67,7 +83,7 @@ export function MapAdminPage() {
     }
 
     const set = <K extends keyof SettingForm>(key: K, value: SettingForm[K]) => setForm({...form, [key]: value});
-    const keyField = form.provider === 'KAKAO' ? 'kakaoApiKeyId' : 'naverApiKeyId';
+    const keyField = KEY_FIELDS[form.provider];
     const apiKey = form.provider === saved.provider && form[keyField] === (saved[keyField]?.toString() ?? '')
         ? saved.apiKey
         : null;
@@ -81,6 +97,7 @@ export function MapAdminPage() {
                 ...form,
                 kakaoApiKeyId: toNumber(form.kakaoApiKeyId),
                 naverApiKeyId: toNumber(form.naverApiKeyId),
+                googleApiKeyId: toNumber(form.googleApiKeyId),
                 officeLatitude: toNumber(form.officeLatitude),
                 officeLongitude: toNumber(form.officeLongitude),
             });
@@ -104,11 +121,12 @@ export function MapAdminPage() {
                     <select id="provider" value={form.provider} onChange={(e) => set('provider', e.target.value as MapProvider)}>
                         <option value="KAKAO">카카오맵</option>
                         <option value="NAVER">네이버 지도</option>
+                        <option value="GOOGLE">구글 지도</option>
                     </select>
                 </div>
                 <div className="field">
                     <label htmlFor={keyField}>
-                        {form.provider === 'KAKAO' ? '카카오맵 JavaScript 키' : '네이버 지도 Client ID (ncpKeyId)'}
+                        {KEY_LABELS[form.provider]}
                     </label>
                     <select id={keyField} value={form[keyField]} onChange={(e) => set(keyField, e.target.value)}>
                         <option value="">사용 안 함</option>
@@ -116,9 +134,7 @@ export function MapAdminPage() {
                     </select>
                 </div>
                 <p className="muted small">
-                    {form.provider === 'KAKAO'
-                        ? 'Kakao Developers에서 앱을 만들고 JavaScript 키를 발급받으세요. 플랫폼 > Web 에 사이트 도메인을 등록해야 지도가 표시됩니다.'
-                        : '네이버 클라우드 플랫폼 Maps에서 Application을 만들고 Client ID를 발급받으세요. 서비스 URL 등록과 Dynamic Map·Geocoding 사용 설정이 필요합니다.'}
+                    {KEY_HELP[form.provider]}
                     {' '}키는 <Link to="/admin/api-keys">API 키 관리</Link>에서 먼저 등록한 뒤 이름으로 고릅니다.
                     키를 고르지 않으면 사용자 화면에는 지도 대신 지도 앱 링크가 표시됩니다.
                 </p>
@@ -183,7 +199,7 @@ export function MapAdminPage() {
 
             {tab === 'branches' && (
                 <>
-                    <form onSubmit={save} className="row align-center">
+                    <form onSubmit={save} className="row align-center settings-bar">
                         <Checkbox label="지점 안내 사용" name="branchesEnabled" checked={form.branchesEnabled}
                                   onChange={(e) => set('branchesEnabled', e.target.checked)}/>
                         <button type="submit" className="primary push-right">저장</button>
@@ -276,7 +292,7 @@ interface BranchForm extends Location {
 
 const EMPTY_BRANCH: BranchForm = {
     name: '', address: '', detailAddress: '', latitude: '', longitude: '', phoneNumber: '', businessHours: '',
-    description: '', sequence: '0', isUsing: true,
+    description: '', sequence: '1', isUsing: true,
 };
 
 const branchToForm = (branch: Branch): BranchForm => ({
@@ -313,7 +329,7 @@ function BranchManager({provider, apiKey}: { provider: MapProvider; apiKey: stri
             ...editing.form,
             latitude: toNumber(editing.form.latitude),
             longitude: toNumber(editing.form.longitude),
-            sequence: Number(editing.form.sequence) || 0,
+            sequence: Number(editing.form.sequence) || 1,
         };
         try {
             await (editing.id ? adminApi.map.branches.update(editing.id, body) : adminApi.map.branches.create(body));
@@ -357,7 +373,7 @@ function BranchManager({provider, apiKey}: { provider: MapProvider; apiKey: stri
                                onChange={(e) => setField('phoneNumber', e.target.value)}/>
                         <Field label="운영 시간" name="businessHours" value={editing.form.businessHours}
                                onChange={(e) => setField('businessHours', e.target.value)}/>
-                        <Field label="표시 순서" name="sequence" type="number" min={0} value={editing.form.sequence}
+                        <Field label="표시 순서" name="sequence" type="number" min={1} value={editing.form.sequence}
                                onChange={(e) => setField('sequence', e.target.value)}/>
                     </div>
                     <LocationEditor

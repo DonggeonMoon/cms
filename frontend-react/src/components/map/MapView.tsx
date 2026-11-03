@@ -98,6 +98,27 @@ function draw(provider: MapProvider, container: HTMLElement, places: Place[], fo
         return;
     }
 
+    if (provider === 'GOOGLE') {
+        const google = window.google;
+        const map = new google.maps.Map(container, {center, zoom: 16, mapTypeControl: false, streetViewControl: false});
+        const bounds = new google.maps.LatLngBounds();
+        const info = new google.maps.InfoWindow();
+        places.forEach((place) => {
+            const position = {lat: place.latitude, lng: place.longitude};
+            const marker = new google.maps.Marker({map, position, title: place.name});
+            marker.addListener('click', () => {
+                info.setContent(`<div class="map-label">${escape(place.name)}</div>`);
+                info.open({map, anchor: marker});
+            });
+            bounds.extend(position);
+        });
+        if (places.length > 1 && !focus) {
+            map.fitBounds(bounds);
+        }
+        map.addListener('click', (event: any) => event.latLng && onPick({lat: event.latLng.lat(), lng: event.latLng.lng()}));
+        return;
+    }
+
     const naver = window.naver;
     const map = new naver.maps.Map(container, {center: new naver.maps.LatLng(center.lat, center.lng), zoom: 16});
     const bounds = new naver.maps.LatLngBounds();

@@ -501,7 +501,7 @@ export interface Dashboard {
     last7DaysVisits: DailyVisits[];
 }
 
-export type MapProvider = 'KAKAO' | 'NAVER';
+export type MapProvider = 'KAKAO' | 'NAVER' | 'GOOGLE';
 
 export interface Office {
     name: string | null;
@@ -539,6 +539,7 @@ export interface MapSetting {
     provider: MapProvider;
     kakaoApiKeyId: number | null;
     naverApiKeyId: number | null;
+    googleApiKeyId: number | null;
     apiKey: string | null;
     directionsEnabled: boolean;
     branchesEnabled: boolean;

@@ -18,6 +18,7 @@ public final class MapDtos {
             @NotNull MapProvider provider,
             Long kakaoApiKeyId,
             Long naverApiKeyId,
+            Long googleApiKeyId,
             boolean directionsEnabled,
             boolean branchesEnabled,
             @Size(max = 100) String officeName,
@@ -34,11 +35,12 @@ public final class MapDtos {
         }
     }
 
-    public record MapSettingResponse(MapProvider provider, Long kakaoApiKeyId, Long naverApiKeyId, String apiKey,
+    public record MapSettingResponse(MapProvider provider, Long kakaoApiKeyId, Long naverApiKeyId, Long googleApiKeyId,
+                                     String apiKey,
                                      boolean directionsEnabled, boolean branchesEnabled, Office office) {
         public static MapSettingResponse from(final MapSetting setting, final String apiKey) {
             return new MapSettingResponse(setting.getProvider(), setting.getKakaoApiKeyId(), setting.getNaverApiKeyId(),
-                    apiKey, setting.isDirectionsEnabled(), setting.isBranchesEnabled(), Office.from(setting));
+                    setting.getGoogleApiKeyId(), apiKey, setting.isDirectionsEnabled(), setting.isBranchesEnabled(), Office.from(setting));
         }
     }
 
@@ -64,9 +66,12 @@ public final class MapDtos {
             @Size(max = 30) String phoneNumber,
             @Size(max = 200) String businessHours,
             @Size(max = 500) String description,
-            @PositiveOrZero int sequence,
+            @Positive Integer sequence,
             boolean isUsing
     ) {
+        public BranchSaveRequest {
+            sequence = sequence == null ? 1 : sequence;
+        }
     }
 
     public record BranchResponse(Long id, String name, String address, String detailAddress, BigDecimal latitude,

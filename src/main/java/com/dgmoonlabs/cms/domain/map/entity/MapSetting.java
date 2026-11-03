@@ -32,6 +32,9 @@ public class MapSetting extends BaseEntity {
     @Comment("네이버 지도 Client ID (API 키 관리의 키 ID)")
     private Long naverApiKeyId;
 
+    @Comment("구글 지도 API 키 (API 키 관리의 키 ID)")
+    private Long googleApiKeyId;
+
     @Column(nullable = false)
     @ColumnDefault("false")
     @Comment("오시는 길 사용 여부")
@@ -77,6 +80,7 @@ public class MapSetting extends BaseEntity {
         this.provider = request.provider();
         this.kakaoApiKeyId = request.kakaoApiKeyId();
         this.naverApiKeyId = request.naverApiKeyId();
+        this.googleApiKeyId = request.googleApiKeyId();
         this.directionsEnabled = request.directionsEnabled();
         this.branchesEnabled = request.branchesEnabled();
         this.officeName = request.officeName();
@@ -90,10 +94,14 @@ public class MapSetting extends BaseEntity {
     }
 
     public Long apiKeyId() {
-        return provider == MapProvider.NAVER ? naverApiKeyId : kakaoApiKeyId;
+        return switch (provider) {
+            case KAKAO -> kakaoApiKeyId;
+            case NAVER -> naverApiKeyId;
+            case GOOGLE -> googleApiKeyId;
+        };
     }
 
     public boolean uses(final Long apiKeyId) {
-        return apiKeyId.equals(kakaoApiKeyId) || apiKeyId.equals(naverApiKeyId);
+        return apiKeyId.equals(kakaoApiKeyId) || apiKeyId.equals(naverApiKeyId) || apiKeyId.equals(googleApiKeyId);
     }
 }

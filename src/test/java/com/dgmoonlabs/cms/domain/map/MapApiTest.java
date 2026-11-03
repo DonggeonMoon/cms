@@ -49,6 +49,16 @@ class MapApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.directions.address").value("서울 중구 세종대로 110"))
                 .andExpect(jsonPath("$.directions.latitude").value(37.5666103))
                 .andExpect(jsonPath("$.branches").doesNotExist());
+
+        long googleKey = createdId(postJson("/api/admin/api-keys", admin, """
+                {"name":"구글 지도 API 키","value":"google-key"}
+                """));
+        putJson("/api/admin/map/settings", admin, """
+                {"provider":"GOOGLE","naverApiKeyId":%d,"googleApiKeyId":%d,"directionsEnabled":true,%s}
+                """.formatted(naverKey, googleKey, HEAD_OFFICE)).andExpect(jsonPath("$.googleApiKeyId").value(googleKey));
+        getJson("/api/map", null)
+                .andExpect(jsonPath("$.provider").value("GOOGLE"))
+                .andExpect(jsonPath("$.apiKey").value("google-key"));
     }
 
     @Test

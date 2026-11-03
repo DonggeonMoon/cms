@@ -11,7 +11,7 @@ const OFFICE = {
 };
 const BRANCH = {
     id: 1, name: '강남점', address: '서울 강남구 테헤란로 1', detailAddress: null, latitude: 37.498, longitude: 127.027,
-    phoneNumber: null, businessHours: null, description: null, sequence: 0, isUsing: true,
+    phoneNumber: null, businessHours: null, description: null, sequence: 1, isUsing: true,
 };
 
 const API_KEYS = [{id: 7, name: '카카오맵 운영 키'}, {id: 8, name: '네이버 지도 키'}];

@@ -50,6 +50,7 @@ public class MapService {
         }
         apiKeyService.requireExists(request.kakaoApiKeyId());
         apiKeyService.requireExists(request.naverApiKeyId());
+        apiKeyService.requireExists(request.googleApiKeyId());
         MapSetting setting = settingRepository.findFirstByOrderByIdAsc()
                 .orElseGet(() -> settingRepository.save(MapSetting.empty()));
         setting.update(request);
