@@ -94,6 +94,22 @@ export function useSite() {
     return useContext(SiteContext);
 }
 
+function findFeatureMenu(menus: Menu[], feature: SiteFeature): Menu | undefined {
+    for (const menu of menus) {
+        const found = menu.type === 'FEATURE' && menu.feature === feature ? menu : findFeatureMenu(menu.children, feature);
+        if (found) {
+            return found;
+        }
+    }
+    return undefined;
+}
+
+/** 관리자가 정한 기능 메뉴 이름. 메뉴가 없으면 기본 이름을 쓴다. */
+export function useFeatureMenuName(feature: SiteFeature, fallback: string): string {
+    const {menus} = useSite();
+    return findFeatureMenu(menus, feature)?.name ?? fallback;
+}
+
 export function RequireFeature({feature}: { feature: SiteFeature | SiteFeature[] }) {
     const {isEnabled} = useSite();
     if (!(Array.isArray(feature) ? feature : [feature]).some(isEnabled)) {

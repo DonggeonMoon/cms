@@ -10,6 +10,7 @@ import {ENROLLMENT_STATUS} from '../components/labels';
 import {ListSearch} from '../components/ListSearch';
 import {MemberOnlyNotice} from '../components/MemberOnlyNotice';
 import {Pagination} from '../components/Pagination';
+import {useFeatureMenuName} from '../components/SiteContext';
 import {Thumbnail} from '../components/Thumbnail';
 
 const REPORT_INTERVAL_MS = 10_000;
@@ -31,6 +32,7 @@ export function MediaListPage() {
     const page = Number(params.get('page') ?? 0);
     const keyword = params.get('keyword') ?? '';
     const mediaType = (params.get('type') ?? '') as MediaType | '';
+    const title = useFeatureMenuName('MEDIA', '스트리밍');
     const [data, setData] = useState<Page<MediaItem> | null>(null);
     const [error, setError] = useState<unknown>(null);
 
@@ -45,7 +47,7 @@ export function MediaListPage() {
 
     return (
         <section className="card">
-            <h1>스트리밍</h1>
+            <h1>{title}</h1>
             <div className="tabs" role="tablist" aria-label="종류">
                 {TYPE_TABS.map((tab) => (
                     <button key={tab.value} type="button" role="tab" aria-selected={mediaType === tab.value}
@@ -54,7 +56,7 @@ export function MediaListPage() {
                     </button>
                 ))}
             </div>
-            <ListSearch label="스트리밍 검색" placeholder="제목 검색"/>
+            <ListSearch label={`${title} 검색`} placeholder="제목 검색"/>
             <ErrorBanner error={error}/>
             <div className="product-grid media-grid">
                 {data?.content.map((item) => (

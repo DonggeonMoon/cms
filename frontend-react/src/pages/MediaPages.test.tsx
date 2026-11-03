@@ -17,7 +17,7 @@ function respond(status: number, body?: unknown) {
     return new Response(body === undefined ? null : JSON.stringify(body), {status});
 }
 
-function stubApi(member: boolean, calls: { url: string; body: unknown }[] = []) {
+function stubApi(member: boolean, calls: { url: string; body: unknown }[] = [], menus: unknown[] = []) {
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
         calls.push({url, body: init?.body ? JSON.parse(String(init.body)) : null});
         switch (url) {
@@ -35,6 +35,8 @@ function stubApi(member: boolean, calls: { url: string; body: unknown }[] = []) 
                 return respond(200, {content: [{...ITEM, id: 8, title: '봄 노래', mediaType: 'AUDIO'}], page: {size: 12, number: 0, totalElements: 1, totalPages: 1}});
             case '/api/configs':
                 return respond(200, {});
+            case '/api/menus':
+                return respond(200, menus);
             default:
                 return url.startsWith('/api/menus') || url.startsWith('/api/banners') || ['/api/boards', '/api/archives', '/api/contents'].includes(url)
                     ? respond(200, [])
@@ -56,6 +58,13 @@ describe('media pages', () => {
         expect(await screen.findByRole('heading', {name: '현장 영상'})).toBeInTheDocument();
         expect(screen.getByText(/회원만 재생할 수 있습니다/)).toBeInTheDocument();
         expect(document.querySelector('video')).toBeNull();
+    });
+
+    it('titles the list with the menu name the admin chose', async () => {
+        stubApi(false, [], [{id: 13, parentId: null, name: '강의', type: 'FEATURE', depth: 0, sequence: 6, link: null,
+            targetId: null, feature: 'MEDIA', isUsing: true, children: []}]);
+        renderAt('/media');
+        expect(await screen.findByRole('heading', {name: '강의'})).toBeInTheDocument();
     });
 
     it('filters the list by music', async () => {
