@@ -51,11 +51,12 @@ export function MemberListPage() {
                         <thead>
                         <tr>
                             <th>아이디</th>
+                            <th>닉네임</th>
                             <th>이름</th>
                             <th>이메일</th>
                             <th>상태</th>
-                            <th>마지막 로그인</th>
                             <th>가입일</th>
+                            <th>마지막 로그인</th>
                             <th/>
                         </tr>
                         </thead>
@@ -63,11 +64,12 @@ export function MemberListPage() {
                         {result.content.map((member) => (
                             <tr key={member.id}>
                                 <td><Link to={`/admin/members/${member.id}`}>{member.username}</Link></td>
-                                <td>{member.name}</td>
+                                <td>{member.nickname ?? '-'}</td>
+                                <td>{member.name ?? '-'}</td>
                                 <td>{member.email ?? '-'}</td>
                                 <td>{member.isLocked ? <span className="badge danger">잠김</span> : '정상'}</td>
-                                <td>{formatDateTime(member.lastLoginDateTime)}</td>
                                 <td>{formatDateTime(member.createdAt)}</td>
+                                <td>{formatDateTime(member.lastLoginDateTime)}</td>
                                 <td className="actions">
                                     {member.isLocked && (
                                         <button type="button" onClick={() => act(() => memberAdminApi.unlock(member.id))}>
@@ -85,7 +87,7 @@ export function MemberListPage() {
                         ))}
                         {result.content.length === 0 && (
                             <tr>
-                                <td colSpan={7} className="muted">회원이 없습니다.</td>
+                                <td colSpan={8} className="muted">회원이 없습니다.</td>
                             </tr>
                         )}
                         </tbody>

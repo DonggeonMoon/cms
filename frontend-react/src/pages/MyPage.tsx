@@ -11,28 +11,32 @@ import {normalizeProfile, ProfileFields} from './ProfileFields';
 
 export function MyPage() {
     const [member, setMember] = useState<MemberResponse | null>(null);
+    const [settings, setSettings] = useState<JoinSettings | null>(null);
     const [loadError, setLoadError] = useState<unknown>(null);
 
     useEffect(() => {
-        memberApi.me().then(setMember).catch(setLoadError);
+        Promise.all([memberApi.me(), memberApi.joinSettings()])
+            .then(([me, joinSettings]) => {
+                setMember(me);
+                setSettings(joinSettings);
+            })
+            .catch(setLoadError);
     }, []);
 
     if (loadError) {
         return <ErrorBanner error={loadError}/>;
     }
-    if (!member) {
+    if (!member || !settings) {
         return <p className="muted">불러오는 중…</p>;
     }
-    return (
-        <>
-            <ProfileSection member={member} onSaved={setMember}/>
-            <PasswordSection/>
-            <QuitSection/>
-        </>
-    );
+    return <ProfileSection member={member} settings={settings} onSaved={setMember}/>;
 }
 
-function ProfileSection({member, onSaved}: { member: MemberResponse; onSaved: (m: MemberResponse) => void }) {
+function ProfileSection({member, settings, onSaved}: {
+    member: MemberResponse;
+    settings: JoinSettings;
+    onSaved: (m: MemberResponse) => void;
+}) {
     const [form, setForm] = useState<MemberProfile>(member);
     const [error, setError] = useState<unknown>(null);
     const [saved, setSaved] = useState(false);
@@ -62,7 +66,7 @@ function ProfileSection({member, onSaved}: { member: MemberResponse; onSaved: (m
                 <dd>{formatDateTime(member.lastLoginDateTime)}</dd>
             </dl>
             <form onSubmit={handleSubmit}>
-                <ProfileFields value={form} onChange={setForm}
+                <ProfileFields value={form} onChange={setForm} settings={settings}
                                errorOf={(field) => (error instanceof ApiError ? error.fieldMessage(field) : undefined)}/>
                 <ErrorBanner error={error}/>
                 {saved && <p className="ok">저장했습니다.</p>}
@@ -72,7 +76,7 @@ function ProfileSection({member, onSaved}: { member: MemberResponse; onSaved: (m
     );
 }
 
-function PasswordSection() {
+export function PasswordChangePage() {
     const [form, setForm] = useState({currentPassword: '', newPassword: '', newPasswordCheck: ''});
     const [error, setError] = useState<unknown>(null);
     const [done, setDone] = useState(false);
@@ -94,7 +98,7 @@ function PasswordSection() {
     const errorOf = (field: string) => (error instanceof ApiError ? error.fieldMessage(field) : undefined);
     return (
         <section className="card">
-            <h2>비밀번호 변경</h2>
+            <h1>비밀번호 변경</h1>
             <form onSubmit={handleSubmit}>
                 <Field label="현재 비밀번호" name="currentPassword" type="password" required
                        autoComplete="current-password" value={form.currentPassword}
@@ -116,7 +120,7 @@ function PasswordSection() {
     );
 }
 
-function QuitSection() {
+export function QuitPage() {
     const {clear} = useAuth();
     const navigate = useNavigate();
     const [error, setError] = useState<unknown>(null);
@@ -136,7 +140,7 @@ function QuitSection() {
 
     return (
         <section className="card">
-            <h2>회원 탈퇴</h2>
+            <h1>회원 탈퇴</h1>
             <ErrorBanner error={error}/>
             <button type="button" className="danger" onClick={handleQuit}>탈퇴하기</button>
         </section>

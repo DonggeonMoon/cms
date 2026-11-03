@@ -12,5 +12,9 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberCus
 
     boolean existsByUsername(String username);
 
+    boolean existsByNicknameAndDeletedAtIsNull(String nickname);
+
+    boolean existsByNicknameAndIdNotAndDeletedAtIsNull(String nickname, Long id);
+
     long countByDeletedAtIsNull();
 }

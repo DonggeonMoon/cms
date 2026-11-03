@@ -23,8 +23,9 @@ export function MemberDetailPage() {
 
     const rows: [string, string | null | undefined][] = [
         ['아이디', member.username],
+        ['닉네임', member.nickname],
         ['이름', member.name],
-        ['생년월일', member.birthDate ? `${member.birthDate}${member.isLunarBirthDate ? ' (음력)' : ''}` : null],
+        ['생년월일', member.birthDate],
         ['성별', member.gender],
         ['이메일', member.email],
         ['전화번호', member.telephoneNumber],
@@ -37,8 +38,8 @@ export function MemberDetailPage() {
             member.isMarketingUsageAgreed && '마케팅',
         ].filter(Boolean).join(', ')],
         ['로그인 실패 횟수', String(member.loginTryCount)],
-        ['마지막 로그인', formatDateTime(member.lastLoginDateTime)],
         ['가입일', formatDateTime(member.createdAt)],
+        ['마지막 로그인', formatDateTime(member.lastLoginDateTime)],
     ];
 
     return (

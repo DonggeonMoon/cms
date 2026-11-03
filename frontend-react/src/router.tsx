@@ -213,6 +213,7 @@ export const routes = [
                             },
                             {path: 'members', element: <MemberListPage/>},
                             {path: 'members/:id', element: <MemberDetailPage/>},
+                            {path: 'join-settings', element: <MemberJoinSettingPage/>},
                             {path: 'policies/:type', element: <PolicyAdminPage/>},
                             {path: 'codes', element: <CodePage/>},
                             {path: 'files', element: <FilePage/>},

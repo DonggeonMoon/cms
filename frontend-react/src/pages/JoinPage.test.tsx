@@ -18,6 +18,9 @@ function stub() {
             return respond(200, {type: 'PRIVACY_POLICY', title: '개인정보처리방침', contentHtml: '<p>제1조 목적</p>',
                 version: 1, lastWorker: 'admin', modifiedAt: '2026-11-02T10:00:00'});
         }
+        if (url === '/api/members/join-settings') {
+            return respond(200, {collectName: true, nameFormat: 'FULL', collectNickname: false, birthDateInput: 'SELECT', collectedItems: ['BIRTH_DATE', 'MOBILE_PHONE']});
+        }
         if (url === '/api/auth/me') {
             return respond(401, {code: 'UNAUTHENTICATED'});
         }
@@ -40,6 +43,11 @@ describe('privacy texts', () => {
         await userEvent.click(screen.getByLabelText(/개인정보 수집·이용에 동의합니다/));
         await userEvent.click(next);
         expect(await screen.findByLabelText(/아이디/)).toBeInTheDocument();
+        expect(await screen.findByLabelText(/성명/)).toBeRequired();
+        expect(screen.getByRole('combobox', {name: '태어난 해'})).toBeInTheDocument();
+        expect(screen.getByLabelText('휴대폰 번호')).toBeInTheDocument();
+        expect(screen.queryByLabelText('이메일')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/음력/)).not.toBeInTheDocument();
     });
 
     it('links the privacy policy from the footer', async () => {

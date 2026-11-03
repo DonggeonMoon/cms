@@ -1,7 +1,8 @@
 import {request} from './client';
-import type {MemberJoinRequest, MemberProfile, MemberResponse, MemberSummary, Page} from './types';
+import type {AdminJoinSettings, JoinSettings, MemberJoinRequest, MemberProfile, MemberResponse, MemberSummary, Page} from './types';
 
 export const memberApi = {
+    joinSettings: () => request<JoinSettings>('/api/members/join-settings'),
     join: (body: MemberJoinRequest) => request<void>('/api/members', {method: 'POST', body}),
     isUsernameAvailable: (username: string) =>
         request<{ available: boolean }>('/api/members/username-availability', {query: {username}})
@@ -22,4 +23,7 @@ export const memberAdminApi = {
     get: (id: number) => request<MemberResponse>(`/api/admin/members/${id}`),
     unlock: (id: number) => request<void>(`/api/admin/members/${id}/unlock`, {method: 'POST'}),
     remove: (id: number) => request<void>(`/api/admin/members/${id}`, {method: 'DELETE'}),
+    joinSettings: () => request<AdminJoinSettings>('/api/admin/members/join-settings'),
+    saveJoinSettings: (body: AdminJoinSettings) =>
+        request<AdminJoinSettings>('/api/admin/members/join-settings', {method: 'PUT', body}),
 };

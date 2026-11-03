@@ -1,16 +1,17 @@
 package com.dgmoonlabs.cms.domain.common.user.dto;
 
 import com.dgmoonlabs.cms.domain.common.user.entity.member.Member;
+import com.dgmoonlabs.cms.domain.common.user.entity.member.MemberJoinSetting;
 import com.dgmoonlabs.cms.domain.common.user.entity.member.MemberAddress;
 import com.dgmoonlabs.cms.domain.common.user.entity.member.MemberAgreement;
 import com.dgmoonlabs.cms.domain.common.user.entity.member.MemberOrganization;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
 import java.time.LocalDate;
+import java.util.function.Predicate;
 
 @Builder
 public record MemberJoinRequest(
@@ -39,49 +40,50 @@ public record MemberJoinRequest(
         String officeDetailAddress,
         boolean isPrivacyConsentAgreed
 ) {
-    public Member toEntity(final String encodedPassword) {
+    public Member toEntity(final String encodedPassword, final MemberName memberName, final String nickname,
+                           final MemberJoinSetting setting) {
         return Member.builder()
                 .username(username)
                 .password(encodedPassword)
-                .name(name)
-                .lastName(lastName)
-                .firstName(firstName)
-                .birthDate(birthDate)
-                .isLunarBirthDate(Boolean.TRUE.equals(isLunarBirthDate))
-                .gender(gender)
-                .email(email)
-                .telephoneNumber(telephoneNumber)
-                .mobilePhoneNumber(mobilePhoneNumber)
+                .nickname(nickname)
+                .name(memberName.name())
+                .lastName(memberName.lastName())
+                .firstName(memberName.firstName())
+                .birthDate(setting.keep(PersonalInfoItem.BIRTH_DATE, birthDate))
+                .gender(setting.keep(PersonalInfoItem.GENDER, gender))
+                .email(setting.keep(PersonalInfoItem.EMAIL, email))
+                .telephoneNumber(setting.keep(PersonalInfoItem.TELEPHONE, telephoneNumber))
+                .mobilePhoneNumber(setting.keep(PersonalInfoItem.MOBILE_PHONE, mobilePhoneNumber))
                 .termConfirmationDate(LocalDate.now())
                 .build();
     }
 
-    public MemberAddress toAddress(final Long memberId) {
+    public MemberAddress toAddress(final Long memberId, final MemberJoinSetting setting) {
         return MemberAddress.builder()
                 .memberId(memberId)
-                .postalCode(postalCode)
-                .address(address)
-                .detailAddress(detailAddress)
+                .postalCode(setting.keep(PersonalInfoItem.ADDRESS, postalCode))
+                .address(setting.keep(PersonalInfoItem.ADDRESS, address))
+                .detailAddress(setting.keep(PersonalInfoItem.ADDRESS, detailAddress))
                 .build();
     }
 
-    public MemberAgreement toAgreement(final Long memberId) {
+    public MemberAgreement toAgreement(final Long memberId, final Predicate<PolicyType> isUsing) {
         return MemberAgreement.builder()
                 .memberId(memberId)
-                .isMailReceptionAgreed(isMailReceptionAgreed)
-                .isSmsReceptionAgreed(isSmsReceptionAgreed)
-                .isMarketingUsageAgreed(isMarketingUsageAgreed)
+                .isMailReceptionAgreed(isMailReceptionAgreed && isUsing.test(PolicyType.MAIL_RECEPTION))
+                .isSmsReceptionAgreed(isSmsReceptionAgreed && isUsing.test(PolicyType.SMS_RECEPTION))
+                .isMarketingUsageAgreed(isMarketingUsageAgreed && isUsing.test(PolicyType.MARKETING_USAGE))
                 .build();
     }
 
-    public MemberOrganization toOrganization(final Long memberId) {
+    public MemberOrganization toOrganization(final Long memberId, final MemberJoinSetting setting) {
         return MemberOrganization.builder()
                 .memberId(memberId)
-                .officeName(officeName)
-                .officeDepartment(officeDepartment)
-                .officePosition(officePosition)
-                .officeAddress(officeAddress)
-                .officeDetailAddress(officeDetailAddress)
+                .officeName(setting.keep(PersonalInfoItem.OFFICE, officeName))
+                .officeDepartment(setting.keep(PersonalInfoItem.OFFICE, officeDepartment))
+                .officePosition(setting.keep(PersonalInfoItem.OFFICE, officePosition))
+                .officeAddress(setting.keep(PersonalInfoItem.OFFICE, officeAddress))
+                .officeDetailAddress(setting.keep(PersonalInfoItem.OFFICE, officeDetailAddress))
                 .build();
     }
 }

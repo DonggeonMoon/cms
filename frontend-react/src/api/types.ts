@@ -29,11 +29,11 @@ export interface ErrorBody {
 }
 
 export interface MemberProfile {
+    nickname?: string | null;
     name: string;
     lastName?: string | null;
     firstName?: string | null;
     birthDate?: string | null;
-    isLunarBirthDate?: boolean;
     gender?: string | null;
     email?: string | null;
     telephoneNumber?: string | null;
@@ -51,6 +51,31 @@ export interface MemberProfile {
     officeDetailAddress?: string | null;
 }
 
+export type NameFormat = 'FULL' | 'SPLIT';
+
+export type PersonalInfoItem = 'BIRTH_DATE' | 'GENDER' | 'EMAIL' | 'TELEPHONE' | 'MOBILE_PHONE' | 'ADDRESS' | 'OFFICE';
+
+export const PERSONAL_INFO_ITEMS: { value: PersonalInfoItem; label: string }[] = [
+    {value: 'BIRTH_DATE', label: '생년월일'},
+    {value: 'GENDER', label: '성별'},
+    {value: 'EMAIL', label: '이메일'},
+    {value: 'TELEPHONE', label: '전화번호'},
+    {value: 'MOBILE_PHONE', label: '휴대폰 번호'},
+    {value: 'ADDRESS', label: '주소'},
+    {value: 'OFFICE', label: '직장 정보'},
+];
+
+export type BirthDateInput = 'SELECT' | 'EIGHT_DIGITS' | 'SIX_DIGITS';
+
+export interface JoinSettings {
+    collectName: boolean;
+    nameFormat: NameFormat;
+    collectNickname: boolean;
+    birthDateInput: BirthDateInput;
+    collectedItems: PersonalInfoItem[];
+}
+
+export interface AdminJoinSettings extends JoinSettings {
 export interface MemberJoinRequest extends MemberProfile {
     username: string;
     password: string;
@@ -69,7 +94,8 @@ export interface MemberResponse extends MemberProfile {
 export interface MemberSummary {
     id: number;
     username: string;
-    name: string;
+    nickname: string | null;
+    name: string | null;
     email: string | null;
     isLocked: boolean;
     lastLoginDateTime: string | null;

@@ -8,6 +8,7 @@ import type {MemberJoinRequest} from '../api/types';
 import {ErrorBanner} from '../components/ErrorBanner';
 import {Checkbox, Field} from '../components/Field';
 import {HtmlView} from '../components/HtmlView';
+import {useSite} from '../components/SiteContext';
 import {EMPTY_PROFILE, normalizeProfile, ProfileFields} from './ProfileFields';
 
 export function JoinPage() {
@@ -25,8 +26,8 @@ function ConsentStep({onAgree}: { onAgree: () => void }) {
     }, []);
 
     return (
-        <section className="card">
-            <h1>회원가입</h1>
+        <section className="card form-page">
+            <JoinTitle/>
             <h2>{policy?.title ?? '개인정보 수집·이용 동의'}</h2>
             <ErrorBanner error={error}/>
             <div className="policy-box">{policy ? <HtmlView html={policy.contentHtml}/> : <p className="muted">불러오는 중…</p>}</div>
@@ -51,6 +52,10 @@ function JoinForm() {
     const [usernameStatus, setUsernameStatus] = useState<'unknown' | 'available' | 'taken'>('unknown');
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        memberApi.joinSettings().then(setSettings).catch(setError);
+    }, []);
 
     const errorOf = (field: string) => (error instanceof ApiError ? error.fieldMessage(field) : undefined);
     const passwordMismatch = form.passwordCheck !== '' && form.password !== form.passwordCheck;
@@ -84,8 +89,8 @@ function JoinForm() {
     };
 
     return (
-        <section className="card">
-            <h1>회원가입</h1>
+        <section className="card form-page">
+            <JoinTitle/>
             <form onSubmit={handleSubmit}>
                 <fieldset>
                     <legend>계정</legend>
@@ -110,10 +115,12 @@ function JoinForm() {
                                onChange={(e) => setForm({...form, passwordCheck: e.target.value})}/>
                     </div>
                 </fieldset>
-                <ProfileFields value={form} onChange={setForm} errorOf={errorOf}/>
+                {settings
+                    ? <ProfileFields value={form} onChange={setForm} errorOf={errorOf} settings={settings}/>
+                    : <p className="muted">불러오는 중…</p>}
                 <ErrorBanner error={error}/>
-                <button type="submit" className="primary" disabled={submitting || passwordMismatch}>
-                    {submitting ? '가입 중…' : '가입하기'}
+                <button type="submit" className="primary" disabled={submitting || passwordMismatch || !settings}>
+                    <StableLabel current={submitting ? '가입 중…' : '가입하기'} labels={['가입 중…', '가입하기']}/>
                 </button>
             </form>
         </section>

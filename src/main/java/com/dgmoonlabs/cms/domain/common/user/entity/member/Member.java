@@ -1,7 +1,9 @@
 package com.dgmoonlabs.cms.domain.common.user.entity.member;
 
 import com.dgmoonlabs.cms.global.crypto.EncryptedStringConverter;
+import com.dgmoonlabs.cms.domain.common.user.constant.PersonalInfoItem;
 import com.dgmoonlabs.cms.domain.common.user.dto.MemberModifyRequest;
+import com.dgmoonlabs.cms.domain.common.user.dto.MemberName;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -50,6 +52,10 @@ public class Member extends BaseEntity {
     @Comment("약관 동의 만료 일시")
     private LocalDate termExpirationDate;
 
+    @Comment("닉네임")
+    @Column(length = 30, unique = true)
+    private String nickname;
+
     @Comment("이름")
     @Convert(converter = EncryptedStringConverter.class)
     @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
@@ -67,11 +73,6 @@ public class Member extends BaseEntity {
 
     @Comment("생년월일")
     private LocalDate birthDate;
-
-    @Column(nullable = false)
-    @ColumnDefault("false")
-    @Comment("음력 여부")
-    private boolean isLunarBirthDate;
 
     @Comment("성별")
     @Convert(converter = EncryptedStringConverter.class)

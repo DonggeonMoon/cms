@@ -1,5 +1,5 @@
 import {type FormEvent, useState} from 'react';
-import {Link, useLocation, useNavigate} from 'react-router';
+import {Link, useLocation, useNavigate, useSearchParams} from 'react-router';
 import type {UserType} from '../api/types';
 import {useAuth} from '../auth/AuthContext';
 import {ErrorBanner} from '../components/ErrorBanner';
@@ -41,7 +41,7 @@ export function LoginPage({userType}: { userType: UserType }) {
                        autoComplete="current-password" required onChange={(e) => setPassword(e.target.value)}/>
                 <ErrorBanner error={error}/>
                 <button type="submit" className="primary" disabled={submitting}>
-                    {submitting ? '로그인 중…' : '로그인'}
+                    <StableLabel current={submitting ? '로그인 중…' : '로그인'} labels={['로그인 중…', '로그인']}/>
                 </button>
             </form>
             {!isAdmin && <p className="muted">계정이 없으신가요? <Link to="/join">회원가입</Link></p>}

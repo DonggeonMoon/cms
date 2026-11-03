@@ -215,6 +215,8 @@ def seed(base_url, admin_password):
     ]:
         admin.create(f'/api/admin/archives/{notices}/articles', {'title': title, 'contentHtml': body, 'status': status})
 
+    admin.put('/api/admin/members/join-settings',
+              {'nameFormat': 'FULL', 'collectedItems': ['EMAIL', 'MOBILE_PHONE', 'ADDRESS']})
     members = [
         ('happybuyer', '김하늘', 'sky@example.com', '010-1234-5678', '서울특별시 마포구 월드컵북로 400', '101동 1203호'),
         ('retro_mania', '이도윤', 'doyun@example.com', '010-2345-6789', '부산광역시 부산진구 중앙대로 672', '3층'),

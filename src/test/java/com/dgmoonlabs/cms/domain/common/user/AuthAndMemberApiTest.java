@@ -56,20 +56,22 @@ class AuthAndMemberApiTest {
 
         mockMvc.perform(get("/api/members/me").session(session))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.address").value("서울"))
+                .andExpect(jsonPath("$.address").doesNotExist())
+                .andExpect(jsonPath("$.email").doesNotExist())
                 .andExpect(jsonPath("$.isMailReceptionAgreed").value(true))
-                .andExpect(jsonPath("$.officeName").value("DG Labs"))
+                .andExpect(jsonPath("$.officeName").doesNotExist())
                 .andExpect(jsonPath("$.password").doesNotExist());
 
         mockMvc.perform(put("/api/members/me").session(session).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"새이름","email":"new@example.com","address":"부산","isSmsReceptionAgreed":true}
+                                {"name":"새이름","mobilePhoneNumber":"010-1111-2222","address":"부산","isSmsReceptionAgreed":true}
                                 """))
                 .andExpect(status().isNoContent());
         mockMvc.perform(get("/api/members/me").session(session))
                 .andExpect(jsonPath("$.name").value("새이름"))
-                .andExpect(jsonPath("$.address").value("부산"))
+                .andExpect(jsonPath("$.mobilePhoneNumber").value("010-1111-2222"))
+                .andExpect(jsonPath("$.address").doesNotExist())
                 .andExpect(jsonPath("$.isSmsReceptionAgreed").value(true));
 
         mockMvc.perform(put("/api/members/me/password").session(session).with(csrf())
@@ -101,7 +103,78 @@ class AuthAndMemberApiTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"))
-                .andExpect(jsonPath("$.fieldErrors.length()").value(3));
+                .andExpect(jsonPath("$.fieldErrors.length()").value(2));
+        mockMvc.perform(post("/api/members").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(JOIN_BODY.replace("\"name\":\"테스터\"", "\"name\":\" \"")))
+                .andExpect(jsonPath("$.code").value("MEMBER_NAME_REQUIRED"));
+    }
+
+    @Test
+    void joinSettingsDecideNameFormatAndCollectedItems() throws Exception {
+        mockMvc.perform(get("/api/members/join-settings"))
+                .andExpect(jsonPath("$.nameFormat").value("FULL"))
+                .andExpect(jsonPath("$.birthDateInput").value("SELECT"))
+                .andExpect(jsonPath("$.collectedItems.length()").value(2));
+
+        adminRepository.save(Admin.builder().username("root").password(passwordEncoder.encode("adminpass1")).name("관리자").build());
+        MockHttpSession admin = login("root", "adminpass1", "ADMIN");
+        mockMvc.perform(get("/api/admin/members/join-settings").session(admin))
+                .andExpect(jsonPath("$.code").value("REAUTHENTICATION_REQUIRED"));
+        mockMvc.perform(post("/api/admin/reauthenticate").session(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"password\":\"adminpass1\"}"))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(put("/api/admin/members/join-settings").session(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nameFormat":"SPLIT","birthDateInput":"SIX_DIGITS","collectedItems":["ADDRESS","GENDER"]}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/members/join-settings"))
+                .andExpect(jsonPath("$.nameFormat").value("SPLIT"))
+                .andExpect(jsonPath("$.birthDateInput").value("SIX_DIGITS"));
+
+        String body = """
+                {"username":"split","password":"password123","passwordCheck":"password123","isPrivacyConsentAgreed":true,
+                 "lastName":"홍","firstName":"길동","gender":"남","birthDate":"1990-01-02","address":"서울"}
+                """;
+        mockMvc.perform(post("/api/members").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(body.replace("\"firstName\":\"길동\",", "")))
+                .andExpect(jsonPath("$.code").value("MEMBER_NAME_REQUIRED"));
+        mockMvc.perform(post("/api/members").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated());
+
+        MockHttpSession member = login("split", "password123", "MEMBER");
+        mockMvc.perform(get("/api/members/me").session(member))
+                .andExpect(jsonPath("$.name").value("홍길동"))
+                .andExpect(jsonPath("$.lastName").value("홍"))
+                .andExpect(jsonPath("$.gender").value("남"))
+                .andExpect(jsonPath("$.address").value("서울"))
+                .andExpect(jsonPath("$.birthDate").doesNotExist());
+
+        mockMvc.perform(put("/api/admin/members/join-settings").session(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"collectName":false,"nameFormat":"FULL","collectNickname":true,"collectedItems":[]}
+                                """))
+                .andExpect(jsonPath("$.collectName").value(false))
+                .andExpect(jsonPath("$.collectNickname").value(true));
+        String nicknameBody = """
+                {"username":"%s","password":"password123","passwordCheck":"password123","isPrivacyConsentAgreed":true,
+                 "name":"무시됨"%s}
+                """;
+        mockMvc.perform(post("/api/members").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(nicknameBody.formatted("nonick", "")))
+                .andExpect(jsonPath("$.code").value("NICKNAME_REQUIRED"));
+        mockMvc.perform(post("/api/members").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(nicknameBody.formatted("nick1", ",\"nickname\":\"별빛\"")))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/members").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(nicknameBody.formatted("nick2", ",\"nickname\":\"별빛\"")))
+                .andExpect(jsonPath("$.code").value("DUPLICATE_NICKNAME"));
+
+        MockHttpSession nickMember = login("nick1", "password123", "MEMBER");
+        mockMvc.perform(get("/api/auth/me").session(nickMember)).andExpect(jsonPath("$.name").value("별빛"));
+        mockMvc.perform(get("/api/members/me").session(nickMember))
+                .andExpect(jsonPath("$.nickname").value("별빛"))
+                .andExpect(jsonPath("$.name").doesNotExist());
     }
 
     @Test
