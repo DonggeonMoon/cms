@@ -25,7 +25,7 @@ export function DashboardPage() {
     const allTiles: { label: string; value: string; to: string; feature?: SiteFeature }[] = [
         {label: '오늘 방문', value: data.todayVisits.toLocaleString('ko-KR'), to: '/admin/statistics'},
         {label: '게시글', value: data.articleCount.toLocaleString('ko-KR'), to: '/admin/boards', feature: 'BOARD'},
-        {label: '질문', value: data.questionCount.toLocaleString('ko-KR'), to: '/admin/questions', feature: 'QNA'},
+        {label: '미답변 질문', value: data.unansweredQuestions.toLocaleString('ko-KR'), to: '/admin/questions?unanswered=true', feature: 'QNA'},
         {label: '결제 대기 주문', value: data.pendingPaymentOrders.toLocaleString('ko-KR'), to: '/admin/orders', feature: 'PRODUCT'},
         {label: '결제 완료 주문', value: data.paidOrders.toLocaleString('ko-KR'), to: '/admin/orders', feature: 'PRODUCT'},
         {label: '확정 예약', value: data.confirmedReservations.toLocaleString('ko-KR'), to: '/admin/reservations', feature: 'PROGRAM'},
@@ -56,15 +56,19 @@ export function DashboardPage() {
     );
 }
 
-export function VisitBars({data}: { data: DailyVisits[] }) {
+export function VisitBars({data, formatLabel = (date) => date.slice(5), ariaLabel = '일별 방문 수 막대 그래프'}: {
+    data: DailyVisits[];
+    formatLabel?: (date: string) => string;
+    ariaLabel?: string;
+}) {
     const max = Math.max(1, ...data.map((row) => row.visits));
     return (
-        <div className="bars" role="img" aria-label="일별 방문 수 막대 그래프">
+        <div className="bars" role="img" aria-label={ariaLabel}>
             {data.map((row) => (
-                <div key={row.date} className="bar-col" title={`${row.date}: ${row.visits}회`}>
+                <div key={row.date} className="bar-col" title={`${formatLabel(row.date)}: ${row.visits}회`}>
                     <span className="bar-value">{row.visits}</span>
                     <div className="bar" style={{height: `${(row.visits / max) * 100}%`}}/>
-                    <span className="bar-label">{row.date.slice(5)}</span>
+                    <span className="bar-label">{formatLabel(row.date)}</span>
                 </div>
             ))}
         </div>

@@ -18,8 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 import ua_parser.Client;
 import ua_parser.Parser;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -74,6 +77,38 @@ public class StatisticsService {
             series.add(new DailyRow(day, visits.getOrDefault(day, 0L)));
         }
         return series;
+    }
+
+    @Transactional(readOnly = true)
+    public List<DailyRow> visitSeries(final PeriodUnit unit, final LocalDate from, final LocalDate to) {
+        if (unit == PeriodUnit.DAY) {
+            return dailyVisits(from, to);
+        }
+        validateRange(from, to);
+        Map<LocalDate, Long> visits = new HashMap<>();
+        statisticsMapper.dailyVisits(from, to)
+                .forEach(row -> visits.merge(periodStart(unit, row.date()), row.visits(), Long::sum));
+        List<DailyRow> series = new ArrayList<>();
+        for (LocalDate start = periodStart(unit, from); !start.isAfter(to); start = nextPeriod(unit, start)) {
+            series.add(new DailyRow(start, visits.getOrDefault(start, 0L)));
+        }
+        return series;
+    }
+
+    private static LocalDate periodStart(final PeriodUnit unit, final LocalDate date) {
+        return switch (unit) {
+            case DAY -> date;
+            case WEEK -> date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            case MONTH -> date.withDayOfMonth(1);
+        };
+    }
+
+    private static LocalDate nextPeriod(final PeriodUnit unit, final LocalDate start) {
+        return switch (unit) {
+            case DAY -> start.plusDays(1);
+            case WEEK -> start.plusWeeks(1);
+            case MONTH -> start.plusMonths(1);
+        };
     }
 
     @Transactional(readOnly = true)

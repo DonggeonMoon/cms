@@ -40,6 +40,13 @@ public class StatisticsController {
         return ResponseEntity.ok(statisticsService.dailyVisits(from, to));
     }
 
+    @GetMapping("/api/admin/statistics/series")
+    public ResponseEntity<List<DailyRow>> series(@RequestParam final PeriodUnit unit,
+                                                 @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate from,
+                                                 @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate to) {
+        return ResponseEntity.ok(statisticsService.visitSeries(unit, from, to));
+    }
+
     @GetMapping("/api/admin/statistics/breakdown")
     public ResponseEntity<List<CountRow>> breakdown(@RequestParam final Dimension dimension,
                                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate from,

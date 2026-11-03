@@ -17,6 +17,10 @@ public final class StatisticsDtos {
         BROWSER, OS, URL
     }
 
+    public enum PeriodUnit {
+        DAY, WEEK, MONTH
+    }
+
     public record VisitRequest(@NotBlank @Size(max = 500) String path, @Size(max = 500) String referrer) {
     }
 
@@ -37,7 +41,7 @@ public final class StatisticsDtos {
     public record DashboardResponse(
             long memberCount,
             long articleCount,
-            long questionCount,
+            long unansweredQuestions,
             long pendingPaymentOrders,
             long paidOrders,
             BigDecimal revenueLast30Days,

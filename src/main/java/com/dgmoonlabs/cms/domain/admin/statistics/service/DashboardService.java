@@ -37,7 +37,7 @@ public class DashboardService {
         return new DashboardResponse(
                 memberRepository.countByDeletedAtIsNull(),
                 articleRepository.countByDeletedAtIsNull(),
-                questionRepository.countByDeletedAtIsNull(),
+                questionRepository.countUnanswered(),
                 orderRepository.countByStatus(OrderStatus.PENDING_PAYMENT),
                 orderRepository.countByStatus(OrderStatus.PAID),
                 orderRepository.sumTotalPriceSince(

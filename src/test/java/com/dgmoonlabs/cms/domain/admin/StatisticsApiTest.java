@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -42,6 +43,16 @@ class StatisticsApiTest extends ApiTestSupport {
         getJson("/api/admin/dashboard", admin)
                 .andExpect(jsonPath("$.todayVisits").value(3))
                 .andExpect(jsonPath("$.last7DaysVisits.length()").value(7));
+
+        LocalDate monday = today.with(DayOfWeek.MONDAY);
+        getJson("/api/admin/statistics/series?unit=WEEK&from=%s&to=%s".formatted(monday.minusWeeks(2), today), admin)
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[2].date").value(monday.toString()))
+                .andExpect(jsonPath("$[2].visits").value(3));
+        getJson("/api/admin/statistics/series?unit=MONTH&from=%s&to=%s".formatted(today.minusMonths(1).withDayOfMonth(1), today), admin)
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[1].date").value(today.withDayOfMonth(1).toString()))
+                .andExpect(jsonPath("$[1].visits").value(3));
 
         getJson("/api/admin/statistics/daily?from=%s&to=%s".formatted(today, today.minusDays(1)), admin)
                 .andExpect(jsonPath("$.code").value("INVALID_PERIOD"));
