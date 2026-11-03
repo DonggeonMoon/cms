@@ -1,28 +1,34 @@
 import {type FormEvent, useEffect, useState} from 'react';
 import {Link, useNavigate, useParams} from 'react-router';
 import {ApiError} from '../api/client';
-import type {ReportDetail, ReportSummary} from '../api/domain';
+import type {GuestPostingPolicy, ReportDetail, ReportSummary} from '../api/domain';
 import {govApi} from '../api/endpoints';
 import type {Page} from '../api/types';
 import {useAuth} from '../auth/AuthContext';
 import {ErrorBanner} from '../components/ErrorBanner';
 import {formatDateTime} from '../components/format';
 import {HtmlView} from '../components/HtmlView';
+import {MemberOnlyNotice} from '../components/MemberOnlyNotice';
 import {REPORT_STATUS} from '../components/labels';
 import {type FieldSpec, SchemaForm} from '../components/SchemaForm';
 
 export function ReportWritePage() {
     const {user} = useAuth();
+    const [guest, setGuest] = useState<GuestPostingPolicy>({allowed: true, collectPhone: true, collectEmail: false});
+    useEffect(() => {
+        govApi.reportGuestPosting().then(setGuest).catch(() => undefined);
+    }, []);
     const navigate = useNavigate();
     const [lookup, setLookup] = useState('');
     const fields: FieldSpec[] = [
-        {name: 'title', label: '제목', required: true, wide: true},
         ...(!user ? [
-            {name: 'reporterName', label: '이름', required: true},
-            {name: 'password', label: '조회 비밀번호', required: true, help: '처리 결과를 확인할 때 필요합니다.'},
+            {name: 'reporterName', label: '이름', required: true, wide: true},
+            {name: 'password', label: '조회 비밀번호', type: 'password', required: true, wide: true, help: '처리 결과를 확인할 때 필요합니다.'},
+            {name: 'passwordCheck', label: '조회 비밀번호 확인', type: 'password', required: true, wide: true},
+            ...(guest.collectPhone ? [{name: 'phoneNumber', label: '연락처', required: true, wide: true}] : []),
+            ...(guest.collectEmail ? [{name: 'email', label: '이메일', required: true, wide: true}] : []),
         ] as FieldSpec[] : []),
-        {name: 'phoneNumber', label: '연락처'},
-        {name: 'email', label: '이메일'},
+        {name: 'title', label: '제목', required: true, wide: true},
         {name: 'contentHtml', label: '내용', type: 'html'},
     ];
 
@@ -31,16 +37,23 @@ export function ReportWritePage() {
             <section className="card">
                 <h1>신고 접수</h1>
                 <p className="muted">접수된 내용은 담당자 확인 후 답변드립니다. 개인정보는 처리 목적 외에 사용하지 않습니다.</p>
-                <SchemaForm fields={fields} initial={{contentHtml: ''}} submitLabel="접수하기"
-                            onSubmit={async (values) => {
-                                const {id} = await govApi.createReport(values);
-                                if (user) {
-                                    navigate('/mypage/reports');
-                                } else {
-                                    window.alert(`접수되었습니다. 접수 번호는 ${id}번입니다.\n접수 번호와 비밀번호로 처리 결과를 확인할 수 있습니다.`);
-                                    navigate(`/reports/${id}`);
-                                }
-                            }}/>
+                {!user && !guest.allowed
+                    ? <MemberOnlyNotice message="신고는 회원만 접수할 수 있습니다."/>
+                    : (
+                    <SchemaForm fields={fields} initial={{contentHtml: ''}} submitLabel="접수하기"
+                                onSubmit={async ({passwordCheck, ...values}) => {
+                                    if (!user && values.password !== passwordCheck) {
+                                        throw new Error('조회 비밀번호 확인이 일치하지 않습니다.');
+                                    }
+                                    const {id} = await govApi.createReport(values);
+                                    if (user) {
+                                        navigate('/mypage/reports');
+                                    } else {
+                                        window.alert(`접수되었습니다. 접수 번호는 ${id}번입니다.\n접수 번호와 비밀번호로 처리 결과를 확인할 수 있습니다.`);
+                                        navigate(`/reports/${id}`);
+                                    }
+                                }}/>
+                    )}
             </section>
             <section className="card">
                 <h2>접수 결과 확인</h2>

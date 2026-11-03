@@ -1,9 +1,10 @@
 import {useCallback, useEffect, useState} from 'react';
 import type {Query} from '../../api/client';
 import type {ReportDetail, ReportStatus, ReportSummary, Satisfaction} from '../../api/domain';
-import {adminApi} from '../../api/endpoints';
+import {adminApi, govApi} from '../../api/endpoints';
 import {AdminCrudPage} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
+import {GuestPostingToggle} from '../../components/GuestPostingToggle';
 import {formatDateTime} from '../../components/format';
 import {HtmlView} from '../../components/HtmlView';
 import {REPORT_STATUS, toOptions} from '../../components/labels';
@@ -18,6 +19,7 @@ export function ReportAdminPage() {
         <>
             <AdminCrudPage<ReportSummary>
                 title="신고"
+                description={<GuestPostingToggle label="비회원도 신고 접수 허용" load={govApi.reportGuestPosting} save={adminApi.reports.setGuestPosting}/>}
                 load={loadReports}
                 extraQuery={{status}}
                 filters={

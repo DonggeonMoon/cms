@@ -63,6 +63,10 @@ public class QuestionService {
     @Transactional
     public Long createQuestion(final QuestionSaveRequest request, final String ipAddress) {
         Optional<LoginUser> user = CurrentUser.get();
+        GuestPostingPolicy guestPolicy = guestPostingService.policy(SiteFeature.QNA);
+        if (user.isEmpty() && !guestPolicy.allowed()) {
+            throw new BusinessException(ErrorCode.GUEST_WRITE_NOT_ALLOWED);
+        }
         if (user.isEmpty() && (isBlank(request.authorName()) || isBlank(request.password()))) {
             throw new BusinessException(ErrorCode.GUEST_PASSWORD_REQUIRED);
         }

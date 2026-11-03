@@ -11,6 +11,9 @@ import com.dgmoonlabs.cms.domain.government.report.repository.ReportRepository;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.html.HtmlSanitizer;
+import com.dgmoonlabs.cms.domain.admin.site.constant.SiteFeature;
+import com.dgmoonlabs.cms.domain.common.guestposting.GuestPostingPolicy;
+import com.dgmoonlabs.cms.domain.common.guestposting.GuestPostingService;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
 import com.dgmoonlabs.cms.global.security.LoginUser;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +32,20 @@ public class ReportService {
     private final ReportAnswerRepository answerRepository;
     private final PasswordEncoder passwordEncoder;
     private final HtmlSanitizer htmlSanitizer;
+    private final GuestPostingService guestPostingService;
 
     @Transactional
     public Long createReport(final ReportCreateRequest request) {
         Optional<LoginUser> member = CurrentUser.get().filter(user -> user.userType() == UserType.MEMBER);
+        GuestPostingPolicy guestPolicy = guestPostingService.policy(SiteFeature.REPORT);
+        if (member.isEmpty() && !guestPolicy.allowed()) {
+            throw new BusinessException(ErrorCode.GUEST_WRITE_NOT_ALLOWED);
+        }
         if (member.isEmpty() && (isBlank(request.reporterName()) || isBlank(request.password()))) {
             throw new BusinessException(ErrorCode.GUEST_PASSWORD_REQUIRED);
+        }
+        if (member.isEmpty()) {
+            guestPolicy.requireContacts(request.phoneNumber(), request.email());
         }
         String html = htmlSanitizer.sanitize(request.contentHtml());
         return reportRepository.save(Report.builder()
@@ -44,8 +55,8 @@ public class ReportService {
                 .userId(member.map(LoginUser::id).orElse(null))
                 .reporterName(member.map(LoginUser::name).orElse(request.reporterName()))
                 .password(member.isPresent() ? null : passwordEncoder.encode(request.password()))
-                .email(request.email())
-                .phoneNumber(request.phoneNumber())
+                .email(member.isEmpty() ? guestPolicy.keepEmail(request.email()) : request.email())
+                .phoneNumber(member.isEmpty() ? guestPolicy.keepPhone(request.phoneNumber()) : request.phoneNumber())
                 .status(ReportStatus.RECEIVED)
                 .build()).getId();
     }

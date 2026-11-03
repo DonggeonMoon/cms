@@ -17,6 +17,8 @@ public enum ErrorCode {
     ACCOUNT_LOCKED(HttpStatus.LOCKED, "로그인 시도 횟수를 초과해 계정이 잠겼습니다. 관리자에게 문의하세요."),
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "이미 사용 중인 아이디입니다."),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호 확인이 일치하지 않습니다."),
+    GUEST_CONTACT_REQUIRED(HttpStatus.BAD_REQUEST, "연락받을 연락처나 이메일을 입력해 주세요."),
+    GUEST_WRITE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "로그인한 회원만 등록할 수 있습니다. 로그인 후 다시 시도해 주세요."),
     PRIVACY_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "개인정보 수집·이용에 동의해야 가입할 수 있습니다."),
     WRONG_PASSWORD(HttpStatus.BAD_REQUEST, "현재 비밀번호가 올바르지 않습니다."),
     REAUTHENTICATION_REQUIRED(HttpStatus.FORBIDDEN, "보안을 위해 비밀번호를 다시 입력해 주세요."),

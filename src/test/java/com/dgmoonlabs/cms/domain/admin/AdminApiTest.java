@@ -212,6 +212,77 @@ class AdminApiTest extends ApiTestSupport {
         postJson("/api/admin/menus", admin, """
                 {"parentId":%d,"name":"하위","type":"LINK","link":"/x"}
                 """.formatted(productMenu)).andExpect(jsonPath("$.code").value("MENU_BUILT_IN"));
+        deleteJson("/api/admin/menus/" + productMenu, admin, null).andExpect(status().isNoContent());
+
+        postJson("/api/admin/sites", admin, """
+                {"name":"cms","isDefault":true,"disabledFeatures":["MAP"]}
+                """).andExpect(status().isCreated());
+        postJson("/api/admin/menus", admin, """
+                {"name":"지도","type":"FEATURE","feature":"MAP"}
+                """).andExpect(jsonPath("$.code").value("MENU_FEATURE_DISABLED"));
+    }
+
+    @Test
+    void guestPostingFollowsFeatureSettings() throws Exception {
+        MockHttpSession admin = admin();
+        String question = """
+                {"title":"문의","contentHtml":"<p>?</p>","authorName":"손님","password":"pw1234"%s}
+                """;
+        String report = """
+                {"title":"신고","contentHtml":"<p>!</p>","reporterName":"손님","password":"pw1234"%s}
+                """;
+        getJson("/api/questions/guest-posting", null)
+                .andExpect(jsonPath("$.allowed").value(true))
+                .andExpect(jsonPath("$.collectPhone").value(false))
+                .andExpect(jsonPath("$.collectEmail").value(true))
+                .andExpect(jsonPath("$.contactChosen").doesNotExist());
+        postJson("/api/questions", null, question.formatted(""))
+                .andExpect(jsonPath("$.code").value("GUEST_CONTACT_REQUIRED"));
+        long questionId = createdId(postJson("/api/questions", null,
+                question.formatted(",\"email\":\"g@example.com\",\"phoneNumber\":\"010-0000-0000\""))
+                .andExpect(status().isCreated()));
+        postJson("/api/questions/" + questionId + "/access", null, "{\"password\":\"pw1234\"}")
+                .andExpect(jsonPath("$.email").value("g@example.com"))
+                .andExpect(jsonPath("$.phoneNumber").doesNotExist());
+
+        putJson("/api/admin/questions/guest-posting", admin,
+                "{\"allowed\":true,\"collectPhone\":false,\"collectEmail\":false}")
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        putJson("/api/admin/reports/guest-posting", admin,
+                "{\"allowed\":true,\"collectPhone\":true,\"collectEmail\":false}")
+                .andExpect(jsonPath("$.collectEmail").value(false));
+        postJson("/api/reports", null, report.formatted(",\"email\":\"g@example.com\""))
+                .andExpect(jsonPath("$.code").value("GUEST_CONTACT_REQUIRED"));
+        postJson("/api/reports", null, report.formatted(",\"phoneNumber\":\"010-1111-2222\""))
+                .andExpect(status().isCreated());
+
+        putJson("/api/admin/questions/guest-posting", admin,
+                "{\"allowed\":false,\"collectPhone\":false,\"collectEmail\":true}").andExpect(status().isOk());
+        putJson("/api/admin/reports/guest-posting", admin,
+                "{\"allowed\":false,\"collectPhone\":true,\"collectEmail\":true}").andExpect(status().isOk());
+        putJson("/api/admin/reports/guest-posting", null,
+                "{\"allowed\":true,\"collectPhone\":true,\"collectEmail\":true}").andExpect(status().isUnauthorized());
+        getJson("/api/questions/guest-posting", null).andExpect(jsonPath("$.allowed").value(false));
+        getJson("/api/reports/guest-posting", null).andExpect(jsonPath("$.allowed").value(false));
+        postJson("/api/questions", null, question.formatted(",\"email\":\"g@example.com\""))
+                .andExpect(jsonPath("$.code").value("GUEST_WRITE_NOT_ALLOWED"));
+        postJson("/api/reports", null, report.formatted(",\"phoneNumber\":\"010-1234-5678\""))
+                .andExpect(jsonPath("$.code").value("GUEST_WRITE_NOT_ALLOWED"));
+        postJson("/api/questions", admin, question.formatted("")).andExpect(status().isCreated());
+    }
+
+    @Test
+    void archiveMenusPointAtOneArchive() throws Exception {
+        MockHttpSession admin = admin();
+        long menu = createdId(postJson("/api/admin/menus", admin, """
+                {"name":"공지","type":"ARCHIVE","targetId":3}
+                """).andExpect(status().isCreated()));
+        getJson("/api/admin/menus/" + menu, admin)
+                .andExpect(jsonPath("$.type").value("ARCHIVE"))
+                .andExpect(jsonPath("$.targetId").value(3));
+        postJson("/api/admin/menus", admin, """
+                {"name":"대상 없음","type":"ARCHIVE"}
+                """).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
     @Test
