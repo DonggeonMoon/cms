@@ -24,6 +24,7 @@ import {MemberJoinSettingPage} from './pages/admin/MemberJoinSettingPage';
 import {ChatbotAdminPage} from './pages/admin/ChatbotAdminPage';
 import {MemberListPage} from './pages/admin/MemberListPage';
 import {PolicyAdminPage} from './pages/admin/PolicyAdminPage';
+import {RegexAdminPage} from './pages/admin/RegexAdminPage';
 import {
     DiscountAdminPage,
     OrderAdminPage,
@@ -244,6 +245,7 @@ export const routes = [
                             {path: 'join-settings', element: <MemberJoinSettingPage/>},
                             {path: 'chatbot', element: <ChatbotAdminPage/>},
                             {path: 'policies/:type', element: <PolicyAdminPage/>},
+                            {path: 'regexes', element: <RegexAdminPage/>},
                             {path: 'codes', element: <CodePage/>},
                             {path: 'files', element: <FilePage/>},
                             {path: 'audit-logs', element: <AuditLogPage/>},

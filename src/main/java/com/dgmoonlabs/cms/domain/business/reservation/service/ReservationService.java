@@ -16,6 +16,8 @@ import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.html.HtmlSanitizer;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
+import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
+import com.dgmoonlabs.cms.domain.common.regex.service.RegexService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +37,7 @@ public class ReservationService {
     private final PaymentService paymentService;
     private final FileService fileService;
     private final HtmlSanitizer htmlSanitizer;
+    private final RegexService regexService;
 
     @Transactional(readOnly = true)
     public Page<ProgramResponse> getPrograms(final String keyword, final Pageable pageable) {
@@ -117,7 +120,8 @@ public class ReservationService {
         BigDecimal total = program.getPrice().multiply(BigDecimal.valueOf(request.quantity()));
         ReservationStatus status = paid || total.signum() == 0 ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING_PAYMENT;
         Reservation reservation = reservationRepository.save(Reservation.builder()
-                .reservationNumber(BusinessNumbers.next("R", reservationRepository::existsByReservationNumber))
+                .reservationNumber(regexService.requireNumberFormat(RegexTarget.RESERVATION_NUMBER,
+                        BusinessNumbers.next("R", reservationRepository::existsByReservationNumber)))
                 .userType(userType)
                 .userId(userId)
                 .programId(program.getId())
@@ -143,8 +147,12 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public Page<ReservationResponse> searchReservations(final Long programId, final ReservationStatus status,
-                                                        final Pageable pageable) {
-        return reservationRepository.search(programId, status, pageable).map(ReservationResponse::from);
+                                                        final String keyword, final Pageable pageable) {
+        String text = keyword == null ? "" : keyword.trim();
+        if (!text.isEmpty() && regexService.matches(RegexTarget.RESERVATION_NUMBER, text)) {
+            return reservationRepository.findByReservationNumber(text, pageable).map(ReservationResponse::from);
+        }
+        return reservationRepository.search(programId, status, text, pageable).map(ReservationResponse::from);
     }
 
     @Transactional

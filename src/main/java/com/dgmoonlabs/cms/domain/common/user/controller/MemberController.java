@@ -10,6 +10,8 @@ import com.dgmoonlabs.cms.global.security.SessionLoginHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
+import com.dgmoonlabs.cms.domain.common.regex.service.RegexService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,6 +26,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class MemberController {
     private final MemberService memberService;
+    private final RegexService regexService;
     private final SessionLoginHandler sessionLoginHandler;
 
     @PostMapping
@@ -32,7 +35,11 @@ public class MemberController {
     }
 
     @GetMapping("/username-availability")
-    public ResponseEntity<Map<String, Boolean>> checkUsername(@RequestParam final String username) {
+    public ResponseEntity<Map<String, Object>> checkUsername(@RequestParam final String username) {
+        Optional<String> violation = regexService.violation(RegexTarget.USERNAME, username);
+        if (violation.isPresent()) {
+            return ResponseEntity.ok(Map.of("available", false, "message", violation.get()));
+        }
         return ResponseEntity.ok(Map.of("available", memberService.isUsernameAvailable(username)));
     }
 

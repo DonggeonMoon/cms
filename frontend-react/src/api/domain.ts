@@ -424,6 +424,7 @@ export type PaymentMethod = 'CARD' | 'BANK_TRANSFER' | 'VIRTUAL_ACCOUNT' | 'MOBI
 
 export interface Payment {
     id: number;
+    paymentNumber: string | null;
     targetType: PaymentTargetType;
     targetId: number;
     memberId: number;

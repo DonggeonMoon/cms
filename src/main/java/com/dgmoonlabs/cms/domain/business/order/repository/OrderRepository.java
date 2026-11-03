@@ -27,6 +27,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     boolean existsByOrderNumber(String orderNumber);
 
+    @Query("select o from Order o where o.orderNumber = :orderNumber and (:status is null or o.status = :status)")
+    Page<Order> findByOrderNumberAndStatus(String orderNumber, OrderStatus status, Pageable pageable);
+
     @Query("select coalesce(sum(o.totalPrice), 0) from Order o where o.status in :statuses and o.createdAt >= :since")
     BigDecimal sumTotalPriceSince(Collection<OrderStatus> statuses, LocalDateTime since);
 

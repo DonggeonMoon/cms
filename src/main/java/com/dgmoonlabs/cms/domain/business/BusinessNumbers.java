@@ -13,9 +13,13 @@ public final class BusinessNumbers {
     }
 
     public static String next(final String prefix, final Predicate<String> isTaken) {
+        return next(prefix, LocalDateTime.now(), isTaken);
+    }
+
+    public static String next(final String prefix, final LocalDateTime at, final Predicate<String> isTaken) {
         String number;
         do {
-            number = prefix + LocalDateTime.now().format(FORMAT) + "-" + (1000 + RANDOM.nextInt(9000));
+            number = prefix + at.format(FORMAT) + "-" + (1000 + RANDOM.nextInt(9000));
         } while (isTaken.test(number));
         return number;
     }

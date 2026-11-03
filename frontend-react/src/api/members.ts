@@ -4,9 +4,8 @@ import type {AdminJoinSettings, JoinSettings, MemberJoinRequest, MemberProfile, 
 export const memberApi = {
     joinSettings: () => request<JoinSettings>('/api/members/join-settings'),
     join: (body: MemberJoinRequest) => request<void>('/api/members', {method: 'POST', body}),
-    isUsernameAvailable: (username: string) =>
-        request<{ available: boolean }>('/api/members/username-availability', {query: {username}})
-            .then((result) => result.available),
+    checkUsername: (username: string) =>
+        request<{ available: boolean; message?: string }>('/api/members/username-availability', {query: {username}}),
     me: () => request<MemberResponse>('/api/members/me'),
     modify: (body: MemberProfile) => request<void>('/api/members/me', {method: 'PUT', body}),
     changePassword: (currentPassword: string, newPassword: string, newPasswordCheck: string) =>

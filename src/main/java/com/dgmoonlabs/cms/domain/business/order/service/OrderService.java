@@ -16,6 +16,8 @@ import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
+import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
+import com.dgmoonlabs.cms.domain.common.regex.service.RegexService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +34,7 @@ public class OrderService {
     private final ProductOptionRepository optionRepository;
     private final DiscountService discountService;
     private final PaymentService paymentService;
+    private final RegexService regexService;
 
     @Transactional
     public OrderResponse createOrder(final Long memberId, final OrderCreateRequest request) {
@@ -62,7 +65,8 @@ public class OrderService {
 
         product.decreaseStock(request.quantity());
         Order order = orderRepository.save(Order.builder()
-                .orderNumber(BusinessNumbers.next("O", orderRepository::existsByOrderNumber))
+                .orderNumber(regexService.requireNumberFormat(RegexTarget.ORDER_NUMBER,
+                        BusinessNumbers.next("O", orderRepository::existsByOrderNumber)))
                 .userType(userType)
                 .userId(userId)
                 .productId(product.getId())
@@ -99,7 +103,11 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Page<OrderResponse> searchOrders(final OrderStatus status, final String keyword, final Pageable pageable) {
-        return orderRepository.search(status, keyword == null ? "" : keyword.trim(), pageable).map(OrderResponse::from);
+        String text = keyword == null ? "" : keyword.trim();
+        if (regexService.matches(RegexTarget.ORDER_NUMBER, text) && !text.isEmpty()) {
+            return orderRepository.findByOrderNumberAndStatus(text, status, pageable).map(OrderResponse::from);
+        }
+        return orderRepository.search(status, text, pageable).map(OrderResponse::from);
     }
 
     @Transactional

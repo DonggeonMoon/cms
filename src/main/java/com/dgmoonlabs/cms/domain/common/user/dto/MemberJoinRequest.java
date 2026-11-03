@@ -1,5 +1,9 @@
 package com.dgmoonlabs.cms.domain.common.user.dto;
 
+import com.dgmoonlabs.cms.domain.common.policy.constant.PolicyType;
+import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
+import com.dgmoonlabs.cms.domain.common.regex.validation.MatchesRegex;
+import com.dgmoonlabs.cms.domain.common.user.constant.PersonalInfoItem;
 import com.dgmoonlabs.cms.domain.common.user.entity.member.Member;
 import com.dgmoonlabs.cms.domain.common.user.entity.member.MemberJoinSetting;
 import com.dgmoonlabs.cms.domain.common.user.entity.member.MemberAddress;
@@ -15,19 +19,19 @@ import java.util.function.Predicate;
 
 @Builder
 public record MemberJoinRequest(
-        @NotBlank @Pattern(regexp = "^[a-z0-9_]{4,20}$", message = "아이디는 영문 소문자, 숫자, _ 로 4~20자여야 합니다.") String username,
-        @NotBlank @Size(min = 8, max = 64, message = "비밀번호는 8~64자여야 합니다.") String password,
+        @NotBlank @MatchesRegex(RegexTarget.USERNAME) String username,
+        @NotBlank @Size(max = 64, message = "비밀번호는 64자 이하여야 합니다.") @MatchesRegex(RegexTarget.PASSWORD) String password,
         @NotBlank String passwordCheck,
-        @NotBlank @Size(max = 50) String name,
-        String lastName,
-        String firstName,
+        @Size(max = 30) @MatchesRegex(RegexTarget.NICKNAME) String nickname,
+        @Size(max = 50) String name,
+        @Size(max = 25) String lastName,
+        @Size(max = 25) String firstName,
         LocalDate birthDate,
-        Boolean isLunarBirthDate,
-        String gender,
-        @Email String email,
-        String telephoneNumber,
-        String mobilePhoneNumber,
-        String postalCode,
+        @Pattern(regexp = "^(남|여)?$", message = "성별은 남 또는 여 중에서 골라 주세요.") String gender,
+        @MatchesRegex(RegexTarget.EMAIL) String email,
+        @MatchesRegex(RegexTarget.PHONE_NUMBER) String telephoneNumber,
+        @MatchesRegex(RegexTarget.MOBILE_PHONE) String mobilePhoneNumber,
+        @MatchesRegex(RegexTarget.POSTAL_CODE) String postalCode,
         String address,
         String detailAddress,
         boolean isMailReceptionAgreed,

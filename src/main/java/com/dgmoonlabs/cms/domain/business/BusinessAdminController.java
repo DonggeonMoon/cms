@@ -129,8 +129,9 @@ public class BusinessAdminController {
     @GetMapping("/reservations")
     public ResponseEntity<PagedModel<ReservationResponse>> reservations(@RequestParam(required = false) final Long programId,
                                                                         @RequestParam(required = false) final ReservationStatus status,
+                                                                        @RequestParam(required = false) final String keyword,
                                                                         @PageableDefault(size = 20) final Pageable pageable) {
-        return ResponseEntity.ok(new PagedModel<>(reservationService.searchReservations(programId, status, pageable)));
+        return ResponseEntity.ok(new PagedModel<>(reservationService.searchReservations(programId, status, keyword, pageable)));
     }
 
     @PostMapping("/reservations")
@@ -154,8 +155,9 @@ public class BusinessAdminController {
     }
 
     @GetMapping("/payments")
-    public ResponseEntity<PagedModel<PaymentResponse>> payments(@PageableDefault(size = 20) final Pageable pageable) {
-        return ResponseEntity.ok(new PagedModel<>(paymentService.getPayments(pageable)));
+    public ResponseEntity<PagedModel<PaymentResponse>> payments(@RequestParam(required = false) final String keyword,
+                                                                @PageableDefault(size = 20) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(paymentService.getPayments(keyword, pageable)));
     }
 
     @GetMapping("/reviews")

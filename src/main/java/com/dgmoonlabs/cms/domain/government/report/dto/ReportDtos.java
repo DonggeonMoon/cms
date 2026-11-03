@@ -6,6 +6,8 @@ import com.dgmoonlabs.cms.domain.government.report.entity.answer.ReportAnswer;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
+import com.dgmoonlabs.cms.domain.common.regex.validation.MatchesRegex;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
@@ -20,8 +22,8 @@ public final class ReportDtos {
             @NotBlank @Size(max = 200) String title,
             @Size(max = 100_000) String contentHtml,
             @Size(max = 50) String reporterName,
-            @Email String email,
-            @Size(max = 30) String phoneNumber,
+            @MatchesRegex(RegexTarget.EMAIL) String email,
+            @Size(max = 30) @MatchesRegex(RegexTarget.PHONE_NUMBER) String phoneNumber,
             @Size(max = 64) String password
     ) {
     }

@@ -1,3 +1,4 @@
+import type {MemberRegexTarget} from './regex';
 export type UserType = 'ADMIN' | 'MEMBER' | 'GUEST';
 
 export interface LoginUser {
@@ -76,6 +77,9 @@ export interface JoinSettings {
 }
 
 export interface AdminJoinSettings extends JoinSettings {
+    regexes: Partial<Record<MemberRegexTarget, number | null>>;
+}
+
 export interface MemberJoinRequest extends MemberProfile {
     username: string;
     password: string;

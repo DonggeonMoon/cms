@@ -2,6 +2,8 @@ package com.dgmoonlabs.cms.domain.business.order.dto;
 
 import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
 import com.dgmoonlabs.cms.domain.business.order.entity.Order;
+import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
+import com.dgmoonlabs.cms.domain.common.regex.validation.MatchesRegex;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
 
@@ -19,8 +21,8 @@ public final class OrderDtos {
             @NotNull @Min(1) @Max(999) Integer quantity,
             Long discountId,
             @NotBlank @Size(max = 50) String receiverName,
-            @NotBlank @Size(max = 30) String phoneNumber,
-            @Size(max = 10) String postalCode,
+            @NotBlank @Size(max = 30) @MatchesRegex(RegexTarget.PHONE_NUMBER) String phoneNumber,
+            @Size(max = 10) @MatchesRegex(RegexTarget.POSTAL_CODE) String postalCode,
             @Size(max = 255) String address,
             @Size(max = 255) String detailAddress
     ) {

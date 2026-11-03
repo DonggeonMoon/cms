@@ -4,6 +4,8 @@ import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus
 import com.dgmoonlabs.cms.domain.business.reservation.entity.Reservation;
 import com.dgmoonlabs.cms.domain.business.reservation.entity.program.Program;
 import jakarta.validation.constraints.*;
+import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
+import com.dgmoonlabs.cms.domain.common.regex.validation.MatchesRegex;
 import lombok.Builder;
 
 import java.math.BigDecimal;
@@ -60,7 +62,7 @@ public final class ReservationDtos {
             @NotNull Long programId,
             @NotNull @Min(1) @Max(100) Integer quantity,
             @NotBlank @Size(max = 50) String applicantName,
-            @NotBlank @Size(max = 30) String phoneNumber
+            @NotBlank @Size(max = 30) @MatchesRegex(RegexTarget.PHONE_NUMBER) String phoneNumber
     ) {
     }
 

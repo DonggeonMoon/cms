@@ -22,6 +22,10 @@ public class Payment extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, length = 30)
+    @Comment("결제번호")
+    private String paymentNumber;
+
     @Column(nullable = false, columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("결제 대상 종류")
@@ -58,6 +62,10 @@ public class Payment extends BaseEntity {
 
     @Comment("취소 일시")
     private LocalDateTime canceledAt;
+
+    public void assignNumber(final String paymentNumber) {
+        this.paymentNumber = paymentNumber;
+    }
 
     public void cancel() {
         this.status = PaymentStatus.CANCELED;

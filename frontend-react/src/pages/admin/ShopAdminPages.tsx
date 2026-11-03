@@ -5,6 +5,7 @@ import type {Discount, Order, OrderStatus, Payment, ProductSummary, Program, Res
 import {adminApi, shopApi} from '../../api/endpoints';
 import {AdminCrudPage, won, YesNo} from '../../components/AdminCrudPage';
 import {formatDateTime} from '../../components/format';
+import {RegexBindingSelect} from '../../components/RegexBindingSelect';
 import {ORDER_STATUS, RESERVATION_STATUS, toOptions} from '../../components/labels';
 import type {FieldSpec, FormValues} from '../../components/SchemaForm';
 
@@ -138,7 +139,10 @@ export function OrderAdminPage() {
     return (
         <AdminCrudPage<Order>
             title="주문"
-            description="관리자가 전화·방문 주문을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다."
+            description={<>
+                <p>관리자가 전화·방문 주문을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다.</p>
+                <RegexBindingSelect target="ORDER_NUMBER" label="주문번호 정규식"/>
+            </>}
             load={loadOrders}
             fields={orderFields(productChoices)}
             emptyForm={{product: '', quantity: 1, paid: false}}
@@ -253,8 +257,10 @@ export function ReservationAdminPage() {
     return (
         <AdminCrudPage<Reservation>
             title="예약"
-            description="관리자가 전화·현장 예약을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다."
-            searchable={false}
+            description={<>
+                <p>관리자가 전화·현장 예약을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다. 예약번호나 프로그램명으로 검색할 수 있습니다.</p>
+                <RegexBindingSelect target="RESERVATION_NUMBER" label="예약번호 정규식"/>
+            </>}
             load={loadReservations}
             fields={reservationFields(programChoices)}
             emptyForm={{programId: '', quantity: 1, paid: false}}
@@ -298,10 +304,13 @@ export function PaymentAdminPage() {
     return (
         <AdminCrudPage<Payment>
             title="결제 내역"
-            description="결제는 목업 PG로 처리됩니다. 실제 결제 연동 전까지 모든 요청이 즉시 승인됩니다."
-            searchable={false}
+            description={<>
+                <p>결제는 목업 PG로 처리됩니다. 실제 결제 연동 전까지 모든 요청이 즉시 승인됩니다. 결제번호를 그대로 넣어 검색하면 그 결제만 찾습니다.</p>
+                <RegexBindingSelect target="PAYMENT_NUMBER" label="결제번호 정규식"/>
+            </>}
             load={loadPayments}
             columns={[
+                {label: '결제번호', render: (p) => <code>{p.paymentNumber ?? '-'}</code>},
                 {label: '거래 ID', render: (p) => <code className="small">{p.transactionId}</code>},
                 {label: '대상', render: (p) => `${p.targetType === 'ORDER' ? '주문' : '예약'} #${p.targetId}`},
                 {label: '금액', render: (p) => won(p.amount)},

@@ -4,7 +4,8 @@ import {ApiError} from '../api/client';
 import type {Policy} from '../api/domain';
 import {siteApi} from '../api/endpoints';
 import {memberApi} from '../api/members';
-import type {MemberJoinRequest} from '../api/types';
+import {useRegexHints} from '../api/regex';
+import type {JoinSettings, MemberJoinRequest} from '../api/types';
 import {ErrorBanner} from '../components/ErrorBanner';
 import {Checkbox, Field} from '../components/Field';
 import {HtmlView} from '../components/HtmlView';
@@ -49,7 +50,10 @@ function JoinForm() {
         passwordCheck: '',
         isPrivacyConsentAgreed: true,
     });
-    const [usernameStatus, setUsernameStatus] = useState<'unknown' | 'available' | 'taken'>('unknown');
+    const [settings, setSettings] = useState<JoinSettings | null>(null);
+    const [usernameStatus, setUsernameStatus] = useState<'unknown' | 'available' | 'taken' | 'invalid'>('unknown');
+    const [usernameMessage, setUsernameMessage] = useState<string | null>(null);
+    const hints = useRegexHints();
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
 
@@ -65,7 +69,9 @@ function JoinForm() {
             return;
         }
         try {
-            setUsernameStatus(await memberApi.isUsernameAvailable(form.username) ? 'available' : 'taken');
+            const result = await memberApi.checkUsername(form.username);
+            setUsernameMessage(result.message ?? null);
+            setUsernameStatus(result.available ? 'available' : result.message ? 'invalid' : 'taken');
         } catch (e) {
             setError(e);
         }
@@ -96,7 +102,7 @@ function JoinForm() {
                     <legend>계정</legend>
                     <div className="row align-end">
                         <Field label="아이디" name="username" required value={form.username} autoComplete="username"
-                               error={errorOf('username')} placeholder="영문 소문자, 숫자, _ 4~20자"
+                               error={errorOf('username')} placeholder={hints.USERNAME}
                                onChange={(e) => {
                                    setForm({...form, username: e.target.value});
                                    setUsernameStatus('unknown');
@@ -105,15 +111,14 @@ function JoinForm() {
                     </div>
                     {usernameStatus === 'available' && <p className="ok">사용할 수 있는 아이디입니다.</p>}
                     {usernameStatus === 'taken' && <p className="field-error">이미 사용 중인 아이디입니다.</p>}
-                    <div className="row">
-                        <Field label="비밀번호" name="password" type="password" required autoComplete="new-password"
-                               value={form.password} error={errorOf('password')} placeholder="8~64자"
-                               onChange={(e) => setForm({...form, password: e.target.value})}/>
-                        <Field label="비밀번호 확인" name="passwordCheck" type="password" required
-                               autoComplete="new-password" value={form.passwordCheck}
-                               error={passwordMismatch ? '비밀번호가 일치하지 않습니다.' : errorOf('passwordCheck')}
-                               onChange={(e) => setForm({...form, passwordCheck: e.target.value})}/>
-                    </div>
+                    {usernameStatus === 'invalid' && <p className="field-error">{usernameMessage}</p>}
+                    <Field label="비밀번호" name="password" type="password" required autoComplete="new-password"
+                           value={form.password} error={errorOf('password')} placeholder={hints.PASSWORD}
+                           onChange={(e) => setForm({...form, password: e.target.value})}/>
+                    <Field label="비밀번호 확인" name="passwordCheck" type="password" required
+                           autoComplete="new-password" value={form.passwordCheck}
+                           error={passwordMismatch ? '비밀번호가 일치하지 않습니다.' : errorOf('passwordCheck')}
+                           onChange={(e) => setForm({...form, passwordCheck: e.target.value})}/>
                 </fieldset>
                 {settings
                     ? <ProfileFields value={form} onChange={setForm} errorOf={errorOf} settings={settings}/>

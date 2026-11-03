@@ -14,6 +14,9 @@ import com.dgmoonlabs.cms.domain.business.reservation.entity.Reservation;
 import com.dgmoonlabs.cms.domain.business.reservation.repository.ReservationRepository;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
+import com.dgmoonlabs.cms.domain.business.BusinessNumbers;
+import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
+import com.dgmoonlabs.cms.domain.common.regex.service.RegexService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +34,7 @@ public class PaymentService {
     private final OrderRepository orderRepository;
     private final ReservationRepository reservationRepository;
     private final MockPaymentGateway paymentGateway;
+    private final RegexService regexService;
 
     @Transactional
     public PaymentResponse pay(final Long memberId, final PaymentRequest request) {
@@ -57,6 +62,7 @@ public class PaymentService {
 
         onApproved.run();
         Payment payment = paymentRepository.save(Payment.builder()
+                .paymentNumber(nextNumber(LocalDateTime.now()))
                 .targetType(request.targetType())
                 .targetId(request.targetId())
                 .memberId(memberId)
@@ -79,7 +85,30 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PaymentResponse> getPayments(final Pageable pageable) {
-        return paymentRepository.findAllByOrderByIdDesc(pageable).map(PaymentResponse::from);
+    public Page<PaymentResponse> getPayments(final String keyword, final Pageable pageable) {
+        String text = keyword == null ? "" : keyword.trim();
+        if (text.isEmpty()) {
+            return paymentRepository.findAllByOrderByIdDesc(pageable).map(PaymentResponse::from);
+        }
+        if (regexService.matches(RegexTarget.PAYMENT_NUMBER, text)) {
+            return paymentRepository.findByPaymentNumber(text, pageable).map(PaymentResponse::from);
+        }
+        return paymentRepository.search(text, pageable).map(PaymentResponse::from);
+    }
+
+    @Transactional
+    public int assignMissingNumbers() {
+        List<Payment> payments = paymentRepository.findAllByPaymentNumberIsNull();
+        for (Payment payment : payments) {
+            LocalDateTime at = payment.getApprovedAt() != null ? payment.getApprovedAt() : payment.getCreatedAt();
+            payment.assignNumber(nextNumber(at != null ? at : LocalDateTime.now()));
+            paymentRepository.flush();
+        }
+        return payments.size();
+    }
+
+    private String nextNumber(final LocalDateTime at) {
+        return regexService.requireNumberFormat(RegexTarget.PAYMENT_NUMBER,
+                BusinessNumbers.next("P", at, paymentRepository::existsByPaymentNumber));
     }
 }

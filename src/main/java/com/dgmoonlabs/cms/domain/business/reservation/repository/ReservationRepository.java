@@ -16,8 +16,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     Page<Reservation> findAllByUserTypeAndUserIdOrderByIdDesc(UserType userType, Long userId, Pageable pageable);
 
     @Query("select r from Reservation r where (:programId is null or r.programId = :programId) "
-            + "and (:status is null or r.status = :status) order by r.id desc")
-    Page<Reservation> search(Long programId, ReservationStatus status, Pageable pageable);
+            + "and (:status is null or r.status = :status) "
+            + "and (:keyword = '' or r.reservationNumber like concat('%', :keyword, '%') "
+            + "     or lower(r.programName) like lower(concat('%', :keyword, '%'))) order by r.id desc")
+    Page<Reservation> search(Long programId, ReservationStatus status, String keyword, Pageable pageable);
+
+    Page<Reservation> findByReservationNumber(String reservationNumber, Pageable pageable);
 
     boolean existsByReservationNumber(String reservationNumber);
 

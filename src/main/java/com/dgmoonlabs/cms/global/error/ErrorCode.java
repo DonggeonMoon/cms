@@ -21,6 +21,8 @@ public enum ErrorCode {
     CHATBOT_NOT_CONFIGURED(HttpStatus.BAD_REQUEST, "챗봇을 켜려면 API 키와 모델을 먼저 지정해야 합니다."),
     CHATBOT_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "질문이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
     CHATBOT_UPSTREAM_ERROR(HttpStatus.BAD_GATEWAY, "챗봇이 지금 답변할 수 없습니다. 잠시 후 다시 시도해 주세요."),
+    REGEX_NUMBER_FORMAT_MISMATCH(HttpStatus.BAD_REQUEST, "이 정규식은 시스템이 만드는 번호(접두어 + 날짜시각 14자리 + - + 4자리)와 맞지 않아 번호 형식으로 쓸 수 없습니다."),
+    NUMBER_FORMAT_MISMATCH(HttpStatus.INTERNAL_SERVER_ERROR, "생성한 번호가 등록된 번호 정규식과 맞지 않습니다. 관리자에게 문의하세요."),
     MEDIA_FILE_REQUIRED(HttpStatus.BAD_REQUEST, "동영상이나 음악 파일을 올려야 합니다."),
     MEDIA_THUMBNAIL_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "썸네일은 이미지 파일이어야 합니다."),
     GUEST_CONTACT_REQUIRED(HttpStatus.BAD_REQUEST, "연락받을 연락처나 이메일을 입력해 주세요."),

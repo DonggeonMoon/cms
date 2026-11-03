@@ -2,7 +2,8 @@ import {type FormEvent, useEffect, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {ApiError} from '../api/client';
 import {memberApi} from '../api/members';
-import type {MemberProfile, MemberResponse} from '../api/types';
+import {useRegexHints} from '../api/regex';
+import type {JoinSettings, MemberProfile, MemberResponse} from '../api/types';
 import {useAuth} from '../auth/AuthContext';
 import {ErrorBanner} from '../components/ErrorBanner';
 import {Field} from '../components/Field';
@@ -78,6 +79,7 @@ function ProfileSection({member, settings, onSaved}: {
 
 export function PasswordChangePage() {
     const [form, setForm] = useState({currentPassword: '', newPassword: '', newPasswordCheck: ''});
+    const hints = useRegexHints();
     const [error, setError] = useState<unknown>(null);
     const [done, setDone] = useState(false);
     const mismatch = form.newPasswordCheck !== '' && form.newPassword !== form.newPasswordCheck;
@@ -103,15 +105,13 @@ export function PasswordChangePage() {
                 <Field label="현재 비밀번호" name="currentPassword" type="password" required
                        autoComplete="current-password" value={form.currentPassword}
                        onChange={(e) => setForm({...form, currentPassword: e.target.value})}/>
-                <div className="row">
-                    <Field label="새 비밀번호" name="newPassword" type="password" required autoComplete="new-password"
-                           value={form.newPassword} error={errorOf('newPassword')}
-                           onChange={(e) => setForm({...form, newPassword: e.target.value})}/>
-                    <Field label="새 비밀번호 확인" name="newPasswordCheck" type="password" required
-                           autoComplete="new-password" value={form.newPasswordCheck}
-                           error={mismatch ? '비밀번호가 일치하지 않습니다.' : undefined}
-                           onChange={(e) => setForm({...form, newPasswordCheck: e.target.value})}/>
-                </div>
+                <Field label="새 비밀번호" name="newPassword" type="password" required autoComplete="new-password"
+                       value={form.newPassword} error={errorOf('newPassword')} placeholder={hints.PASSWORD}
+                       onChange={(e) => setForm({...form, newPassword: e.target.value})}/>
+                <Field label="새 비밀번호 확인" name="newPasswordCheck" type="password" required
+                       autoComplete="new-password" value={form.newPasswordCheck}
+                       error={mismatch ? '비밀번호가 일치하지 않습니다.' : undefined}
+                       onChange={(e) => setForm({...form, newPasswordCheck: e.target.value})}/>
                 <ErrorBanner error={error}/>
                 {done && <p className="ok">비밀번호를 변경했습니다.</p>}
                 <button type="submit" disabled={mismatch}>비밀번호 변경</button>
