@@ -44,7 +44,7 @@ export function PolicyAdminPage() {
         <section className="card">
             <h1>{policy.title}</h1>
             <p className="muted page-description">{WHERE_SHOWN[type]}</p>
-            <p className="muted small">
+            <p className={policy.version === 0 ? 'muted small' : 'muted small align-right'}>
                 {policy.version === 0
                     ? '아직 작성되지 않아 기본 문구가 표시되고 있습니다. 실제 내용으로 수정해 저장해 주세요.'
                     : `v${policy.version} · ${policy.lastWorker ?? '-'} · ${formatDateTime(policy.modifiedAt)} 수정`}
