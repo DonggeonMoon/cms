@@ -15,6 +15,9 @@
         - 프로그램 (다) - 예약 (일)
     - 결제
         - 주문, 예약 (다) - 결제 (일)
+    - 스트리밍 (동영상·음악)
+        - 진도 (회원별로 실제 재생한 구간만 누적)
+        - 수강 (완료 진도율을 넘기면 수강 완료로 기록)
 - 공공기관
     - 신고
     - 만족도 조사
@@ -87,7 +90,7 @@ cd frontend-react && npm install && npm run dev
 - 관리자 테이블이 비어 있으면 시작 시 초기 관리자 `admin` 이 생성됩니다. 비밀번호는 `CMS_ADMIN_PASSWORD`
   환경변수, 없으면 개발용 기본값을 씁니다(`application.yml` 의 `cms.security.initial-admin-password`).
   관리자 로그인 화면은 `/admin/login` 입니다.
-- 업로드 파일은 `./uploads` 에 저장됩니다(gitignore).
+- 업로드 파일은 `./uploads` 에 저장됩니다(gitignore). 한 파일의 최대 크기(동영상 등)는 `CMS_MAX_UPLOAD_SIZE`(기본 `1GB`)로 바꿉니다.
 - `CMS_CRYPTO_MASTER_KEY` 환경변수(암호화 마스터키)가 없으면 서버가 시작되지 않습니다. 개발은 `.env.development`,
   배포는 GitHub Secrets 에 둡니다. 값을 바꾸면 저장된 키를 풀 수 없으니 한 번 정한 값은 유지합니다.
 
@@ -108,11 +111,13 @@ cd frontend-react && npm install && npm run dev
 
 DB 볼륨이 비어 있는 상태로 처음 띄우면 `docker/postgres/init/01-junggo-heaven.sql` 이 실행되어 중고거래 샘플 사이트가
 기본 데이터로 들어갑니다(컨텐츠, 게시판, 아카이브, 질문답변, 지도·지점, 상품·할인·주문, 프로그램·예약, 신고, 만족도,
-배너·팝업, 개인정보 문구).
+배너·팝업, 개인정보 문구). 이어서 `02-sample-media.sql` 이 동영상 강의 1개와 회원 진도·수강 기록을 넣습니다.
 
 - 관리자 `admin` / `admin1234!`, 회원 `happybuyer`, `retro_mania`, `camping_lee`, `gadget_kim` / `junggo1234!`
-- 상품·프로그램·팝업 사진 파일은 DB 덤프에 들어가지 않으므로 처음 한 번 복사합니다: `mkdir -p uploads && cp -R docker/sample-uploads/. uploads/`
+- 상품·프로그램·팝업 사진과 샘플 강의 영상 파일은 DB 덤프에 들어가지 않으므로 처음 한 번 복사합니다: `mkdir -p uploads && cp -R docker/sample-uploads/. uploads/`
+  (Docker 로 실행 중이면 `docker compose cp docker/sample-uploads/. app:/data/uploads/`)
   (사진은 위키미디어 공용의 자유 라이선스 이미지이며, 출처는 `scripts/sample-images/credits.json` 과 사이트의 "사진 출처" 페이지에 있습니다.)
+  (샘플 강의 영상 `scripts/sample-media/laptop-check-basics.mp4` 는 이 프로젝트용으로 직접 만든 슬라이드 영상입니다.)
 - 이미 데이터가 있는 볼륨에는 적용되지 않습니다. 처음부터 다시 받으려면 `docker compose --env-file .env.development down -v` 후 다시 띄웁니다.
 - 샘플 데이터는 `scripts/seed_sample_site.py` 가 CMS API 로 만든 것입니다. 엔티티가 바뀌어 다시 만들 때는 빈 DB 에서
   서버를 띄우고 스크립트를 실행한 뒤 `pg_dump --no-owner --no-privileges --schema=public` 결과로 SQL 파일을 교체합니다

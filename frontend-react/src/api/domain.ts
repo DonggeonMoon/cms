@@ -16,7 +16,7 @@ export interface Menu {
     children: Menu[];
 }
 
-export type SiteFeature = 'CONTENT' | 'BOARD' | 'ARCHIVE' | 'QNA' | 'MAP' | 'PRODUCT' | 'PROGRAM' | 'REPORT' | 'SATISFACTION';
+export type SiteFeature = 'CONTENT' | 'BOARD' | 'ARCHIVE' | 'QNA' | 'MAP' | 'PRODUCT' | 'PROGRAM' | 'REPORT' | 'SATISFACTION' | 'MEDIA' | 'CHATBOT';
 
 export const SITE_FEATURES: { value: SiteFeature; label: string }[] = [
     {value: 'CONTENT', label: '소개 페이지(컨텐츠)'},
@@ -26,10 +26,62 @@ export const SITE_FEATURES: { value: SiteFeature; label: string }[] = [
     {value: 'MAP', label: '지도'},
     {value: 'PRODUCT', label: '상품'},
     {value: 'PROGRAM', label: '프로그램'},
+    {value: 'MEDIA', label: '스트리밍'},
     {value: 'REPORT', label: '신고'},
     {value: 'SATISFACTION', label: '만족도 조사'},
     {value: 'CHATBOT', label: '챗봇'},
 ];
+
+export type EnrollmentStatus = 'IN_PROGRESS' | 'COMPLETED';
+
+export interface MediaProgress {
+    status: EnrollmentStatus;
+    progressRate: number;
+    watchedSeconds: number;
+    lastPositionSeconds: number;
+    startedAt: string;
+    lastWatchedAt: string | null;
+    completedAt: string | null;
+}
+
+export interface MediaItem {
+    id: number;
+    title: string;
+    description: string | null;
+    fileId: number;
+    fileName: string | null;
+    mediaType: MediaType | null;
+    mediaUrl: string;
+    thumbnailFileId: number | null;
+    thumbnailUrl: string | null;
+    posterUrl: string | null;
+    durationSeconds: number;
+    completionRate: number;
+    isUsing: boolean;
+    createdAt: string;
+    myProgress: MediaProgress | null;
+}
+
+export interface MyMedia {
+    mediaId: number;
+    title: string;
+    mediaType: MediaType | null;
+    thumbnailUrl: string | null;
+    durationSeconds: number;
+    available: boolean;
+    progress: MediaProgress | null;
+}
+
+export interface Learner {
+    memberId: number;
+    username: string;
+    status: EnrollmentStatus;
+    progressRate: number;
+    watchedSeconds: number;
+    startedAt: string;
+    lastWatchedAt: string | null;
+    completedAt: string | null;
+}
 
 export interface Site {
     id: number;

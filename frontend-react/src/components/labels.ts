@@ -1,4 +1,4 @@
-import type {OrderStatus, PublishStatus, ReportStatus, ReservationStatus} from '../api/domain';
+import type {EnrollmentStatus, OrderStatus, PublishStatus, ReportStatus, ReservationStatus} from '../api/domain';
 
 export const ORDER_STATUS: Record<OrderStatus, string> = {
     PENDING_PAYMENT: '결제 대기',
@@ -29,3 +29,7 @@ export const PUBLISH_STATUS: Record<PublishStatus, string> = {
 export const toOptions = (labels: Record<string, string>) =>
     Object.entries(labels).map(([value, label]) => ({value, label}));
 
+export const ENROLLMENT_STATUS: Record<EnrollmentStatus, string> = {
+    IN_PROGRESS: '수강 중',
+    COMPLETED: '수강 완료',
+};

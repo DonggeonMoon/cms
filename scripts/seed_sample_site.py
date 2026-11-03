@@ -20,6 +20,7 @@ import urllib.request
 from datetime import datetime, timedelta
 
 IMAGES = Path(__file__).with_name('sample-images')
+MEDIA = Path(__file__).with_name('sample-media')
 
 
 class Client:
@@ -183,14 +184,12 @@ def seed(base_url, admin_password):
     admin.create('/api/admin/contents', {'title': '채용 안내 (준비 중)', 'status': 'DRAFT',
                                          'contentHtml': p('검수사 채용 공고를 준비하고 있습니다.'), 'memo': '공개 전 인사팀 검토 필요'})
 
-    about_menu = admin.create('/api/admin/menus', {'name': '소개', 'type': 'CONTENT', 'targetId': about, 'sequence': 0})
-    top_menus = admin.get('/api/admin/menus')
-    for menu in top_menus:
-        renamed = {'BOARD': '커뮤니티', 'ARCHIVE': '공지사항'}.get(menu.get('feature'))
-        if renamed:
-            admin.put(f"/api/admin/menus/{menu['id']}", {**menu, 'name': renamed})
-    admin.put('/api/admin/menus/order',
-              {'parentId': None, 'ids': [about_menu, *(m['id'] for m in top_menus if m['id'] != about_menu)]})
+    about_menu = admin.create('/api/admin/menus', {'name': '소개', 'type': 'CONTENT', 'targetId': about, 'sequence': 1})
+    for sequence, (name, feature) in enumerate([
+        ('커뮤니티', 'BOARD'), ('공지사항', 'ARCHIVE'), ('상품', 'PRODUCT'), ('프로그램', 'PROGRAM'),
+        ('질문답변', 'QNA'), ('신고', 'REPORT'), ('지도', 'MAP'), ('스트리밍', 'MEDIA'),
+    ], start=2):
+        admin.create('/api/admin/menus', {'name': name, 'type': 'FEATURE', 'feature': feature, 'sequence': sequence})
     admin.create('/api/admin/menus', {'parentId': about_menu, 'name': '안전거래 가이드', 'type': 'CONTENT',
                                       'targetId': guide, 'sequence': 1})
     admin.create('/api/admin/menus', {'parentId': about_menu, 'name': '판매 수수료 안내', 'type': 'CONTENT',
@@ -379,6 +378,16 @@ def seed(base_url, admin_password):
                                                             'contentHtml': p('사전 안내 메일이 친절했어요. 노트북 챙겨 갑니다!')})
 
     laptop_video = admin.create('/api/admin/media', {
+        'title': '[강의] 중고 노트북 셀프 점검 기초', 'durationSeconds': 80, 'completionRate': 90, 'isUsing': True,
+        'description': '중고천국 검수사가 알려 드리는 노트북 점검 4단계(배터리·디스플레이·키보드·포트)입니다.\n'
+                       '"중고 노트북 셀프 점검 클래스" 수강 전에 미리 보면 좋아요.',
+        'fileId': admin.upload('laptop-check-basics.mp4', '중고 노트북 셀프 점검 기초 강의', MEDIA),
+        'thumbnailFileId': admin.upload('laptop-check-basics.jpg', '중고 노트북 셀프 점검 기초 썸네일', MEDIA),
+    })
+    for client, watched in [(sky, 80), (minjun, 32)]:
+        client.post(f'/api/media/{laptop_video}/start')
+        client.post(f'/api/media/{laptop_video}/progress', {'ranges': [{'start': 0, 'end': watched}], 'position': watched})
+
     questions = [
         (sky, {'title': '검수 기간은 얼마나 걸리나요?', 'contentHtml': p('판매하려고 하는데 검수센터 도착 후 며칠이면 판매 등록되나요?')},
          '<p>검수센터 도착 후 영업일 기준 1~2일 안에 검수를 마치고 바로 판매 등록됩니다.</p>'),

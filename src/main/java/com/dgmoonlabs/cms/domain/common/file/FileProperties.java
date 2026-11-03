@@ -10,6 +10,7 @@ public record FileProperties(
         @DefaultValue("./uploads") String uploadDir,
         @DefaultValue("320") int thumbnailMaxSize,
         @DefaultValue({"jpg", "jpeg", "png", "gif", "bmp", "webp", "mp4", "webm", "mov",
+                "mp3", "m4a", "aac", "wav", "ogg", "oga",
                 "pdf", "txt", "csv", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "hwp", "hwpx", "zip"})
         Set<String> allowedExtensions
 ) {

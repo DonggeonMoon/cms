@@ -122,7 +122,7 @@ export interface CodeSaveRequest {
     isUsing: boolean;
 }
 
-export type MediaType = 'DOCUMENT' | 'IMAGE' | 'VIDEO' | 'ETC';
+export type MediaType = 'DOCUMENT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'ETC';
 
 export interface FileInfo {
     id: number;

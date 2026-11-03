@@ -24,6 +24,13 @@ export interface FieldSpec {
 
 export type FormValues = Record<string, unknown>;
 
+export interface MediaValue {
+    id: number;
+    name: string;
+    durationSeconds: number | null;
+    thumbnailId: number | null;
+}
+
 interface Props {
     fields: FieldSpec[];
     initial: FormValues;
@@ -169,6 +176,8 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
             return <HtmlField id={id} label={label} labelText={field.label} value={(value as string) ?? ''} onChange={onChange} help={help}/>;
         case 'image':
             return <ImageField id={id} label={label} value={value as number | null} onChange={onChange} help={help}/>;
+        case 'media':
+            return <MediaField id={id} label={label} value={(value as MediaValue | null) ?? null} onChange={onChange} help={help}/>;
         case 'files':
             return <FilesField label={label} value={(value as FileInfo[]) ?? []} onChange={onChange} help={help}/>;
         default:
@@ -227,6 +236,121 @@ function ImageField({id, label, value, onChange, help}: {
                 }}/>
                 {value && <button type="button" onClick={() => onChange(null)}>이미지 제거</button>}
             </div>
+            <ErrorBanner error={error}/>
+            {help}
+        </div>
+    );
+}
+
+const THUMBNAIL_MAX_WIDTH = 1280;
+
+interface MediaInfo {
+    durationSeconds: number | null;
+    frame: File | null;
+}
+
+function readMediaInfo(file: File): Promise<MediaInfo> {
+    return new Promise((resolve) => {
+        const isVideo = !file.type.startsWith('audio/');
+        const media = document.createElement(isVideo ? 'video' : 'audio');
+        const url = URL.createObjectURL(file);
+        let durationSeconds: number | null = null;
+        const done = (frame: File | null) => {
+            URL.revokeObjectURL(url);
+            resolve({durationSeconds, frame});
+        };
+        media.preload = 'auto';
+        media.muted = true;
+        media.onerror = () => done(null);
+        media.onloadedmetadata = () => {
+            durationSeconds = Number.isFinite(media.duration) ? Math.round(media.duration) : null;
+            if (!(media instanceof HTMLVideoElement) || !media.videoWidth) {
+                done(null);
+                return;
+            }
+            media.onseeked = () => {
+                const scale = Math.min(1, THUMBNAIL_MAX_WIDTH / media.videoWidth);
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(media.videoWidth * scale);
+                canvas.height = Math.round(media.videoHeight * scale);
+                const context = canvas.getContext('2d');
+                if (!context) {
+                    done(null);
+                    return;
+                }
+                context.drawImage(media, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob((blob) => done(blob && new File([blob], `${file.name.replace(/\.[^.]+$/, '')}-thumbnail.jpg`,
+                    {type: 'image/jpeg'})), 'image/jpeg', 0.85);
+            };
+            media.currentTime = Math.min((durationSeconds ?? 0) * 0.1, 5);
+        };
+        media.src = url;
+    });
+}
+
+function MediaField({id, label, value, onChange, help}: {
+    id: string; label: ReactNode; value: MediaValue | null; onChange: (v: unknown) => void; help: ReactNode;
+}) {
+    const [error, setError] = useState<unknown>(null);
+    const [uploading, setUploading] = useState(false);
+
+    const run = async (action: () => Promise<void>) => {
+        setUploading(true);
+        setError(null);
+        try {
+            await action();
+        } catch (err) {
+            setError(err);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    return (
+        <div className="field">
+            {label}
+            {value && <p>{value.name}</p>}
+            <input id={id} type="file" accept="video/*,audio/*" disabled={uploading} onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (file) {
+                    void run(async () => {
+                        const [uploaded, info] = await Promise.all([fileApi.upload(file), readMediaInfo(file)]);
+                        const thumbnail = info.frame ? await fileApi.upload(info.frame, `${uploaded.originalName} 썸네일`) : null;
+                        onChange({id: uploaded.id, name: uploaded.originalName, durationSeconds: info.durationSeconds,
+                            thumbnailId: thumbnail?.id ?? null});
+                    });
+                }
+            }}/>
+            {uploading && <p className="muted small">업로드 중…</p>}
+            {value && (
+                <div className="row align-center">
+                    <label htmlFor={`${id}-duration`}>재생 시간(초)</label>
+                    <input id={`${id}-duration`} type="number" min={1} required value={value.durationSeconds ?? ''}
+                           onChange={(e) => onChange({...value, durationSeconds: e.target.value ? Number(e.target.value) : null})}/>
+                </div>
+            )}
+            {value && value.durationSeconds == null && (
+                <p className="muted small">이 브라우저에서 재생 시간을 읽지 못했습니다. 직접 입력해 주세요.</p>
+            )}
+            {value && (
+                <div className="media-thumbnail-field">
+                    <label htmlFor={`${id}-thumbnail`}>썸네일</label>
+                    {value.thumbnailId
+                        ? <img className="preview-image" src={`/api/files/${value.thumbnailId}/view`} alt="썸네일 미리보기"/>
+                        : <p className="muted small">썸네일이 없습니다. 동영상은 올릴 때 화면 한 장면을 자동으로 썸네일로 만듭니다.</p>}
+                    <div className="row align-center">
+                        <input id={`${id}-thumbnail`} type="file" accept="image/*" disabled={uploading} onChange={(e) => {
+                            const image = e.target.files?.[0];
+                            e.target.value = '';
+                            if (image) {
+                                void run(async () => onChange({...value, thumbnailId: (await fileApi.upload(image)).id}));
+                            }
+                        }}/>
+                        {value.thumbnailId && <button type="button" onClick={() => onChange({...value, thumbnailId: null})}>썸네일 제거</button>}
+                    </div>
+                </div>
+            )}
             <ErrorBanner error={error}/>
             {help}
         </div>

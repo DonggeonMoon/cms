@@ -71,7 +71,11 @@ export function SiteProvider({children}: { children: ReactNode }) {
     return <SiteContext.Provider value={value}>{children}</SiteContext.Provider>;
 }
 
-const MENU_FEATURE: Partial<Record<Menu['type'], SiteFeature>> = {CONTENT: 'CONTENT', BOARD: 'BOARD'};
+const MENU_FEATURE: Partial<Record<Menu['type'], SiteFeature>> = {CONTENT: 'CONTENT', BOARD: 'BOARD', ARCHIVE: 'ARCHIVE'};
+
+export const FEATURE_PATHS: Partial<Record<SiteFeature, string>> = {
+    PRODUCT: '/products', PROGRAM: '/programs', QNA: '/qna', REPORT: '/reports/new', MAP: '/map', MEDIA: '/media',
+};
 
 function linksTo(menus: Menu[], href: string): boolean {
     return menus.some((menu) => menuHref(menu).split('?')[0] === href || linksTo(menu.children, href));

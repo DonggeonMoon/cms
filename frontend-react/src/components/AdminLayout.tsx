@@ -46,6 +46,7 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
             {to: '/admin/orders', label: '주문', sub: true, features: ['PRODUCT']},
             {to: '/admin/programs', label: '프로그램', features: ['PROGRAM']},
             {to: '/admin/reservations', label: '예약', sub: true, features: ['PROGRAM']},
+            {to: '/admin/media', label: '스트리밍', features: ['MEDIA']},
             {to: '/admin/payments', label: '결제', features: ['PRODUCT', 'PROGRAM']},
             {to: '/admin/reviews', label: '리뷰', features: ['PRODUCT', 'PROGRAM']},
         ],

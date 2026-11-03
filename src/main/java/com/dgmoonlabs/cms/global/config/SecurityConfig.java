@@ -37,6 +37,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/reviews/*").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/satisfactions").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.GET, "/api/reports/me").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.GET, "/api/media/me").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.POST, "/api/media/*/start", "/api/media/*/progress").hasRole("MEMBER")
                 .requestMatchers(API).permitAll()
                 .anyRequest().permitAll()
         );

@@ -21,6 +21,8 @@ public enum ErrorCode {
     CHATBOT_NOT_CONFIGURED(HttpStatus.BAD_REQUEST, "챗봇을 켜려면 API 키와 모델을 먼저 지정해야 합니다."),
     CHATBOT_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "질문이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
     CHATBOT_UPSTREAM_ERROR(HttpStatus.BAD_GATEWAY, "챗봇이 지금 답변할 수 없습니다. 잠시 후 다시 시도해 주세요."),
+    MEDIA_FILE_REQUIRED(HttpStatus.BAD_REQUEST, "동영상이나 음악 파일을 올려야 합니다."),
+    MEDIA_THUMBNAIL_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "썸네일은 이미지 파일이어야 합니다."),
     GUEST_CONTACT_REQUIRED(HttpStatus.BAD_REQUEST, "연락받을 연락처나 이메일을 입력해 주세요."),
     GUEST_WRITE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "로그인한 회원만 등록할 수 있습니다. 로그인 후 다시 시도해 주세요."),
     NICKNAME_REQUIRED(HttpStatus.BAD_REQUEST, "닉네임을 입력해 주세요."),

@@ -32,3 +32,10 @@ export function formatBytes(bytes: number): string {
     return `${value.toFixed(1)} ${units[unit]}`;
 }
 
+export function formatDuration(totalSeconds: number): string {
+    const seconds = Math.max(0, Math.floor(totalSeconds));
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds % 60)}` : `${minutes}:${pad(seconds % 60)}`;
+}

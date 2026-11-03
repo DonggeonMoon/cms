@@ -6,7 +6,7 @@ import {formatBytes, formatDateTime} from '../../components/format';
 import {Pagination} from '../../components/Pagination';
 import {StableLabel} from '../../components/StableLabel';
 
-const MEDIA_LABELS: Record<MediaType, string> = {DOCUMENT: '문서', IMAGE: '이미지', VIDEO: '영상', ETC: '기타'};
+const MEDIA_LABELS: Record<MediaType, string> = {DOCUMENT: '문서', IMAGE: '이미지', VIDEO: '영상', AUDIO: '오디오', ETC: '기타'};
 
 export function FilePage() {
     const [uploadOpen, setUploadOpen] = useState(false);

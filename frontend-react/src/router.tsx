@@ -17,6 +17,7 @@ import {
 import {DashboardPage} from './pages/admin/DashboardPage';
 import {FilePage} from './pages/admin/FilePage';
 import {MapAdminPage} from './pages/admin/MapAdminPage';
+import {MediaAdminPage} from './pages/admin/MediaAdminPage';
 import {ReportAdminPage, SatisfactionAdminPage} from './pages/admin/GovAdminPages';
 import {MemberDetailPage} from './pages/admin/MemberDetailPage';
 import {MemberJoinSettingPage} from './pages/admin/MemberJoinSettingPage';
@@ -42,7 +43,8 @@ import {OrderFormPage, ReservationFormPage} from './pages/shop/CheckoutFormPages
 import {JoinPage} from './pages/JoinPage';
 import {AdminLoginPage, LoginPage} from './pages/LoginPage';
 import {MapPage} from './pages/MapPage';
-import {MyPage} from './pages/MyPage';
+import {MediaDetailPage, MediaListPage, MyMediaPage} from './pages/MediaPages';
+import {MyPage, PasswordChangePage, QuitPage} from './pages/MyPage';
 import {PrivacyPolicyPage} from './pages/PolicyPage';
 import {MyReportsPage, ReportDetailPage, ReportWritePage} from './pages/ReportPages';
 import {
@@ -114,6 +116,12 @@ export const routes = [
                         ],
                     },
                     {
+                        element: <RequireFeature feature="MEDIA"/>,
+                        children: [
+                            {path: '/media', element: <MediaListPage/>},
+                            {path: '/media/:id', element: <MediaDetailPage/>},
+                        ],
+                    },
                     {
                         element: <RequireFeature feature="REPORT"/>,
                         children: [
@@ -146,6 +154,9 @@ export const routes = [
                                 children: [{path: '/mypage/reports', element: <MyReportsPage/>}],
                             },
                             {
+                                element: <RequireFeature feature="MEDIA"/>,
+                                children: [{path: '/mypage/media', element: <MyMediaPage/>}],
+                            },
                             {path: '/checkout/:type/:id', element: <CheckoutPage/>},
                         ],
                     },
@@ -210,6 +221,9 @@ export const routes = [
                                 ],
                             },
                             {
+                                element: <RequireFeature feature="MEDIA"/>,
+                                children: [{path: 'media', element: <MediaAdminPage/>}],
+                            },
                             {
                                 element: <RequireFeature feature={['PRODUCT', 'PROGRAM']}/>,
                                 children: [

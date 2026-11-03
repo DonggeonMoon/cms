@@ -18,6 +18,33 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    logging: &logging
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  app:
+    build: .
+    image: ${CMS_IMAGE:-cms:latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      CMS_DB_HOST: ${CMS_DB_HOST:-postgres}
+      CMS_DB_PORT: ${CMS_DB_PORT:-5432}
+      CMS_DB_NAME: ${CMS_DB_NAME:?}
+      CMS_DB_USER: ${CMS_DB_USER:?}
+      CMS_DB_PASSWORD: ${CMS_DB_PASSWORD:?}
+      CMS_CRYPTO_MASTER_KEY: ${CMS_CRYPTO_MASTER_KEY:?CMS_CRYPTO_MASTER_KEY must be set and backed up}
+      CMS_ADMIN_PASSWORD: ${CMS_ADMIN_PASSWORD:-admin1234!}
+      CMS_MAX_UPLOAD_SIZE: ${CMS_MAX_UPLOAD_SIZE:-1GB}
+      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75}
+    ports:
+      - "${CMS_PORT:-8080}:8080"
+    volumes:
+      - uploads:/data/uploads
+    logging: *logging
 
 volumes:
   postgres-data:

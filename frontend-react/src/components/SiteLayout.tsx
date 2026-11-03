@@ -55,6 +55,9 @@ function SiteFrame() {
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/orders">주문 내역</NavLink>}
                     {isEnabled('PROGRAM') && <NavLink to="/mypage/reservations">예약 내역</NavLink>}
                     {isEnabled('REPORT') && <NavLink to="/mypage/reports">신고</NavLink>}
+                    {isEnabled('MEDIA') && <NavLink to="/mypage/media">수강 내역</NavLink>}
+                    <NavLink to="/mypage/password">비밀번호 변경</NavLink>
+                    <NavLink to="/mypage/quit">회원 탈퇴</NavLink>
                 </nav>
             )}
             <main className="site-main">

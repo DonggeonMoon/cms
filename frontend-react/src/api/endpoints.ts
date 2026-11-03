@@ -51,6 +51,10 @@ export const adminApi = {
     reauthenticate: (password: string) => request<void>('/api/admin/reauthenticate', {method: 'POST', body: {password}}),
     configs: resource<D.Config>('/api/admin/configs'),
     media: {
+        ...resource<D.MediaItem>('/api/admin/media'),
+        learners: (id: number, page: number) =>
+            request<Page<D.Learner>>(`/api/admin/media/${id}/learners`, {query: {page}}),
+    },
     chatbot: {
         get: () => request<D.ChatbotSetting>('/api/admin/chatbot'),
         save: (body: Omit<D.ChatbotSetting, 'defaultInstructions'>) =>
@@ -240,6 +244,16 @@ export const govApi = {
     satisfaction: (menuId: number) => request<D.Satisfaction>('/api/satisfactions', {query: {menuId}}),
     vote: (menuId: number, score: number, opinion: string) =>
         request<D.Satisfaction>('/api/satisfactions', {method: 'POST', body: {menuId, score, opinion}}),
+};
+
+export const mediaApi = {
+    list: (keyword: string, mediaType: MediaType | '', page: number) =>
+        request<Page<D.MediaItem>>('/api/media', {query: {keyword, mediaType, page}}),
+    get: (id: number) => request<D.MediaItem>(`/api/media/${id}`),
+    start: (id: number) => request<D.MediaProgress>(`/api/media/${id}/start`, {method: 'POST'}),
+    record: (id: number, ranges: { start: number; end: number }[], position: number) =>
+        request<D.MediaProgress>(`/api/media/${id}/progress`, {method: 'POST', body: {ranges, position}}),
+    mine: (page: number) => request<Page<D.MyMedia>>('/api/media/me', {query: {page}}),
 };
 
 export const chatbotApi = {
