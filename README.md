@@ -111,17 +111,20 @@ cd frontend-react && npm install && npm run dev
 
 DB 볼륨이 비어 있는 상태로 처음 띄우면 `docker/postgres/init/01-junggo-heaven.sql` 이 실행되어 중고거래 샘플 사이트가
 기본 데이터로 들어갑니다(컨텐츠, 게시판, 아카이브, 질문답변, 지도·지점, 상품·할인·주문, 프로그램·예약, 신고, 만족도,
-배너·팝업, 개인정보 문구). 이어서 `02-sample-media.sql` 이 동영상 강의 1개와 회원 진도·수강 기록을 넣습니다.
+배너·팝업, 개인정보·수신 동의 문구, 강의 영상과 회원 진도·수강 기록, 정규식, 방문 통계).
 
 - 관리자 `admin` / `admin1234!`, 회원 `happybuyer`, `retro_mania`, `camping_lee`, `gadget_kim` / `junggo1234!`
+- 개인정보는 평문으로 들어 있고, 관리자가 처음 로그인할 때 만들어지는 암호화 키로 자동 암호화됩니다.
+  그래서 어떤 `CMS_CRYPTO_MASTER_KEY` 로 띄워도 됩니다. API 키는 들어 있지 않아 챗봇·지도 키·소셜 로그인은 꺼져 있습니다.
 - 상품·프로그램·팝업 사진과 샘플 강의 영상 파일은 DB 덤프에 들어가지 않으므로 처음 한 번 복사합니다: `mkdir -p uploads && cp -R docker/sample-uploads/. uploads/`
   (Docker 로 실행 중이면 `docker compose cp docker/sample-uploads/. app:/data/uploads/`)
   (사진은 위키미디어 공용의 자유 라이선스 이미지이며, 출처는 `scripts/sample-images/credits.json` 과 사이트의 "사진 출처" 페이지에 있습니다.)
   (샘플 강의 영상 `scripts/sample-media/laptop-check-basics.mp4` 는 이 프로젝트용으로 직접 만든 슬라이드 영상입니다.)
 - 이미 데이터가 있는 볼륨에는 적용되지 않습니다. 처음부터 다시 받으려면 `docker compose --env-file .env.development down -v` 후 다시 띄웁니다.
-- 샘플 데이터는 `scripts/seed_sample_site.py` 가 CMS API 로 만든 것입니다. 엔티티가 바뀌어 다시 만들 때는 빈 DB 에서
+- 샘플 데이터는 `scripts/seed_sample_site.py` 가 CMS API 로 만든 뒤 화면에서 다듬은 데이터입니다. 다시 만들 때는 빈 DB 에서
   서버를 띄우고 스크립트를 실행한 뒤 `pg_dump --no-owner --no-privileges --schema=public` 결과로 SQL 파일을 교체합니다
-  (`CREATE SCHEMA public;` 줄은 지웁니다). 업로드된 사진도 `uploads/` 에서 `docker/sample-uploads/` 로 다시 복사합니다.
+  (`CREATE SCHEMA public;` 줄은 지웁니다). 암호화된 개인정보(`ENC:` 값)는 평문으로 풀고 `crypto_key`, `api_key`,
+  `spring_session*`, `watchdog_log` 는 빼야 다른 환경에서도 쓸 수 있습니다. 업로드 파일도 `uploads/` 에서 `docker/sample-uploads/` 로 복사합니다.
 - 사이트 테마는 관리자 > 사이트의 "테마"에서 고릅니다. 중고천국은 `market` 테마를 씁니다.
 
 ## 테스트
