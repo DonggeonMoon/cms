@@ -1,4 +1,8 @@
 spring:
+  # MockMvc tests hand sessions over as MockHttpSession, which Spring Session's
+  # cookie-based filter would ignore; JdbcSessionTest turns it back on.
+  autoconfigure:
+    exclude: org.springframework.boot.session.jdbc.autoconfigure.JdbcSessionAutoConfiguration
   datasource:
     url: jdbc:h2:mem:cms;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     username: sa

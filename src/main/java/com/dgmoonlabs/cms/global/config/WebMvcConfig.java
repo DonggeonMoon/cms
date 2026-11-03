@@ -5,9 +5,15 @@ import com.dgmoonlabs.cms.domain.admin.site.SiteFeatureInterceptor;
 import com.dgmoonlabs.cms.global.security.ReauthenticationInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.resource.PathResourceResolver;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
+
+import java.io.IOException;
 
 @Configuration
 @RequiredArgsConstructor
@@ -23,5 +29,27 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(adminAuditInterceptor).addPathPatterns("/api/admin/**");
         registry.addInterceptor(siteFeatureInterceptor).addPathPatterns("/api/**");
         registry.addInterceptor(reauthenticationInterceptor).addPathPatterns("/api/admin/**");
+    }
+
+    // 파일이 없는 클라이언트 라우트는 index.html 로 보낸다(API 경로 제외).
+    @Override
+    public void addResourceHandlers(final ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/**")
+                .addResourceLocations("classpath:/static/")
+                .resourceChain(true)
+                .addResolver(new PathResourceResolver() {
+                    @Override
+                    protected Resource getResource(final String resourcePath, final Resource location) throws IOException {
+                        Resource requested = location.createRelative(resourcePath);
+                        if (requested.exists() && requested.isReadable()) {
+                            return requested;
+                        }
+                        if (resourcePath.startsWith("api/") || resourcePath.contains(".")) {
+                            return null;
+                        }
+                        Resource index = new ClassPathResource("/static/index.html");
+                        return index.exists() ? index : null;
+                    }
+                });
     }
 }

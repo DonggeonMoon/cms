@@ -1,14 +1,15 @@
 services:
   postgres:
     image: postgres:18
-    container_name: cms-postgres
     restart: unless-stopped
-    ports:
-      - "${DB_PORT:?}:5432"
     environment:
-      POSTGRES_DB: ${DB_NAME:?}
-      POSTGRES_USER: ${DB_USER:?}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?}
+      POSTGRES_DB: ${CMS_DB_NAME:?}
+      POSTGRES_USER: ${CMS_DB_USER:?}
+      POSTGRES_PASSWORD: ${CMS_DB_PASSWORD:?}
+      # PostgreSQL 과 pg_isready 모두 PGPORT 를 읽어 앱이 붙는 포트로 뜬다.
+      PGPORT: ${CMS_DB_PORT:-5432}
+    ports:
+      - "127.0.0.1:${CMS_DB_PORT:-5432}:${CMS_DB_PORT:-5432}"
     volumes:
       - postgres-data:/var/lib/postgresql
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
@@ -20,3 +21,4 @@ services:
 
 volumes:
   postgres-data:
+  uploads:

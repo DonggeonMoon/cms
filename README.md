@@ -52,11 +52,30 @@
 
 API는 모두 `/api/**` 아래에 있고, 관리자 API는 `/api/admin/**` (ADMIN 권한)입니다.
 
+## Docker 로 실행 (설치)
+
+앱(화면 + API 를 담은 컨테이너 하나)과 PostgreSQL 을 함께 띄웁니다.
+
+```bash
+cp .env.example .env      # 값을 채웁니다. CMS_CRYPTO_MASTER_KEY 는 처음 정한 값을 반드시 따로 백업합니다
+docker compose up -d --build
+# http://localhost:8080 (포트는 CMS_PORT), 관리자 화면은 /admin/login
+```
+
+- 데이터는 볼륨 `postgres-data`(DB), `uploads`(업로드 파일)에 남습니다. `docker compose down -v` 는 이 데이터를 지웁니다.
+- 로그인 세션은 DB 에 저장되므로 앱을 재시작·업데이트해도 로그인이 유지됩니다.
+- 이미 운영 중인 PostgreSQL 을 쓰려면 `.env` 에 `CMS_DB_HOST`/`CMS_DB_PORT` 를 채우고
+  `docker compose up -d --build --no-deps app` 으로 앱만 띄웁니다.
+- 함께 뜨는 PostgreSQL 은 호스트의 `127.0.0.1:CMS_DB_PORT`(기본 5432) 로만 열립니다.
+- 앞단에 HTTPS 리버스 프록시(Caddy, Nginx 등)를 두면 `X-Forwarded-*` 헤더로 실제 접속자 IP 와 HTTPS 를 인식합니다.
+- 비어 있는 DB 로 처음 띄우면 아래 샘플 사이트 데이터가 들어갑니다. 빈 사이트로 시작하려면 `docker/postgres/init/` 의 SQL 을
+  빼고 띄웁니다.
+
 ## 개발 환경 실행
 
 ```bash
-# 1. DB (값은 공용 .env.development 의 DB_* 사용)
-docker compose --env-file .env.development up -d
+# 1. DB 만 띄우고 호스트 포트(CMS_DB_PORT)로 엽니다 (값은 공용 .env.development 사용)
+docker compose --env-file .env.development up -d postgres
 
 # 2. 백엔드 (http://localhost:8080)
 ./gradlew bootRun

@@ -36,9 +36,10 @@ out/
 ### VS Code ###
 .vscode/
 /src/main/webapp/
-/src/main/resources/
-!/src/main/resources/static/**
-!/src/main/resources/templates/**
+/src/main/resources/*
+!/src/main/resources/application.yml
+!/src/main/resources/static/
+!/src/main/resources/templates/
 
 ### CMS uploaded files ###
 /uploads/
@@ -51,3 +52,5 @@ out/
 
 ### Python ###
 __pycache__/
+
+*.tsbuildinfo

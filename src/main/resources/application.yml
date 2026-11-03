@@ -1,0 +1,35 @@
+spring:
+  config:
+    import: optional:file:./.env.development[.properties]
+  datasource:
+    url: jdbc:postgresql://${CMS_DB_HOST}:${CMS_DB_PORT}/${CMS_DB_NAME}
+    username: ${CMS_DB_USER}
+    password: ${CMS_DB_PASSWORD}
+  servlet:
+    multipart:
+      max-file-size: ${CMS_MAX_UPLOAD_SIZE:1GB}
+      max-request-size: ${CMS_MAX_UPLOAD_SIZE:1GB}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  session:
+    jdbc:
+      initialize-schema: always
+    timeout: ${CMS_SESSION_TIMEOUT:2h}
+
+server:
+  forward-headers-strategy: framework
+
+locale:
+  parameterName: lang
+
+cms:
+  security:
+    max-login-try-count: 5
+    initial-admin-username: admin
+    initial-admin-password: ${CMS_ADMIN_PASSWORD:admin1234!}
+  file:
+    upload-dir: ${CMS_UPLOAD_DIR:./uploads}
+  crypto:
+    master-key: ${CMS_CRYPTO_MASTER_KEY:}

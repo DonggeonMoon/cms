@@ -1,0 +1,17 @@
+# Dev-only secrets synced into every checkout; must never reach an image.
+.env
+.env.*
+!.env.example
+
+.git
+.gradle
+.idea
+build
+uploads
+frontend-react/node_modules
+frontend-react/dist
+frontend-react/uploads
+scripts/__pycache__
+docker/postgres
+docker/sample-uploads
+*.md
