@@ -23,6 +23,7 @@ import {MemberDetailPage} from './pages/admin/MemberDetailPage';
 import {MemberJoinSettingPage} from './pages/admin/MemberJoinSettingPage';
 import {ChatbotAdminPage} from './pages/admin/ChatbotAdminPage';
 import {MemberListPage} from './pages/admin/MemberListPage';
+import {PasswordHashPage} from './pages/admin/PasswordHashPage';
 import {PolicyAdminPage} from './pages/admin/PolicyAdminPage';
 import {RegexAdminPage} from './pages/admin/RegexAdminPage';
 import {
@@ -251,6 +252,7 @@ export const routes = [
                             {path: 'codes', element: <CodePage/>},
                             {path: 'files', element: <FilePage/>},
                             {path: 'audit-logs', element: <AuditLogPage/>},
+                            {path: 'password-hash', element: <PasswordHashPage/>},
                             {path: 'crypto-key', element: <CryptoKeyPage/>},
                             {path: 'api-keys', element: <ApiKeyPage/>},
                         ],

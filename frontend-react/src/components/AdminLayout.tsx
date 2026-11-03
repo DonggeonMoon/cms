@@ -79,6 +79,7 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
         title: '보안',
         items: [
             {to: '/admin/api-keys', label: 'API 키 관리'},
+            {to: '/admin/password-hash', label: '해시 알고리즘 관리'},
             {to: '/admin/crypto-key', label: '암호화 키 관리'},
         ],
     },

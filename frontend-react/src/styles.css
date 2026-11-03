@@ -2602,3 +2602,32 @@ input[type='checkbox'], input[type='radio'] {
     flex: 1;
 }
 
+.hash-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 640px;
+}
+
+.hash-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.hash-option.selected {
+    border-color: var(--primary);
+}
+
+.hash-option .badge {
+    margin-left: 6px;
+}
+
+.hash-description {
+    display: block;
+    margin-top: 2px;
+}

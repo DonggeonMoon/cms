@@ -40,6 +40,9 @@ public class AuthService {
             member.recordLoginFailure();
             throw new BusinessException(ErrorCode.LOGIN_FAILED);
         }
+        if (passwordEncoder.upgradeEncoding(member.getPassword())) {
+            member.changePassword(passwordEncoder.encode(request.password()));
+        }
         member.recordLoginSuccess();
         return new LoginUser(member.getId(), member.getUsername(), member.displayName(), UserType.MEMBER);
     }
@@ -66,6 +69,9 @@ public class AuthService {
         if (!passwordEncoder.matches(request.password(), admin.getPassword())) {
             admin.recordLoginFailure();
             throw new BusinessException(ErrorCode.LOGIN_FAILED);
+        }
+        if (passwordEncoder.upgradeEncoding(admin.getPassword())) {
+            admin.changePassword(passwordEncoder.encode(request.password()));
         }
         admin.recordLoginSuccess();
         return new LoginUser(admin.getId(), admin.getUsername(), admin.getName(), UserType.ADMIN);
