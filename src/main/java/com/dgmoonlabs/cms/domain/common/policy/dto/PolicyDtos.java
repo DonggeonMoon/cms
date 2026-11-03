@@ -11,18 +11,23 @@ public final class PolicyDtos {
     private PolicyDtos() {
     }
 
-    public record PolicySaveRequest(@NotBlank @Size(max = 200_000) String contentHtml) {
+    public record PolicySaveRequest(@NotBlank @Size(max = 200_000) String contentHtml, Boolean isUsing) {
+        public boolean isUsingOrDefault() {
+            return isUsing == null || isUsing;
+        }
     }
 
-    public record PolicyResponse(PolicyType type, String title, String contentHtml, int version, String lastWorker,
-                                 LocalDateTime modifiedAt) {
+    public record PolicyResponse(PolicyType type, String title, String contentHtml, boolean isUsing, boolean optional,
+                                 int version, String lastWorker, LocalDateTime modifiedAt) {
         public static PolicyResponse from(final Policy policy) {
             return new PolicyResponse(policy.getType(), policy.getType().getLabel(), policy.getContentHtml(),
-                    policy.getVersion(), policy.getLastWorker(), policy.getModifiedAt());
+                    policy.isUsing(), policy.getType().isOptional(), policy.getVersion(), policy.getLastWorker(),
+                    policy.getModifiedAt());
         }
 
         public static PolicyResponse template(final PolicyType type) {
-            return new PolicyResponse(type, type.getLabel(), type.getDefaultContentHtml(), 0, null, null);
+            return new PolicyResponse(type, type.getLabel(), type.getDefaultContentHtml(), true, type.isOptional(), 0,
+                    null, null);
         }
     }
 }

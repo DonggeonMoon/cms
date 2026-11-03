@@ -23,13 +23,18 @@ public class PolicyService {
         return policyRepository.findByType(type).map(PolicyResponse::from).orElseGet(() -> PolicyResponse.template(type));
     }
 
+    @Transactional(readOnly = true)
+    public boolean isUsing(final PolicyType type) {
+        return policyRepository.findByType(type).map(Policy::isUsing).orElse(true);
+    }
+
     @Transactional
     public PolicyResponse savePolicy(final PolicyType type, final PolicySaveRequest request) {
         String html = htmlSanitizer.sanitize(request.contentHtml());
         String worker = CurrentUser.get().map(LoginUser::username).orElse(null);
         Policy policy = policyRepository.findByType(type)
                 .orElseGet(() -> policyRepository.save(Policy.builder().type(type).contentHtml("").version(0).build()));
-        policy.update(html, worker);
+        policy.update(html, request.isUsingOrDefault(), worker);
         return PolicyResponse.from(policy);
     }
 }

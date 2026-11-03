@@ -46,4 +46,28 @@ class PolicyApiTest extends ApiTestSupport {
         MockHttpSession member = member("consented");
         getJson("/api/members/me", member).andExpect(status().isOk());
     }
+
+    @Test
+    void optionalConsentTextsCanBeSwitchedOffAndThenAreNeverRecorded() throws Exception {
+        getJson("/api/policies/MARKETING_USAGE", null)
+                .andExpect(jsonPath("$.title").value("마케팅 활용 동의"))
+                .andExpect(jsonPath("$.isUsing").value(true))
+                .andExpect(jsonPath("$.optional").value(true));
+
+        MockHttpSession admin = admin();
+        putJson("/api/admin/policies/MARKETING_USAGE", admin, """
+                {"contentHtml":"<p>혜택 안내</p>","isUsing":false}
+                """).andExpect(jsonPath("$.isUsing").value(false));
+        putJson("/api/admin/policies/PRIVACY_CONSENT", admin, """
+                {"contentHtml":"<p>필수 동의</p>","isUsing":false}
+                """).andExpect(jsonPath("$.isUsing").value(true));
+
+        postJson("/api/members", null, """
+                {"username":"optout","password":"password123","passwordCheck":"password123","isPrivacyConsentAgreed":true,
+                 "name":"선택","isMarketingUsageAgreed":true,"isSmsReceptionAgreed":true}
+                """).andExpect(status().isCreated());
+        getJson("/api/members/me", login("optout", "password123", "MEMBER"))
+                .andExpect(jsonPath("$.isMarketingUsageAgreed").value(false))
+                .andExpect(jsonPath("$.isSmsReceptionAgreed").value(true));
+    }
 }

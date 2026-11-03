@@ -9,11 +9,17 @@ import {SchemaForm} from '../../components/SchemaForm';
 const WHERE_SHOWN: Record<PolicyType, string> = {
     PRIVACY_CONSENT: '회원가입 첫 단계의 동의 화면에 표시되며, 동의해야 가입할 수 있습니다.',
     PRIVACY_POLICY: '사용자 화면 하단(푸터)의 "개인정보처리방침" 링크에서 표시됩니다.',
+    MAIL_RECEPTION: '회원가입·마이페이지의 "이메일 수신 동의" 선택 항목에서 표시됩니다. 사용하지 않으면 항목이 숨겨지고 동의를 받지 않습니다.',
+    SMS_RECEPTION: '회원가입·마이페이지의 "SMS 수신 동의" 선택 항목에서 표시됩니다. 사용하지 않으면 항목이 숨겨지고 동의를 받지 않습니다.',
+    MARKETING_USAGE: '회원가입·마이페이지의 "마케팅 활용 동의" 선택 항목에서 표시됩니다. 사용하지 않으면 항목이 숨겨지고 동의를 받지 않습니다.',
 };
 
 const TYPES: Record<string, PolicyType> = {
     'privacy-consent': 'PRIVACY_CONSENT',
     'privacy-policy': 'PRIVACY_POLICY',
+    'mail-reception': 'MAIL_RECEPTION',
+    'sms-reception': 'SMS_RECEPTION',
+    'marketing-usage': 'MARKETING_USAGE',
 };
 
 export function PolicyAdminPage() {
@@ -45,11 +51,14 @@ export function PolicyAdminPage() {
             </p>
             <SchemaForm
                 key={`${type}-${policy.version}`}
-                fields={[{name: 'contentHtml', label: '내용', type: 'html', required: true}]}
-                initial={{contentHtml: policy.contentHtml}}
+                fields={[
+                    ...(policy.optional ? [{name: 'isUsing', label: '사용', type: 'checkbox', wide: true, spaced: true} as const] : []),
+                    {name: 'contentHtml', label: '내용', type: 'html', required: true},
+                ]}
+                initial={{contentHtml: policy.contentHtml, isUsing: policy.isUsing}}
                 onSubmit={async (values) => {
                     setSaved(false);
-                    setPolicy(await adminApi.policies.save(type, String(values.contentHtml ?? '')));
+                    setPolicy(await adminApi.policies.save(type, String(values.contentHtml ?? ''), values.isUsing !== false));
                     setSaved(true);
                 }}
             />

@@ -35,8 +35,15 @@ public class Policy extends BaseEntity {
     @Comment("마지막 수정자")
     private String lastWorker;
 
-    public void update(final String contentHtml, final String worker) {
+    @Builder.Default
+    @Column(nullable = false)
+    @ColumnDefault("true")
+    @Comment("사용 여부 (선택 동의 문서만 끌 수 있음)")
+    private boolean isUsing = true;
+
+    public void update(final String contentHtml, final boolean isUsing, final String worker) {
         this.contentHtml = contentHtml;
+        this.isUsing = !type.isOptional() || isUsing;
         this.lastWorker = worker;
         this.version++;
     }
