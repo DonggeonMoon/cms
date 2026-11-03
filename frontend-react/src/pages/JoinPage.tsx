@@ -11,13 +11,20 @@ import {Checkbox, Field} from '../components/Field';
 import {HtmlView} from '../components/HtmlView';
 import {useSite} from '../components/SiteContext';
 import {EMPTY_PROFILE, normalizeProfile, ProfileFields} from './ProfileFields';
+import {SocialLoginButtons} from '../components/SocialLoginButtons';
+import {StableLabel} from '../components/StableLabel';
 
 export function JoinPage() {
     const [agreed, setAgreed] = useState(false);
     return agreed ? <JoinForm/> : <ConsentStep onAgree={() => setAgreed(true)}/>;
 }
 
-function ConsentStep({onAgree}: { onAgree: () => void }) {
+export function JoinTitle() {
+    const {name} = useSite();
+    return <h1>{name} 회원가입</h1>;
+}
+
+export function ConsentStep({onAgree, social = true}: { onAgree: () => void; social?: boolean }) {
     const [policy, setPolicy] = useState<Policy | null>(null);
     const [error, setError] = useState<unknown>(null);
     const [checked, setChecked] = useState(false);
@@ -37,6 +44,7 @@ function ConsentStep({onAgree}: { onAgree: () => void }) {
             <div className="toolbar form-actions">
                 <button type="button" className="primary" disabled={!checked || !policy} onClick={onAgree}>동의하고 계속</button>
             </div>
+            {social && <SocialLoginButtons redirect="/" verb="가입"/>}
         </section>
     );
 }

@@ -4,6 +4,8 @@ import type {UserType} from '../api/types';
 import {useAuth} from '../auth/AuthContext';
 import {ErrorBanner} from '../components/ErrorBanner';
 import {Field} from '../components/Field';
+import {SOCIAL_ERRORS, SocialLoginButtons} from '../components/SocialLoginButtons';
+import {StableLabel} from '../components/StableLabel';
 
 export function LoginPage({userType}: { userType: UserType }) {
     const {login} = useAuth();
@@ -15,6 +17,8 @@ export function LoginPage({userType}: { userType: UserType }) {
     const [submitting, setSubmitting] = useState(false);
 
     const isAdmin = userType === 'ADMIN';
+    const [params] = useSearchParams();
+    const socialError = params.get('socialError');
     const redirectTo = (location.state as { from?: string } | null)?.from ?? (isAdmin ? '/admin' : '/');
 
     const handleSubmit = async (event: FormEvent) => {
@@ -44,6 +48,8 @@ export function LoginPage({userType}: { userType: UserType }) {
                     <StableLabel current={submitting ? '로그인 중…' : '로그인'} labels={['로그인 중…', '로그인']}/>
                 </button>
             </form>
+            {!isAdmin && socialError && <p className="field-error">{SOCIAL_ERRORS[socialError] ?? SOCIAL_ERRORS.failed}</p>}
+            {!isAdmin && <SocialLoginButtons redirect={redirectTo}/>}
             {!isAdmin && <p className="muted">계정이 없으신가요? <Link to="/join">회원가입</Link></p>}
         </section>
     );

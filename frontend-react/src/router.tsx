@@ -42,6 +42,7 @@ import {ArchiveArticlePage, ArchiveListPage, ContentPage} from './pages/ContentP
 import {HomePage, NotFoundPage} from './pages/HomePage';
 import {OrderFormPage, ReservationFormPage} from './pages/shop/CheckoutFormPages';
 import {JoinPage} from './pages/JoinPage';
+import {SocialJoinPage} from './pages/SocialJoinPage';
 import {AdminLoginPage, LoginPage} from './pages/LoginPage';
 import {MapPage} from './pages/MapPage';
 import {MediaDetailPage, MediaListPage, MyMediaPage} from './pages/MediaPages';
@@ -68,6 +69,7 @@ export const routes = [
                     {path: '/', element: <HomePage/>},
                     {path: '/login', element: <LoginPage userType="MEMBER"/>},
                     {path: '/join', element: <JoinPage/>},
+                    {path: '/join/social', element: <SocialJoinPage/>},
                     {path: '/privacy', element: <PrivacyPolicyPage/>},
                     {
                         element: <RequireFeature feature="CONTENT"/>,

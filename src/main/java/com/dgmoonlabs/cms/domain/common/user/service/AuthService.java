@@ -41,7 +41,20 @@ public class AuthService {
             throw new BusinessException(ErrorCode.LOGIN_FAILED);
         }
         member.recordLoginSuccess();
-        return new LoginUser(member.getId(), member.getUsername(), member.getName(), UserType.MEMBER);
+        return new LoginUser(member.getId(), member.getUsername(), member.displayName(), UserType.MEMBER);
+    }
+
+    @Transactional
+    public LoginUser authenticateSocialMember(final Long memberId) {
+        Member member = memberRepository.findById(memberId).filter(found -> found.getDeletedAt() == null).orElse(null);
+        if (member == null) {
+            return null;
+        }
+        if (member.isLocked(securityProperties.maxLoginTryCount())) {
+            throw new BusinessException(ErrorCode.ACCOUNT_LOCKED);
+        }
+        member.recordLoginSuccess();
+        return new LoginUser(member.getId(), member.getUsername(), member.displayName(), UserType.MEMBER);
     }
 
     private LoginUser authenticateAdmin(final LoginRequest request) {

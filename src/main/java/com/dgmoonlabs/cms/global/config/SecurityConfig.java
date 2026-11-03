@@ -45,7 +45,9 @@ public class SecurityConfig {
 
         http.securityContext(context -> context.securityContextRepository(securityContextRepository));
 
-        http.csrf(configurer -> configurer.spa());
+        // 애플 콜백은 cross-site POST 라 CSRF 토큰이 없다. 리다이렉트만 한다.
+        http.csrf(configurer -> configurer.spa()
+                .ignoringRequestMatchers(PathPatternRequestMatcher.pathPattern(HttpMethod.POST, "/api/auth/oauth/apple/callback")));
 
         http.exceptionHandling(handling -> handling
                 .defaultAuthenticationEntryPointFor(

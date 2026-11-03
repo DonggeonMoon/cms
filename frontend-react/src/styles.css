@@ -2533,3 +2533,72 @@ input[type='checkbox'], input[type='radio'] {
     padding-bottom: 4px;
 }
 
+.social-login {
+    margin-top: 20px;
+}
+
+.social-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.social-divider::before,
+.social-divider::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--border);
+}
+
+.social-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.social-button {
+    display: block;
+    padding: 11px 16px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+}
+
+.social-kakao {
+    background: #FEE500;
+    color: rgb(0 0 0 / 85%);
+}
+
+.social-naver {
+    background: #03C75A;
+    color: #fff;
+}
+
+.social-google {
+    background: #fff;
+    color: #1f1f1f;
+    border-color: #747775;
+}
+
+.social-apple {
+    background: #000;
+    color: #fff;
+}
+
+.social-facebook {
+    background: #1877F2;
+    color: #fff;
+}
+
+.social-setting legend .badge {
+    margin-left: 4px;
+}
+
+.social-setting .row input {
+    flex: 1;
+}
+
