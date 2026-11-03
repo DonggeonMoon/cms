@@ -8,6 +8,7 @@ Everything goes through the public/admin APIs (no SQL), so the data obeys the sa
 business rules as data entered from the screens.
 """
 import argparse
+import mimetypes
 import uuid
 from pathlib import Path
 import http.cookiejar
@@ -67,11 +68,12 @@ class Client:
             return int(location.rstrip('/').split('/')[-1])
         return payload['id']
 
-    def upload(self, file_name, alternative_text):
-        """Uploads a sample image (see sample-images/credits.json) and returns its file id."""
+    def upload(self, file_name, alternative_text, folder=IMAGES):
+        """Uploads a sample file (images: see sample-images/credits.json) and returns its file id."""
         boundary = uuid.uuid4().hex
+        content_type = mimetypes.guess_type(file_name)[0] or 'application/octet-stream'
         body = (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{file_name}"\r\n'
-                'Content-Type: image/jpeg\r\n\r\n').encode() + (IMAGES / file_name).read_bytes() + f'\r\n--{boundary}--\r\n'.encode()
+                f'Content-Type: {content_type}\r\n\r\n').encode() + (folder / file_name).read_bytes() + f'\r\n--{boundary}--\r\n'.encode()
         headers = {'Content-Type': f'multipart/form-data; boundary={boundary}', 'Accept': 'application/json',
                    'X-XSRF-TOKEN': self._csrf()}
         if self.zone == 'admin':
@@ -131,9 +133,9 @@ def seed(base_url, admin_password):
     for order, (name, english, children) in enumerate([
         ('상품 등급', 'GRADE', [('S급 (미개봉)', 'S'), ('A급 (사용감 거의 없음)', 'A'), ('B급 (생활 흠집)', 'B'), ('C급 (기능 정상, 외관 하자)', 'C')]),
         ('거래 방식', 'TRADE', [('택배 거래', 'DELIVERY'), ('직거래', 'DIRECT'), ('매장 픽업', 'PICKUP')]),
-    ]):
+    ], start=1):
         parent = admin.create('/api/admin/codes', {'order': order, 'name': name, 'englishName': english, 'isUsing': True})
-        for child_order, (child, child_english) in enumerate(children):
+        for child_order, (child, child_english) in enumerate(children, start=1):
             admin.create('/api/admin/codes', {'parentId': parent, 'order': child_order, 'name': child,
                                               'englishName': child_english, 'isUsing': True})
 
@@ -190,11 +192,11 @@ def seed(base_url, admin_password):
     admin.put('/api/admin/menus/order',
               {'parentId': None, 'ids': [about_menu, *(m['id'] for m in top_menus if m['id'] != about_menu)]})
     admin.create('/api/admin/menus', {'parentId': about_menu, 'name': '안전거래 가이드', 'type': 'CONTENT',
-                                      'targetId': guide, 'sequence': 0})
+                                      'targetId': guide, 'sequence': 1})
     admin.create('/api/admin/menus', {'parentId': about_menu, 'name': '판매 수수료 안내', 'type': 'CONTENT',
-                                      'targetId': fee, 'sequence': 1})
+                                      'targetId': fee, 'sequence': 2})
     admin.create('/api/admin/menus', {'parentId': about_menu, 'name': '사진 출처', 'type': 'CONTENT',
-                                      'targetId': photo_credits, 'sequence': 2})
+                                      'targetId': photo_credits, 'sequence': 3})
 
     board_defaults = {'type': 'NORMAL', 'isMemberAccessible': True, 'isMemberReadable': True, 'isGuestAccessible': True,
                       'isGuestReadable': True, 'supportsNotice': True, 'supportsComment': True, 'supportsLike': True,
@@ -275,7 +277,7 @@ def seed(base_url, admin_password):
         ('성수 픽업라운지', '서울특별시 성동구 아차산로 17', '1층', 37.5446, 127.0557, '02-555-0102', '화~일 11:00~21:00', '가구·생활용품 직접 보고 구매'),
         ('부산 서면점', '부산광역시 부산진구 중앙대로 692', '2층', 35.1578, 129.0600, '051-555-0103', '매일 10:00~19:00', '부산·경남 지역 매입과 픽업'),
         ('대전 둔산점', '대전광역시 서구 대덕대로 211', '1층', 36.3510, 127.3850, '042-555-0104', '월~토 10:00~19:00', '캠핑·레저 용품 특화 매장'),
-    ]):
+    ], start=1):
         admin.create('/api/admin/map/branches', {'name': name, 'address': address, 'detailAddress': detail, 'latitude': lat,
                                                  'longitude': lng, 'phoneNumber': phone, 'businessHours': hours,
                                                  'description': desc, 'sequence': sequence, 'isUsing': True})
@@ -376,6 +378,7 @@ def seed(base_url, admin_password):
     minjun.create(f'/api/programs/{laptop_class}/reviews', {'rating': 5, 'title': '신청 전부터 기대돼요',
                                                             'contentHtml': p('사전 안내 메일이 친절했어요. 노트북 챙겨 갑니다!')})
 
+    laptop_video = admin.create('/api/admin/media', {
     questions = [
         (sky, {'title': '검수 기간은 얼마나 걸리나요?', 'contentHtml': p('판매하려고 하는데 검수센터 도착 후 며칠이면 판매 등록되나요?')},
          '<p>검수센터 도착 후 영업일 기준 1~2일 안에 검수를 마치고 바로 판매 등록됩니다.</p>'),
@@ -402,17 +405,17 @@ def seed(base_url, admin_password):
                                    (seoyeon, 5, '')]:
         client.post('/api/satisfactions', {'menuId': about_menu, 'score': score, 'opinion': opinion})
 
-    admin.create('/api/admin/banners', {'type': 'BANNER', 'order': 0, 'name': '오픈 이벤트 띠배너', 'isUsing': True,
+    admin.create('/api/admin/banners', {'type': 'BANNER', 'order': 1, 'name': '오픈 이벤트 띠배너', 'isUsing': True,
                                         'description': '🎉 중고천국 정식 오픈! 첫 구매 10% 할인 쿠폰을 드려요', 'link': '/products',
                                         'backgroundColor': '#0F766E', 'textColor': '#FFFFFF', 'dismissDays': 1})
-    admin.create('/api/admin/banners', {'type': 'BANNER', 'order': 1, 'name': '점검 안내 (대기)', 'isUsing': False,
+    admin.create('/api/admin/banners', {'type': 'BANNER', 'order': 2, 'name': '점검 안내 (대기)', 'isUsing': False,
                                         'description': '11/12(목) 02:00~05:00 정기 점검이 있습니다.',
                                         'backgroundColor': '#B45309', 'textColor': '#FFFFFF', 'dismissDays': 1})
-    admin.create('/api/admin/banners', {'type': 'POPUP', 'order': 0, 'name': '플리마켓 셀러 모집', 'isUsing': True, 'isModal': True,
+    admin.create('/api/admin/banners', {'type': 'POPUP', 'order': 1, 'name': '플리마켓 셀러 모집', 'isUsing': True, 'isModal': True,
                                         'description': '성수 주말 플리마켓 셀러를 모집합니다. 부스비 2만 원, 판매 수수료 0원!',
                                         'fileId': admin.upload('flea-market.jpg', '플리마켓 셀러 모집'),
                                         'link': f'/programs/{flea_market}', 'width': 420, 'dismissDays': 3})
-    admin.create('/api/admin/banners', {'type': 'POPUP', 'order': 1, 'name': '안전결제 안내', 'isUsing': True, 'isModal': True,
+    admin.create('/api/admin/banners', {'type': 'POPUP', 'order': 2, 'name': '안전결제 안내', 'isUsing': True, 'isModal': True,
                                         'description': '외부 메신저·계좌이체 요구는 100% 사기입니다.\n반드시 중고천국 안전결제를 이용하세요.',
                                         'link': f'/contents/{guide}', 'width': 380, 'dismissDays': 7})
 

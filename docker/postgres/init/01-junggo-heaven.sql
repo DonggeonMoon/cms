@@ -4850,10 +4850,10 @@ COPY public.authenticated_member (connection_info, duplication_info, id) FROM st
 --
 
 COPY public.banner (id, created_at, deleted_at, modified_at, background_color, description, dismiss_days, end_date_time, file_id, height, is_modal, is_using, "left", link, name, opens_new_window, "order", start_date_time, text_color, top, type, width) FROM stdin;
-1	2026-11-02 20:08:45.326049	\N	2026-11-02 20:08:45.326049	#0F766E	🎉 중고천국 정식 오픈! 첫 구매 10% 할인 쿠폰을 드려요	1	\N	\N	\N	f	t	\N	/products	오픈 이벤트 띠배너	f	0	\N	#FFFFFF	\N	BANNER	\N
-2	2026-11-02 20:08:45.3384	\N	2026-11-02 20:08:45.3384	#B45309	11/12(목) 02:00~05:00 정기 점검이 있습니다.	1	\N	\N	\N	f	f	\N	\N	점검 안내 (대기)	f	1	\N	#FFFFFF	\N	BANNER	\N
-3	2026-11-02 20:08:45.371668	\N	2026-11-02 20:08:45.371668	\N	성수 주말 플리마켓 셀러를 모집합니다. 부스비 2만 원, 판매 수수료 0원!	3	\N	13	\N	t	t	\N	/programs/1	플리마켓 셀러 모집	f	0	\N	\N	\N	POPUP	420
-4	2026-11-02 20:08:45.377457	\N	2026-11-02 20:08:45.377457	\N	외부 메신저·계좌이체 요구는 100% 사기입니다.\n반드시 중고천국 안전결제를 이용하세요.	7	\N	\N	\N	t	t	\N	/contents/3	안전결제 안내	f	1	\N	\N	\N	POPUP	380
+1	2026-11-02 20:08:45.326049	\N	2026-11-02 20:08:45.326049	#0F766E	🎉 중고천국 정식 오픈! 첫 구매 10% 할인 쿠폰을 드려요	1	\N	\N	\N	f	t	\N	/products	오픈 이벤트 띠배너	f	1	\N	#FFFFFF	\N	BANNER	\N
+2	2026-11-02 20:08:45.3384	\N	2026-11-02 20:08:45.3384	#B45309	11/12(목) 02:00~05:00 정기 점검이 있습니다.	1	\N	\N	\N	f	f	\N	\N	점검 안내 (대기)	f	2	\N	#FFFFFF	\N	BANNER	\N
+3	2026-11-02 20:08:45.371668	\N	2026-11-02 20:08:45.371668	\N	성수 주말 플리마켓 셀러를 모집합니다. 부스비 2만 원, 판매 수수료 0원!	3	\N	13	\N	t	t	\N	/programs/1	플리마켓 셀러 모집	f	1	\N	\N	\N	POPUP	420
+4	2026-11-02 20:08:45.377457	\N	2026-11-02 20:08:45.377457	\N	외부 메신저·계좌이체 요구는 100% 사기입니다.\n반드시 중고천국 안전결제를 이용하세요.	7	\N	\N	\N	t	t	\N	/contents/3	안전결제 안내	f	2	\N	\N	\N	POPUP	380
 \.
 
 
@@ -4924,10 +4924,10 @@ COPY public.board_config (id, created_at, deleted_at, modified_at, board_id, is_
 --
 
 COPY public.branch (id, created_at, deleted_at, modified_at, address, business_hours, description, detail_address, is_using, latitude, longitude, name, phone_number, sequence) FROM stdin;
-1	2026-11-02 20:08:43.923547	\N	2026-11-02 20:08:43.923547	서울특별시 강남구 강남대로 396	매일 10:00~20:00	디지털 기기 전문 검수, 당일 매입 상담	지하 1층	t	37.4979000	127.0276000	강남 검수센터	02-555-0101	0
-2	2026-11-02 20:08:43.935583	\N	2026-11-02 20:08:43.935583	서울특별시 성동구 아차산로 17	화~일 11:00~21:00	가구·생활용품 직접 보고 구매	1층	t	37.5446000	127.0557000	성수 픽업라운지	02-555-0102	1
-3	2026-11-02 20:08:43.946614	\N	2026-11-02 20:08:43.946614	부산광역시 부산진구 중앙대로 692	매일 10:00~19:00	부산·경남 지역 매입과 픽업	2층	t	35.1578000	129.0600000	부산 서면점	051-555-0103	2
-4	2026-11-02 20:08:43.954804	\N	2026-11-02 20:08:43.954804	대전광역시 서구 대덕대로 211	월~토 10:00~19:00	캠핑·레저 용품 특화 매장	1층	t	36.3510000	127.3850000	대전 둔산점	042-555-0104	3
+1	2026-11-02 20:08:43.923547	\N	2026-11-02 20:08:43.923547	서울특별시 강남구 강남대로 396	매일 10:00~20:00	디지털 기기 전문 검수, 당일 매입 상담	지하 1층	t	37.4979000	127.0276000	강남 검수센터	02-555-0101	1
+2	2026-11-02 20:08:43.935583	\N	2026-11-02 20:08:43.935583	서울특별시 성동구 아차산로 17	화~일 11:00~21:00	가구·생활용품 직접 보고 구매	1층	t	37.5446000	127.0557000	성수 픽업라운지	02-555-0102	2
+3	2026-11-02 20:08:43.946614	\N	2026-11-02 20:08:43.946614	부산광역시 부산진구 중앙대로 692	매일 10:00~19:00	부산·경남 지역 매입과 픽업	2층	t	35.1578000	129.0600000	부산 서면점	051-555-0103	3
+4	2026-11-02 20:08:43.954804	\N	2026-11-02 20:08:43.954804	대전광역시 서구 대덕대로 211	월~토 10:00~19:00	캠핑·레저 용품 특화 매장	1층	t	36.3510000	127.3850000	대전 둔산점	042-555-0104	4
 \.
 
 
@@ -4944,15 +4944,15 @@ COPY public.capability (id, created_at, deleted_at, modified_at, description, is
 --
 
 COPY public.code (id, created_at, deleted_at, modified_at, depth, description, english_name, is_using, name, "order", parent_id) FROM stdin;
-1	2026-11-02 20:08:42.644906	\N	2026-11-02 20:08:42.644906	0	\N	GRADE	t	상품 등급	0	\N
-2	2026-11-02 20:08:42.65815	\N	2026-11-02 20:08:42.65815	1	\N	S	t	S급 (미개봉)	0	1
-3	2026-11-02 20:08:42.665984	\N	2026-11-02 20:08:42.665984	1	\N	A	t	A급 (사용감 거의 없음)	1	1
-4	2026-11-02 20:08:42.674576	\N	2026-11-02 20:08:42.674576	1	\N	B	t	B급 (생활 흠집)	2	1
-5	2026-11-02 20:08:42.681796	\N	2026-11-02 20:08:42.681796	1	\N	C	t	C급 (기능 정상, 외관 하자)	3	1
-6	2026-11-02 20:08:42.687361	\N	2026-11-02 20:08:42.687361	0	\N	TRADE	t	거래 방식	1	\N
-7	2026-11-02 20:08:42.69529	\N	2026-11-02 20:08:42.69529	1	\N	DELIVERY	t	택배 거래	0	6
-8	2026-11-02 20:08:42.702369	\N	2026-11-02 20:08:42.702369	1	\N	DIRECT	t	직거래	1	6
-9	2026-11-02 20:08:42.70969	\N	2026-11-02 20:08:42.70969	1	\N	PICKUP	t	매장 픽업	2	6
+1	2026-11-02 20:08:42.644906	\N	2026-11-02 20:08:42.644906	0	\N	GRADE	t	상품 등급	1	\N
+2	2026-11-02 20:08:42.65815	\N	2026-11-02 20:08:42.65815	1	\N	S	t	S급 (미개봉)	1	1
+3	2026-11-02 20:08:42.665984	\N	2026-11-02 20:08:42.665984	1	\N	A	t	A급 (사용감 거의 없음)	2	1
+4	2026-11-02 20:08:42.674576	\N	2026-11-02 20:08:42.674576	1	\N	B	t	B급 (생활 흠집)	3	1
+5	2026-11-02 20:08:42.681796	\N	2026-11-02 20:08:42.681796	1	\N	C	t	C급 (기능 정상, 외관 하자)	4	1
+6	2026-11-02 20:08:42.687361	\N	2026-11-02 20:08:42.687361	0	\N	TRADE	t	거래 방식	2	\N
+7	2026-11-02 20:08:42.69529	\N	2026-11-02 20:08:42.69529	1	\N	DELIVERY	t	택배 거래	1	6
+8	2026-11-02 20:08:42.702369	\N	2026-11-02 20:08:42.702369	1	\N	DIRECT	t	직거래	2	6
+9	2026-11-02 20:08:42.70969	\N	2026-11-02 20:08:42.70969	1	\N	PICKUP	t	매장 픽업	3	6
 \.
 
 
@@ -5111,17 +5111,17 @@ COPY public.member_organization (id, member_id, office_address, office_departmen
 --
 
 COPY public.menu (dtype, id, created_at, deleted_at, modified_at, depth, feature, is_using, link, name, parent_id, sequence, target_id, type, menu_footer, menu_header, menu_template) FROM stdin;
-Menu	12	2026-11-02 11:25:24.66389	\N	2026-11-02 11:25:24.66389	1	\N	t	\N	사진 출처	9	2	5	CONTENT	\N	\N	\N
-Menu	10	2026-11-02 20:08:42.832896	\N	2026-11-02 20:39:36.714005	1	\N	t	\N	안전거래 가이드	9	0	3	CONTENT	\N	\N	\N
-Menu	11	2026-11-02 11:25:24.66389	\N	2026-11-02 20:39:36.714311	1	\N	t	\N	판매 수수료 안내	9	1	4	CONTENT	\N	\N	\N
-Menu	4	2026-11-02 20:08:41.124635	\N	2026-11-02 20:41:39.107912	0	PRODUCT	t	\N	상품	\N	3	\N	FEATURE	\N	\N	\N
-Menu	5	2026-11-02 20:08:41.1261	\N	2026-11-02 20:41:40.752598	0	PROGRAM	t	\N	프로그램	\N	4	\N	FEATURE	\N	\N	\N
-Menu	6	2026-11-02 20:08:41.127713	\N	2026-11-02 20:41:41.979967	0	QNA	t	\N	질문답변	\N	5	\N	FEATURE	\N	\N	\N
-Menu	7	2026-11-02 20:08:41.128969	\N	2026-11-02 20:41:43.039746	0	REPORT	t	\N	신고	\N	6	\N	FEATURE	\N	\N	\N
-Menu	8	2026-11-02 20:08:41.130141	\N	2026-11-02 20:41:43.039942	0	MAP	t	\N	지도	\N	7	\N	FEATURE	\N	\N	\N
-Menu	2	2026-11-02 20:08:41.121237	\N	2026-11-02 20:44:27.494966	0	BOARD	t	\N	커뮤니티	\N	1	\N	FEATURE	\N	\N	\N
-Menu	3	2026-11-02 20:08:41.123091	\N	2026-11-02 20:44:34.846469	0	ARCHIVE	t	\N	공지사항	\N	2	\N	FEATURE	\N	\N	\N
-Menu	9	2026-11-02 20:08:42.823778	\N	2026-11-02 20:45:18.667223	0	\N	t	\N	소개	\N	0	2	CONTENT	\N	\N	\N
+Menu	12	2026-11-02 11:25:24.66389	\N	2026-11-02 11:25:24.66389	1	\N	t	\N	사진 출처	9	3	5	CONTENT	\N	\N	\N
+Menu	10	2026-11-02 20:08:42.832896	\N	2026-11-02 20:39:36.714005	1	\N	t	\N	안전거래 가이드	9	1	3	CONTENT	\N	\N	\N
+Menu	11	2026-11-02 11:25:24.66389	\N	2026-11-02 20:39:36.714311	1	\N	t	\N	판매 수수료 안내	9	2	4	CONTENT	\N	\N	\N
+Menu	4	2026-11-02 20:08:41.124635	\N	2026-11-02 20:41:39.107912	0	PRODUCT	t	\N	상품	\N	4	\N	FEATURE	\N	\N	\N
+Menu	5	2026-11-02 20:08:41.1261	\N	2026-11-02 20:41:40.752598	0	PROGRAM	t	\N	프로그램	\N	5	\N	FEATURE	\N	\N	\N
+Menu	6	2026-11-02 20:08:41.127713	\N	2026-11-02 20:41:41.979967	0	QNA	t	\N	질문답변	\N	6	\N	FEATURE	\N	\N	\N
+Menu	7	2026-11-02 20:08:41.128969	\N	2026-11-02 20:41:43.039746	0	REPORT	t	\N	신고	\N	7	\N	FEATURE	\N	\N	\N
+Menu	8	2026-11-02 20:08:41.130141	\N	2026-11-02 20:41:43.039942	0	MAP	t	\N	지도	\N	8	\N	FEATURE	\N	\N	\N
+Menu	2	2026-11-02 20:08:41.121237	\N	2026-11-02 20:44:27.494966	0	BOARD	t	\N	커뮤니티	\N	2	\N	FEATURE	\N	\N	\N
+Menu	3	2026-11-02 20:08:41.123091	\N	2026-11-02 20:44:34.846469	0	ARCHIVE	t	\N	공지사항	\N	3	\N	FEATURE	\N	\N	\N
+Menu	9	2026-11-02 20:08:42.823778	\N	2026-11-02 20:45:18.667223	0	\N	t	\N	소개	\N	1	2	CONTENT	\N	\N	\N
 \.
 
 
@@ -6260,6 +6260,23 @@ ALTER TABLE ONLY public.image_file
 
 ALTER TABLE ONLY public.authenticated_member
     ADD CONSTRAINT fkq4wd2pcemgytw8dtjexik7ffc FOREIGN KEY (id) REFERENCES public.member(id);
+
+
+--
+-- Name: member_join_setting; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.member_join_setting (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp(6) without time zone,
+    deleted_at timestamp(6) without time zone,
+    modified_at timestamp(6) without time zone,
+    collected_items character varying(255) NOT NULL,
+    name_format character varying(20) NOT NULL
+);
+
+INSERT INTO public.member_join_setting (created_at, modified_at, collected_items, name_format)
+VALUES ('2026-11-02 20:08:43', '2026-11-02 20:08:43', 'ADDRESS,EMAIL,MOBILE_PHONE', 'FULL');
 
 
 --
