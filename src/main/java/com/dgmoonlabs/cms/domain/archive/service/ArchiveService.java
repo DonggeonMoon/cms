@@ -9,6 +9,8 @@ import com.dgmoonlabs.cms.domain.archive.entity.comment.ArchiveComment;
 import com.dgmoonlabs.cms.domain.archive.repository.ArchiveArticleFileRepository;
 import com.dgmoonlabs.cms.domain.archive.repository.ArchiveArticleRepository;
 import com.dgmoonlabs.cms.domain.archive.repository.ArchiveCommentRepository;
+import com.dgmoonlabs.cms.domain.archive.repository.ArchiveArticleLikeRepository;
+import com.dgmoonlabs.cms.domain.archive.entity.article.ArchiveArticleLike;
 import com.dgmoonlabs.cms.domain.archive.repository.ArchiveRepository;
 import com.dgmoonlabs.cms.domain.board.constant.BoardType;
 import com.dgmoonlabs.cms.domain.board.constant.CommentStatus;
@@ -26,6 +28,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,10 +38,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ArchiveService {
+    private static final int MAX_COMMENT_DEPTH = 1;
+
     private final ArchiveRepository archiveRepository;
     private final ArchiveArticleRepository articleRepository;
     private final ArchiveArticleFileRepository articleFileRepository;
     private final ArchiveCommentRepository commentRepository;
+    private final ArchiveArticleLikeRepository articleLikeRepository;
     private final FileService fileService;
     private final HtmlSanitizer htmlSanitizer;
 
@@ -62,6 +68,7 @@ public class ArchiveService {
                 .description(request.description())
                 .type(request.type())
                 .supportsComment(request.supportsComment())
+                .supportsLike(request.supportsLike())
                 .pageSize(request.pageSize())
                 .build()).getId();
     }
@@ -72,7 +79,7 @@ public class ArchiveService {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         findArchive(id).update(request.name(), request.description(), request.type(), request.supportsComment(),
-                request.pageSize());
+                request.supportsLike(), request.pageSize());
     }
 
     @Transactional
@@ -138,9 +145,28 @@ public class ArchiveService {
     public List<ArchiveCommentResponse> getComments(final Long archiveId, final Long articleId) {
         requireCommentable(archiveId);
         requirePublished(findArticle(archiveId, articleId));
-        return commentRepository.findAllByArticleIdAndDeletedAtIsNullOrderByIdAsc(articleId).stream()
-                .map(comment -> ArchiveCommentResponse.of(comment, canDelete(comment)))
-                .toList();
+        List<ArchiveComment> comments = commentRepository.findAllByArticleIdOrderByIdAsc(articleId);
+        Map<Long, List<ArchiveComment>> replies = new HashMap<>();
+        List<ArchiveComment> roots = new ArrayList<>();
+        for (ArchiveComment comment : comments) {
+            if (comment.getParentId() == null) {
+                roots.add(comment);
+            } else {
+                replies.computeIfAbsent(comment.getParentId(), key -> new ArrayList<>()).add(comment);
+            }
+        }
+        List<ArchiveCommentResponse> result = new ArrayList<>();
+        for (ArchiveComment root : roots) {
+            List<ArchiveComment> children = replies.getOrDefault(root.getId(), List.of()).stream()
+                    .filter(child -> child.getDeletedAt() == null)
+                    .toList();
+            if (root.getDeletedAt() != null && children.isEmpty()) {
+                continue;
+            }
+            result.add(ArchiveCommentResponse.of(root, canDelete(root), isCommentOwner(root)));
+            children.forEach(child -> result.add(ArchiveCommentResponse.of(child, canDelete(child), isCommentOwner(child))));
+        }
+        return result;
     }
 
     @Transactional
@@ -149,8 +175,19 @@ public class ArchiveService {
         requireCommentable(archiveId);
         requirePublished(findArticle(archiveId, articleId));
         LoginUser user = CurrentUser.get().orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED));
+        int depth = 0;
+        if (request.parentId() != null) {
+            ArchiveComment parent = commentRepository.findByIdAndArticleIdAndDeletedAtIsNull(request.parentId(), articleId)
+                    .orElseThrow(BusinessException::notFound);
+            if (parent.getDepth() >= MAX_COMMENT_DEPTH) {
+                throw new BusinessException(ErrorCode.FEATURE_NOT_SUPPORTED);
+            }
+            depth = parent.getDepth() + 1;
+        }
         return commentRepository.save(ArchiveComment.builder()
                 .articleId(articleId)
+                .parentId(request.parentId())
+                .depth(depth)
                 .content(request.content())
                 .userType(user.userType())
                 .userId(user.id())
@@ -171,8 +208,24 @@ public class ArchiveService {
         comment.delete();
     }
 
+    @Transactional
+    public void editComment(final Long archiveId, final Long articleId, final Long commentId, final String content) {
+        requireCommentable(archiveId);
+        findArticle(archiveId, articleId);
+        ArchiveComment comment = commentRepository.findByIdAndArticleIdAndDeletedAtIsNull(commentId, articleId)
+                .orElseThrow(BusinessException::notFound);
+        if (!isCommentOwner(comment)) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+        comment.edit(content);
+    }
+
     private boolean canDelete(final ArchiveComment comment) {
-        return CurrentUser.isAdmin() || comment.getUserId() != null
+        return CurrentUser.isAdmin() || isCommentOwner(comment);
+    }
+
+    private boolean isCommentOwner(final ArchiveComment comment) {
+        return comment.getUserId() != null
                 && CurrentUser.is(comment.getUserType() == null ? UserType.MEMBER : comment.getUserType(), comment.getUserId());
     }
 
@@ -180,6 +233,23 @@ public class ArchiveService {
         if (!findArchive(archiveId).isSupportsComment()) {
             throw new BusinessException(ErrorCode.COMMENT_NOT_SUPPORTED);
         }
+    }
+
+    @Transactional
+    public int like(final Long archiveId, final Long articleId) {
+        if (!findArchive(archiveId).isSupportsLike()) {
+            throw new BusinessException(ErrorCode.FEATURE_NOT_SUPPORTED);
+        }
+        LoginUser user = CurrentUser.get()
+                .filter(loginUser -> loginUser.userType() == UserType.MEMBER)
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED));
+        ArchiveArticle article = findArticle(archiveId, articleId);
+        requirePublished(article);
+        if (!articleLikeRepository.existsByArticleIdAndMemberId(articleId, user.id())) {
+            articleLikeRepository.save(ArchiveArticleLike.builder().articleId(articleId).memberId(user.id()).build());
+            article.increaseLikes();
+        }
+        return article.getLikes();
     }
 
     private void requirePublished(final ArchiveArticle article) {

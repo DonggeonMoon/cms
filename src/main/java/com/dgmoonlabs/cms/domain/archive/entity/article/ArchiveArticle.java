@@ -77,6 +77,10 @@ public class ArchiveArticle extends BaseEntity {
         this.status = status;
     }
 
+    public void increaseLikes() {
+        this.likes++;
+    }
+
     public void increaseHit() {
         this.hit++;
     }

@@ -16,12 +16,13 @@ public record CommentResponse(
         CommentStatus status,
         boolean deleted,
         boolean canDelete,
+        boolean canEdit,
         LocalDateTime createdAt
 ) {
     private static final String REMOVED = "삭제된 댓글입니다.";
     private static final String MODERATED = "관리자에 의해 숨겨진 댓글입니다.";
 
-    public static CommentResponse of(final BoardComment comment, final boolean canDelete) {
+    public static CommentResponse of(final BoardComment comment, final boolean canDelete, final boolean canEdit) {
         boolean deleted = comment.getDeletedAt() != null;
         boolean moderated = comment.getStatus() == CommentStatus.MODERATED;
         return new CommentResponse(
@@ -34,6 +35,7 @@ public record CommentResponse(
                 comment.getStatus(),
                 deleted,
                 canDelete && !deleted,
+                canEdit && !deleted && !moderated,
                 comment.getCreatedAt()
         );
     }

@@ -12,8 +12,12 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     Optional<Question> findByIdAndDeletedAtIsNull(Long id);
 
     @Query("select q from Question q where q.deletedAt is null "
-            + "and (:keyword = '' or lower(q.title) like lower(concat('%', :keyword, '%'))) order by q.id desc")
-    Page<Question> search(String keyword, Pageable pageable);
+            + "and (:keyword = '' or lower(q.title) like lower(concat('%', :keyword, '%'))) "
+            + "and (:unansweredOnly = false or not exists "
+            + "(select 1 from Answer a where a.questionId = q.id and a.deletedAt is null)) order by q.id desc")
+    Page<Question> search(String keyword, boolean unansweredOnly, Pageable pageable);
 
-    long countByDeletedAtIsNull();
+    @Query("select count(q) from Question q where q.deletedAt is null and not exists "
+            + "(select 1 from Answer a where a.questionId = q.id and a.deletedAt is null)")
+    long countUnanswered();
 }

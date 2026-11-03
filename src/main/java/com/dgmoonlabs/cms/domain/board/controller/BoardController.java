@@ -92,6 +92,14 @@ public class BoardController {
                 .build();
     }
 
+    @PutMapping("/{boardId}/articles/{articleId}/comments/{commentId}")
+    public ResponseEntity<Void> editComment(@PathVariable final Long boardId, @PathVariable final Long articleId,
+                                            @PathVariable final Long commentId,
+                                            @RequestBody @Valid final CommentEditRequest request) {
+        commentService.editComment(boardId, articleId, commentId, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{boardId}/articles/{articleId}/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(@PathVariable final Long boardId, @PathVariable final Long articleId,
                                               @PathVariable final Long commentId,

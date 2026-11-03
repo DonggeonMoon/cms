@@ -17,11 +17,12 @@ public final class QuestionResponse {
         }
     }
 
-    public record Detail(Long id, String title, String contentHtml, String authorName, String email, boolean isSecret,
+    public record Detail(Long id, String title, String contentHtml, String authorName, String email, String phoneNumber,
+                         boolean isSecret,
                          int hit, boolean canModify, AnswerDetail answer, LocalDateTime createdAt) {
         public static Detail of(final Question question, final Answer answer, final boolean canModify, final boolean showEmail) {
             return new Detail(question.getId(), question.getTitle(), question.getContentHtml(), question.getAuthorName(),
-                    showEmail ? question.getEmail() : null, question.isSecret(), question.getHit(), canModify,
+                    showEmail ? question.getEmail() : null, showEmail ? question.getPhoneNumber() : null, question.isSecret(), question.getHit(), canModify,
                     answer == null ? null : AnswerDetail.from(answer), question.getCreatedAt());
         }
     }

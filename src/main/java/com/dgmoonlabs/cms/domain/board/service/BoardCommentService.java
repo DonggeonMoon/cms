@@ -2,6 +2,7 @@ package com.dgmoonlabs.cms.domain.board.service;
 
 import com.dgmoonlabs.cms.domain.board.constant.CommentStatus;
 import com.dgmoonlabs.cms.domain.board.dto.BoardResponse.Permissions;
+import com.dgmoonlabs.cms.domain.board.dto.CommentEditRequest;
 import com.dgmoonlabs.cms.domain.board.dto.CommentResponse;
 import com.dgmoonlabs.cms.domain.board.dto.CommentSaveRequest;
 import com.dgmoonlabs.cms.domain.board.entity.aritcle.BoardArticle;
@@ -56,10 +57,10 @@ public class BoardCommentService {
             if (hideRoot) {
                 continue;
             }
-            result.add(CommentResponse.of(root, canDelete(root)));
+            result.add(CommentResponse.of(root, canDelete(root), canEdit(root)));
             children.stream()
                     .filter(child -> child.getDeletedAt() == null)
-                    .forEach(child -> result.add(CommentResponse.of(child, canDelete(child))));
+                    .forEach(child -> result.add(CommentResponse.of(child, canDelete(child), canEdit(child))));
         }
         return result;
     }
@@ -117,6 +118,23 @@ public class BoardCommentService {
     }
 
     @Transactional
+    public void editComment(final Long boardId, final Long articleId, final Long commentId, final CommentEditRequest request) {
+        requireCommentable(boardId);
+        articleService.findArticle(boardId, articleId);
+        BoardComment comment = commentRepository.findByIdAndArticleIdAndDeletedAtIsNull(commentId, articleId)
+                .orElseThrow(BusinessException::notFound);
+        if (comment.getStatus() == CommentStatus.MODERATED) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+        boolean guestMatches = comment.isWrittenByGuest() && request.password() != null && comment.getPassword() != null
+                && passwordEncoder.matches(request.password(), comment.getPassword());
+        if (!isOwner(comment) && !guestMatches) {
+            throw new BusinessException(comment.isWrittenByGuest() ? ErrorCode.ARTICLE_PASSWORD_MISMATCH : ErrorCode.ACCESS_DENIED);
+        }
+        comment.edit(request.content());
+    }
+
+    @Transactional
     public void moderateComment(final Long boardId, final Long articleId, final Long commentId) {
         articleService.findArticle(boardId, articleId);
         commentRepository.findByIdAndArticleIdAndDeletedAtIsNull(commentId, articleId)
@@ -126,6 +144,14 @@ public class BoardCommentService {
 
     private boolean canDelete(final BoardComment comment) {
         return isOwnerOrAdmin(comment) || comment.isWrittenByGuest();
+    }
+
+    private boolean canEdit(final BoardComment comment) {
+        return isOwner(comment) || comment.isWrittenByGuest();
+    }
+
+    private boolean isOwner(final BoardComment comment) {
+        return comment.getUserId() != null && CurrentUser.is(comment.getUserType(), comment.getUserId());
     }
 
     private boolean isOwnerOrAdmin(final BoardComment comment) {

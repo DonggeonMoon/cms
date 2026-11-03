@@ -26,7 +26,7 @@ public class ContentService {
 
     @Transactional(readOnly = true)
     public Page<ContentResponse> searchContents(final String keyword, final Pageable pageable) {
-        return contentRepository.findAllByDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdDesc(
+        return contentRepository.findAllByDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdAsc(
                 keyword == null ? "" : keyword, pageable).map(ContentResponse::from);
     }
 

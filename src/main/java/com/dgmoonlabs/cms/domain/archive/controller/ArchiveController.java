@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -39,6 +40,11 @@ public class ArchiveController {
         return ResponseEntity.ok(archiveService.getArticle(archiveId, articleId));
     }
 
+    @PostMapping("/api/archives/{archiveId}/articles/{articleId}/likes")
+    public ResponseEntity<Map<String, Integer>> like(@PathVariable final Long archiveId, @PathVariable final Long articleId) {
+        return ResponseEntity.ok(Map.of("likes", archiveService.like(archiveId, articleId)));
+    }
+
     @GetMapping("/api/archives/{archiveId}/articles/{articleId}/comments")
     public ResponseEntity<List<ArchiveCommentResponse>> comments(@PathVariable final Long archiveId,
                                                                  @PathVariable final Long articleId) {
@@ -52,6 +58,14 @@ public class ArchiveController {
         Long id = archiveService.createComment(archiveId, articleId, request, httpRequest.getRemoteAddr());
         return ResponseEntity.created(URI.create("/api/archives/" + archiveId + "/articles/" + articleId + "/comments/" + id))
                 .build();
+    }
+
+    @PutMapping("/api/archives/{archiveId}/articles/{articleId}/comments/{commentId}")
+    public ResponseEntity<Void> editComment(@PathVariable final Long archiveId, @PathVariable final Long articleId,
+                                            @PathVariable final Long commentId,
+                                            @RequestBody @Valid final ArchiveCommentEditRequest request) {
+        archiveService.editComment(archiveId, articleId, commentId, request.content());
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/api/archives/{archiveId}/articles/{articleId}/comments/{commentId}")

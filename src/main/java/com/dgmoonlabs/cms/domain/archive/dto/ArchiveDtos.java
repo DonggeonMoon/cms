@@ -22,15 +22,16 @@ public final class ArchiveDtos {
             @Size(max = 255) String description,
             @NotNull BoardType type,
             boolean supportsComment,
+            boolean supportsLike,
             @Min(1) @Max(100) int pageSize
     ) {
     }
 
     public record ArchiveResponse(Long id, String name, String description, BoardType type, boolean supportsComment,
-                                  int pageSize) {
+                                  boolean supportsLike, int pageSize) {
         public static ArchiveResponse from(final Archive archive) {
             return new ArchiveResponse(archive.getId(), archive.getName(), archive.getDescription(), archive.getType(),
-                    archive.isSupportsComment(), archive.getPageSize());
+                    archive.isSupportsComment(), archive.isSupportsLike(), archive.getPageSize());
         }
     }
 
@@ -55,23 +56,31 @@ public final class ArchiveDtos {
     }
 
     public record ArchiveArticleDetail(Long id, Long archiveId, String title, String contentHtml, String authorName,
-                                       ArchiveStatus status, int hit, List<FileResponse> files, LocalDateTime createdAt,
+                                       ArchiveStatus status, int hit, int likes, List<FileResponse> files, LocalDateTime createdAt,
                                        LocalDateTime modifiedAt) {
         public static ArchiveArticleDetail of(final ArchiveArticle article, final List<FileResponse> files) {
             return new ArchiveArticleDetail(article.getId(), article.getArchiveId(), article.getTitle(),
-                    article.getContentHtml(), article.getAuthorName(), article.getStatus(), article.getHit(), files,
+                    article.getContentHtml(), article.getAuthorName(), article.getStatus(), article.getHit(),
+                    article.getLikes(), files,
                     article.getCreatedAt(), article.getModifiedAt());
         }
     }
 
-    public record ArchiveCommentSaveRequest(@NotBlank @Size(max = 2000) String content) {
+    public record ArchiveCommentSaveRequest(Long parentId, @NotBlank @Size(max = 2000) String content) {
     }
 
-    public record ArchiveCommentResponse(Long id, String content, String authorName, boolean canDelete,
-                                         LocalDateTime createdAt) {
-        public static ArchiveCommentResponse of(final ArchiveComment comment, final boolean canDelete) {
-            return new ArchiveCommentResponse(comment.getId(), comment.getContent(), comment.getAuthorName(), canDelete,
-                    comment.getCreatedAt());
+    public record ArchiveCommentEditRequest(@NotBlank @Size(max = 2000) String content) {
+    }
+
+    public record ArchiveCommentResponse(Long id, Long parentId, int depth, String content, String authorName, boolean deleted,
+                                         boolean canDelete, boolean canEdit, LocalDateTime createdAt) {
+        private static final String REMOVED = "삭제된 댓글입니다.";
+
+        public static ArchiveCommentResponse of(final ArchiveComment comment, final boolean canDelete, final boolean canEdit) {
+            boolean deleted = comment.getDeletedAt() != null;
+            return new ArchiveCommentResponse(comment.getId(), comment.getParentId(), comment.getDepth(),
+                    deleted ? REMOVED : comment.getContent(), deleted ? null : comment.getAuthorName(), deleted,
+                    canDelete && !deleted, canEdit && !deleted, comment.getCreatedAt());
         }
     }
 }

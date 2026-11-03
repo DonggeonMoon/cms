@@ -5,11 +5,14 @@ import type {ArticleDetail, ArticleSummary, Board, Comment} from '../../api/doma
 import {boardApi} from '../../api/endpoints';
 import type {FileInfo, Page} from '../../api/types';
 import {useAuth} from '../../auth/AuthContext';
+import {CommentEditor} from '../../components/CommentEditor';
 import {ErrorBanner} from '../../components/ErrorBanner';
-import {formatBytes, formatDateTime} from '../../components/format';
+import {formatBytes, formatDate, formatDateTime, rowNumber} from '../../components/format';
 import {HtmlView} from '../../components/HtmlView';
+import {ListSearch} from '../../components/ListSearch';
 import {Pagination} from '../../components/Pagination';
 import {type FieldSpec, SchemaForm} from '../../components/SchemaForm';
+import {StableLabel} from '../../components/StableLabel';
 
 function useBoard(boardId: number) {
     const [board, setBoard] = useState<Board | null>(null);
@@ -26,7 +29,6 @@ export function BoardListPage() {
     const [params, setParams] = useSearchParams();
     const keyword = params.get('keyword') ?? '';
     const page = Number(params.get('page') ?? 0);
-    const [input, setInput] = useState(keyword);
     const [data, setData] = useState<{ notices: ArticleSummary[]; articles: Page<ArticleSummary> } | null>(null);
     const [error, setError] = useState<unknown>(null);
 
@@ -35,11 +37,6 @@ export function BoardListPage() {
         boardApi.articles(boardId, keyword, page).then(setData).catch(setError);
     }, [boardId, keyword, page]);
 
-    const handleSearch = (event: FormEvent) => {
-        event.preventDefault();
-        setParams(input ? {keyword: input} : {});
-    };
-
     if (boardError) {
         return <ErrorBanner error={boardError}/>;
     }
@@ -47,14 +44,12 @@ export function BoardListPage() {
     return (
         <section className="card">
             <h1>{board?.name ?? '게시판'}</h1>
-            {board?.description && <p className="muted">{board.description}</p>}
-            <div className="toolbar space-between">
-                <form className="toolbar inline" onSubmit={handleSearch}>
-                    <input aria-label="검색어" placeholder="제목·내용 검색" value={input} onChange={(e) => setInput(e.target.value)}/>
-                    <button type="submit">검색</button>
-                </form>
-                {board?.permissions.canWrite && <Link className="button primary" to={`/boards/${boardId}/write`}>글쓰기</Link>}
-            </div>
+            {(board?.description || board?.permissions.canWrite) && (
+                <div className="list-head">
+                    <p className="muted">{board?.description}</p>
+                    {board?.permissions.canWrite && <Link className="button primary" to={`/boards/${boardId}/write`}>글쓰기</Link>}
+                </div>
+            )}
             <ErrorBanner error={error}/>
             {data && (
                 gallery ? (
@@ -70,20 +65,23 @@ export function BoardListPage() {
                     </div>
                 ) : (
                     <div className="table-wrap">
-                        <table>
+                        <table className="post-table">
                             <thead>
                             <tr>
+                                <th className="col-no">순번</th>
                                 <th>제목</th>
-                                <th>작성자</th>
-                                <th>조회</th>
-                                <th>작성일</th>
+                                <th className="col-fit">작성자</th>
+                                <th className="col-fit">작성일</th>
+                                <th className="col-fit">조회</th>
                             </tr>
                             </thead>
                             <tbody>
                             {data.notices.map((article) => <ArticleRow key={`n-${article.id}`} boardId={boardId} article={article} notice/>)}
-                            {data.articles.content.map((article) => <ArticleRow key={article.id} boardId={boardId} article={article}/>)}
+                            {data.articles.content.map((article, index) => (
+                                <ArticleRow key={article.id} boardId={boardId} article={article} no={rowNumber(data.articles.page, index)}/>
+                            ))}
                             {data.notices.length + data.articles.content.length === 0 && (
-                                <tr><td colSpan={4} className="muted">게시글이 없습니다.</td></tr>
+                                <tr><td colSpan={5} className="muted">게시글이 없습니다.</td></tr>
                             )}
                             </tbody>
                         </table>
@@ -92,23 +90,24 @@ export function BoardListPage() {
             )}
             {data && <Pagination page={page} totalPages={data.articles.page.totalPages}
                                  onChange={(next) => setParams({...(keyword && {keyword}), page: String(next)})}/>}
+            <ListSearch label="검색어" placeholder="제목·내용 검색" placement="bottom"/>
         </section>
     );
 }
 
-function ArticleRow({boardId, article, notice}: { boardId: number; article: ArticleSummary; notice?: boolean }) {
+function ArticleRow({boardId, article, notice, no}: { boardId: number; article: ArticleSummary; notice?: boolean; no?: number }) {
     return (
         <tr className={notice ? 'notice-row' : ''}>
-            <td>
-                {notice && <span className="badge danger">공지</span>}{' '}
+            <td className="col-no">{notice ? <span className="badge danger">공지</span> : no}</td>
+            <td className="col-title">
                 <Link to={`/boards/${boardId}/articles/${article.id}`}>{article.title}</Link>
                 {article.isSecret && <span className="muted small"> 🔒</span>}
                 {article.isHidden && <span className="badge">숨김</span>}
                 {article.commentCount > 0 && <span className="muted small"> [{article.commentCount}]</span>}
             </td>
-            <td>{article.authorName}</td>
-            <td>{article.hit}</td>
-            <td>{formatDateTime(article.createdAt)}</td>
+            <td className="col-fit">{article.authorName}</td>
+            <td className="col-fit">{formatDate(article.createdAt)}</td>
+            <td className="col-fit">{article.hit}</td>
         </tr>
     );
 }
@@ -192,13 +191,13 @@ export function BoardArticlePage() {
             <article className="card">
                 <Link to={`/boards/${boardId}`} className="muted">← {board?.name ?? '목록'}</Link>
                 <h1>{article.isNotice && <span className="badge danger">공지</span>} {article.title}</h1>
-                <p className="muted small">
+                <p className="muted small align-right">
                     {article.authorName} · {formatDateTime(article.createdAt)} · 조회 {article.hit}
                 </p>
                 <HtmlView html={article.contentHtml}/>
                 <AttachmentList files={article.files}/>
                 <ErrorBanner error={error}/>
-                <div className="toolbar">
+                <div className="toolbar form-actions">
                     {board?.supportsLike && <button type="button" onClick={like}>👍 추천 {article.likes}</button>}
                     {article.canModify && (
                         <>
@@ -237,6 +236,7 @@ function Comments({boardId, articleId, canWrite}: { boardId: number; articleId: 
     const [comments, setComments] = useState<Comment[]>([]);
     const [error, setError] = useState<unknown>(null);
     const [replyTo, setReplyTo] = useState<number | null>(null);
+    const [editing, setEditing] = useState<number | null>(null);
 
     const reload = useCallback(() => {
         boardApi.comments(boardId, articleId).then(setComments).catch(setError);
@@ -260,17 +260,31 @@ function Comments({boardId, articleId, canWrite}: { boardId: number; articleId: 
             <ul className="comments">
                 {comments.map((comment) => (
                     <li key={comment.id} className={comment.depth > 0 ? 'reply' : ''}>
-                        <div className="row space-between">
+                        <div className="comment-meta">
+                            <span className="comment-avatar" aria-hidden="true">{comment.authorName?.slice(0, 1) ?? '·'}</span>
                             <strong>{comment.authorName ?? ''}</strong>
                             <span className="muted small">{formatDateTime(comment.createdAt)}</span>
                         </div>
-                        <p className={comment.deleted ? 'muted' : ''}>{comment.content}</p>
-                        <div className="toolbar">
-                            {canWrite && comment.depth === 0 && !comment.deleted && (
-                                <button type="button" className="link-button" onClick={() => setReplyTo(comment.id)}>답글</button>
-                            )}
-                            {comment.canDelete && <button type="button" className="link-button" onClick={() => remove(comment)}>삭제</button>}
-                        </div>
+                        {editing === comment.id ? (
+                            <CommentEditor initial={comment.content} needsPassword={comment.authorType === 'GUEST' && !user}
+                                           onCancel={() => setEditing(null)}
+                                           onSave={async (content, password) => {
+                                               await boardApi.editComment(boardId, articleId, comment.id, content, password);
+                                               setEditing(null);
+                                               reload();
+                                           }}/>
+                        ) : (
+                            <>
+                                <p className={comment.deleted ? 'muted' : ''}>{comment.content}</p>
+                                <div className="toolbar comment-actions">
+                                    {canWrite && comment.depth === 0 && !comment.deleted && (
+                                        <button type="button" className="link-button" onClick={() => setReplyTo(comment.id)}>답글</button>
+                                    )}
+                                    {comment.canEdit && <button type="button" className="link-button" onClick={() => setEditing(comment.id)}>수정</button>}
+                                    {comment.canDelete && <button type="button" className="link-button" onClick={() => remove(comment)}>삭제</button>}
+                                </div>
+                            </>
+                        )}
                         {replyTo === comment.id && (
                             <CommentForm boardId={boardId} articleId={articleId} parentId={comment.id}
                                          onDone={() => {
@@ -310,16 +324,16 @@ function CommentForm({boardId, articleId, parentId, onDone}: {
     return (
         <form className="comment-form" onSubmit={submit}>
             {!user && (
-                <div className="row">
+                <>
                     <input aria-label="이름" placeholder="이름" value={authorName} onChange={(e) => setAuthorName(e.target.value)}/>
                     <input aria-label="비밀번호" type="password" placeholder="비밀번호" value={password}
                            onChange={(e) => setPassword(e.target.value)}/>
-                </div>
+                </>
             )}
             <textarea aria-label="댓글 내용" rows={3} required placeholder={parentId ? '답글을 입력하세요' : '댓글을 입력하세요'}
                       value={content} onChange={(e) => setContent(e.target.value)}/>
             <ErrorBanner error={error}/>
-            <button type="submit" className="primary">{parentId ? '답글 등록' : '댓글 등록'}</button>
+            <button type="submit" className="primary"><StableLabel current={parentId ? '답글 등록' : '댓글 등록'} labels={['답글 등록', '댓글 등록']}/></button>
         </form>
     );
 }
@@ -355,8 +369,8 @@ export function BoardWritePage() {
     const fields: FieldSpec[] = [
         {name: 'title', label: '제목', required: true, wide: true},
         ...(!user ? [
-            {name: 'authorName', label: '작성자 이름', required: !articleId},
-            {name: 'password', label: '비밀번호', required: true, help: '수정·삭제할 때 필요합니다.'},
+            {name: 'authorName', label: '작성자 이름', required: !articleId, wide: true},
+            {name: 'password', label: '비밀번호', type: 'password', required: true, wide: true, help: '수정·삭제할 때 필요합니다.'},
         ] as FieldSpec[] : []),
         {name: 'contentHtml', label: '내용', type: 'html'},
         ...(board.supportsAttachment ? [{name: 'files', label: `첨부파일 (최대 ${board.maximumFileCount}개)`, type: 'files'} as FieldSpec] : []),

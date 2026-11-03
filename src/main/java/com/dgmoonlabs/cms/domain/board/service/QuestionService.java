@@ -11,6 +11,9 @@ import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.html.HtmlSanitizer;
+import com.dgmoonlabs.cms.domain.admin.site.constant.SiteFeature;
+import com.dgmoonlabs.cms.domain.common.guestposting.GuestPostingPolicy;
+import com.dgmoonlabs.cms.domain.common.guestposting.GuestPostingService;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
 import com.dgmoonlabs.cms.global.security.LoginUser;
 import lombok.RequiredArgsConstructor;
@@ -31,10 +34,12 @@ public class QuestionService {
     private final AnswerRepository answerRepository;
     private final PasswordEncoder passwordEncoder;
     private final HtmlSanitizer htmlSanitizer;
+    private final GuestPostingService guestPostingService;
 
     @Transactional(readOnly = true)
-    public Page<QuestionResponse.Summary> getQuestions(final String keyword, final Pageable pageable) {
-        Page<Question> questions = questionRepository.search(keyword == null ? "" : keyword.trim(), pageable);
+    public Page<QuestionResponse.Summary> getQuestions(final String keyword, final boolean unansweredOnly,
+                                                      final Pageable pageable) {
+        Page<Question> questions = questionRepository.search(keyword == null ? "" : keyword.trim(), unansweredOnly, pageable);
         Set<Long> answered = answerRepository.findAllByQuestionIdInAndDeletedAtIsNull(
                         questions.getContent().stream().map(Question::getId).toList())
                 .stream().map(Answer::getQuestionId).collect(Collectors.toSet());
@@ -61,12 +66,16 @@ public class QuestionService {
         if (user.isEmpty() && (isBlank(request.authorName()) || isBlank(request.password()))) {
             throw new BusinessException(ErrorCode.GUEST_PASSWORD_REQUIRED);
         }
+        if (user.isEmpty()) {
+            guestPolicy.requireContacts(request.phoneNumber(), request.email());
+        }
         String html = htmlSanitizer.sanitize(request.contentHtml());
         Question question = Question.builder()
                 .title(request.title())
                 .contentHtml(html)
                 .contentText(htmlSanitizer.toPlainText(html))
-                .email(request.email())
+                .email(user.isEmpty() ? guestPolicy.keepEmail(request.email()) : request.email())
+                .phoneNumber(user.isEmpty() ? guestPolicy.keepPhone(request.phoneNumber()) : request.phoneNumber())
                 .isSecret(request.isSecret())
                 .userType(user.map(LoginUser::userType).orElse(UserType.GUEST))
                 .userId(user.map(LoginUser::id).orElse(null))
@@ -85,7 +94,8 @@ public class QuestionService {
             throw new BusinessException(ErrorCode.ALREADY_ANSWERED);
         }
         String html = htmlSanitizer.sanitize(request.contentHtml());
-        question.update(request.title(), html, htmlSanitizer.toPlainText(html), request.email(), request.isSecret());
+        question.update(request.title(), html, htmlSanitizer.toPlainText(html), request.email(), request.phoneNumber(),
+                request.isSecret());
     }
 
     @Transactional

@@ -75,6 +75,9 @@ class BoardApiTest extends ApiTestSupport {
         postJson(articleUrl + "/comments", alice, "{\"parentId\":%d,\"content\":\"감사\"}".formatted(commentId))
                 .andExpect(status().isCreated());
         deleteJson(articleUrl + "/comments/" + commentId, alice, null).andExpect(status().isForbidden());
+        putJson(articleUrl + "/comments/" + commentId, alice, "{\"content\":\"남의 댓글 수정\"}").andExpect(status().isForbidden());
+        putJson(articleUrl + "/comments/" + commentId, admin, "{\"content\":\"관리자 수정\"}").andExpect(status().isForbidden());
+        putJson(articleUrl + "/comments/" + commentId, bob, "{\"content\":\"좋은 글 (수정)\"}").andExpect(status().isNoContent());
 
         postJson(articleUrl + "/likes", bob, "").andExpect(jsonPath("$.likes").value(1));
         postJson(articleUrl + "/likes", bob, "").andExpect(jsonPath("$.likes").value(1));
@@ -84,8 +87,11 @@ class BoardApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.articles.content[0].title").value("앨리스 글"))
                 .andExpect(jsonPath("$.articles.content[0].commentCount").value(2));
 
+        getJson(articleUrl + "/comments", bob)
+                .andExpect(jsonPath("$[0].canEdit").value(true))
+                .andExpect(jsonPath("$[1].canEdit").value(false));
         getJson(articleUrl + "/comments", alice)
-                .andExpect(jsonPath("$[0].content").value("좋은 글"))
+                .andExpect(jsonPath("$[0].content").value("좋은 글 (수정)"))
                 .andExpect(jsonPath("$[1].depth").value(1));
     }
 
@@ -100,8 +106,13 @@ class BoardApiTest extends ApiTestSupport {
         getJson("/api/questions/" + questionId, null).andExpect(status().isForbidden());
 
         MockHttpSession admin = admin();
+        getJson("/api/admin/dashboard", admin).andExpect(jsonPath("$.unansweredQuestions").value(1));
+        getJson("/api/questions?unanswered=true", null).andExpect(jsonPath("$.content.length()").value(1));
         putJson("/api/admin/questions/" + questionId + "/answer", admin, "{\"contentHtml\":\"<p>내일 처리됩니다</p>\"}")
                 .andExpect(status().isNoContent());
+        getJson("/api/admin/dashboard", admin).andExpect(jsonPath("$.unansweredQuestions").value(0));
+        getJson("/api/questions?unanswered=true", null).andExpect(jsonPath("$.content.length()").value(0));
+        getJson("/api/questions", null).andExpect(jsonPath("$.content.length()").value(1));
 
         postJson("/api/questions/" + questionId + "/access", null, "{\"password\":\"pw1234\"}")
                 .andExpect(jsonPath("$.answer.contentHtml").value("<p>내일 처리됩니다</p>"))
@@ -131,9 +142,9 @@ class BoardApiTest extends ApiTestSupport {
         long archiveId = createdId(postJson("/api/admin/archives", admin, """
                 {"name":"자료실","type":"NORMAL","supportsComment":true,"pageSize":10}
                 """).andExpect(status().isCreated()));
-        postJson("/api/admin/archives/" + archiveId + "/articles", admin, """
+        long published = createdId(postJson("/api/admin/archives/" + archiveId + "/articles", admin, """
                 {"title":"공개 자료","status":"PUBLISHED"}
-                """).andExpect(status().isCreated());
+                """).andExpect(status().isCreated()));
         long hidden = createdId(postJson("/api/admin/archives/" + archiveId + "/articles", admin, """
                 {"title":"비공개 자료","status":"DRAFT"}
                 """).andExpect(status().isCreated()));
@@ -143,5 +154,38 @@ class BoardApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.content[0].title").value("공개 자료"));
         getJson("/api/archives/" + archiveId + "/articles/" + hidden, null).andExpect(status().isNotFound());
         getJson("/api/archives/" + archiveId + "/articles", admin).andExpect(jsonPath("$.page.totalElements").value(2));
+
+        String commentsUrl = "/api/archives/" + archiveId + "/articles/" + published + "/comments";
+        MockHttpSession carol = member("carol");
+        long commentId = createdId(postJson(commentsUrl, carol, "{\"content\":\"유용해요\"}").andExpect(status().isCreated()));
+        putJson(commentsUrl + "/" + commentId, admin, "{\"content\":\"관리자 수정\"}").andExpect(status().isForbidden());
+        putJson(commentsUrl + "/" + commentId, carol, "{\"content\":\"정말 유용해요\"}").andExpect(status().isNoContent());
+        getJson(commentsUrl, carol)
+                .andExpect(jsonPath("$[0].content").value("정말 유용해요"))
+                .andExpect(jsonPath("$[0].canEdit").value(true));
+
+        MockHttpSession dave = member("dave1");
+        long reply = createdId(postJson(commentsUrl, dave, "{\"parentId\":%d,\"content\":\"동감\"}".formatted(commentId))
+                .andExpect(status().isCreated()));
+        postJson(commentsUrl, carol, "{\"parentId\":%d,\"content\":\"답글의 답글\"}".formatted(reply))
+                .andExpect(jsonPath("$.code").value("FEATURE_NOT_SUPPORTED"));
+        deleteJson(commentsUrl + "/" + commentId, carol, null).andExpect(status().isNoContent());
+        getJson(commentsUrl, dave)
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].deleted").value(true))
+                .andExpect(jsonPath("$[1].depth").value(1))
+                .andExpect(jsonPath("$[1].parentId").value(commentId));
+
+        String likeUrl = "/api/archives/" + archiveId + "/articles/" + published + "/likes";
+        postJson(likeUrl, dave, "").andExpect(jsonPath("$.code").value("FEATURE_NOT_SUPPORTED"));
+        putJson("/api/admin/archives/" + archiveId, admin, """
+                {"name":"자료실","type":"NORMAL","supportsComment":true,"supportsLike":true,"pageSize":10}
+                """).andExpect(status().isNoContent());
+        postJson(likeUrl, null, "").andExpect(status().isUnauthorized());
+        postJson(likeUrl, dave, "").andExpect(jsonPath("$.likes").value(1));
+        postJson(likeUrl, dave, "").andExpect(jsonPath("$.likes").value(1));
+        postJson(likeUrl, carol, "").andExpect(jsonPath("$.likes").value(2));
+        getJson("/api/archives/" + archiveId + "/articles/" + published, null).andExpect(jsonPath("$.likes").value(2));
+        getJson("/api/archives/" + archiveId, null).andExpect(jsonPath("$.supportsLike").value(true));
     }
 }

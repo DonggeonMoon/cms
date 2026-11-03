@@ -87,6 +87,10 @@ public class BoardComment extends BaseEntity {
         return userType == UserType.GUEST;
     }
 
+    public void edit(final String content) {
+        this.content = content;
+    }
+
     public void moderate() {
         this.status = CommentStatus.MODERATED;
     }

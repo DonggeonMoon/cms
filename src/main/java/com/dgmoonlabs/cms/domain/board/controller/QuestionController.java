@@ -23,8 +23,9 @@ public class QuestionController {
 
     @GetMapping("/api/questions")
     public ResponseEntity<PagedModel<QuestionResponse.Summary>> list(@RequestParam(required = false) final String keyword,
+                                                                     @RequestParam(defaultValue = "false") final boolean unanswered,
                                                                      @PageableDefault final Pageable pageable) {
-        return ResponseEntity.ok(new PagedModel<>(questionService.getQuestions(keyword, pageable)));
+        return ResponseEntity.ok(new PagedModel<>(questionService.getQuestions(keyword, unanswered, pageable)));
     }
 
     @GetMapping("/api/questions/{id}")

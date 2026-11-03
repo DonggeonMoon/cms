@@ -16,5 +16,5 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
 
     List<Content> findAllByStatusAndDeletedAtIsNullOrderByIdAsc(ContentStatus status);
 
-    Page<Content> findAllByDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdDesc(String keyword, Pageable pageable);
+    Page<Content> findAllByDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdAsc(String keyword, Pageable pageable);
 }

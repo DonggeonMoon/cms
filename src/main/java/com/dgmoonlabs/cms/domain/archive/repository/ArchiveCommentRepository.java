@@ -9,5 +9,7 @@ import java.util.Optional;
 public interface ArchiveCommentRepository extends JpaRepository<ArchiveComment, Long> {
     List<ArchiveComment> findAllByArticleIdAndDeletedAtIsNullOrderByIdAsc(Long articleId);
 
+    List<ArchiveComment> findAllByArticleIdOrderByIdAsc(Long articleId);
+
     Optional<ArchiveComment> findByIdAndArticleIdAndDeletedAtIsNull(Long id, Long articleId);
 }

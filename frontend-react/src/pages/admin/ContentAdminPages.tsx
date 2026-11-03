@@ -1,21 +1,23 @@
 import {useCallback, useEffect, useState} from 'react';
-import {Link, useParams} from 'react-router';
+import {Link, useParams, useSearchParams} from 'react-router';
 import type {Query} from '../../api/client';
 import type {Archive, ArchiveArticleSummary, Board, Content, QuestionSummary} from '../../api/domain';
 import {adminApi, archiveApi, qnaApi} from '../../api/endpoints';
 import type {FileInfo} from '../../api/types';
 import {AdminCrudPage, YesNo} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
+import {GuestPostingToggle} from '../../components/GuestPostingToggle';
 import {HOME_BLOCKS} from '../../components/HomeBlocks';
 import {formatDateTime} from '../../components/format';
 import {HtmlView} from '../../components/HtmlView';
 import {PUBLISH_STATUS, toOptions} from '../../components/labels';
 import {type FieldSpec, SchemaForm} from '../../components/SchemaForm';
+import {StableLabel} from '../../components/StableLabel';
 
 const BOARD_FIELDS: FieldSpec[] = [
-    {name: 'name', label: '게시판 이름', required: true},
     {name: 'type', label: '형식', type: 'select', required: true, options: [
             {value: 'NORMAL', label: '일반'}, {value: 'GALLERY', label: '갤러리'}]},
+    {name: 'name', label: '게시판 이름', required: true, newRow: true},
     {name: 'description', label: '설명', wide: true},
     {name: 'pageSize', label: '페이지당 글 수', type: 'number', required: true},
     {name: 'maximumFileCount', label: '최대 첨부 수', type: 'number', required: true},
@@ -71,8 +73,8 @@ export function BoardAdminPage() {
 }
 
 const CONTENT_FIELDS: FieldSpec[] = [
-    {name: 'title', label: '제목', required: true},
     {name: 'status', label: '상태', type: 'select', required: true, options: toOptions(PUBLISH_STATUS)},
+    {name: 'title', label: '제목', required: true, newRow: true},
     {name: 'contentHtml', label: '내용', type: 'html'},
     {name: 'memo', label: '작업 메모', wide: true},
 ];
@@ -119,12 +121,13 @@ export function ContentAdminPage() {
 }
 
 const ARCHIVE_FIELDS: FieldSpec[] = [
-    {name: 'name', label: '이름', required: true},
     {name: 'type', label: '형식', type: 'select', required: true, options: [
             {value: 'NORMAL', label: '일반'}, {value: 'GALLERY', label: '갤러리'}]},
+    {name: 'name', label: '이름', required: true, newRow: true},
     {name: 'description', label: '설명', wide: true},
     {name: 'pageSize', label: '페이지당 글 수', type: 'number', required: true},
     {name: 'supportsComment', label: '회원 댓글 허용', type: 'checkbox', group: '기능'},
+    {name: 'supportsLike', label: '추천', type: 'checkbox', group: '기능'},
 ];
 
 const loadArchives = () => adminApi.archives.list();
@@ -143,12 +146,13 @@ export function ArchiveAdminPage() {
             searchable={false}
             load={loadArchives}
             fields={ARCHIVE_FIELDS}
-            emptyForm={{type: 'NORMAL', pageSize: 10, supportsComment: false}}
+            emptyForm={{type: 'NORMAL', pageSize: 10, supportsComment: false, supportsLike: false}}
             columns={[
                 {label: 'ID', render: (a) => a.id},
                 {label: '이름', render: (a) => <Link to={`/admin/archives/${a.id}`}>{a.name}</Link>},
                 {label: '형식', render: (a) => (a.type === 'GALLERY' ? '갤러리' : '일반')},
                 {label: '댓글', render: (a) => <YesNo value={a.supportsComment}/>},
+                {label: '추천', render: (a) => <YesNo value={a.supportsLike}/>},
             ]}
             create={(v) => adminApi.archives.create(v)}
             update={(a, v) => adminApi.archives.update(a.id, v)}
@@ -158,8 +162,8 @@ export function ArchiveAdminPage() {
 }
 
 const ARCHIVE_ARTICLE_FIELDS: FieldSpec[] = [
-    {name: 'title', label: '제목', required: true},
     {name: 'status', label: '상태', type: 'select', required: true, options: toOptions(PUBLISH_STATUS)},
+    {name: 'title', label: '제목', required: true, newRow: true},
     {name: 'contentHtml', label: '내용', type: 'html'},
     {name: 'files', label: '첨부파일', type: 'files'},
 ];
@@ -198,14 +202,26 @@ export function ArchiveArticleAdminPage() {
     );
 }
 
-const loadQuestions = (query: Query) => qnaApi.list(String(query.keyword ?? ''), Number(query.page ?? 0));
+const loadQuestions = (query: Query) =>
+    qnaApi.list(String(query.keyword ?? ''), Number(query.page ?? 0), query.unanswered === true);
 
 export function QuestionAdminPage() {
     const [answering, setAnswering] = useState<number | null>(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const unanswered = searchParams.get('unanswered') === 'true';
     return (
         <AdminCrudPage<QuestionSummary>
             title="질문답변"
+            description={<GuestPostingToggle label="비회원도 질문 등록 허용" load={qnaApi.guestPosting} save={adminApi.questions.setGuestPosting}/>}
             load={loadQuestions}
+            extraQuery={{unanswered}}
+            filters={
+                <label className="checkbox">
+                    <input type="checkbox" checked={unanswered}
+                           onChange={(e) => setSearchParams(e.target.checked ? {unanswered: 'true'} : {})}/>
+                    미답변만 보기
+                </label>
+            }
             columns={[
                 {label: '제목', render: (q) => <Link to={`/qna/${q.id}`}>{q.title}</Link>},
                 {label: '작성자', render: (q) => q.authorName},
@@ -213,12 +229,17 @@ export function QuestionAdminPage() {
                 {label: '답변', render: (q) => q.answered ? <span className="badge ok">완료</span> : <span className="badge danger">대기</span>},
                 {label: '등록일', render: (q) => formatDateTime(q.createdAt)},
             ]}
-            actions={(q, reload) => answering === q.id
-                ? <AnswerEditor questionId={q.id} onDone={() => {
+            actions={(q) => (
+                <button type="button" disabled={answering === q.id} onClick={() => setAnswering(q.id)}>
+                    <StableLabel current={q.answered ? '답변 수정' : '답변하기'} labels={['답변 수정', '답변하기']}/>
+                </button>
+            )}
+            expandedRow={(q, reload) => answering === q.id && (
+                <AnswerEditor questionId={q.id} onDone={() => {
                     setAnswering(null);
                     reload();
                 }}/>
-                : <button type="button" onClick={() => setAnswering(q.id)}>{q.answered ? '답변 수정' : '답변하기'}</button>}
+            )}
         />
     );
 }
@@ -238,7 +259,7 @@ function AnswerEditor({questionId, onDone}: { questionId: number; onDone: () => 
         return <span className="muted">불러오는 중…</span>;
     }
     return (
-        <div className="answer-editor">
+        <div>
             <HtmlView html={question.contentHtml}/>
             <SchemaForm
                 fields={[{name: 'contentHtml', label: '답변', type: 'html', required: true}]}

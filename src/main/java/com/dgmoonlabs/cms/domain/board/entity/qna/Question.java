@@ -2,6 +2,7 @@ package com.dgmoonlabs.cms.domain.board.entity.qna;
 
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
+import com.dgmoonlabs.cms.global.crypto.EncryptedStringConverter;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -51,6 +52,11 @@ public class Question extends BaseEntity {
     @Comment("이메일")
     private String email;
 
+    @Comment("연락처")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
+    private String phoneNumber;
+
     @Column(nullable = false)
     @ColumnDefault("false")
     @Comment("비밀글 여부")
@@ -73,11 +79,12 @@ public class Question extends BaseEntity {
     private String ipAddress;
 
     public void update(final String title, final String contentHtml, final String contentText, final String email,
-                       final boolean isSecret) {
+                       final String phoneNumber, final boolean isSecret) {
         this.title = title;
         this.contentHtml = contentHtml;
         this.contentText = contentText;
         this.email = email;
+        this.phoneNumber = phoneNumber;
         this.isSecret = isSecret;
     }
 

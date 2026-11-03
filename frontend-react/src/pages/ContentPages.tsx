@@ -4,10 +4,12 @@ import type {Archive, ArchiveArticleDetail, ArchiveArticleSummary, ArchiveCommen
 import {archiveApi, govApi, siteApi} from '../api/endpoints';
 import type {Page} from '../api/types';
 import {useAuth} from '../auth/AuthContext';
+import {CommentEditor} from '../components/CommentEditor';
 import {ErrorBanner} from '../components/ErrorBanner';
-import {formatDateTime} from '../components/format';
+import {formatDate, formatDateTime, rowNumber} from '../components/format';
 import {useSite} from '../components/SiteContext';
 import {HtmlView} from '../components/HtmlView';
+import {ListSearch, pageParams} from '../components/ListSearch';
 import {Pagination} from '../components/Pagination';
 import {AttachmentList} from './board/BoardPages';
 
@@ -33,7 +35,7 @@ export function ContentPage() {
             <article className="card">
                 <h1>{content.title}</h1>
                 <HtmlView html={content.contentHtml}/>
-                <p className="muted small">최종 수정 {formatDateTime(content.modifiedAt)}</p>
+                <p className="muted small align-right">최종 수정 {formatDateTime(content.modifiedAt)}</p>
             </article>
             {menuId && isEnabled('SATISFACTION') && <SatisfactionWidget menuId={menuId}/>}
         </>
@@ -95,6 +97,7 @@ export function ArchiveListPage() {
     const archiveId = Number(useParams().archiveId);
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
+    const keyword = params.get('keyword') ?? '';
     const [archive, setArchive] = useState<Archive | null>(null);
     const [data, setData] = useState<Page<ArchiveArticleSummary> | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -103,8 +106,8 @@ export function ArchiveListPage() {
         archiveApi.get(archiveId).then(setArchive).catch(setError);
     }, [archiveId]);
     useEffect(() => {
-        archiveApi.articles(archiveId, '', page).then(setData).catch(setError);
-    }, [archiveId, page]);
+        archiveApi.articles(archiveId, keyword, page).then(setData).catch(setError);
+    }, [archiveId, keyword, page]);
 
     return (
         <section className="card">
@@ -122,19 +125,38 @@ export function ArchiveListPage() {
                         ))}
                     </div>
                 ) : (
-                    <ul className="list">
-                        {data.content.map((article) => (
-                            <li key={article.id}>
-                                <Link to={`/archives/${archiveId}/articles/${article.id}`}>{article.title}</Link>
-                                {article.status === 'DRAFT' && <span className="badge">임시 저장</span>}
-                                <span className="muted small"> · {formatDateTime(article.createdAt)}</span>
-                            </li>
-                        ))}
-                        {data.content.length === 0 && <li className="muted">게시물이 없습니다.</li>}
-                    </ul>
+                    <div className="table-wrap">
+                        <table className="post-table">
+                            <thead>
+                            <tr>
+                                <th className="col-no">순번</th>
+                                <th>제목</th>
+                                <th className="col-fit">작성자</th>
+                                <th className="col-fit">작성일</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {data.content.map((article, index) => (
+                                <tr key={article.id}>
+                                    <td className="col-no">{rowNumber(data.page, index)}</td>
+                                    <td className="col-title">
+                                        <Link to={`/archives/${archiveId}/articles/${article.id}`}>{article.title}</Link>
+                                        {article.status === 'DRAFT' && <span className="badge">임시 저장</span>}
+                                    </td>
+                                    <td className="col-fit">{article.authorName}</td>
+                                    <td className="col-fit">{formatDate(article.createdAt)}</td>
+                                </tr>
+                            ))}
+                            {data.content.length === 0 && (
+                                <tr><td colSpan={4} className="muted">{keyword ? '검색 결과가 없습니다.' : '게시물이 없습니다.'}</td></tr>
+                            )}
+                            </tbody>
+                        </table>
+                    </div>
                 )
             )}
-            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={(next) => setParams({page: String(next)})}/>}
+            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={(next) => setParams(pageParams(keyword, next))}/>}
+            <ListSearch label={`${archive?.name ?? '아카이브'} 검색`} placeholder="제목 검색" placement="bottom"/>
         </section>
     );
 }
@@ -146,6 +168,16 @@ export function ArchiveArticlePage() {
     const [archive, setArchive] = useState<Archive | null>(null);
     const [article, setArticle] = useState<ArchiveArticleDetail | null>(null);
     const [error, setError] = useState<unknown>(null);
+    const {user} = useAuth();
+
+    const like = async () => {
+        try {
+            const result = await archiveApi.like(archiveId, articleId);
+            setArticle((prev) => (prev ? {...prev, likes: result.likes} : prev));
+        } catch (e) {
+            setError(e);
+        }
+    };
 
     useEffect(() => {
         archiveApi.get(archiveId).then(setArchive).catch(setError);
@@ -163,9 +195,16 @@ export function ArchiveArticlePage() {
             <article className="card">
                 <Link to={`/archives/${archiveId}`} className="muted">← {archive?.name ?? '목록'}</Link>
                 <h1>{article.title}</h1>
-                <p className="muted small">{article.authorName} · {formatDateTime(article.createdAt)} · 조회 {article.hit}</p>
+                <p className="muted small align-right">{article.authorName} · {formatDateTime(article.createdAt)} · 조회 {article.hit}</p>
                 <HtmlView html={article.contentHtml}/>
                 <AttachmentList files={article.files}/>
+                {archive?.supportsLike && (
+                    <div className="toolbar form-actions">
+                        {user?.userType === 'MEMBER'
+                            ? <button type="button" onClick={like}>👍 추천 {article.likes}</button>
+                            : <span className="muted small">👍 추천 {article.likes} · <Link to="/login">로그인</Link> 후 추천할 수 있습니다.</span>}
+                    </div>
+                )}
             </article>
             {archive?.supportsComment && <ArchiveComments archiveId={archiveId} articleId={articleId}/>}
         </>
@@ -175,7 +214,8 @@ export function ArchiveArticlePage() {
 function ArchiveComments({archiveId, articleId}: { archiveId: number; articleId: number }) {
     const {user} = useAuth();
     const [comments, setComments] = useState<ArchiveComment[]>([]);
-    const [content, setContent] = useState('');
+    const [editing, setEditing] = useState<number | null>(null);
+    const [replyTo, setReplyTo] = useState<number | null>(null);
     const [error, setError] = useState<unknown>(null);
     const reload = useCallback(() => {
         archiveApi.comments(archiveId, articleId).then(setComments).catch(setError);
@@ -184,38 +224,82 @@ function ArchiveComments({archiveId, articleId}: { archiveId: number; articleId:
 
     return (
         <section className="card">
-            <h2>댓글 {comments.length}</h2>
+            <h2>댓글 {comments.filter((c) => !c.deleted).length}</h2>
             <ErrorBanner error={error}/>
             <ul className="comments">
                 {comments.map((comment) => (
-                    <li key={comment.id}>
-                        <div className="row space-between">
-                            <strong>{comment.authorName}</strong>
+                    <li key={comment.id} className={comment.depth > 0 ? 'reply' : ''}>
+                        <div className="comment-meta">
+                            <span className="comment-avatar" aria-hidden="true">{comment.authorName?.slice(0, 1) ?? '·'}</span>
+                            <strong>{comment.authorName ?? ''}</strong>
                             <span className="muted small">{formatDateTime(comment.createdAt)}</span>
                         </div>
-                        <p>{comment.content}</p>
-                        {comment.canDelete && (
-                            <button type="button" className="link-button" onClick={() =>
-                                archiveApi.removeComment(archiveId, articleId, comment.id).then(reload).catch(setError)}>삭제</button>
+                        {editing === comment.id ? (
+                            <CommentEditor initial={comment.content} onCancel={() => setEditing(null)}
+                                           onSave={async (text) => {
+                                               await archiveApi.editComment(archiveId, articleId, comment.id, text);
+                                               setEditing(null);
+                                               reload();
+                                           }}/>
+                        ) : (
+                            <>
+                                <p className={comment.deleted ? 'muted' : ''}>{comment.content}</p>
+                                <div className="toolbar comment-actions">
+                                    {user && comment.depth === 0 && !comment.deleted && (
+                                        <button type="button" className="link-button" onClick={() => setReplyTo(comment.id)}>답글</button>
+                                    )}
+                                    {comment.canEdit && (
+                                        <button type="button" className="link-button" onClick={() => setEditing(comment.id)}>수정</button>
+                                    )}
+                                    {comment.canDelete && (
+                                        <button type="button" className="link-button" onClick={() =>
+                                            archiveApi.removeComment(archiveId, articleId, comment.id).then(reload).catch(setError)}>삭제</button>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                        {replyTo === comment.id && (
+                            <ArchiveCommentForm archiveId={archiveId} articleId={articleId} parentId={comment.id}
+                                                onCancel={() => setReplyTo(null)}
+                                                onDone={() => {
+                                                    setReplyTo(null);
+                                                    reload();
+                                                }}/>
                         )}
                     </li>
                 ))}
             </ul>
-            {user ? (
-                <form className="comment-form" onSubmit={async (e) => {
-                    e.preventDefault();
-                    try {
-                        await archiveApi.addComment(archiveId, articleId, content);
-                        setContent('');
-                        reload();
-                    } catch (err) {
-                        setError(err);
-                    }
-                }}>
-                    <textarea aria-label="댓글 내용" rows={3} required value={content} onChange={(e) => setContent(e.target.value)}/>
-                    <button type="submit" className="primary">댓글 등록</button>
-                </form>
-            ) : <p className="muted"><Link to="/login">로그인</Link> 후 댓글을 남길 수 있습니다.</p>}
+            {user
+                ? <ArchiveCommentForm archiveId={archiveId} articleId={articleId} parentId={null} onDone={reload}/>
+                : <p className="muted"><Link to="/login">로그인</Link> 후 댓글을 남길 수 있습니다.</p>}
         </section>
+    );
+}
+
+function ArchiveCommentForm({archiveId, articleId, parentId, onDone, onCancel}: {
+    archiveId: number; articleId: number; parentId: number | null; onDone: () => void; onCancel?: () => void;
+}) {
+    const [content, setContent] = useState('');
+    const [error, setError] = useState<unknown>(null);
+    return (
+        <form className="comment-form" onSubmit={async (e) => {
+            e.preventDefault();
+            try {
+                setError(null);
+                await archiveApi.addComment(archiveId, articleId, content, parentId);
+                setContent('');
+                onDone();
+            } catch (err) {
+                setError(err);
+            }
+        }}>
+            <textarea aria-label="댓글 내용" rows={3} required value={content}
+                      placeholder={parentId ? '답글을 입력하세요' : '댓글을 입력하세요'} onChange={(e) => setContent(e.target.value)}/>
+            <ErrorBanner error={error}/>
+            <div className="toolbar form-actions">
+                <button type="submit" className="primary">{parentId ? '답글 등록' : '댓글 등록'}</button>
+                {onCancel && <button type="button" onClick={onCancel}>취소</button>}
+            </div>
+        </form>
     );
 }

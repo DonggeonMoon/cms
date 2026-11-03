@@ -80,4 +80,8 @@ public class ArchiveComment extends BaseEntity {
 
     @Comment("조회 수")
     private int hit;
+
+    public void edit(final String content) {
+        this.content = content;
+    }
 }
