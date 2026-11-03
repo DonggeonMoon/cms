@@ -1462,3 +1462,770 @@ a.button.primary {
     border: none;
     background: color-mix(in srgb, var(--primary) 7%, var(--surface));
 }
+.chatbot {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.chatbot-toggle {
+    border-radius: 999px;
+    padding: 12px 18px;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+}
+
+.chatbot-panel {
+    width: min(360px, calc(100vw - 40px));
+    height: min(520px, calc(100vh - 120px));
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 40px rgb(0 0 0 / 18%);
+    overflow: hidden;
+}
+
+.chatbot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.chatbot-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.chatbot-bubble {
+    margin: 0;
+    max-width: 85%;
+    padding: 8px 12px;
+    border-radius: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.5;
+}
+
+.chatbot-bubble.assistant {
+    align-self: flex-start;
+    background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+}
+
+.chatbot-bubble.user {
+    align-self: flex-end;
+    background: var(--primary);
+    color: var(--primary-text);
+}
+
+.chatbot-form {
+    display: flex;
+    gap: 6px;
+    padding: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.chatbot-form input {
+    flex: 1;
+    min-width: 0;
+}
+
+.chatbot-note {
+    margin: 0;
+    padding: 0 12px 10px;
+}
+
+
+:root {
+    --subtle: #f4f5f7;
+    --ring: color-mix(in srgb, var(--primary) 28%, transparent);
+    --shadow-lg: 0 18px 50px -12px rgb(15 23 42 / 22%);
+    --ease: cubic-bezier(.2, .7, .2, 1);
+    --radius: 12px;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --subtle: #22262d;
+    }
+}
+
+h1, h2, h3 {
+    letter-spacing: -0.025em;
+    line-height: 1.3;
+}
+
+h1 {
+    font-size: 1.875rem;
+    font-weight: 750;
+}
+
+h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+a {
+    text-underline-offset: 3px;
+}
+
+button, a.button {
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-weight: 600;
+    transition: background-color .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease), box-shadow .15s var(--ease), transform .15s var(--ease);
+}
+
+button:not(.primary):not(.danger):not(.link-button):not(.tab):not(.active):hover:not(:disabled),
+a.button:not(.primary):hover {
+    background: var(--subtle);
+}
+
+button.primary:hover:not(:disabled), a.button.primary:hover {
+    background: color-mix(in srgb, var(--primary) 88%, black);
+    border-color: color-mix(in srgb, var(--primary) 88%, black);
+}
+
+button.danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+}
+
+button:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--ring);
+}
+
+input:not([type='checkbox']):not([type='radio']):not([type='file']), select, textarea {
+    border-radius: 10px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+
+input:not([type='checkbox']):not([type='radio']):not([type='file']):hover, select:hover, textarea:hover {
+    border-color: color-mix(in srgb, var(--text) 25%, var(--border));
+}
+
+input:not([type='checkbox']):not([type='radio']):not([type='file']):focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--ring);
+}
+
+input[type='checkbox'], input[type='radio'] {
+    accent-color: var(--primary);
+    width: 16px;
+    height: 16px;
+}
+
+.field label, .field-label {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.badge {
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: none;
+    background: var(--subtle);
+}
+
+.notice-box {
+    border-radius: var(--radius);
+    padding: 14px 16px;
+}
+
+
+.site {
+    --bg: #ffffff;
+    background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+    .site {
+        --bg: #111317;
+    }
+}
+
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    min-height: 64px;
+    padding: 10px max(24px, calc((100% - 1120px) / 2));
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.site .brand {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.site-nav {
+    gap: 4px;
+}
+
+.site-nav a, .site-nav .link-button {
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: background-color .15s var(--ease), color .15s var(--ease);
+}
+
+.site-nav a:hover, .site-nav .link-button:hover {
+    background: var(--subtle);
+}
+
+.site-nav a.active {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+}
+
+.dropdown-menu {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px;
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+}
+
+.dropdown-menu a {
+    display: block;
+    border-radius: 8px;
+}
+
+.site-main, .site[data-theme='market'] .site-main {
+    max-width: 1120px;
+    padding: 40px 24px 64px;
+}
+
+.site .card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 56px;
+}
+
+.site .card > h1:first-child,
+.site .card > h1:first-of-type {
+    margin-bottom: 20px;
+}
+
+.site .card + .card {
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+}
+
+.site .card.narrow {
+    max-width: 440px;
+    margin: 24px auto 56px;
+    padding: 36px 32px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+}
+
+.site fieldset {
+    border: none;
+    padding: 0;
+    margin: 0 0 32px;
+}
+
+.site legend {
+    padding: 0;
+    margin-bottom: 14px;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.site table {
+    font-size: 0.95rem;
+}
+
+.site thead th {
+    border-top: 2px solid var(--text);
+    border-bottom: 1px solid var(--border);
+    padding: 12px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.site tbody td {
+    padding: 14px 12px;
+}
+
+.site tbody tr {
+    transition: background-color .12s var(--ease);
+}
+
+.site tbody tr:hover {
+    background: var(--subtle);
+}
+
+.post-table .col-title a {
+    color: var(--text);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.post-table .col-title a:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.post-table tr.notice-row {
+    background: color-mix(in srgb, var(--primary) 4%, transparent);
+}
+
+.site .comments li {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 0;
+}
+
+.site .comments li.reply {
+    padding-left: 20px;
+    margin-left: 12px;
+    border-left: 2px solid var(--border);
+}
+
+.site .meta {
+    padding: 16px 20px;
+    border-radius: var(--radius);
+    background: var(--subtle);
+}
+
+.product-card, .gallery-item {
+    border: none;
+    background: transparent;
+    padding: 0;
+    text-decoration: none;
+    color: var(--text);
+}
+
+.product-card img, .gallery-item img, .gallery-empty {
+    border-radius: var(--radius);
+    transition: transform .35s var(--ease), box-shadow .35s var(--ease);
+}
+
+.product-card:hover img, .gallery-item:hover img {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+}
+
+.tile, .feature-card, .site .home-section {
+    border-radius: var(--radius);
+}
+
+.tile {
+    border: 1px solid var(--border);
+    transition: border-color .15s var(--ease), transform .2s var(--ease), box-shadow .2s var(--ease);
+}
+
+.tile:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.site .hero, .site[data-theme='market'] .hero {
+    border-radius: 24px;
+    padding: 56px 44px;
+}
+
+.pagination button {
+    min-width: 36px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border-color: transparent;
+}
+
+.pagination button.current {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--bg);
+}
+
+.site-footer, .site[data-theme='market'] .site-footer {
+    margin-top: auto;
+    padding: 40px max(24px, calc((100% - 1120px) / 2)) 56px;
+    border-top: 1px solid var(--border);
+    background: var(--subtle);
+    text-align: left;
+    font-size: 0.85rem;
+    line-height: 1.8;
+}
+
+.footer-links {
+    margin-bottom: 8px;
+}
+
+.footer-links a {
+    color: var(--text);
+    text-decoration: none;
+}
+
+
+.admin .card {
+    border-color: color-mix(in srgb, var(--border) 80%, transparent);
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.admin-header {
+    background: color-mix(in srgb, var(--surface) 85%, transparent);
+    backdrop-filter: saturate(180%) blur(12px);
+}
+
+.admin-sidebar nav a {
+    font-size: 0.92rem;
+    transition: background-color .15s var(--ease);
+}
+
+.admin-sidebar nav a:hover:not(.active) {
+    background: var(--subtle);
+}
+
+.admin thead th {
+    font-size: 0.82rem;
+    background: var(--subtle);
+}
+
+.admin thead th:first-child {
+    border-top-left-radius: 8px;
+}
+
+.admin thead th:last-child {
+    border-top-right-radius: 8px;
+}
+
+@media (max-width: 640px) {
+    .site-main, .site[data-theme='market'] .site-main {
+        padding: 24px 16px 48px;
+    }
+
+    .site .card.narrow {
+        padding: 28px 20px;
+        border-radius: 16px;
+    }
+
+    .site .hero, .site[data-theme='market'] .hero {
+        padding: 32px 22px;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+    }
+}
+
+.consent-item {
+    padding: 6px 0;
+}
+
+.consent-item .policy-box {
+    margin: 6px 0 4px;
+    font-size: 0.9rem;
+}
+
+.card.form-page {
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.list-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 24px;
+}
+
+.list-search input {
+    width: min(280px, 100%);
+}
+
+.list-search input:not([type='checkbox']):not([type='radio']):not([type='file']) {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+}
+
+.list-search button {
+    padding: 6px 14px;
+    font-size: 0.9rem;
+}
+
+.list-search.bottom {
+    margin: 24px 0 0;
+}
+
+.list-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 16px;
+}
+
+.list-head p {
+    margin: 0;
+}
+
+.list-toolbar-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.card > p.muted + .list-search,
+.card > p.muted + .list-toolbar-row {
+    margin-top: -4px;
+}
+
+
+.site .dropdown {
+    position: relative;
+}
+
+.site .dropdown::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: 12px;
+}
+
+.site .dropdown > a::after {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-left: 6px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: translateY(-3px) rotate(45deg);
+    opacity: .55;
+    transition: transform .2s var(--ease);
+}
+
+.site .dropdown:hover > a::after,
+.site .dropdown:focus-within > a::after {
+    transform: translateY(0) rotate(-135deg);
+}
+
+.site .dropdown-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    top: calc(100% + 10px);
+    left: 50%;
+    min-width: 200px;
+    padding: 8px;
+    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    box-shadow: 0 1px 2px rgb(15 23 42 / 6%), 0 16px 40px -12px rgb(15 23 42 / 25%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translate(-50%, 6px) scale(.98);
+    transform-origin: top center;
+    transition: opacity .18s var(--ease), transform .18s var(--ease), visibility 0s linear .18s;
+}
+
+.site .dropdown:hover .dropdown-menu,
+.site .main-nav:not(:hover) .dropdown:focus-within .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translate(-50%, 0) scale(1);
+    transition: opacity .18s var(--ease), transform .18s var(--ease), visibility 0s;
+}
+
+.site .dropdown-menu a {
+    display: block;
+    padding: 10px 14px;
+    border-radius: 10px;
+    white-space: nowrap;
+    font-size: 0.92rem;
+    color: var(--text);
+}
+
+.site .dropdown-menu a:hover {
+    background: var(--subtle);
+    color: var(--primary);
+}
+
+.site .dropdown-menu a.active {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+}
+
+
+.site .comments {
+    margin: 8px 0 0;
+}
+
+.site .comments li {
+    padding: 18px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.site .comments li.reply {
+    margin-left: 18px;
+    padding-left: 22px;
+    border-left: 2px solid var(--border);
+    border-bottom: none;
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.comment-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.comment-meta strong {
+    font-size: 0.92rem;
+}
+
+.comment-avatar {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.site .comments li > p,
+.site .comments li > .comment-actions,
+.site .comments li > .comment-form {
+    margin-left: 42px;
+}
+
+.site .comments li > p {
+    margin-top: 6px;
+    margin-bottom: 4px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+}
+
+.site .comment-actions {
+    gap: 2px;
+}
+
+.site .comment-actions .link-button {
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+}
+
+.site .comment-actions .link-button:hover {
+    background: var(--subtle);
+    color: var(--text);
+}
+
+.site .comment-form {
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+
+.site .comment-form:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--ring);
+}
+
+.site .comment-form textarea,
+.site .comment-form input:not([type='checkbox']) {
+    border: none;
+    box-shadow: none;
+    padding: 6px 4px;
+    background: transparent;
+    resize: vertical;
+}
+
+.site .comment-form input:not([type='checkbox']) {
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+}
+
+.site .comment-form textarea:focus,
+.site .comment-form input:focus {
+    box-shadow: none;
+}
+
+@media (max-width: 640px) {
+    .site .dropdown-menu {
+        left: 0;
+        transform: translate(0, 6px);
+    }
+
+    .site .dropdown:hover .dropdown-menu,
+    .site .main-nav:not(:hover) .dropdown:focus-within .dropdown-menu {
+        transform: translate(0, 0);
+    }
+
+    .site .comments li > p,
+    .site .comments li > .comment-actions,
+    .site .comments li > .comment-form {
+        margin-left: 0;
+    }
+}
+
+.indented {
+    margin-left: 24px;
+}
+
+

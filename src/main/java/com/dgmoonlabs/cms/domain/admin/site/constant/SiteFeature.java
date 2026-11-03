@@ -19,7 +19,8 @@ public enum SiteFeature {
     PROGRAM("프로그램", List.of("/api/programs", "/api/reservations"),
             List.of("/api/admin/programs", "/api/admin/reservations", "/api/admin/payments", "/api/admin/reviews")),
     REPORT("신고", List.of("/api/reports"), List.of("/api/admin/reports")),
-    SATISFACTION("만족도 조사", List.of("/api/satisfactions"), List.of("/api/admin/satisfactions"));
+    SATISFACTION("만족도 조사", List.of("/api/satisfactions"), List.of("/api/admin/satisfactions")),
+    CHATBOT("챗봇", List.of("/api/chatbot"), List.of("/api/admin/chatbot"));
 
     private final String label;
     private final List<String> pathPrefixes;

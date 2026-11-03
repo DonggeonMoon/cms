@@ -50,6 +50,11 @@ export const adminApi = {
     },
     reauthenticate: (password: string) => request<void>('/api/admin/reauthenticate', {method: 'POST', body: {password}}),
     configs: resource<D.Config>('/api/admin/configs'),
+    chatbot: {
+        get: () => request<D.ChatbotSetting>('/api/admin/chatbot'),
+        save: (body: Omit<D.ChatbotSetting, 'defaultInstructions'>) =>
+            request<D.ChatbotSetting>('/api/admin/chatbot', {method: 'PUT', body}),
+    },
     apiKeys: {
         ...resource<D.ApiKey>('/api/admin/api-keys'),
         options: () => request<D.ApiKeyOption[]>('/api/admin/api-keys/options'),
@@ -220,4 +225,9 @@ export const govApi = {
     satisfaction: (menuId: number) => request<D.Satisfaction>('/api/satisfactions', {query: {menuId}}),
     vote: (menuId: number, score: number, opinion: string) =>
         request<D.Satisfaction>('/api/satisfactions', {method: 'POST', body: {menuId, score, opinion}}),
+};
+export const chatbotApi = {
+    status: () => request<{ enabled: boolean; welcomeMessage: string | null }>('/api/chatbot'),
+    send: (messages: D.ChatMessage[]) =>
+        request<{ reply: string }>('/api/chatbot/messages', {method: 'POST', body: {messages}}).then((r) => r.reply),
 };

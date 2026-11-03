@@ -3,7 +3,8 @@ import {Link, NavLink, Outlet, useLocation, useNavigate} from 'react-router';
 import type {Menu, SiteFeature} from '../api/domain';
 import {siteApi} from '../api/endpoints';
 import {useAuth} from '../auth/AuthContext';
-import {menuHref, SiteProvider, useSite} from './SiteContext';
+import {FEATURE_PATHS, menuHref, SiteProvider, useSite} from './SiteContext';
+import {ChatbotWidget} from './ChatbotWidget';
 import {TopBar} from './TopBar';
 
 export function SiteLayout() {
@@ -75,6 +76,7 @@ function SiteFrame() {
                 </nav>
                 <div>{configs['site.footer'] ?? `ⓒ ${new Date().getFullYear()}. dgmoonlabs All Rights Reserved`}</div>
             </footer>
+            {isEnabled('CHATBOT') && <ChatbotWidget/>}
         </div>
     );
 }

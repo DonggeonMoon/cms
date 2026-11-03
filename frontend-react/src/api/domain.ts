@@ -28,6 +28,7 @@ export const SITE_FEATURES: { value: SiteFeature; label: string }[] = [
     {value: 'PROGRAM', label: '프로그램'},
     {value: 'REPORT', label: '신고'},
     {value: 'SATISFACTION', label: '만족도 조사'},
+    {value: 'CHATBOT', label: '챗봇'},
 ];
 
 export interface Site {
@@ -44,6 +45,24 @@ export interface Site {
 }
 
 export type OptionType = 'TEXT' | 'RADIO' | 'CHECKBOX' | 'TEXTAREA';
+
+export type ChatbotProvider = 'OPENAI' | 'GEMINI' | 'CLAUDE';
+
+export interface ChatbotSetting {
+    enabled: boolean;
+    provider: ChatbotProvider;
+    apiKeyId: number | null;
+    model: string | null;
+    instructions: string;
+    welcomeMessage: string | null;
+    dailyLimitPerVisitor: number;
+    defaultInstructions: string;
+}
+
+export interface ChatMessage {
+    role: 'USER' | 'ASSISTANT';
+    content: string;
+}
 
 export interface ApiKeyOption {
     id: number;

@@ -19,6 +19,7 @@ import {FilePage} from './pages/admin/FilePage';
 import {MapAdminPage} from './pages/admin/MapAdminPage';
 import {ReportAdminPage, SatisfactionAdminPage} from './pages/admin/GovAdminPages';
 import {MemberDetailPage} from './pages/admin/MemberDetailPage';
+import {ChatbotAdminPage} from './pages/admin/ChatbotAdminPage';
 import {MemberListPage} from './pages/admin/MemberListPage';
 import {PolicyAdminPage} from './pages/admin/PolicyAdminPage';
 import {
@@ -214,6 +215,7 @@ export const routes = [
                             {path: 'members', element: <MemberListPage/>},
                             {path: 'members/:id', element: <MemberDetailPage/>},
                             {path: 'join-settings', element: <MemberJoinSettingPage/>},
+                            {path: 'chatbot', element: <ChatbotAdminPage/>},
                             {path: 'policies/:type', element: <PolicyAdminPage/>},
                             {path: 'codes', element: <CodePage/>},
                             {path: 'files', element: <FilePage/>},
