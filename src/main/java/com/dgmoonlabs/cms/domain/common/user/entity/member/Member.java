@@ -12,6 +12,7 @@ import org.hibernate.annotations.Comment;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.stream.Stream;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -94,16 +95,24 @@ public class Member extends BaseEntity {
     @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String mobilePhoneNumber;
 
-    public void updateProfile(final MemberModifyRequest request) {
-        this.name = request.name();
-        this.lastName = request.lastName();
-        this.firstName = request.firstName();
-        this.birthDate = request.birthDate();
-        this.isLunarBirthDate = Boolean.TRUE.equals(request.isLunarBirthDate());
-        this.gender = request.gender();
-        this.email = request.email();
-        this.telephoneNumber = request.telephoneNumber();
-        this.mobilePhoneNumber = request.mobilePhoneNumber();
+    public String displayName() {
+        return Stream.of(nickname, username, name)
+                .filter(value -> value != null && !value.isBlank())
+                .findFirst()
+                .orElse(null);
+    }
+
+    public void updateProfile(final MemberModifyRequest request, final MemberName memberName, final String nickname,
+                              final MemberJoinSetting setting) {
+        this.nickname = nickname;
+        this.name = memberName.name();
+        this.lastName = memberName.lastName();
+        this.firstName = memberName.firstName();
+        this.birthDate = setting.keep(PersonalInfoItem.BIRTH_DATE, request.birthDate());
+        this.gender = setting.keep(PersonalInfoItem.GENDER, request.gender());
+        this.email = setting.keep(PersonalInfoItem.EMAIL, request.email());
+        this.telephoneNumber = setting.keep(PersonalInfoItem.TELEPHONE, request.telephoneNumber());
+        this.mobilePhoneNumber = setting.keep(PersonalInfoItem.MOBILE_PHONE, request.mobilePhoneNumber());
     }
 
     public void changePassword(final String encodedPassword) {
