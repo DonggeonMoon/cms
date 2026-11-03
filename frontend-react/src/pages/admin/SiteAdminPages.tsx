@@ -303,7 +303,23 @@ export function MenuAdminPage() {
         }
     };
 
-    const nextSequence = (siblings: Menu[]) => siblings.reduce((max, m) => Math.max(max, m.sequence + 1), 0);
+    const nextSequence = (siblings: Menu[]) => siblings.reduce((max, m) => Math.max(max, m.sequence + 1), 1);
+
+    const editForm = () => editing && (
+        <SchemaForm
+            key={editing.menu?.id ?? `new-${editing.parentId}`}
+            title={editing.menu ? `'${editing.menu.name}' 메뉴 수정` : editing.parentId ? '하위 메뉴 추가' : '메뉴 추가'}
+            fields={menuFields(allowedKinds)}
+            initial={editing.values}
+            onCancel={() => setEditing(null)}
+            onSubmit={async (values) => {
+                const body = toMenuBody(values, editing.parentId);
+                await (editing.menu ? adminApi.menus.update(editing.menu.id, body) : adminApi.menus.create(body));
+                setEditing(null);
+                reload();
+            }}
+        />
+    );
 
     const renderNode = (menu: Menu, index: number, siblings: Menu[]) => {
         const isFeatureMenu = menu.type === 'FEATURE';
@@ -336,6 +352,9 @@ export function MenuAdminPage() {
                     <button type="button" className="danger" onClick={() => remove(menu)}>삭제</button>
                 </span>
             </div>
+            {editing && (editing.menu?.id === menu.id || (!editing.menu && editing.parentId === menu.id)) && (
+                <div className="tree-edit">{editForm()}</div>
+            )}
             {menu.children.length > 0 && <ul className="tree">{menu.children.map((child, i) => renderNode(child, i, menu.children))}</ul>}
         </li>
         );
@@ -355,21 +374,7 @@ export function MenuAdminPage() {
                 <button type="button" className="primary push-right" onClick={() => setEditing({menu: null, parentId: null,
                     values: {kind: defaultKind, sequence: nextSequence(menus), isUsing: true}})}>최상위 메뉴 추가</button>
             </div>
-            {editing && (
-                <SchemaForm
-                    key={editing.menu?.id ?? `new-${editing.parentId}`}
-                    title={editing.menu ? '메뉴 수정' : '메뉴 추가'}
-                    fields={editing.menu?.type === 'FEATURE' ? FEATURE_MENU_FIELDS : menuFields(allowedTypes)}
-                    initial={editing.values}
-                    onCancel={() => setEditing(null)}
-                    onSubmit={async (values) => {
-                        const body = {...values, parentId: editing.parentId};
-                        await (editing.menu ? adminApi.menus.update(editing.menu.id, body) : adminApi.menus.create(body));
-                        setEditing(null);
-                        reload();
-                    }}
-                />
-            )}
+            {editing && !editing.menu && editing.parentId === null && editForm()}
             <ErrorBanner error={error}/>
             {menus.length === 0 ? <p className="muted">메뉴가 없습니다.</p> : <ul className="tree">{menus.map((menu, i) => renderNode(menu, i, menus))}</ul>}
         </section>
