@@ -209,10 +209,6 @@ class AdminApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$[?(@.feature == 'QNA')]").isEmpty());
         getJson("/api/admin/menus", admin).andExpect(jsonPath("$[?(@.feature == 'QNA')].isUsing").value(hasItem(false)));
 
-        deleteJson("/api/admin/menus/" + productMenu, admin, null).andExpect(jsonPath("$.code").value("MENU_BUILT_IN"));
-        postJson("/api/admin/menus", admin, """
-                {"name":"상품2","type":"FEATURE"}
-                """).andExpect(jsonPath("$.code").value("MENU_BUILT_IN"));
         postJson("/api/admin/menus", admin, """
                 {"parentId":%d,"name":"하위","type":"LINK","link":"/x"}
                 """.formatted(productMenu)).andExpect(jsonPath("$.code").value("MENU_BUILT_IN"));

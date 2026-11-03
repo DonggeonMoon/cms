@@ -6,6 +6,7 @@ import com.dgmoonlabs.cms.domain.admin.menu.dto.MenuResponse;
 import com.dgmoonlabs.cms.domain.admin.menu.dto.MenuSaveRequest;
 import com.dgmoonlabs.cms.domain.admin.menu.entity.Menu;
 import com.dgmoonlabs.cms.domain.admin.menu.repository.MenuRepository;
+import com.dgmoonlabs.cms.domain.admin.site.constant.SiteFeature;
 import com.dgmoonlabs.cms.domain.admin.site.service.SiteService;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
@@ -54,10 +55,7 @@ public class MenuService {
 
     @Transactional
     public Long createMenu(final MenuSaveRequest request) {
-        if (request.type() == MenuType.FEATURE) {
-            throw new BusinessException(ErrorCode.MENU_BUILT_IN);
-        }
-        requireFeatureEnabled(request.type());
+        requireFeatureEnabled(request);
         Menu parent = request.parentId() == null ? null : findMenu(request.parentId());
         if (parent != null && parent.isFeatureMenu()) {
             throw new BusinessException(ErrorCode.MENU_BUILT_IN);
@@ -69,8 +67,9 @@ public class MenuService {
                 .name(request.name())
                 .type(request.type())
                 .sequence(request.sequence())
-                .link(request.link())
-                .targetId(request.targetId())
+                .targetId(request.type() == MenuType.FEATURE || request.type() == MenuType.LINK ? null : request.targetId())
+                .link(request.type() == MenuType.LINK ? request.link() : null)
+                .feature(request.type() == MenuType.FEATURE ? request.feature() : null)
                 .isUsing(request.isUsingOrDefault())
                 .build();
         return menuRepository.save(menu).getId();
@@ -79,11 +78,9 @@ public class MenuService {
     @Transactional
     public void updateMenu(final Long id, final MenuSaveRequest request) {
         Menu menu = findMenu(id);
-        if (!menu.isFeatureMenu()) {
-            if (request.type() == MenuType.FEATURE) {
-                throw new BusinessException(ErrorCode.MENU_BUILT_IN);
-            }
-            requireFeatureEnabled(request.type());
+        requireFeatureEnabled(request);
+        if (request.type() == MenuType.FEATURE && menuRepository.existsByParentIdAndDeletedAtIsNull(id)) {
+            throw new BusinessException(ErrorCode.MENU_BUILT_IN);
         }
         menu.update(request);
     }
@@ -97,12 +94,13 @@ public class MenuService {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         for (int i = 0; i < request.ids().size(); i++) {
-            siblings.get(request.ids().get(i)).moveTo(i);
+            siblings.get(request.ids().get(i)).moveTo(i + 1);
         }
     }
 
-    private void requireFeatureEnabled(final MenuType type) {
-        if (type != null && type.feature().filter(feature -> !siteService.isEnabled(feature)).isPresent()) {
+    private void requireFeatureEnabled(final MenuSaveRequest request) {
+        SiteFeature feature = request.requiredFeature();
+        if (feature != null && !siteService.isEnabled(feature)) {
             throw new BusinessException(ErrorCode.MENU_FEATURE_DISABLED);
         }
     }
@@ -110,9 +108,6 @@ public class MenuService {
     @Transactional
     public void deleteMenu(final Long id) {
         Menu menu = findMenu(id);
-        if (menu.isFeatureMenu()) {
-            throw new BusinessException(ErrorCode.MENU_BUILT_IN);
-        }
         if (menuRepository.existsByParentIdAndDeletedAtIsNull(id)) {
             throw new BusinessException(ErrorCode.MENU_HAS_CHILDREN);
         }

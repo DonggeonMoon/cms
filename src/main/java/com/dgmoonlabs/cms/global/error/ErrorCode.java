@@ -24,7 +24,7 @@ public enum ErrorCode {
 
     CODE_HAS_CHILDREN(HttpStatus.CONFLICT, "하위 코드가 있어 삭제할 수 없습니다."),
     MENU_HAS_CHILDREN(HttpStatus.CONFLICT, "하위 메뉴가 있어 삭제할 수 없습니다."),
-    MENU_BUILT_IN(HttpStatus.CONFLICT, "기능 메뉴는 새로 만들거나 삭제할 수 없고 하위 메뉴도 둘 수 없습니다. 숨기려면 사용을 끄세요."),
+    MENU_BUILT_IN(HttpStatus.CONFLICT, "기능 메뉴 아래에는 하위 메뉴를 둘 수 없습니다."),
     DUPLICATE_CONFIG_KEY(HttpStatus.CONFLICT, "이미 등록된 설정 키입니다."),
     DUPLICATE_API_KEY_NAME(HttpStatus.CONFLICT, "이미 등록된 API 키 이름입니다."),
     API_KEY_IN_USE(HttpStatus.CONFLICT, "지도 설정 등에서 사용 중인 API 키는 삭제할 수 없습니다. 사용하는 곳에서 다른 키로 바꾼 뒤 삭제하세요."),

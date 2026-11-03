@@ -43,7 +43,7 @@ public class Menu extends BaseEntity {
     @Comment("링크")
     private String link;
 
-    @Comment("연결 대상 ID (CONTENT: 컨텐츠 ID, BOARD: 게시판 ID)")
+    @Comment("연결 대상 ID (CONTENT: 컨텐츠 ID, BOARD: 게시판 ID, ARCHIVE: 아카이브 ID)")
     private Long targetId;
 
     @Comment("기능 메뉴가 가리키는 기능 (FEATURE 메뉴만)")
@@ -69,11 +69,9 @@ public class Menu extends BaseEntity {
         this.name = request.name();
         this.sequence = request.sequence();
         this.isUsing = request.isUsingOrDefault();
-        if (isFeatureMenu()) {
-            return;
-        }
         this.type = request.type();
-        this.link = request.link();
-        this.targetId = request.targetId();
+        this.feature = request.type() == MenuType.FEATURE ? request.feature() : null;
+        this.link = request.type() == MenuType.LINK ? request.link() : null;
+        this.targetId = request.type() == MenuType.FEATURE || request.type() == MenuType.LINK ? null : request.targetId();
     }
 }
