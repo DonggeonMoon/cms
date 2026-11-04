@@ -58,7 +58,8 @@ public class Order extends BaseEntity {
     private Long subscriptionId;
 
     @Builder.Default
-    @Column(nullable = false, columnDefinition = "varchar(20) default 'DELIVERY'")
+    @Column(nullable = false, columnDefinition = "varchar(20)")
+    @ColumnDefault("'DELIVERY'")
     @Enumerated(EnumType.STRING)
     @Comment("받는 방식 (배송 / 포장 / 매장 식사)")
     private FulfillmentType fulfillmentType = FulfillmentType.DELIVERY;

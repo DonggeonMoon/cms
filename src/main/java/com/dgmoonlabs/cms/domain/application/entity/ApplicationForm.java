@@ -56,7 +56,8 @@ public class ApplicationForm extends BaseEntity {
     private boolean isEnabled;
 
     @Builder.Default
-    @Column(nullable = false, columnDefinition = "varchar(20) default 'REVIEW'")
+    @Column(nullable = false, columnDefinition = "varchar(20)")
+    @ColumnDefault("'REVIEW'")
     @Enumerated(EnumType.STRING)
     @Comment("선정 방식 (심사 / 추첨)")
     private SelectionMethod selectionMethod = SelectionMethod.REVIEW;

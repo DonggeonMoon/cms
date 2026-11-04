@@ -41,13 +41,19 @@ public class AdminAccountService implements ApplicationRunner {
         ensureSuperAdmin();
     }
 
-    /** 최고 관리자가 한 명도 없으면 가장 먼저 만든 관리자를 최고 관리자로 정해, 관리자 관리에 아무도 못 들어가는 일을 막는다. */
+    /**
+     * 최고 관리자가 한 명도 없으면 가장 먼저 만든 관리자를 최고 관리자로 정해, 관리자 관리에 아무도 못 들어가는 일을 막는다.
+     * 서버 시작 때는 암호화 키가 아직 올라오지 않았으므로(ApplicationReadyEvent 에서 설치) 암호화된 컬럼은 읽지 않는다.
+     */
     @Transactional
     public void ensureSuperAdmin() {
         AdminGrade superGrade = superGrade();
-        List<Admin> admins = adminRepository.findAllByDeletedAtIsNullOrderByIdAsc();
-        if (!admins.isEmpty() && admins.stream().noneMatch(admin -> superGrade.getId().equals(admin.getGradeId()))) {
-            admins.getFirst().changeGrade(superGrade.getId());
+        if (adminRepository.existsByGradeIdAndDeletedAtIsNull(superGrade.getId())) {
+            return;
+        }
+        List<Long> ids = adminRepository.findActiveIds();
+        if (!ids.isEmpty()) {
+            adminRepository.assignGrade(ids.getFirst(), superGrade.getId());
         }
     }
 
