@@ -109,6 +109,16 @@ export const adminApi = {
         markPaid: (id: number) => request<void>(`/api/admin/orders/${id}/pay`, {method: 'POST'}),
         changeStatus: (id: number, status: D.OrderStatus) =>
             request<void>(`/api/admin/orders/${id}/status`, {method: 'PUT', body: {status}}),
+        quote: (id: number, amount: number, message: string) =>
+            request<D.Order>(`/api/admin/orders/${id}/quote`, {method: 'POST', body: {amount, message}}),
+        cancelItem: (id: number, itemId: number) =>
+            request<D.Order>(`/api/admin/orders/${id}/items/${itemId}/cancel`, {method: 'POST'}),
+        ship: (id: number, courier: string, trackingNumber: string) =>
+            request<D.Order>(`/api/admin/orders/${id}/shipment`, {method: 'PUT', body: {courier, trackingNumber}}),
+    },
+    shippingPolicy: {
+        save: (body: Body) => request<D.ShippingPolicy>('/api/admin/shipping-policy', {method: 'PUT', body}),
+    },
     applications: {
         ...resource<D.ApplicationForm>('/api/admin/applications'),
         submissions: (id: number, query: Query) =>
@@ -116,6 +126,10 @@ export const adminApi = {
         review: (submissionId: number, body: Body) =>
             request<D.Submission>(`/api/admin/applications/submissions/${submissionId}`, {method: 'PUT', body}),
     },
+    subscriptions: {
+        search: (query: Query) => request<Page<D.Subscription>>('/api/admin/subscriptions', {query}),
+        cancel: (id: number) => request<D.Subscription>(`/api/admin/subscriptions/${id}/cancel`, {method: 'POST'}),
+        renewDue: () => request<{ renewed: number }>('/api/admin/subscriptions/renew', {method: 'POST'}),
     },
     reservations: {
         search: (query: Query) => request<Page<D.Reservation>>('/api/admin/reservations', {query}),
@@ -229,6 +243,18 @@ export const shopApi = {
     myOrders: (page: number) => request<Page<D.Order>>('/api/orders/me', {query: {page}}),
     myOrder: (id: number) => request<D.Order>(`/api/orders/${id}`),
     cancelOrder: (id: number) => request<void>(`/api/orders/${id}/cancel`, {method: 'POST'}),
+    acceptQuote: (id: number) => request<D.Order>(`/api/orders/${id}/accept-quote`, {method: 'POST'}),
+    cancelOrderItem: (id: number, itemId: number) =>
+        request<D.Order>(`/api/orders/${id}/items/${itemId}/cancel`, {method: 'POST'}),
+    shippingPolicy: () => request<D.ShippingPolicy>('/api/shipping-policy'),
+    cart: (postalCode?: string) => request<D.Cart>('/api/cart', {query: postalCode ? {postalCode} : {}}),
+    addToCart: (body: { productId: number; productOptionId: number | null; quantity: number }) =>
+        request<D.Cart>('/api/cart', {method: 'POST', body}),
+    changeCartQuantity: (id: number, quantity: number) => request<D.Cart>(`/api/cart/${id}`, {method: 'PUT', body: {quantity}}),
+    removeFromCart: (id: number) => request<D.Cart>(`/api/cart/${id}`, {method: 'DELETE'}),
+    checkoutCart: (body: Body) => request<D.Order>('/api/cart/checkout', {method: 'POST', body}),
+    mySubscriptions: (page: number) => request<Page<D.Subscription>>('/api/subscriptions/me', {query: {page}}),
+    cancelSubscription: (id: number) => request<D.Subscription>(`/api/subscriptions/${id}/cancel`, {method: 'POST'}),
     programs: (keyword: string, page: number) =>
         request<Page<D.Program>>('/api/programs', {query: {keyword, page}}),
     program: (id: number) => request<D.Program>(`/api/programs/${id}`),

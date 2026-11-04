@@ -14,6 +14,8 @@ import com.dgmoonlabs.cms.domain.business.review.service.ReviewService;
 import com.dgmoonlabs.cms.global.security.LoginUser;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import com.dgmoonlabs.cms.domain.business.subscription.dto.SubscriptionResponse;
+import com.dgmoonlabs.cms.domain.business.subscription.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -31,6 +33,7 @@ public class MemberBusinessController {
     private final ReservationService reservationService;
     private final PaymentService paymentService;
     private final ReviewService reviewService;
+    private final SubscriptionService subscriptionService;
 
     @PostMapping("/api/orders")
     public ResponseEntity<OrderResponse> order(@AuthenticationPrincipal final LoginUser user,
@@ -48,6 +51,23 @@ public class MemberBusinessController {
     @GetMapping("/api/orders/{id}")
     public ResponseEntity<OrderResponse> myOrder(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id) {
         return ResponseEntity.ok(orderService.getMyOrder(user.id(), id));
+    }
+
+    @PostMapping("/api/orders/{id}/accept-quote")
+    public ResponseEntity<OrderResponse> acceptQuote(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id) {
+        return ResponseEntity.ok(orderService.acceptMyQuote(user.id(), id));
+    }
+
+    @GetMapping("/api/subscriptions/me")
+    public ResponseEntity<PagedModel<SubscriptionResponse>> mySubscriptions(@AuthenticationPrincipal final LoginUser user,
+                                                                            @PageableDefault final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(subscriptionService.getMine(user.id(), pageable)));
+    }
+
+    @PostMapping("/api/subscriptions/{id}/cancel")
+    public ResponseEntity<SubscriptionResponse> cancelSubscription(@AuthenticationPrincipal final LoginUser user,
+                                                                   @PathVariable final Long id) {
+        return ResponseEntity.ok(subscriptionService.cancelMine(user.id(), id));
     }
 
     @PostMapping("/api/orders/{id}/cancel")

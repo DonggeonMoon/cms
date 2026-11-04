@@ -45,9 +45,10 @@ function SiteFrame() {
                 <nav className="site-nav" aria-label="계정">
                     {user?.userType === 'MEMBER' && (
                         <>
-                            <span className="muted">{user.name}님</span>
-                            <NavLink to="/mypage">마이페이지</NavLink>
-                            <button type="button" className="link-button" onClick={handleLogout}>로그아웃</button>
+                            <span className="muted">{t('nav.greeting', '{name}님', {name: user.name})}</span>
+                            {isEnabled('PRODUCT') && <NavLink to="/cart">{t('nav.cart', '장바구니')}</NavLink>}
+                            <NavLink to="/mypage">{t('nav.mypage', '마이페이지')}</NavLink>
+                            <button type="button" className="link-button" onClick={handleLogout}>{t('nav.logout', '로그아웃')}</button>
                         </>
                     )}
                     {!user && <NavLink to="/login">{t('nav.login', '로그인')}</NavLink>}
@@ -61,13 +62,15 @@ function SiteFrame() {
             </header>
             {user?.userType === 'MEMBER' && location.pathname.startsWith('/mypage') && (
                 <nav className="sub-nav" aria-label="마이페이지">
-                    <NavLink to="/mypage" end>회원정보</NavLink>
-                    {isEnabled('PRODUCT') && <NavLink to="/mypage/orders">주문 내역</NavLink>}
-                    {isEnabled('PROGRAM') && <NavLink to="/mypage/reservations">예약 내역</NavLink>}
-                    {isEnabled('REPORT') && <NavLink to="/mypage/reports">신고</NavLink>}
-                    {isEnabled('MEDIA') && <NavLink to="/mypage/media">수강 내역</NavLink>}
-                    <NavLink to="/mypage/password">비밀번호 변경</NavLink>
-                    <NavLink to="/mypage/quit">회원 탈퇴</NavLink>
+                    <NavLink to="/mypage" end>{t('mypage.profile', '회원정보')}</NavLink>
+                    {isEnabled('PRODUCT') && <NavLink to="/mypage/orders">{t('mypage.orders', '주문 내역')}</NavLink>}
+                    {isEnabled('PRODUCT') && <NavLink to="/mypage/subscriptions">{t('mypage.subscriptions', '구독')}</NavLink>}
+                    {isEnabled('PROGRAM') && <NavLink to="/mypage/reservations">{t('mypage.reservations', '예약 내역')}</NavLink>}
+                    {isEnabled('APPLICATION') && <NavLink to="/mypage/applications">{t('mypage.applications', '신청 내역')}</NavLink>}
+                    {isEnabled('REPORT') && <NavLink to="/mypage/reports">{t('mypage.reports', '신고')}</NavLink>}
+                    {isEnabled('MEDIA') && <NavLink to="/mypage/media">{t('mypage.media', '수강 내역')}</NavLink>}
+                    <NavLink to="/mypage/password">{t('mypage.password', '비밀번호 변경')}</NavLink>
+                    <NavLink to="/mypage/quit">{t('mypage.quit', '회원 탈퇴')}</NavLink>
                 </nav>
             )}
             <main className="site-main">

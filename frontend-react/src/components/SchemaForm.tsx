@@ -7,8 +7,9 @@ import {ErrorBanner} from './ErrorBanner';
 import {FormFieldsEditor} from './FormFieldsEditor';
 import {LayoutEditor} from './LayoutEditor';
 import {StableLabel} from './StableLabel';
+import {type OptionSet, ProductOptionsEditor} from './ProductOptionsEditor';
 
-export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media';
+export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media' | 'time' | 'layout' | 'formFields' | 'productOptions';
 
 export interface FieldSpec {
     name: string;
@@ -23,6 +24,7 @@ export interface FieldSpec {
     spaced?: boolean;
     newRow?: boolean;
     group?: string;
+    visibleWhen?: (values: FormValues) => boolean;
 }
 
 export type FormValues = Record<string, unknown>;
@@ -69,9 +71,9 @@ export function SchemaForm({fields, initial, onSubmit, onCancel, submitLabel = '
     const groups = [...new Set(fields.flatMap((field) => (field.group ? [field.group] : [])))];
     const grid = (specs: FieldSpec[]) => (
         <div className="schema-grid">
-            {specs.map((field) => (
+            {specs.filter((field) => !field.visibleWhen || field.visibleWhen(values)).map((field) => (
                 <div key={field.name} className={[
-                    field.wide || ['html', 'textarea', 'files', 'media'].includes(field.type ?? '') ? 'wide' : '',
+                    field.wide || ['html', 'textarea', 'files', 'media', 'layout', 'formFields', 'productOptions'].includes(field.type ?? '') ? 'wide' : '',
                     field.spaced ? 'spaced' : '',
                     field.newRow ? 'new-row' : '',
                     field.type === 'checkbox' && !field.wide ? 'inline-check' : '',
@@ -184,6 +186,14 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
                 <div className="field">
                     {label}
                     <FormFieldsEditor value={(value as FormField[]) ?? []} onChange={onChange}/>
+                    {help}
+                </div>
+            );
+        case 'productOptions':
+            return (
+                <div className="field">
+                    {label}
+                    <ProductOptionsEditor value={value as OptionSet | undefined} onChange={onChange}/>
                     {help}
                 </div>
             );

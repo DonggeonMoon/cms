@@ -26,11 +26,11 @@ public final class PaymentDtos {
 
     public record PaymentResponse(Long id, String paymentNumber, PaymentTargetType targetType, Long targetId, Long memberId, BigDecimal amount,
                                   PaymentMethod method, PaymentStatus status, String transactionId,
-                                  LocalDateTime approvedAt, LocalDateTime canceledAt) {
+                                  LocalDateTime approvedAt, LocalDateTime canceledAt, BigDecimal refundedAmount) {
         public static PaymentResponse from(final Payment payment) {
             return new PaymentResponse(payment.getId(), payment.getPaymentNumber(), payment.getTargetType(), payment.getTargetId(),
                     payment.getMemberId(), payment.getAmount(), payment.getMethod(), payment.getStatus(),
-                    payment.getTransactionId(), payment.getApprovedAt(), payment.getCanceledAt());
+                    payment.getTransactionId(), payment.getApprovedAt(), payment.getCanceledAt(), payment.getRefundedAmount());
         }
     }
 }

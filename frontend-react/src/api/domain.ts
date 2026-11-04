@@ -350,6 +350,9 @@ export interface Discount {
     isUsing: boolean;
 }
 
+export type ProductSaleType = 'PURCHASE' | 'SUBSCRIPTION' | 'DONATION' | 'QUOTE';
+export type BillingCycle = 'MONTHLY' | 'YEARLY';
+
 export interface ProductSummary {
     id: number;
     accessGradeId: number | null;
@@ -358,21 +361,57 @@ export interface ProductSummary {
     name: string;
     description: string | null;
     price: number;
+    saleType: ProductSaleType;
+    billingCycle: BillingCycle | null;
     availableQuantity: number | null;
     isEnabled: boolean;
     imageUrl: string | null;
     createdAt: string;
 }
 
+export interface OptionGroup {
+    name: string;
+    values: string[];
+}
+
+export interface ProductOption {
+    id: number;
+    name: string;
+    description: string | null;
+    additionalPrice: number;
+    optionValues: string[];
+    stock: number | null;
+    isEnabled: boolean;
+}
+
 export interface ProductDetail extends ProductSummary {
     imageFileId: number | null;
     contentHtml: string;
-    options: { id: number; name: string; description: string | null; additionalPrice: number }[];
+    optionGroups: OptionGroup[];
+    requiresShipping: boolean;
+    options: ProductOption[];
     discounts: Discount[];
     averageRating: number | null;
+    donationPresets: number[];
+    goalAmount: number | null;
+    donation: { raisedAmount: number; supporterCount: number } | null;
 }
 
-export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'SHIPPING' | 'DELIVERED' | 'CANCELED';
+export interface Subscription {
+    id: number;
+    memberId: number;
+    productId: number;
+    productName: string;
+    firstOrderId: number;
+    price: number;
+    billingCycle: BillingCycle;
+    status: 'ACTIVE' | 'CANCELED';
+    nextBillingDate: string | null;
+    startedAt: string;
+    canceledAt: string | null;
+}
+
+export type OrderStatus = 'QUOTE_REQUESTED' | 'QUOTED' | 'PENDING_PAYMENT' | 'PAID' | 'SHIPPING' | 'DELIVERED' | 'CANCELED';
 
 export interface Order {
     id: number;
@@ -380,18 +419,84 @@ export interface Order {
     userId: number;
     productId: number;
     productName: string;
+    saleType: ProductSaleType;
+    subscriptionId: number | null;
     productOptionId: number | null;
     quantity: number;
     discountId: number | null;
-    totalPrice: number;
+    totalPrice: number | null;
     status: OrderStatus;
     customStatus: string | null;
+    requestMessage: string | null;
+    quoteMessage: string | null;
+    quotedAt: string | null;
     receiverName: string;
     phoneNumber: string;
     postalCode: string | null;
     address: string | null;
     detailAddress: string | null;
     createdAt: string;
+    items: OrderItem[];
+    itemsAmount: number | null;
+    shippingFee: number | null;
+    refundedAmount: number | null;
+    courier: string | null;
+    trackingNumber: string | null;
+    shippedAt: string | null;
+}
+
+export interface OrderItem {
+    id: number;
+    productId: number;
+    productOptionId: number | null;
+    productName: string;
+    optionName: string | null;
+    unitPrice: number;
+    quantity: number;
+    amount: number;
+    status: 'ORDERED' | 'CANCELED';
+    refundedAmount: number | null;
+    canceledAt: string | null;
+}
+
+export interface CartItem {
+    id: number;
+    productId: number;
+    productOptionId: number | null;
+    productName: string;
+    optionName: string | null;
+    imageUrl: string | null;
+    unitPrice: number;
+    quantity: number;
+    amount: number;
+    stock: number | null;
+    requiresShipping: boolean;
+    available: boolean;
+}
+
+export interface Cart {
+    items: CartItem[];
+    itemsAmount: number;
+    shippingFee: number;
+    shippingRegion: string | null;
+    freeShippingThreshold: number | null;
+    totalPrice: number;
+}
+
+export interface RegionFee {
+    name: string;
+    postalCodeFrom: string;
+    postalCodeTo: string;
+    fee: number;
+}
+
+export interface ShippingPolicy {
+    baseFee: number;
+    freeThreshold: number | null;
+    regionFees: RegionFee[];
+    defaultCourier: string | null;
+}
+
 export type ReservationType = 'PROGRAM' | 'CONSULTATION' | 'RENTAL' | 'LODGING' | 'EVENT';
 export type CellKind = 'SEAT' | 'ROOM' | 'SPACE' | 'AISLE' | 'STAGE' | 'EMPTY';
 

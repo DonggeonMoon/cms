@@ -28,6 +28,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     boolean existsByOrderNumber(String orderNumber);
 
+    @Query("select coalesce(sum(o.totalPrice), 0) from Order o where o.productId = :productId "
+            + "and o.saleType = com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType.DONATION "
+            + "and o.status = com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus.PAID")
+    BigDecimal sumPaidDonations(Long productId);
+
+    @Query("select count(o) from Order o where o.productId = :productId "
+            + "and o.saleType = com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType.DONATION "
+            + "and o.status = com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus.PAID")
+    long countPaidDonations(Long productId);
+
     @Query("select o from Order o where o.orderNumber = :orderNumber and (:status is null or o.status = :status)")
     Page<Order> findByOrderNumberAndStatus(String orderNumber, OrderStatus status, Pageable pageable);
 

@@ -2,6 +2,7 @@ package com.dgmoonlabs.cms.domain.business.order.entity;
 
 import com.dgmoonlabs.cms.global.crypto.EncryptedStringConverter;
 import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
+import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import com.dgmoonlabs.cms.global.error.BusinessException;
@@ -14,6 +15,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "`order`")
@@ -44,6 +46,27 @@ public class Order extends BaseEntity {
     @Comment("상품 ID")
     private Long productId;
 
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "varchar(20)")
+    @ColumnDefault("'PURCHASE'")
+    @Enumerated(EnumType.STRING)
+    @Comment("판매 방식 (주문 당시)")
+    private ProductSaleType saleType = ProductSaleType.PURCHASE;
+
+    @Comment("정기 결제로 만들어진 주문의 구독 ID")
+    private Long subscriptionId;
+
+    @Column(columnDefinition = "text")
+    @Comment("견적 요청 내용")
+    private String requestMessage;
+
+    @Column(columnDefinition = "text")
+    @Comment("견적 회신 내용")
+    private String quoteMessage;
+
+    @Comment("견적 회신 일시")
+    private LocalDateTime quotedAt;
+
     @Comment("상품 옵션 ID")
     private Long productOptionId;
 
@@ -59,6 +82,29 @@ public class Order extends BaseEntity {
     @Column(precision = 15, scale = 2)
     @Comment("총 금액")
     private BigDecimal totalPrice;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("상품 금액 합계 (항목이 있는 주문)")
+    private BigDecimal itemsAmount;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("배송비")
+    private BigDecimal shippingFee;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("부분 취소로 환불한 누적 금액")
+    private BigDecimal refundedAmount;
+
+    @Column(length = 50)
+    @Comment("택배사")
+    private String courier;
+
+    @Column(length = 50)
+    @Comment("송장 번호")
+    private String trackingNumber;
+
+    @Comment("발송 일시")
+    private LocalDateTime shippedAt;
 
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
@@ -103,6 +149,31 @@ public class Order extends BaseEntity {
     @Comment("추가 필드")
     private String fields;
 
+    public void quote(final BigDecimal amount, final String message) {
+        this.customStatus = null;
+        if (status != OrderStatus.QUOTE_REQUESTED && status != OrderStatus.QUOTED) {
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        this.totalPrice = amount;
+        this.quoteMessage = message;
+        this.quotedAt = LocalDateTime.now();
+        this.status = OrderStatus.QUOTED;
+    }
+
+    public void linkSubscription(final Long subscriptionId) {
+        this.subscriptionId = subscriptionId;
+    }
+
+    public void acceptQuote() {
+        this.customStatus = null;
+        requireStatus(OrderStatus.QUOTED);
+        this.status = OrderStatus.PENDING_PAYMENT;
+    }
+
+    public boolean holdsStock() {
+        return saleType != ProductSaleType.DONATION && (status == OrderStatus.PENDING_PAYMENT || status == OrderStatus.PAID);
+    }
+
     public void markPaid() {
         this.customStatus = null;
         requireStatus(OrderStatus.PENDING_PAYMENT);
@@ -130,6 +201,41 @@ public class Order extends BaseEntity {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
     }
+
+    public void repriceBeforePayment(final BigDecimal itemsAmount, final BigDecimal shippingFee) {
+        requireStatus(OrderStatus.PENDING_PAYMENT);
+        this.itemsAmount = itemsAmount;
+        this.shippingFee = shippingFee;
+        this.totalPrice = itemsAmount.add(shippingFee);
+    }
+
+    public void recordRefund(final BigDecimal amount, final BigDecimal shippingFee) {
+        this.refundedAmount = (refundedAmount == null ? BigDecimal.ZERO : refundedAmount).add(amount);
+        this.shippingFee = shippingFee;
+    }
+
+    public boolean isPartiallyCancelable() {
+        return status == OrderStatus.PENDING_PAYMENT || status == OrderStatus.PAID;
+    }
+
+    public void ship(final String courier, final String trackingNumber) {
+        this.customStatus = null;
+        if (status != OrderStatus.PAID && status != OrderStatus.SHIPPING) {
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        this.courier = courier;
+        this.trackingNumber = trackingNumber;
+        if (status == OrderStatus.PAID) {
+            this.status = OrderStatus.SHIPPING;
+            this.shippedAt = LocalDateTime.now();
+        }
+    }
+
+    public BigDecimal paidRemaining() {
+        BigDecimal total = totalPrice == null ? BigDecimal.ZERO : totalPrice;
+        return refundedAmount == null ? total : total.subtract(refundedAmount);
+    }
+
     public void applyCustomStatus(final String code) {
         this.customStatus = code;
     }

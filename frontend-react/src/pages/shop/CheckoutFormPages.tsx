@@ -1,17 +1,26 @@
 import {type FormEvent, useEffect, useState} from 'react';
 import {Link, useNavigate, useSearchParams} from 'react-router';
-import type {ProductDetail, Program} from '../../api/domain';
+import type {ProductDetail, ProductSaleType, Program, ShippingPolicy} from '../../api/domain';
+import {estimateShipping} from '../../components/shipping';
 import {shopApi} from '../../api/endpoints';
 import {memberApi} from '../../api/members';
 import {won} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {Field} from '../../components/Field';
 import {formatDateTime} from '../../components/format';
+import {BILLING_CYCLE} from '../../components/labels';
 import {reservationUsage} from '../../components/reservationUsage';
 import {StableLabel} from '../../components/StableLabel';
 import {estimateReservation} from './ReservationPicker';
 
 const positive = (value: string | null, fallback = 1) => Math.max(fallback, Number(value) || fallback);
+
+const MODES: Record<ProductSaleType, { title: string; receiverLegend: string; totalLabel: string; submit: string }> = {
+    PURCHASE: {title: '주문 정보 입력', receiverLegend: '배송 정보', totalLabel: '결제 예정 금액', submit: '주문하고 결제하기'},
+    SUBSCRIPTION: {title: '구독 신청', receiverLegend: '배송 정보', totalLabel: '회차별 결제 금액', submit: '구독하고 결제하기'},
+    DONATION: {title: '후원 정보 입력', receiverLegend: '후원자 정보', totalLabel: '후원 금액', submit: '후원하고 결제하기'},
+    QUOTE: {title: '견적 문의', receiverLegend: '연락처', totalLabel: '', submit: '견적 요청 보내기'},
+};
 
 export function OrderFormPage() {
     const [params] = useSearchParams();
@@ -20,13 +29,17 @@ export function OrderFormPage() {
     const optionId = params.get('optionId') ?? '';
     const discountId = params.get('discountId') ?? '';
     const quantity = positive(params.get('quantity'));
+    const amount = Number(params.get('amount')) || 0;
+    const [requestMessage, setRequestMessage] = useState('');
     const [product, setProduct] = useState<ProductDetail | null>(null);
+    const [policy, setPolicy] = useState<ShippingPolicy | null>(null);
     const [receiver, setReceiver] = useState({receiverName: '', phoneNumber: '', postalCode: '', address: '', detailAddress: ''});
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         shopApi.product(productId).then(setProduct).catch(setError);
+        shopApi.shippingPolicy().then(setPolicy).catch(() => setPolicy(null));
         memberApi.me().then((me) => setReceiver((current) => ({
             receiverName: current.receiverName || me.name || '',
             phoneNumber: current.phoneNumber || me.mobilePhoneNumber || me.telephoneNumber || '',
@@ -45,7 +58,12 @@ export function OrderFormPage() {
     const option = product.options.find((o) => String(o.id) === optionId);
     const discount = product.discounts.find((d) => String(d.id) === discountId);
     const subtotal = (Number(product.price) + Number(option?.additionalPrice ?? 0)) * quantity;
-    const total = discount ? Math.round(subtotal * (100 - Number(discount.rate)) / 100) : subtotal;
+    const total = product.saleType === 'DONATION' ? amount
+        : discount ? Math.round(subtotal * (100 - Number(discount.rate)) / 100) : subtotal;
+    const mode = MODES[product.saleType ?? 'PURCHASE'];
+    const purchase = (product.saleType ?? 'PURCHASE') === 'PURCHASE';
+    const needsAddress = purchase && product.requiresShipping !== false;
+    const shipping = estimateShipping(policy, needsAddress, total, receiver.postalCode);
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
@@ -57,9 +75,11 @@ export function OrderFormPage() {
                 productOptionId: option ? option.id : null,
                 discountId: discount ? discount.id : null,
                 quantity,
-                ...receiver,
+                ...(product.saleType === 'DONATION' ? {receiverName: receiver.receiverName, phoneNumber: receiver.phoneNumber} : receiver),
+                amount: product.saleType === 'DONATION' ? amount : null,
+                requestMessage: product.saleType === 'QUOTE' ? requestMessage : null,
             });
-            navigate(`/checkout/ORDER/${created.id}`);
+            navigate(product.saleType === 'QUOTE' ? '/mypage/orders' : `/checkout/ORDER/${created.id}`);
         } catch (e) {
             setError(e);
         } finally {
@@ -69,35 +89,59 @@ export function OrderFormPage() {
 
     return (
         <section className="card">
-            <h1>주문 정보 입력</h1>
+            <h1>{mode.title}</h1>
             <dl className="meta">
                 <dt>상품</dt>
                 <dd><Link to={`/products/${product.id}`}>{product.name}</Link></dd>
                 {option && (<><dt>옵션</dt><dd>{option.name} (+{won(option.additionalPrice)})</dd></>)}
                 {discount && (<><dt>할인</dt><dd>{discount.name} ({discount.rate}%)</dd></>)}
-                <dt>수량</dt>
-                <dd>{quantity}개</dd>
+                {product.saleType !== 'DONATION' && (<><dt>수량</dt><dd>{quantity}개</dd></>)}
+                {product.saleType === 'SUBSCRIPTION' && product.billingCycle && (<><dt>결제 주기</dt><dd>{BILLING_CYCLE[product.billingCycle]}</dd></>)}
             </dl>
             <form onSubmit={submit}>
+                {product.saleType === 'QUOTE' && (
+                    <div className="field">
+                        <label htmlFor="requestMessage">요청 내용</label>
+                        <textarea id="requestMessage" rows={5} maxLength={2000} value={requestMessage}
+                                  placeholder="필요한 수량, 일정, 조건 등을 적어 주세요."
+                                  onChange={(e) => setRequestMessage(e.target.value)}/>
+                    </div>
+                )}
                 <fieldset>
-                    <legend>배송 정보</legend>
-                    <Field label="수령인" name="receiverName" required value={receiver.receiverName}
+                    <legend>{mode.receiverLegend}</legend>
+                    <Field label={product.saleType === 'DONATION' ? '후원자 이름' : product.saleType === 'QUOTE' ? '담당자 이름' : '수령인'}
+                           name="receiverName" required value={receiver.receiverName}
                            onChange={(e) => setReceiver({...receiver, receiverName: e.target.value})}/>
                     <Field label="연락처" name="phoneNumber" type="tel" required value={receiver.phoneNumber}
                            onChange={(e) => setReceiver({...receiver, phoneNumber: e.target.value})}/>
-                    <Field label="우편번호" name="postalCode" value={receiver.postalCode}
-                           onChange={(e) => setReceiver({...receiver, postalCode: e.target.value})}/>
-                    <Field label="주소" name="address" value={receiver.address}
-                           onChange={(e) => setReceiver({...receiver, address: e.target.value})}/>
-                    <Field label="상세 주소" name="detailAddress" value={receiver.detailAddress}
-                           onChange={(e) => setReceiver({...receiver, detailAddress: e.target.value})}/>
+                    {product.saleType !== 'DONATION' && (
+                        <>
+                            <Field label="우편번호" name="postalCode" value={receiver.postalCode}
+                                   onChange={(e) => setReceiver({...receiver, postalCode: e.target.value})}/>
+                            <Field label="주소" name="address" required={needsAddress} value={receiver.address}
+                                   onChange={(e) => setReceiver({...receiver, address: e.target.value})}/>
+                            <Field label="상세 주소" name="detailAddress" value={receiver.detailAddress}
+                                   onChange={(e) => setReceiver({...receiver, detailAddress: e.target.value})}/>
+                        </>
+                    )}
                 </fieldset>
-                <p className="price align-right">결제 예정 금액 {won(total)}</p>
+                {product.saleType === 'QUOTE'
+                    ? <p className="muted">요청을 보내면 관리자가 견적 금액을 회신합니다. 마이페이지 주문 내역에서 수락하고 결제할 수 있습니다.</p>
+                    : (
+                        <>
+                            {needsAddress && (
+                                <p className="align-right muted">
+                                    상품 {won(total)} + 배송비 {won(shipping.fee)}{shipping.regionName && ` (${shipping.regionName} 추가 포함)`}
+                                </p>
+                            )}
+                            <p className="price align-right">{mode.totalLabel} {won(total + shipping.fee)}</p>
+                        </>
+                    )}
                 <ErrorBanner error={error}/>
                 <div className="toolbar form-actions">
                     <button type="button" onClick={() => navigate(-1)}>이전</button>
                     <button type="submit" className="primary" disabled={submitting}>
-                        <StableLabel current={submitting ? '주문 중…' : '주문하고 결제하기'} labels={['주문 중…', '주문하고 결제하기']}/>
+                        <StableLabel current={submitting ? '보내는 중…' : mode.submit} labels={['보내는 중…', mode.submit]}/>
                     </button>
                 </div>
             </form>

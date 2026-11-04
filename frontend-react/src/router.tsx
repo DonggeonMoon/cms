@@ -29,9 +29,11 @@ import {PasswordHashPage} from './pages/admin/PasswordHashPage';
 import {PolicyAdminPage} from './pages/admin/PolicyAdminPage';
 import {RegexAdminPage} from './pages/admin/RegexAdminPage';
 import {GradeAdminPage} from './pages/admin/GradeAdminPage';
+import {ShippingPolicyPage} from './pages/admin/ShippingPolicyPage';
 import {
     DiscountAdminPage,
     OrderAdminPage,
+    SubscriptionAdminPage,
     PaymentAdminPage,
     ProductAdminPage,
     ProgramAdminPage,
@@ -45,6 +47,7 @@ import {QnaDetailPage, QnaListPage, QnaWritePage} from './pages/board/QnaPages';
 import {ArchiveArticlePage, ArchiveListPage, ContentPage} from './pages/ContentPages';
 import {HomePage, NotFoundPage} from './pages/HomePage';
 import {OrderFormPage, ReservationFormPage} from './pages/shop/CheckoutFormPages';
+import {CartOrderPage, CartPage} from './pages/shop/CartPages';
 import {JoinPage} from './pages/JoinPage';
 import {SocialJoinPage} from './pages/SocialJoinPage';
 import {AdminLoginPage, LoginPage} from './pages/LoginPage';
@@ -58,10 +61,11 @@ import {
     CheckoutPage,
     MyOrdersPage,
     MyReservationsPage,
+    MySubscriptionsPage,
     ProductDetailPage,
     ProductListPage,
     ProgramDetailPage,
-    ProgramListPage
+    ProgramListPage,
 } from './pages/shop/ShopPages';
 
 export const routes = [
@@ -154,7 +158,10 @@ export const routes = [
                                 element: <RequireFeature feature="PRODUCT"/>,
                                 children: [
                                     {path: '/mypage/orders', element: <MyOrdersPage/>},
+                                    {path: '/mypage/subscriptions', element: <MySubscriptionsPage/>},
                                     {path: '/orders/new', element: <OrderFormPage/>},
+                                    {path: '/cart', element: <CartPage/>},
+                                    {path: '/orders/cart', element: <CartOrderPage/>},
                                 ],
                             },
                             {
@@ -229,7 +236,9 @@ export const routes = [
                                 children: [
                                     {path: 'products', element: <ProductAdminPage/>},
                                     {path: 'discounts', element: <DiscountAdminPage/>},
+                                    {path: 'shipping', element: <ShippingPolicyPage/>},
                                     {path: 'orders', element: <OrderAdminPage/>},
+                                    {path: 'subscriptions', element: <SubscriptionAdminPage/>},
                                 ],
                             },
                             {

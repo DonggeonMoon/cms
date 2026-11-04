@@ -1,11 +1,12 @@
 import {type FormEvent, useCallback, useEffect, useMemo, useState} from 'react';
 import {Link, useNavigate, useParams, useSearchParams} from 'react-router';
-import type {Order, PaymentMethod, ProductDetail, ProductSummary, Program, Reservation, Review, ReviewTargetType} from '../../api/domain';
+import type {Order, PaymentMethod, ProductDetail, ProductSaleType, ProductSummary, Program, Reservation, ReservationType, Review, ReviewTargetType, Subscription} from '../../api/domain';
 import {shopApi} from '../../api/endpoints';
 import {useStatusLabels} from '../../api/statuses';
 import type {Page} from '../../api/types';
 import {useAuth} from '../../auth/AuthContext';
 import {won} from '../../components/AdminCrudPage';
+import {priceLabel} from '../../components/price';
 import {reservationUsage} from '../../components/reservationUsage';
 import {ReservationPicker} from './ReservationPicker';
 import {ErrorBanner} from '../../components/ErrorBanner';
@@ -13,12 +14,14 @@ import {Field} from '../../components/Field';
 import {formatDateTime} from '../../components/format';
 import {HtmlView} from '../../components/HtmlView';
 import {ListSearch, pageParams} from '../../components/ListSearch';
-import {ORDER_STATUS, RESERVATION_STATUS} from '../../components/labels';
+import {BILLING_CYCLE, ORDER_STATUS, RESERVATION_STATUS, RESERVATION_TYPE, SALE_TYPE} from '../../components/labels';
 import {Pagination} from '../../components/Pagination';
 import {Thumbnail} from '../../components/Thumbnail';
 import {StableLabel} from '../../components/StableLabel';
 import {useFeatureMenuName} from '../../components/SiteContext';
 import {GradeBadge} from '../../components/GradeBadge';
+import {OptionPicker} from './OptionPicker';
+import {OrderAmount, OrderItemsTable} from './OrderItems';
 
 export function ProductCard({product}: { product: ProductSummary }) {
     return (
@@ -26,7 +29,8 @@ export function ProductCard({product}: { product: ProductSummary }) {
             <Thumbnail src={product.imageUrl} name={product.name}/>
             <strong className="product-name">{product.name}</strong>
             {product.description && <span className="product-summary muted small">{product.description}</span>}
-            <span className="product-price">{won(product.price)}</span>
+            <span className="product-price">{priceLabel(product)}</span>
+            {product.saleType !== 'PURCHASE' && <span className="badge">{SALE_TYPE[product.saleType]}</span>}
             {product.availableQuantity === 0 && <span className="badge danger">품절</span>}
             <GradeBadge gradeId={product.accessGradeId}/>
         </Link>
@@ -82,6 +86,27 @@ function estimateOrder(product: ProductDetail, optionId: string, discountId: str
     return discount ? Math.round(subtotal * (100 - Number(discount.rate)) / 100) : subtotal;
 }
 
+const ACTION_LABEL: Record<ProductSaleType, string> = {
+    PURCHASE: '주문하기',
+    SUBSCRIPTION: '구독하기',
+    DONATION: '후원하기',
+    QUOTE: '견적 문의하기',
+};
+
+function DonationProgressBar({product}: { product: ProductDetail }) {
+    const raised = Number(product.donation?.raisedAmount ?? 0);
+    const goal = product.goalAmount ? Number(product.goalAmount) : null;
+    return (
+        <div className="donation-progress">
+            {goal && <progress value={Math.min(raised, goal)} max={goal} aria-label="모금 달성률"/>}
+            <p>
+                <strong>{won(raised)}</strong> 모금{goal && <> · 목표 {won(goal)} ({Math.floor(raised * 100 / goal)}%)</>}
+                <span className="muted small"> · 후원자 {product.donation?.supporterCount ?? 0}명</span>
+            </p>
+        </div>
+    );
+}
+
 export function ProductDetailPage() {
     const id = Number(useParams().id);
     const navigate = useNavigate();
@@ -90,18 +115,39 @@ export function ProductDetailPage() {
     const [optionId, setOptionId] = useState('');
     const [discountId, setDiscountId] = useState('');
     const [quantity, setQuantity] = useState(1);
+    const [amount, setAmount] = useState(0);
     const [error, setError] = useState<unknown>(null);
 
     useEffect(() => {
-        shopApi.product(id).then(setProduct).catch(setError);
+        shopApi.product(id).then((loaded) => {
+            setProduct(loaded);
+            setAmount(loaded.donationPresets[0] ?? Number(loaded.price));
+        }).catch(setError);
     }, [id]);
 
     const estimate = useMemo(() => (product ? estimateOrder(product, optionId, discountId, quantity) : 0),
         [product, optionId, discountId, quantity]);
 
+    const [cartNotice, setCartNotice] = useState<string | null>(null);
+    const needsOption = (product?.optionGroups?.length ?? 0) > 0 && !optionId && product?.saleType !== 'DONATION';
+
+    const addToCart = async () => {
+        setError(null);
+        setCartNotice(null);
+        try {
+            await shopApi.addToCart({productId: id, productOptionId: optionId ? Number(optionId) : null, quantity});
+            setCartNotice('장바구니에 담았습니다.');
+        } catch (e) {
+            setError(e);
+        }
+    };
+
     const order = (event: FormEvent) => {
         event.preventDefault();
         const query = new URLSearchParams({productId: String(id), quantity: String(quantity)});
+        if (product?.saleType === 'DONATION') {
+            query.set('amount', String(amount));
+        }
         if (optionId) {
             query.set('optionId', optionId);
         }
@@ -127,23 +173,32 @@ export function ProductDetailPage() {
                 <div>
                     <h1>{product.name} <GradeBadge gradeId={product.accessGradeId}/></h1>
                     {product.description && <p className="muted">{product.description}</p>}
-                    <p className="price">{won(product.price)}</p>
+                    <p className="price">{priceLabel(product)}</p>
+                    {product.donation && <DonationProgressBar product={product}/>}
                     {product.averageRating != null && <p>평점 {'★'.repeat(Math.round(product.averageRating))} {product.averageRating.toFixed(1)}</p>}
-                    <p className="muted small">재고 {product.availableQuantity ?? '충분'}</p>
+                    {product.saleType !== 'DONATION' && <p className="muted small">재고 {product.availableQuantity ?? '충분'}</p>}
                     {user?.userType === 'MEMBER' ? (
                         <form onSubmit={order}>
-                            {product.options.length > 0 && (
+                            {product.saleType === 'DONATION' && (
                                 <div className="field">
-                                    <label htmlFor="option">옵션</label>
-                                    <select id="option" value={optionId} onChange={(e) => setOptionId(e.target.value)}>
-                                        <option value="">기본</option>
-                                        {product.options.map((o) => (
-                                            <option key={o.id} value={o.id}>{o.name} (+{won(o.additionalPrice)})</option>
-                                        ))}
-                                    </select>
+                                    <label htmlFor="amount">후원 금액(원)</label>
+                                    {product.donationPresets.length > 0 && (
+                                        <div className="toolbar">
+                                            {product.donationPresets.map((preset) => (
+                                                <button key={preset} type="button" className={amount === preset ? 'primary' : ''}
+                                                        onClick={() => setAmount(preset)}>{won(preset)}</button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <input id="amount" type="number" min={Number(product.price)} step={1000} required value={amount}
+                                           onChange={(e) => setAmount(Number(e.target.value))}/>
+                                    <p className="muted small">{won(product.price)} 이상 후원할 수 있습니다.</p>
                                 </div>
                             )}
-                            {product.discounts.length > 0 && (
+                            {product.saleType !== 'DONATION' && (
+                                <OptionPicker product={product} optionId={optionId} onChange={setOptionId}/>
+                            )}
+                            {product.saleType !== 'DONATION' && product.saleType !== 'QUOTE' && product.discounts.length > 0 && (
                                 <div className="field">
                                     <label htmlFor="discount">할인</label>
                                     <select id="discount" value={discountId} onChange={(e) => setDiscountId(e.target.value)}>
@@ -152,13 +207,23 @@ export function ProductDetailPage() {
                                     </select>
                                 </div>
                             )}
-                            <Field label="수량" name="quantity" type="number" min={1} value={quantity}
-                                   onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}/>
-                            <p className="price align-right">예상 결제 금액 {won(estimate)}</p>
+                            {product.saleType !== 'DONATION' && (
+                                <Field label="수량" name="quantity" type="number" min={1} value={quantity}
+                                       onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}/>
+                            )}
+                            {product.saleType === 'PURCHASE' && <p className="price align-right">예상 결제 금액 {won(estimate)}</p>}
+                            {product.saleType === 'SUBSCRIPTION' && product.billingCycle && (
+                                <p className="price align-right">{BILLING_CYCLE[product.billingCycle]} {won(estimate)} 결제</p>
+                            )}
                             <ErrorBanner error={error}/>
+                            {cartNotice && <p className="ok">{cartNotice} <Link to="/cart">장바구니 보기</Link></p>}
                             <div className="toolbar form-actions">
-                                <button type="submit" className="primary" disabled={soldOut}>
-                                    <StableLabel current={soldOut ? '품절' : '주문하기'} labels={['품절', '주문하기']}/>
+                                {product.saleType === 'PURCHASE' && (
+                                    <button type="button" disabled={soldOut || needsOption} onClick={addToCart}>장바구니 담기</button>
+                                )}
+                                <button type="submit" className="primary" disabled={(soldOut && product.saleType !== 'DONATION') || needsOption}>
+                                    <StableLabel current={soldOut && product.saleType !== 'DONATION' ? '품절' : ACTION_LABEL[product.saleType ?? 'PURCHASE']}
+                                                 labels={['품절', ...Object.values(ACTION_LABEL)]}/>
                                 </button>
                             </div>
                         </form>
@@ -477,15 +542,43 @@ export function MyOrdersPage() {
                     {data?.content.map((order) => (
                         <tr key={order.id}>
                             <td><code>{order.orderNumber}</code></td>
-                            <td><Link to={`/products/${order.productId}`}>{order.productName}</Link> × {order.quantity}</td>
-                            <td>{won(order.totalPrice)}</td>
-                            <td>{ORDER_STATUS[order.status]}</td>
+                            <td>
+                                {order.items.length > 1 ? order.productName
+                                    : <><Link to={`/products/${order.productId}`}>{order.productName}</Link> × {order.quantity}</>}
+                                {order.items.length > 1 && (
+                                    <details>
+                                        <summary>주문 상품 {order.items.length}개</summary>
+                                        <OrderItemsTable order={order} onCancel={['PENDING_PAYMENT', 'PAID'].includes(order.status)
+                                        && order.items.filter((item) => item.status === 'ORDERED').length > 1
+                                            ? (item) => {
+                                                if (window.confirm(`'${item.productName}'만 취소할까요? 결제한 주문은 이 상품 금액을 환불합니다. 남은 금액이 무료 배송 기준보다 적어지면 배송비를 빼고 환불합니다.`)) {
+                                                    shopApi.cancelOrderItem(order.id, item.id).then(reload).catch(setError);
+                                                }
+                                            }
+                                            : undefined}/>
+                                    </details>
+                                )}
+                            </td>
+                            <td>
+                                <OrderAmount order={order}/>
+                                {order.saleType !== 'PURCHASE' && <span className="badge">{SALE_TYPE[order.saleType]}</span>}
+                                {order.quoteMessage && <div className="muted small">{order.quoteMessage}</div>}
+                            </td>
+                            <td>
+                                {orderStatus(order.status, order.customStatus)}
+                                {order.trackingNumber && <div className="muted small">{order.courier} {order.trackingNumber}</div>}
+                            </td>
                             <td>{formatDateTime(order.createdAt)}</td>
                             <td className="button-cell">
                                 {order.status === 'PENDING_PAYMENT' && <Link className="button primary" to={`/checkout/ORDER/${order.id}`}>결제</Link>}
+                                {order.status === 'QUOTED' && (
+                                    <button type="button" className="primary" onClick={() => {
+                                        shopApi.acceptQuote(order.id).then(() => navigate(`/checkout/ORDER/${order.id}`)).catch(setError);
+                                    }}>견적 수락</button>
+                                )}
                             </td>
                             <td className="button-cell">
-                                {(order.status === 'PENDING_PAYMENT' || order.status === 'PAID') && (
+                                {['QUOTE_REQUESTED', 'QUOTED', 'PENDING_PAYMENT', 'PAID'].includes(order.status) && (
                                     <button type="button" className="danger" onClick={() => {
                                         if (window.confirm('주문을 취소할까요?')) {
                                             shopApi.cancelOrder(order.id).then(reload).catch(setError);
@@ -547,6 +640,50 @@ export function MyReservationsPage() {
                         </tr>
                     ))}
                     {data?.content.length === 0 && <tr><td colSpan={7} className="muted">예약 내역이 없습니다.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
+        </section>
+    );
+}
+
+export function MySubscriptionsPage() {
+    const [page, setPage] = useState(0);
+    const [data, setData] = useState<Page<Subscription> | null>(null);
+    const [error, setError] = useState<unknown>(null);
+    const reload = useCallback(() => {
+        shopApi.mySubscriptions(page).then(setData).catch(setError);
+    }, [page]);
+    useEffect(reload, [reload]);
+
+    return (
+        <section className="card">
+            <h1>구독</h1>
+            <ErrorBanner error={error}/>
+            <div className="table-wrap">
+                <table>
+                    <thead><tr><th>상품</th><th>금액</th><th>상태</th><th>다음 결제일</th><th>시작일</th><th>해지</th></tr></thead>
+                    <tbody>
+                    {data?.content.map((item) => (
+                        <tr key={item.id}>
+                            <td><Link to={`/products/${item.productId}`}>{item.productName}</Link></td>
+                            <td>{BILLING_CYCLE[item.billingCycle]} {won(item.price)}</td>
+                            <td>{item.status === 'ACTIVE' ? <span className="badge ok">구독 중</span> : <span className="badge">해지</span>}</td>
+                            <td>{item.nextBillingDate ?? '-'}</td>
+                            <td>{formatDateTime(item.startedAt)}</td>
+                            <td className="button-cell">
+                                {item.status === 'ACTIVE' && (
+                                    <button type="button" className="danger" onClick={() => {
+                                        if (window.confirm('구독을 해지할까요? 다음 결제일부터 결제되지 않습니다.')) {
+                                            shopApi.cancelSubscription(item.id).then(reload).catch(setError);
+                                        }
+                                    }}>해지</button>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                    {data?.content.length === 0 && <tr><td colSpan={6} className="muted">구독 중인 상품이 없습니다.</td></tr>}
                     </tbody>
                 </table>
             </div>

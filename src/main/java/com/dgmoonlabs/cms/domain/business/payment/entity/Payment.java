@@ -63,8 +63,23 @@ public class Payment extends BaseEntity {
     @Comment("취소 일시")
     private LocalDateTime canceledAt;
 
+    @Column(precision = 15, scale = 2)
+    @Comment("부분 환불 누적 금액")
+    private BigDecimal refundedAmount;
+
     public void assignNumber(final String paymentNumber) {
         this.paymentNumber = paymentNumber;
+    }
+
+    public BigDecimal refundable() {
+        return refundedAmount == null ? amount : amount.subtract(refundedAmount);
+    }
+
+    public void refund(final BigDecimal refund) {
+        this.refundedAmount = (refundedAmount == null ? BigDecimal.ZERO : refundedAmount).add(refund);
+        if (refundable().signum() <= 0) {
+            cancel();
+        }
     }
 
     public void cancel() {

@@ -22,6 +22,9 @@ import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewResponse;
 import com.dgmoonlabs.cms.domain.business.review.service.ReviewService;
 import com.dgmoonlabs.cms.global.security.LoginUser;
 import jakarta.validation.Valid;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.QuoteRequest;
+import com.dgmoonlabs.cms.domain.business.subscription.dto.SubscriptionResponse;
+import com.dgmoonlabs.cms.domain.business.subscription.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -31,6 +34,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.time.LocalDate;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -39,6 +44,7 @@ public class BusinessAdminController {
     private final ProductService productService;
     private final DiscountService discountService;
     private final OrderService orderService;
+    private final SubscriptionService subscriptionService;
     private final ReservationService reservationService;
     private final PaymentService paymentService;
     private final ReviewService reviewService;
@@ -101,6 +107,26 @@ public class BusinessAdminController {
     public ResponseEntity<Void> markOrderPaid(@PathVariable final Long id) {
         orderService.markPaid(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/orders/{id}/quote")
+    public ResponseEntity<OrderResponse> quote(@PathVariable final Long id, @RequestBody @Valid final QuoteRequest request) {
+        return ResponseEntity.ok(orderService.quote(id, request));
+    }
+
+    @GetMapping("/subscriptions")
+    public ResponseEntity<PagedModel<SubscriptionResponse>> subscriptions(@PageableDefault(size = 20) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(subscriptionService.search(pageable)));
+    }
+
+    @PostMapping("/subscriptions/{id}/cancel")
+    public ResponseEntity<SubscriptionResponse> cancelSubscription(@PathVariable final Long id) {
+        return ResponseEntity.ok(subscriptionService.cancel(id));
+    }
+
+    @PostMapping("/subscriptions/renew")
+    public ResponseEntity<Map<String, Integer>> renewSubscriptions() {
+        return ResponseEntity.ok(Map.of("renewed", subscriptionService.renewDue(LocalDate.now())));
     }
 
     @PutMapping("/orders/{id}/status")

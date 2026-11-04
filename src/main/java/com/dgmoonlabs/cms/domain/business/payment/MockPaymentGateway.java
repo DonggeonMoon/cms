@@ -16,7 +16,7 @@ public class MockPaymentGateway {
         return transactionId;
     }
 
-    public void refund(final String transactionId) {
-        log.info("[mock-pg] refunded {}", transactionId);
+    public void refund(final String transactionId, final BigDecimal amount) {
+        log.info("[mock-pg] refunded {} {}", amount, transactionId);
     }
 }

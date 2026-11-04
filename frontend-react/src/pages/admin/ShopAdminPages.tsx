@@ -1,35 +1,59 @@
-import {useEffect, useState} from 'react';
+import {type FormEvent, useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import type {Query} from '../../api/client';
-import type {Discount, Order, OrderStatus, Payment, ProductSummary, Program, Reservation, Review, ReviewTargetType} from '../../api/domain';
+import type {Discount, Order, OrderStatus, Payment, ProductSummary, Program, Reservation, ReservationType, Review, ReviewTargetType, Subscription} from '../../api/domain';
 import {adminApi, shopApi} from '../../api/endpoints';
 import {statusApi, useStatusLabels} from '../../api/statuses';
 import {AdminCrudPage, won, YesNo} from '../../components/AdminCrudPage';
+import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatDateTime} from '../../components/format';
+import {priceLabel} from '../../components/price';
 import {reservationUsage} from '../../components/reservationUsage';
 import {RegexBindingSelect} from '../../components/RegexBindingSelect';
-import {ORDER_STATUS, RESERVATION_STATUS, toOptions} from '../../components/labels';
+import {CustomStatusSelect, StatusManager} from '../../components/StatusManager';
+import {BILLING_CYCLE, ORDER_STATUS, RESERVATION_STATUS, RESERVATION_TYPE, RESERVATION_TYPE_GROUPS, SALE_TYPE, toOptions} from '../../components/labels';
+import {EMPTY_LAYOUT} from '../../components/LayoutEditor';
 import type {FieldSpec, FormValues} from '../../components/SchemaForm';
 import {type Grade, gradeSelectField, useWithGradeFields} from '../../api/grades';
+import {EMPTY_OPTION_SET, type OptionSet, optionSetBody, toOptionSet} from '../../components/ProductOptionsEditor';
+import {OrderAmount, OrderItemsTable} from '../shop/OrderItems';
 
 const PRODUCT_FIELDS: FieldSpec[] = [
     {name: 'name', label: '상품명', required: true, wide: true},
-    {name: 'price', label: '가격(원)', type: 'number', required: true, wide: true},
-    {name: 'availableQuantity', label: '재고', type: 'number', help: '비워두면 무제한', wide: true},
+    {name: 'saleType', label: '판매 방식', type: 'select', required: true, wide: true, options: toOptions(SALE_TYPE),
+        help: '구매: 한 번 결제 / 구독: 주기마다 결제 / 후원: 금액을 정해 후원 / 견적 문의: 요청을 받고 관리자가 금액을 회신'},
+    {name: 'billingCycle', label: '결제 주기', type: 'select', required: true, wide: true, options: toOptions(BILLING_CYCLE),
+        visibleWhen: (v) => v.saleType === 'SUBSCRIPTION'},
+    {name: 'price', label: '가격(원)', type: 'number', required: true, wide: true,
+        help: '구독은 회차별 금액, 후원은 최소 후원 금액입니다. 견적 문의는 0으로 두면 됩니다.'},
+    {name: 'donationPresetsText', label: '추천 후원 금액', wide: true, placeholder: '5000, 10000, 30000',
+        help: '쉼표로 구분합니다. 후원하는 사람이 버튼으로 고를 수 있습니다.', visibleWhen: (v) => v.saleType === 'DONATION'},
+    {name: 'goalAmount', label: '목표 금액(원)', type: 'number', wide: true, help: '비워두면 달성률을 표시하지 않습니다.',
+        visibleWhen: (v) => v.saleType === 'DONATION'},
+    {name: 'availableQuantity', label: '재고', type: 'number', help: '상품 전체 재고입니다. 비워두면 무제한이고, 옵션 조합별 재고는 아래에서 따로 정합니다.', wide: true},
+    {name: 'requiresShipping', label: '배송 상품', type: 'checkbox', wide: true,
+        help: '디지털·서비스 상품은 끄세요. 배송 상품이 있는 주문에만 배송비를 받습니다.'},
     {name: 'isEnabled', label: '판매 중', type: 'checkbox', wide: true},
     {name: 'description', label: '요약 설명', wide: true},
     {name: 'imageFileId', label: '대표 이미지', type: 'image', wide: true},
-    {name: 'optionsText', label: '옵션', type: 'textarea',
-        help: '한 줄에 하나씩 "옵션명:추가금액" 형식으로 입력합니다. 예) 대형:2000'},
+    {name: 'optionSet', label: '옵션', type: 'productOptions',
+        help: '옵션 그룹(색상, 사이즈 등)을 정하면 모든 조합이 만들어지고 조합마다 추가 금액·재고·판매 여부를 정할 수 있습니다. 그룹 없이 단일 옵션만 둘 수도 있습니다.'},
     {name: 'contentHtml', label: '상세 설명', type: 'html'},
 ];
 
-const toProductBody = (values: FormValues) => ({
+const productGradeFields = (grades: Grade[]): FieldSpec[] => [
+    gradeSelectField('accessGradeId', '구매 가능 등급', grades, '이 등급 이상 회원만 주문할 수 있습니다.'),
+    {name: 'grantGradeId', label: '결제 시 부여할 등급', type: 'select', wide: true,
+        options: grades.map((grade) => ({value: String(grade.id), label: grade.name})),
+        help: '결제가 끝나면 이 등급을 줍니다. 구독은 다음 결제일까지 유지되고 해지하면 원래 등급으로 돌아갑니다.'},
+    {name: 'grantGradeDays', label: '등급 유지 일수', type: 'number', wide: true, min: 1, help: '비워두면 무기한입니다.',
+        visibleWhen: (v) => Boolean(v.grantGradeId) && v.saleType !== 'SUBSCRIPTION'},
+];
+
+const toProductBody = ({donationPresetsText, optionSet, ...values}: FormValues) => ({
     ...values,
-    options: String(values.optionsText ?? '').split('\n').map((line) => line.trim()).filter(Boolean).map((line) => {
-        const [name, price] = line.split(':');
-        return {name: name.trim(), additionalPrice: Number(price ?? 0) || 0};
-    }),
+    donationPresets: String(donationPresetsText ?? '').split(',').map((v) => Number(v.trim())).filter((v) => v > 0),
+    ...optionSetBody(optionSet as OptionSet | undefined),
 });
 
 const loadProducts = (query: Query) => adminApi.products.search(query);
@@ -40,19 +64,21 @@ export function ProductAdminPage() {
         <AdminCrudPage<ProductSummary>
             title="상품"
             load={loadProducts}
-            fields={PRODUCT_FIELDS}
-            emptyForm={{isEnabled: true, price: 0, contentHtml: '', optionsText: ''}}
+            fields={fields}
+            emptyForm={{isEnabled: true, requiresShipping: true, saleType: 'PURCHASE', price: 0, contentHtml: '', optionSet: EMPTY_OPTION_SET}}
             columns={[
                 {label: '이미지', render: (p) => p.imageUrl ? <img className="thumb" src={p.imageUrl} alt={p.name}/> : '-'},
                 {label: 'ID', render: (p) => p.id},
                 {label: '상품명', render: (p) => <Link to={`/products/${p.id}`}>{p.name}</Link>},
-                {label: '가격', render: (p) => won(p.price)},
+                {label: '판매 방식', render: (p) => <span className="badge">{SALE_TYPE[p.saleType]}</span>},
+                {label: '가격', render: (p) => priceLabel(p)},
                 {label: '재고', render: (p) => p.availableQuantity ?? '무제한'},
                 {label: '판매 중', render: (p) => <YesNo value={p.isEnabled}/>},
             ]}
             toForm={(p) => adminApi.products.get(p.id).then((full) => ({
                 ...full,
-                optionsText: full.options.map((o) => `${o.name}:${o.additionalPrice}`).join('\n'),
+                optionSet: toOptionSet(full.optionGroups ?? [], full.options),
+                donationPresetsText: full.donationPresets.join(', '),
             }))}
             create={(v) => adminApi.products.create(toProductBody(v))}
             update={(p, v) => adminApi.products.update(p.id, toProductBody(v))}
@@ -134,9 +160,95 @@ function createOrder({product, paid, ...rest}: FormValues) {
     return adminApi.orders.create({...rest, productId, productOptionId: productOptionId ?? null}, Boolean(paid)).then(() => undefined);
 }
 
+const CANCELABLE: OrderStatus[] = ['QUOTE_REQUESTED', 'QUOTED', 'PENDING_PAYMENT', 'PAID'];
+
+function QuoteForm({order, onDone}: { order: Order; onDone: () => void }) {
+    const [amount, setAmount] = useState(order.totalPrice?.toString() ?? '');
+    const [message, setMessage] = useState(order.quoteMessage ?? '');
+    const [error, setError] = useState<unknown>(null);
+    const submit = async (event: FormEvent) => {
+        event.preventDefault();
+        setError(null);
+        try {
+            await adminApi.orders.quote(order.id, Number(amount), message);
+            onDone();
+        } catch (e) {
+            setError(e);
+        }
+    };
+    return (
+        <form className="inline-form" onSubmit={submit}>
+            <h3>견적 회신</h3>
+            <p className="muted">요청 내용: {order.requestMessage ?? '(내용 없음)'}</p>
+            <div className="schema-grid">
+                <div className="field">
+                    <label htmlFor={`quote-amount-${order.id}`}>견적 금액(원)</label>
+                    <input id={`quote-amount-${order.id}`} type="number" min={0} required value={amount} onChange={(e) => setAmount(e.target.value)}/>
+                </div>
+                <div className="field wide">
+                    <label htmlFor={`quote-message-${order.id}`}>안내 메시지</label>
+                    <textarea id={`quote-message-${order.id}`} rows={3} value={message} onChange={(e) => setMessage(e.target.value)}/>
+                </div>
+            </div>
+            <ErrorBanner error={error}/>
+            <div className="toolbar form-actions">
+                <button type="submit" className="primary">견적 보내기</button>
+            </div>
+        </form>
+    );
+}
+
+function OrderDetailPanel({order, onChange}: { order: Order; onChange: () => void }) {
+    const [courier, setCourier] = useState(order.courier ?? '');
+    const [trackingNumber, setTrackingNumber] = useState(order.trackingNumber ?? '');
+    const [error, setError] = useState<unknown>(null);
+    useEffect(() => {
+        if (!order.courier) {
+            shopApi.shippingPolicy().then((policy) => setCourier((current) => current || policy.defaultCourier || '')).catch(() => undefined);
+        }
+    }, [order.courier]);
+    const run = async (action: () => Promise<unknown>) => {
+        setError(null);
+        try {
+            await action();
+            onChange();
+        } catch (e) {
+            setError(e);
+        }
+    };
+    const activeCount = order.items.filter((item) => item.status === 'ORDERED').length;
+    const partiallyCancelable = order.status === 'PENDING_PAYMENT' || order.status === 'PAID';
+    return (
+        <div className="inline-form">
+            <h3>주문 상세</h3>
+            <OrderItemsTable order={order} onCancel={partiallyCancelable && activeCount > 1
+                ? (item) => window.confirm(`'${item.productName}' 항목을 취소할까요? 결제된 주문은 이 항목 금액을 환불합니다.`)
+                    && void run(() => adminApi.orders.cancelItem(order.id, item.id))
+                : undefined}/>
+            <p className="muted">
+                {order.address ? `배송지: (${order.postalCode ?? '-'}) ${order.address} ${order.detailAddress ?? ''}` : '배송지 없음 (방문 수령 등)'}
+            </p>
+            {(order.status === 'PAID' || order.status === 'SHIPPING') && (
+                <form className="toolbar" onSubmit={(e) => {
+                    e.preventDefault();
+                    void run(() => adminApi.orders.ship(order.id, courier, trackingNumber));
+                }}>
+                    <input aria-label="택배사" placeholder="택배사" required value={courier} onChange={(e) => setCourier(e.target.value)}/>
+                    <input aria-label="송장 번호" placeholder="송장 번호" required value={trackingNumber}
+                           onChange={(e) => setTrackingNumber(e.target.value)}/>
+                    <button type="submit" className="primary">{order.status === 'PAID' ? '송장 입력 후 배송 처리' : '송장 수정'}</button>
+                </form>
+            )}
+            <ErrorBanner error={error}/>
+        </div>
+    );
+}
+
 export function OrderAdminPage() {
     const {statuses, label: statusLabel, reload: reloadStatuses} = useStatusLabels('ORDER', ORDER_STATUS);
     const [status, setStatus] = useState('');
+    const [quoting, setQuoting] = useState<number | null>(null);
+    const [detail, setDetail] = useState<number | null>(null);
     const [productChoices, setProductChoices] = useState<{ value: string; label: string }[]>([]);
     useEffect(() => {
         loadProductChoices().then(setProductChoices).catch(() => setProductChoices([]));
@@ -162,8 +274,13 @@ export function OrderAdminPage() {
             }
             columns={[
                 {label: '주문번호', render: (o) => <code>{o.orderNumber}</code>},
-                {label: '상품', render: (o) => `${o.productName} × ${o.quantity}`},
-                {label: '금액', render: (o) => won(o.totalPrice)},
+                {label: '상품', render: (o) => (
+                    <button type="button" className="link-button" onClick={() => setDetail(detail === o.id ? null : o.id)}>
+                        {o.productName} × {o.quantity}
+                    </button>
+                )},
+                {label: '판매 방식', render: (o) => <span className="badge">{SALE_TYPE[o.saleType]}</span>},
+                {label: '금액', render: (o) => <OrderAmount order={o}/>},
                 {label: '수령인', render: (o) => `${o.receiverName} (${o.phoneNumber})`},
                 {label: '상태', render: (o, reload) => (
                     <>
@@ -189,7 +306,12 @@ export function OrderAdminPage() {
                         )}
                     </>
                 )},
-                {label: '취소', className: 'button-cell', render: (o, reload) => (o.status === 'PENDING_PAYMENT' || o.status === 'PAID') && (
+                {label: '견적', className: 'button-cell', render: (o) => (o.status === 'QUOTE_REQUESTED' || o.status === 'QUOTED') && (
+                    <button type="button" onClick={() => setQuoting(quoting === o.id ? null : o.id)}>
+                        {quoting === o.id ? '닫기' : o.status === 'QUOTED' ? '견적 수정' : '견적 회신'}
+                    </button>
+                )},
+                {label: '취소', className: 'button-cell', render: (o, reload) => CANCELABLE.includes(o.status) && (
                     <button type="button" className="danger" onClick={() => {
                         if (window.confirm('주문을 취소할까요? 결제된 주문은 환불 처리됩니다.')) {
                             void adminApi.orders.changeStatus(o.id, 'CANCELED').then(reload);
@@ -197,6 +319,57 @@ export function OrderAdminPage() {
                     }}>취소</button>
                 )},
             ]}
+            expandedRow={(o, reload) => (
+                <>
+                    {quoting === o.id && <QuoteForm order={o} onDone={() => {
+                        setQuoting(null);
+                        reload();
+                    }}/>}
+                    {detail === o.id && <OrderDetailPanel order={o} onChange={reload}/>}
+                </>
+            )}
+        />
+    );
+}
+
+const loadSubscriptions = (query: Query) => adminApi.subscriptions.search(query);
+
+export function SubscriptionAdminPage() {
+    const [notice, setNotice] = useState<string | null>(null);
+    const [version, setVersion] = useState(0);
+    return (
+        <AdminCrudPage<Subscription>
+            key={version}
+            title="구독"
+            searchable={false}
+            description={<>
+                <p>구독 상품을 결제하면 구독이 시작되고, 결제일마다 다음 회차 주문이 만들어져 자동 결제됩니다(목업 PG). 매일 새벽 3시에 처리합니다.</p>
+                <div className="toolbar">
+                    <button type="button" onClick={async () => {
+                        const result = await adminApi.subscriptions.renewDue();
+                        setNotice(`결제일이 된 구독 ${result.renewed}건을 갱신했습니다.`);
+                        setVersion((v) => v + 1);
+                    }}>지금 갱신 처리</button>
+                    {notice && <span className="ok">{notice}</span>}
+                </div>
+            </>}
+            load={loadSubscriptions}
+            columns={[
+                {label: 'ID', render: (s) => s.id},
+                {label: '상품', render: (s) => s.productName},
+                {label: '회원 ID', render: (s) => s.memberId},
+                {label: '금액', render: (s) => `${BILLING_CYCLE[s.billingCycle]} ${won(s.price)}`},
+                {label: '상태', render: (s) => (s.status === 'ACTIVE' ? <span className="badge ok">구독 중</span> : <span className="badge">해지</span>)},
+                {label: '다음 결제일', render: (s) => s.nextBillingDate ?? '-'},
+                {label: '시작일', render: (s) => formatDateTime(s.startedAt)},
+            ]}
+            actions={(s, reload) => s.status === 'ACTIVE' && (
+                <button type="button" className="danger" onClick={() => {
+                    if (window.confirm('구독을 해지할까요? 다음 결제일부터 결제되지 않습니다.')) {
+                        void adminApi.subscriptions.cancel(s.id).then(reload);
+                    }
+                }}>해지</button>
+            )}
         />
     );
 }

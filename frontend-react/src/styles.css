@@ -2641,6 +2641,13 @@ input[type='checkbox'], input[type='radio'] {
     display: block;
     margin-top: 2px;
 }
+
+.donation-progress progress {
+    width: 100%;
+    height: 10px;
+    accent-color: var(--primary);
+}
+
 .space-grid {
     display: grid;
     gap: 4px;
@@ -2756,3 +2763,91 @@ input[type='checkbox'], input[type='radio'] {
     flex-wrap: wrap;
 }
 
+.product-options-editor,
+.option-groups {
+    display: grid;
+    gap: 8px;
+}
+
+table.compact input[type='number'] {
+    width: 7em;
+}
+
+table.compact td,
+table.compact th {
+    padding: 4px 8px;
+}
+
+tr.muted td {
+    color: var(--muted);
+    text-decoration: line-through;
+}
+
+tr.muted td:last-child,
+tr.muted td:nth-last-child(2) {
+    text-decoration: none;
+}
+
+.cart-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+    display: grid;
+    gap: 8px;
+}
+
+.cart-list li {
+    display: grid;
+    grid-template-columns: auto 64px 1fr 5em auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.cart-list li.unavailable {
+    opacity: 0.6;
+}
+
+.cart-list .thumbnail {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.cart-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.meta.summary {
+    margin-left: auto;
+    max-width: 360px;
+}
+
+.meta.summary dd {
+    text-align: right;
+}
+
+.plain-list {
+    padding-left: 1.2em;
+}
+
+@media (max-width: 640px) {
+    .cart-list li {
+        grid-template-columns: auto 48px 1fr;
+    }
+
+    .cart-list li > :nth-child(n + 4) {
+        grid-column: 3;
+    }
+
+    .cart-list .thumbnail {
+        width: 48px;
+        height: 48px;
+    }
+}

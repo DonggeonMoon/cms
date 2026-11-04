@@ -17,6 +17,9 @@ import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.domain.business.BusinessNumbers;
 import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
 import com.dgmoonlabs.cms.domain.common.regex.service.RegexService;
+import com.dgmoonlabs.cms.domain.business.order.service.OrderPaidEvent;
+import com.dgmoonlabs.cms.domain.business.payment.constant.PaymentMethod;
+import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +38,7 @@ public class PaymentService {
     private final ReservationRepository reservationRepository;
     private final MockPaymentGateway paymentGateway;
     private final RegexService regexService;
+    private final ApplicationEventPublisher events;
 
     @Transactional
     public PaymentResponse pay(final Long memberId, final PaymentRequest request) {
@@ -52,6 +56,9 @@ public class PaymentService {
             onApproved = reservation::confirm;
         }
 
+        if (expected == null) {
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
         if (expected.compareTo(request.amount()) != 0) {
             throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
@@ -72,6 +79,25 @@ public class PaymentService {
                 .transactionId(paymentGateway.approve(expected, request.method()))
                 .approvedAt(LocalDateTime.now())
                 .build());
+        if (request.targetType() == PaymentTargetType.ORDER) {
+            events.publishEvent(new OrderPaidEvent(request.targetId()));
+        }
+        return PaymentResponse.from(payment);
+    }
+
+    @Transactional
+    public PaymentResponse recordAutomaticPayment(final Long memberId, final Order order) {
+        Payment payment = paymentRepository.save(Payment.builder()
+                .paymentNumber(nextNumber(LocalDateTime.now()))
+                .targetType(PaymentTargetType.ORDER)
+                .targetId(order.getId())
+                .memberId(memberId)
+                .amount(order.getTotalPrice())
+                .method(PaymentMethod.CARD)
+                .status(PaymentStatus.APPROVED)
+                .transactionId(paymentGateway.approve(order.getTotalPrice(), PaymentMethod.CARD))
+                .approvedAt(LocalDateTime.now())
+                .build());
         return PaymentResponse.from(payment);
     }
 
@@ -79,8 +105,21 @@ public class PaymentService {
     public void refundIfPaid(final PaymentTargetType targetType, final Long targetId) {
         paymentRepository.findByTargetTypeAndTargetIdAndStatus(targetType, targetId, PaymentStatus.APPROVED)
                 .ifPresent(payment -> {
-                    paymentGateway.refund(payment.getTransactionId());
+                    paymentGateway.refund(payment.getTransactionId(), payment.refundable());
                     payment.cancel();
+                });
+    }
+
+    @Transactional
+    public void refundPartially(final PaymentTargetType targetType, final Long targetId, final BigDecimal amount) {
+        if (amount.signum() <= 0) {
+            return;
+        }
+        paymentRepository.findByTargetTypeAndTargetIdAndStatus(targetType, targetId, PaymentStatus.APPROVED)
+                .ifPresent(payment -> {
+                    BigDecimal refund = amount.min(payment.refundable());
+                    paymentGateway.refund(payment.getTransactionId(), refund);
+                    payment.refund(refund);
                 });
     }
 

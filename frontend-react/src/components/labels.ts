@@ -1,6 +1,8 @@
-import type {EnrollmentStatus, OrderStatus, PublishStatus, ReportStatus, ReservationStatus} from '../api/domain';
+import type {BillingCycle, CellKind, FormFieldType, ReservationType, SubmissionStatus, EnrollmentStatus, OrderStatus, ProductSaleType, PublishStatus, ReportStatus, ReservationStatus} from '../api/domain';
 
 export const ORDER_STATUS: Record<OrderStatus, string> = {
+    QUOTE_REQUESTED: '견적 요청',
+    QUOTED: '견적 회신',
     PENDING_PAYMENT: '결제 대기',
     PAID: '결제 완료',
     SHIPPING: '배송 중',
@@ -33,6 +35,19 @@ export const ENROLLMENT_STATUS: Record<EnrollmentStatus, string> = {
     IN_PROGRESS: '수강 중',
     COMPLETED: '수강 완료',
 };
+
+export const SALE_TYPE: Record<ProductSaleType, string> = {
+    PURCHASE: '구매',
+    SUBSCRIPTION: '구독',
+    DONATION: '후원',
+    QUOTE: '견적 문의',
+};
+
+export const BILLING_CYCLE: Record<BillingCycle, string> = {
+    MONTHLY: '매월',
+    YEARLY: '매년',
+};
+
 export const RESERVATION_TYPE: Record<ReservationType, string> = {
     PROGRAM: '프로그램',
     CONSULTATION: '상담',
