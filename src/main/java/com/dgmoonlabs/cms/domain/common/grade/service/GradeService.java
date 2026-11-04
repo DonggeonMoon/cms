@@ -14,6 +14,7 @@ import com.dgmoonlabs.cms.global.error.GradeRequiredException;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
 import com.dgmoonlabs.cms.global.security.LoginUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -43,6 +44,7 @@ public class GradeService {
     private final MemberGradeHistoryRepository historyRepository;
     private final MemberRepository memberRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final ApplicationEventPublisher events;
 
     @Transactional(readOnly = true)
     public List<GradeResponse> getGrades() {
@@ -238,6 +240,9 @@ public class GradeService {
 
     private void record(final Member member, final Snapshot before, final GradeChangeReason reason, final Long orderId,
                         final String changedBy) {
+        if (member.getGradeId() != null && !Objects.equals(before.gradeId(), member.getGradeId())) {
+            events.publishEvent(new GradeChangedEvent(member.getId(), member.getGradeId()));
+        }
         historyRepository.save(MemberGradeHistory.builder()
                 .memberId(member.getId())
                 .fromGradeId(before.gradeId())

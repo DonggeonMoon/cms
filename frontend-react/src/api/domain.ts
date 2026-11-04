@@ -443,6 +443,10 @@ export interface Order {
     courier: string | null;
     trackingNumber: string | null;
     shippedAt: string | null;
+    couponIssueId: number | null;
+    couponDiscount: number | null;
+    pointsUsed: number;
+    pointsEarned: number;
 }
 
 export interface OrderItem {
@@ -457,6 +461,9 @@ export interface OrderItem {
     status: 'ORDERED' | 'CANCELED';
     refundedAmount: number | null;
     canceledAt: string | null;
+    couponDiscount: number;
+    pointsUsed: number;
+    pointsEarned: number;
 }
 
 export interface CartItem {

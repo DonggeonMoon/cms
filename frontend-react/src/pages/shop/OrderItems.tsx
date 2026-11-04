@@ -9,6 +9,9 @@ export function OrderAmount({order}: { order: Order }) {
         <>
             {won(order.totalPrice)}
             {Number(order.shippingFee ?? 0) > 0 && <div className="muted small">배송비 {won(order.shippingFee!)} 포함</div>}
+            {Number(order.couponDiscount ?? 0) > 0 && <div className="muted small">쿠폰 -{won(order.couponDiscount!)}</div>}
+            {order.pointsUsed > 0 && <div className="muted small">포인트 -{order.pointsUsed.toLocaleString('ko-KR')}P</div>}
+            {order.pointsEarned > 0 && <div className="muted small">적립 {order.pointsEarned.toLocaleString('ko-KR')}P</div>}
             {Number(order.refundedAmount ?? 0) > 0 && <div className="muted small">환불 {won(order.refundedAmount!)}</div>}
         </>
     );

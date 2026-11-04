@@ -8,6 +8,7 @@ import {ErrorBanner} from '../../components/ErrorBanner';
 import {Field} from '../../components/Field';
 import {estimateShipping} from '../../components/shipping';
 import {Thumbnail} from '../../components/Thumbnail';
+import {type DiscountChoice, DiscountSelector, NO_DISCOUNT} from './DiscountSelector';
 
 function ShippingLine({policy, items, postalCode}: { policy: ShippingPolicy | null; items: CartItem[]; postalCode?: string | null }) {
     const shippable = items.filter((item) => item.requiresShipping);
@@ -109,14 +110,13 @@ export function CartOrderPage() {
     const navigate = useNavigate();
     const ids = useMemo(() => (params.get('items') ?? '').split(',').map(Number).filter(Boolean), [params]);
     const [items, setItems] = useState<CartItem[] | null>(null);
-    const [policy, setPolicy] = useState<ShippingPolicy | null>(null);
     const [receiver, setReceiver] = useState({receiverName: '', phoneNumber: '', postalCode: '', address: '', detailAddress: ''});
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [discount, setDiscount] = useState<DiscountChoice>(NO_DISCOUNT);
 
     useEffect(() => {
         shopApi.cart().then((cart) => setItems(cart.items.filter((item) => item.available && ids.includes(item.id)))).catch(setError);
-        shopApi.shippingPolicy().then(setPolicy).catch(() => setPolicy(null));
         memberApi.me().then((me) => setReceiver((current) => ({
             receiverName: current.receiverName || me.name || '',
             phoneNumber: current.phoneNumber || me.mobilePhoneNumber || me.telephoneNumber || '',
@@ -130,12 +130,13 @@ export function CartOrderPage() {
         return error ? <ErrorBanner error={error}/> : <p className="muted">불러오는 중…</p>;
     }
     const needsAddress = items.some((item) => item.requiresShipping);
+    const previewLines = items.map((item) => ({productId: item.productId, productOptionId: item.productOptionId, quantity: item.quantity}));
     const submit = async (event: FormEvent) => {
         event.preventDefault();
         setSubmitting(true);
         setError(null);
         try {
-            const order = await shopApi.checkoutCart({cartItemIds: items.map((item) => item.id), ...receiver});
+            const order = await shopApi.checkoutCart({cartItemIds: items.map((item) => item.id), ...receiver, ...discount});
             navigate(`/checkout/ORDER/${order.id}`);
         } catch (e) {
             setError(e);
@@ -169,7 +170,7 @@ export function CartOrderPage() {
                         <Field label="상세 주소" name="detailAddress" value={receiver.detailAddress}
                                onChange={(e) => setReceiver({...receiver, detailAddress: e.target.value})}/>
                     </fieldset>
-                    <ShippingLine policy={policy} items={items} postalCode={receiver.postalCode}/>
+                    <DiscountSelector lines={previewLines} postalCode={receiver.postalCode} value={discount} onChange={setDiscount}/>
                     <ErrorBanner error={error}/>
                     <div className="toolbar form-actions">
                         <button type="button" onClick={() => navigate('/cart')}>장바구니로</button>

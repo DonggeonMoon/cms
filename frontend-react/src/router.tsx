@@ -48,6 +48,8 @@ import {ArchiveArticlePage, ArchiveListPage, ContentPage} from './pages/ContentP
 import {HomePage, NotFoundPage} from './pages/HomePage';
 import {OrderFormPage, ReservationFormPage} from './pages/shop/CheckoutFormPages';
 import {CartOrderPage, CartPage} from './pages/shop/CartPages';
+import {MyCouponsPage, MyPointsPage} from './pages/shop/RewardPages';
+import {CouponAdminPage, PointPolicyPage} from './pages/admin/RewardAdminPages';
 import {JoinPage} from './pages/JoinPage';
 import {SocialJoinPage} from './pages/SocialJoinPage';
 import {AdminLoginPage, LoginPage} from './pages/LoginPage';
@@ -161,6 +163,8 @@ export const routes = [
                                     {path: '/mypage/subscriptions', element: <MySubscriptionsPage/>},
                                     {path: '/orders/new', element: <OrderFormPage/>},
                                     {path: '/cart', element: <CartPage/>},
+                                    {path: '/mypage/points', element: <MyPointsPage/>},
+                                    {path: '/mypage/coupons', element: <MyCouponsPage/>},
                                     {path: '/orders/cart', element: <CartOrderPage/>},
                                 ],
                             },
@@ -275,6 +279,8 @@ export const routes = [
                             {path: 'members/:id', element: <MemberDetailPage/>},
                             {path: 'join-settings', element: <MemberJoinSettingPage/>},
                             {path: 'grades', element: <GradeAdminPage/>},
+                            {path: 'points', element: <PointPolicyPage/>},
+                            {path: 'coupons', element: <CouponAdminPage/>},
                             {path: 'chatbot', element: <ChatbotAdminPage/>},
                             {path: 'policies/:type', element: <PolicyAdminPage/>},
                             {path: 'regexes', element: <RegexAdminPage/>},

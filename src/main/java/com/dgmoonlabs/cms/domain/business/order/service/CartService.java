@@ -96,6 +96,7 @@ public class CartService {
                         item.getQuantity(), null)).toList(),
                 new OrderService.Receiver(request.receiverName(), request.phoneNumber(), request.postalCode(),
                         request.address(), request.detailAddress()),
+                new OrderService.Discounts(request.couponIssueId(), request.usePoints() == null ? 0 : request.usePoints()),
                 false);
         cartRepository.deleteAll(items);
         return order;
@@ -124,9 +125,10 @@ public class CartService {
                     BigDecimal.ZERO, item.getQuantity(), BigDecimal.ZERO, 0, false, false);
         }
         BigDecimal unitPrice = product.getPrice().add(option == null ? BigDecimal.ZERO : option.getAdditionalPrice());
-        Integer stock = option != null && option.getStock() != null
-                ? (product.getAvailableQuantity() == null ? option.getStock() : Math.min(option.getStock(), product.getAvailableQuantity()))
-                : product.getAvailableQuantity();
+        Integer stock = product.getAvailableQuantity();
+        if (option != null && option.getStock() != null) {
+            stock = stock == null ? option.getStock() : Integer.valueOf(Math.min(option.getStock(), stock));
+        }
         boolean optionOk = item.getProductOptionId() == null
                 ? !product.hasOptionGroups()
                 : option != null && option.getDeletedAt() == null && option.isEnabled();

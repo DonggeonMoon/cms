@@ -2851,3 +2851,39 @@ tr.muted td:nth-last-child(2) {
         height: 48px;
     }
 }
+
+.coupon-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.coupon-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+}
+
+.coupon-list li > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.coupon-list li.unavailable {
+    opacity: 0.55;
+}
+
+.danger-text {
+    color: var(--danger);
+}
+
+.discount-selector {
+    display: grid;
+    gap: 8px;
+}

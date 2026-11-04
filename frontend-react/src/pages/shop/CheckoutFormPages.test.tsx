@@ -29,6 +29,10 @@ describe('order form page', () => {
             if (url === '/api/products/3') {
                 return respond(200, PRODUCT);
             }
+            if (url === '/api/orders/preview') {
+                return respond(200, {itemsAmount: 1200000, shippingFee: 0, couponDiscount: 0, pointsUsed: 0, totalPrice: 1200000,
+                    pointBalance: 0, maxUsablePoints: 0, minUsePoints: 0, pointsToEarn: 12000, coupons: []});
+            }
             if (url === '/api/orders' && init?.method === 'POST') {
                 bodies.push(JSON.parse(String(init.body)));
                 return respond(201, {id: 42, status: 'PENDING_PAYMENT'});
@@ -40,7 +44,8 @@ describe('order form page', () => {
 
         expect(await screen.findByText(/256GB/)).toBeInTheDocument();
         expect(await screen.findByDisplayValue('010-1234-5678')).toBeInTheDocument();
-        expect(screen.getByText(/1,200,000/)).toBeInTheDocument();
+        expect(await screen.findByText('적립 예정')).toBeInTheDocument();
+        expect(screen.getAllByText(/1,200,000/).length).toBeGreaterThan(0);
 
         await userEvent.click(screen.getByRole('button', {name: '주문하고 결제하기'}));
 

@@ -87,6 +87,25 @@ public class Order extends BaseEntity {
     @Comment("상품 금액 합계 (항목이 있는 주문)")
     private BigDecimal itemsAmount;
 
+    @Comment("사용한 쿠폰(발급) ID")
+    private Long couponIssueId;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("쿠폰 할인액")
+    private BigDecimal couponDiscount;
+
+    @Builder.Default
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    @Comment("사용 포인트")
+    private long pointsUsed = 0;
+
+    @Builder.Default
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    @Comment("적립 포인트")
+    private long pointsEarned = 0;
+
     @Column(precision = 15, scale = 2)
     @Comment("배송비")
     private BigDecimal shippingFee;
@@ -202,11 +221,18 @@ public class Order extends BaseEntity {
         }
     }
 
-    public void repriceBeforePayment(final BigDecimal itemsAmount, final BigDecimal shippingFee) {
+    public void repriceBeforePayment(final BigDecimal itemsAmount, final BigDecimal shippingFee,
+                                     final BigDecimal couponDiscount, final long pointsUsed) {
         requireStatus(OrderStatus.PENDING_PAYMENT);
         this.itemsAmount = itemsAmount;
         this.shippingFee = shippingFee;
-        this.totalPrice = itemsAmount.add(shippingFee);
+        this.couponDiscount = couponDiscount;
+        this.pointsUsed = pointsUsed;
+        this.totalPrice = itemsAmount.subtract(couponDiscount).subtract(BigDecimal.valueOf(pointsUsed)).add(shippingFee);
+    }
+
+    public void recordEarned(final long pointsEarned) {
+        this.pointsEarned = pointsEarned;
     }
 
     public void recordRefund(final BigDecimal amount, final BigDecimal shippingFee) {

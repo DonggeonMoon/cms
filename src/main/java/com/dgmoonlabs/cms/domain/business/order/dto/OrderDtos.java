@@ -7,6 +7,8 @@ import com.dgmoonlabs.cms.domain.business.order.entity.Order;
 import com.dgmoonlabs.cms.domain.business.order.entity.OrderItem;
 import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
 import com.dgmoonlabs.cms.domain.common.regex.validation.MatchesRegex;
+import com.dgmoonlabs.cms.domain.common.coupon.dto.CouponDtos.CouponOption;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
 
@@ -30,8 +32,23 @@ public final class OrderDtos {
             @Size(max = 255) String address,
             @Size(max = 255) String detailAddress,
             @Positive BigDecimal amount,
-            @Size(max = 2000) String requestMessage
+            @Size(max = 2000) String requestMessage,
+            Long couponIssueId,
+            @PositiveOrZero Long usePoints
     ) {
+    }
+
+    public record PreviewLine(@NotNull Long productId, Long productOptionId, @NotNull @Min(1) @Max(999) Integer quantity,
+                              Long discountId) {
+    }
+
+    public record OrderPreviewRequest(@NotEmpty @Size(max = 100) List<@Valid PreviewLine> lines, Long couponIssueId,
+                                      @PositiveOrZero Long usePoints, @Size(max = 10) String postalCode) {
+    }
+
+    public record OrderPreviewResponse(BigDecimal itemsAmount, BigDecimal shippingFee, BigDecimal couponDiscount, long pointsUsed,
+                                       BigDecimal totalPrice, long pointBalance, long maxUsablePoints, long minUsePoints,
+                                       long pointsToEarn, List<CouponOption> coupons) {
     }
 
     public record QuoteRequest(@NotNull @PositiveOrZero BigDecimal amount, @Size(max = 2000) String message) {
@@ -46,7 +63,9 @@ public final class OrderDtos {
             @NotBlank @Size(max = 30) @MatchesRegex(RegexTarget.PHONE_NUMBER) String phoneNumber,
             @Size(max = 10) @MatchesRegex(RegexTarget.POSTAL_CODE) String postalCode,
             @Size(max = 255) String address,
-            @Size(max = 255) String detailAddress
+            @Size(max = 255) String detailAddress,
+            Long couponIssueId,
+            @PositiveOrZero Long usePoints
     ) {
     }
 
@@ -55,11 +74,13 @@ public final class OrderDtos {
 
     public record OrderItemResponse(Long id, Long productId, Long productOptionId, String productName, String optionName,
                                     BigDecimal unitPrice, int quantity, BigDecimal amount, OrderItemStatus status,
-                                    BigDecimal refundedAmount, LocalDateTime canceledAt) {
+                                    BigDecimal refundedAmount, LocalDateTime canceledAt, BigDecimal couponDiscount,
+                                    long pointsUsed, long pointsEarned) {
         public static OrderItemResponse from(final OrderItem item) {
             return new OrderItemResponse(item.getId(), item.getProductId(), item.getProductOptionId(), item.getProductName(),
                     item.getOptionName(), item.getUnitPrice(), item.getQuantity(), item.getAmount(), item.getStatus(),
-                    item.getRefundedAmount(), item.getCanceledAt());
+                    item.getRefundedAmount(), item.getCanceledAt(), item.getCouponDiscount(), item.getPointsUsed(),
+                    item.getPointsEarned());
         }
     }
 
@@ -69,7 +90,8 @@ public final class OrderDtos {
                                 String phoneNumber, String postalCode, String address, String detailAddress,
                                 String requestMessage, String quoteMessage, LocalDateTime quotedAt, LocalDateTime createdAt,
                                 List<OrderItemResponse> items, BigDecimal itemsAmount, BigDecimal shippingFee,
-                                BigDecimal refundedAmount, String courier, String trackingNumber, LocalDateTime shippedAt) {
+                                BigDecimal refundedAmount, String courier, String trackingNumber, LocalDateTime shippedAt,
+                                Long couponIssueId, BigDecimal couponDiscount, long pointsUsed, long pointsEarned) {
         public static OrderResponse of(final Order order, final List<OrderItem> items) {
             return new OrderResponse(order.getId(), order.getOrderNumber(), order.getUserId(), order.getProductId(),
                     order.getProductName(), order.getSaleType(), order.getSubscriptionId(), order.getProductOptionId(),
@@ -78,7 +100,8 @@ public final class OrderDtos {
                     order.getDetailAddress(), order.getRequestMessage(), order.getQuoteMessage(), order.getQuotedAt(),
                     order.getCreatedAt(), items.stream().map(OrderItemResponse::from).toList(), order.getItemsAmount(),
                     order.getShippingFee(), order.getRefundedAmount(), order.getCourier(), order.getTrackingNumber(),
-                    order.getShippedAt());
+                    order.getShippedAt(), order.getCouponIssueId(), order.getCouponDiscount(), order.getPointsUsed(),
+                    order.getPointsEarned());
         }
     }
 }

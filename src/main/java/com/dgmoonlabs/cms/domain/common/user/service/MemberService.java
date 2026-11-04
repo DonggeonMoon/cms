@@ -18,6 +18,7 @@ import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.security.SecurityProperties;
 import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,6 +39,7 @@ public class MemberService {
     private final MemberJoinSettingService joinSettingService;
     private final PolicyService policyService;
     private final GradeService gradeService;
+    private final ApplicationEventPublisher events;
 
     @Transactional
     public Long join(final MemberJoinRequest request) {
@@ -60,6 +62,7 @@ public class MemberService {
         memberAddressRepository.save(request.toAddress(memberId, setting));
         memberAgreementRepository.save(request.toAgreement(memberId, policyService::isUsing));
         memberOrganizationRepository.save(request.toOrganization(memberId, setting));
+        events.publishEvent(new MemberJoinedEvent(memberId));
         return memberId;
     }
 

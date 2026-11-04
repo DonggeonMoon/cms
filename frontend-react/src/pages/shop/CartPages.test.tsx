@@ -52,6 +52,14 @@ describe('cart', () => {
             if (url === '/api/members/me') return respond(200, {name: '김하늘', mobilePhoneNumber: '010-1234-5678', address: '서울', postalCode: '06000'});
             if (url === '/api/cart') return respond(200, cart);
             if (url === '/api/shipping-policy') return respond(200, POLICY);
+            if (url === '/api/orders/preview') {
+                const body = JSON.parse(String(init?.body));
+                const points = body.usePoints ?? 0;
+                return respond(200, {itemsAmount: 15000, shippingFee: 3000, couponDiscount: body.couponIssueId ? 1000 : 0,
+                    pointsUsed: points, totalPrice: 18000 - points - (body.couponIssueId ? 1000 : 0), pointBalance: 5000,
+                    maxUsablePoints: 5000, minUsePoints: 0, pointsToEarn: 150,
+                    coupons: [{issueId: 9, name: '천원 할인', discount: 1000, applicable: true, expiresAt: null}]});
+            }
             if (url === '/api/cart/checkout') {
                 checkouts.push(JSON.parse(String(init?.body)));
                 return respond(201, {id: 77});
@@ -67,8 +75,11 @@ describe('cart', () => {
         await userEvent.click(screen.getByRole('button', {name: '선택 상품 주문하기 (1)'}));
 
         expect(await screen.findByDisplayValue('010-1234-5678')).toBeInTheDocument();
+        await userEvent.selectOptions(await screen.findByLabelText('쿠폰'), '9');
+        await userEvent.click(screen.getByRole('button', {name: '최대 사용'}));
+        expect(await screen.findByText('12,000원')).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: '주문하고 결제하기'}));
         await waitFor(() => expect(router.state.location.pathname).toBe('/checkout/ORDER/77'));
-        expect(checkouts[0]).toMatchObject({cartItemIds: [1], receiverName: '김하늘', address: '서울'});
+        expect(checkouts[0]).toMatchObject({cartItemIds: [1], receiverName: '김하늘', address: '서울', couponIssueId: 9, usePoints: 5000});
     });
 });

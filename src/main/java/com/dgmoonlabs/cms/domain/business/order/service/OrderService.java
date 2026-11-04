@@ -20,7 +20,11 @@ import com.dgmoonlabs.cms.domain.business.order.repository.ProductRepository;
 import com.dgmoonlabs.cms.domain.business.payment.constant.PaymentTargetType;
 import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
 import com.dgmoonlabs.cms.domain.business.shipping.service.ShippingService;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderPreviewRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderPreviewResponse;
+import com.dgmoonlabs.cms.domain.common.coupon.service.CouponService;
 import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
+import com.dgmoonlabs.cms.domain.common.point.service.PointService;
 import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
 import com.dgmoonlabs.cms.domain.common.regex.service.RegexService;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
@@ -34,7 +38,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -52,8 +58,21 @@ public class OrderService {
     private final RegexService regexService;
     private final ApplicationEventPublisher events;
     private final GradeService gradeService;
+    private final CouponService couponService;
+    private final PointService pointService;
 
     public record Line(Long productId, Long productOptionId, int quantity, Long discountId) {
+    }
+
+    public record Discounts(Long couponIssueId, long usePoints) {
+        public static final Discounts NONE = new Discounts(null, 0);
+    }
+
+    private record Priced(List<OrderItem> items, BigDecimal itemsAmount, BigDecimal shippingFee, BigDecimal couponDiscount,
+                          long pointsUsed) {
+        BigDecimal total() {
+            return itemsAmount.subtract(couponDiscount).subtract(BigDecimal.valueOf(pointsUsed)).add(shippingFee);
+        }
     }
 
     public record Receiver(String receiverName, String phoneNumber, String postalCode, String address, String detailAddress) {
@@ -87,31 +106,100 @@ public class OrderService {
             case DONATION -> donate(userType, userId, product, request, paid);
             case PURCHASE -> place(userType, userId,
                     List.of(new Line(product.getId(), request.productOptionId(), request.quantity(), request.discountId())),
-                    Receiver.of(request), paid);
+                    Receiver.of(request), new Discounts(request.couponIssueId(), request.usePoints() == null ? 0 : request.usePoints()),
+                    paid);
             default -> createSingle(userType, userId, product, request, paid);
         };
     }
 
     @Transactional
     public OrderResponse place(final UserType userType, final Long userId, final List<Line> lines, final Receiver receiver,
-                               final boolean paid) {
+                               final Discounts discounts, final boolean paid) {
+        Long memberId = userType == UserType.MEMBER ? userId : null;
+        Priced priced = price(memberId, lines, receiver, memberId == null ? Discounts.NONE : discounts, true);
+        List<OrderItem> items = priced.items();
+        if (items.stream().anyMatch(OrderItem::isRequiresShipping) && !receiver.hasAddress() && memberId != null) {
+            throw new BusinessException(ErrorCode.ADDRESS_REQUIRED);
+        }
+        BigDecimal total = priced.total();
+        OrderItem first = items.getFirst();
+        Order order = orderRepository.save(Order.builder()
+                .orderNumber(nextOrderNumber())
+                .userType(userType)
+                .userId(userId)
+                .productId(first.getProductId())
+                .saleType(ProductSaleType.PURCHASE)
+                .productOptionId(items.size() == 1 ? first.getProductOptionId() : null)
+                .productName(headline(items))
+                .quantity(items.stream().mapToInt(OrderItem::getQuantity).sum())
+                .discountId(items.size() == 1 ? first.getDiscountId() : null)
+                .itemsAmount(priced.itemsAmount())
+                .shippingFee(priced.shippingFee())
+                .couponIssueId(priced.couponDiscount().signum() > 0 ? discounts.couponIssueId() : null)
+                .couponDiscount(priced.couponDiscount())
+                .pointsUsed(priced.pointsUsed())
+                .totalPrice(total)
+                .status(paid || total.signum() == 0 ? OrderStatus.PAID : OrderStatus.PENDING_PAYMENT)
+                .canDeliver(receiver.hasAddress())
+                .receiverName(receiver.receiverName())
+                .phoneNumber(receiver.phoneNumber())
+                .postalCode(receiver.postalCode())
+                .address(receiver.address())
+                .detailAddress(receiver.detailAddress())
+                .build());
+        items.forEach(item -> item.assignOrder(order.getId()));
+        List<OrderItem> saved = itemRepository.saveAll(items);
+        if (order.getCouponIssueId() != null) {
+            couponService.use(memberId, order.getCouponIssueId(), order.getId());
+        }
+        pointService.use(memberId, priced.pointsUsed(), order.getId());
+        if (order.getStatus() == OrderStatus.PAID) {
+            events.publishEvent(new OrderPaidEvent(order.getId()));
+        }
+        return OrderResponse.of(order, saved);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderPreviewResponse preview(final Long memberId, final OrderPreviewRequest request) {
+        List<Line> lines = request.lines().stream()
+                .map(line -> new Line(line.productId(), line.productOptionId(), line.quantity(), line.discountId())).toList();
+        Receiver receiver = new Receiver(null, null, request.postalCode(), "-", null);
+        Priced priced = price(memberId, lines, receiver,
+                new Discounts(request.couponIssueId(), request.usePoints() == null ? 0 : request.usePoints()), false);
+        List<OrderItem> items = priced.items();
+        long toEarn = items.stream().mapToLong(item -> pointService.earnFor(item.paidAmount())).sum();
+        return new OrderPreviewResponse(priced.itemsAmount(), priced.shippingFee(), priced.couponDiscount(), priced.pointsUsed(),
+                priced.total(), pointService.balance(memberId),
+                pointService.maxUsable(memberId, priced.itemsAmount().subtract(priced.couponDiscount())),
+                pointService.getPolicy().minUsePoints(), toEarn, couponService.optionsFor(memberId, couponLines(items)));
+    }
+
+    /**
+     * 상품 줄을 값으로 바꾸고 배송비·쿠폰·포인트를 매긴다. commit 이면 행을 잠그고 재고를 뺀다.
+     * 쿠폰은 대상 줄에, 포인트는 쿠폰을 뺀 금액 비율로 줄마다 나눠 두어 부분 취소 때 그 줄 몫만 정산한다.
+     */
+    private Priced price(final Long memberId, final List<Line> lines, final Receiver receiver, final Discounts discounts,
+                         final boolean commit) {
         if (lines.isEmpty()) {
             throw new BusinessException(ErrorCode.CART_EMPTY);
         }
         List<OrderItem> items = new ArrayList<>();
         for (Line line : lines) {
-            Product product = productRepository.findForUpdate(line.productId())
+            Product product = (commit ? productRepository.findForUpdate(line.productId())
+                    : productRepository.findByIdAndDeletedAtIsNull(line.productId()))
                     .filter(Product::isOnSale)
                     .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_AVAILABLE));
             if (product.getSaleType() != ProductSaleType.PURCHASE) {
                 throw new BusinessException(ErrorCode.CART_PURCHASE_ONLY);
             }
             gradeService.require(product.getAccessGradeId());
-            ProductOption option = lockOption(product, line.productOptionId());
+            ProductOption option = commit ? lockOption(product, line.productOptionId()) : findOption(product, line.productOptionId());
             BigDecimal unitPrice = product.getPrice().add(option == null ? BigDecimal.ZERO : option.getAdditionalPrice());
             BigDecimal amount = discountService.applyTo(line.discountId(), product.getId(),
                     unitPrice.multiply(BigDecimal.valueOf(line.quantity())));
-            takeStock(product, option, line.quantity());
+            if (commit) {
+                takeStock(product, option, line.quantity());
+            }
             items.add(OrderItem.builder()
                     .orderId(0L)
                     .productId(product.getId())
@@ -125,40 +213,32 @@ public class OrderService {
                     .requiresShipping(product.isRequiresShipping())
                     .build());
         }
-        boolean shippable = items.stream().anyMatch(OrderItem::isRequiresShipping);
-        if (shippable && !receiver.hasAddress() && userType == UserType.MEMBER) {
-            throw new BusinessException(ErrorCode.ADDRESS_REQUIRED);
-        }
         BigDecimal itemsAmount = sum(items);
         // 관리자가 주소 없이 받은 주문(방문 수령 등)은 배송비를 받지 않는다.
         BigDecimal shippingFee = receiver.hasAddress() ? shippingFeeOf(items, receiver.postalCode()) : BigDecimal.ZERO;
-        OrderItem first = items.getFirst();
-        Order order = orderRepository.save(Order.builder()
-                .orderNumber(nextOrderNumber())
-                .userType(userType)
-                .userId(userId)
-                .productId(first.getProductId())
-                .saleType(ProductSaleType.PURCHASE)
-                .productOptionId(items.size() == 1 ? first.getProductOptionId() : null)
-                .productName(headline(items))
-                .quantity(items.stream().mapToInt(OrderItem::getQuantity).sum())
-                .discountId(items.size() == 1 ? first.getDiscountId() : null)
-                .itemsAmount(itemsAmount)
-                .shippingFee(shippingFee)
-                .totalPrice(itemsAmount.add(shippingFee))
-                .status(paid ? OrderStatus.PAID : OrderStatus.PENDING_PAYMENT)
-                .canDeliver(receiver.hasAddress())
-                .receiverName(receiver.receiverName())
-                .phoneNumber(receiver.phoneNumber())
-                .postalCode(receiver.postalCode())
-                .address(receiver.address())
-                .detailAddress(receiver.detailAddress())
-                .build());
-        List<OrderItem> saved = itemRepository.saveAll(items.stream().map(item -> withOrder(item, order.getId())).toList());
-        if (order.getStatus() == OrderStatus.PAID) {
-            events.publishEvent(new OrderPaidEvent(order.getId()));
+
+        CouponService.Evaluation coupon = memberId == null || discounts.couponIssueId() == null
+                ? new CouponService.Evaluation(BigDecimal.ZERO, Collections.nCopies(items.size(), BigDecimal.ZERO))
+                : couponService.evaluate(memberId, discounts.couponIssueId(), couponLines(items));
+        BigDecimal afterCoupon = itemsAmount.subtract(coupon.discount());
+        long points = memberId == null ? 0 : discounts.usePoints();
+        pointService.validateUse(memberId, points, afterCoupon);
+
+        long left = points;
+        for (int i = 0; i < items.size(); i++) {
+            OrderItem item = items.get(i);
+            BigDecimal net = item.getAmount().subtract(coupon.allocation().get(i));
+            long share = i == items.size() - 1 || afterCoupon.signum() == 0 ? left
+                    : net.multiply(BigDecimal.valueOf(points)).divide(afterCoupon, 0, RoundingMode.DOWN).longValue();
+            share = Math.min(share, left);
+            item.applyDiscounts(coupon.allocation().get(i), share);
+            left -= share;
         }
-        return OrderResponse.of(order, saved);
+        return new Priced(items, itemsAmount, shippingFee, coupon.discount(), points);
+    }
+
+    private static List<CouponService.Line> couponLines(final List<OrderItem> items) {
+        return items.stream().map(item -> new CouponService.Line(item.getProductId(), item.getAmount())).toList();
     }
 
     private OrderResponse createSingle(final UserType userType, final Long userId, final Product product,
@@ -339,17 +419,22 @@ public class OrderService {
             return toResponse(order);
         }
         returnStock(item);
+        Long memberId = memberOf(order);
+        pointService.restore(memberId, item.getPointsUsed(), order.getId());
         BigDecimal newShipping = order.isCanDeliver() ? shippingFeeOf(remaining, order.getPostalCode()) : BigDecimal.ZERO;
         if (order.getStatus() == OrderStatus.PENDING_PAYMENT) {
             item.cancel(BigDecimal.ZERO);
-            order.repriceBeforePayment(sum(remaining), newShipping);
+            order.repriceBeforePayment(sum(remaining), newShipping,
+                    remaining.stream().map(OrderItem::getCouponDiscount).reduce(BigDecimal.ZERO, BigDecimal::add),
+                    remaining.stream().mapToLong(OrderItem::getPointsUsed).sum());
         } else {
             BigDecimal oldShipping = order.getShippingFee() == null ? BigDecimal.ZERO : order.getShippingFee();
-            BigDecimal refund = item.getAmount().add(oldShipping).subtract(newShipping)
+            BigDecimal refund = item.paidAmount().add(oldShipping).subtract(newShipping)
                     .max(BigDecimal.ZERO).min(order.paidRemaining());
             item.cancel(refund);
             order.recordRefund(refund, newShipping);
             paymentService.refundPartially(PaymentTargetType.ORDER, order.getId(), refund);
+            pointService.revokeEarned(memberId, item.getPointsEarned(), order.getId());
             publishRefund(order, List.of(item.getProductId()));
         }
         return OrderResponse.of(order, items);
@@ -368,21 +453,29 @@ public class OrderService {
         } else {
             List<OrderItem> active = items.stream().filter(OrderItem::isActive).toList();
             BigDecimal shipping = order.getShippingFee() == null ? BigDecimal.ZERO : order.getShippingFee();
+            Long memberId = memberOf(order);
             for (int i = 0; i < active.size(); i++) {
                 OrderItem item = active.get(i);
                 returnStock(item);
                 boolean last = i == active.size() - 1;
-                item.cancel(!paid ? BigDecimal.ZERO : last ? item.getAmount().add(shipping) : item.getAmount());
+                item.cancel(!paid ? BigDecimal.ZERO : last ? item.paidAmount().add(shipping) : item.paidAmount());
             }
+            pointService.restore(memberId, active.stream().mapToLong(OrderItem::getPointsUsed).sum(), order.getId());
             if (paid) {
                 order.recordRefund(remaining, order.getShippingFee());
+                pointService.revokeEarned(memberId, active.stream().mapToLong(OrderItem::getPointsEarned).sum(), order.getId());
             }
+            couponService.restore(order.getCouponIssueId());
         }
         paymentService.refundIfPaid(PaymentTargetType.ORDER, order.getId());
         if (paid) {
             publishRefund(order, items.isEmpty() ? List.of(order.getProductId())
                     : items.stream().map(OrderItem::getProductId).distinct().toList());
         }
+    }
+
+    private static Long memberOf(final Order order) {
+        return order.getUserType() == UserType.MEMBER ? order.getUserId() : null;
     }
 
     private void publishRefund(final Order order, final List<Long> productIds) {
@@ -400,6 +493,21 @@ public class OrderService {
         }
         ProductOption option = optionRepository.findForUpdate(optionId)
                 .filter(found -> found.getProductId().equals(product.getId()) && found.getDeletedAt() == null)
+                .orElseThrow(BusinessException::notFound);
+        if (!option.isEnabled()) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_AVAILABLE);
+        }
+        return option;
+    }
+
+    private ProductOption findOption(final Product product, final Long optionId) {
+        if (optionId == null) {
+            if (product.hasOptionGroups()) {
+                throw new BusinessException(ErrorCode.OPTION_REQUIRED);
+            }
+            return null;
+        }
+        ProductOption option = optionRepository.findByIdAndProductIdAndDeletedAtIsNull(optionId, product.getId())
                 .orElseThrow(BusinessException::notFound);
         if (!option.isEnabled()) {
             throw new BusinessException(ErrorCode.PRODUCT_NOT_AVAILABLE);
@@ -445,21 +553,6 @@ public class OrderService {
         OrderItem first = items.getFirst();
         String name = first.getOptionName() == null ? first.getProductName() : first.getProductName() + " (" + first.getOptionName() + ")";
         return items.size() == 1 ? name : name + " 외 " + (items.size() - 1) + "건";
-    }
-
-    private static OrderItem withOrder(final OrderItem item, final Long orderId) {
-        return OrderItem.builder()
-                .orderId(orderId)
-                .productId(item.getProductId())
-                .productOptionId(item.getProductOptionId())
-                .productName(item.getProductName())
-                .optionName(item.getOptionName())
-                .unitPrice(item.getUnitPrice())
-                .quantity(item.getQuantity())
-                .discountId(item.getDiscountId())
-                .amount(item.getAmount())
-                .requiresShipping(item.isRequiresShipping())
-                .build();
     }
 
     private OrderResponse toResponse(final Order order) {

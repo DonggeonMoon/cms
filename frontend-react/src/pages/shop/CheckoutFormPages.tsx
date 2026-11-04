@@ -1,7 +1,7 @@
 import {type FormEvent, useEffect, useState} from 'react';
 import {Link, useNavigate, useSearchParams} from 'react-router';
-import type {ProductDetail, ProductSaleType, Program, ShippingPolicy} from '../../api/domain';
-import {estimateShipping} from '../../components/shipping';
+import type {ProductDetail, ProductSaleType, Program} from '../../api/domain';
+import {type DiscountChoice, DiscountSelector, NO_DISCOUNT} from './DiscountSelector';
 import {shopApi} from '../../api/endpoints';
 import {memberApi} from '../../api/members';
 import {won} from '../../components/AdminCrudPage';
@@ -32,14 +32,13 @@ export function OrderFormPage() {
     const amount = Number(params.get('amount')) || 0;
     const [requestMessage, setRequestMessage] = useState('');
     const [product, setProduct] = useState<ProductDetail | null>(null);
-    const [policy, setPolicy] = useState<ShippingPolicy | null>(null);
+    const [rewards, setRewards] = useState<DiscountChoice>(NO_DISCOUNT);
     const [receiver, setReceiver] = useState({receiverName: '', phoneNumber: '', postalCode: '', address: '', detailAddress: ''});
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         shopApi.product(productId).then(setProduct).catch(setError);
-        shopApi.shippingPolicy().then(setPolicy).catch(() => setPolicy(null));
         memberApi.me().then((me) => setReceiver((current) => ({
             receiverName: current.receiverName || me.name || '',
             phoneNumber: current.phoneNumber || me.mobilePhoneNumber || me.telephoneNumber || '',
@@ -63,7 +62,6 @@ export function OrderFormPage() {
     const mode = MODES[product.saleType ?? 'PURCHASE'];
     const purchase = (product.saleType ?? 'PURCHASE') === 'PURCHASE';
     const needsAddress = purchase && product.requiresShipping !== false;
-    const shipping = estimateShipping(policy, needsAddress, total, receiver.postalCode);
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
@@ -78,6 +76,7 @@ export function OrderFormPage() {
                 ...(product.saleType === 'DONATION' ? {receiverName: receiver.receiverName, phoneNumber: receiver.phoneNumber} : receiver),
                 amount: product.saleType === 'DONATION' ? amount : null,
                 requestMessage: product.saleType === 'QUOTE' ? requestMessage : null,
+                ...(purchase ? rewards : {}),
             });
             navigate(product.saleType === 'QUOTE' ? '/mypage/orders' : `/checkout/ORDER/${created.id}`);
         } catch (e) {
@@ -128,14 +127,11 @@ export function OrderFormPage() {
                 {product.saleType === 'QUOTE'
                     ? <p className="muted">요청을 보내면 관리자가 견적 금액을 회신합니다. 마이페이지 주문 내역에서 수락하고 결제할 수 있습니다.</p>
                     : (
-                        <>
-                            {needsAddress && (
-                                <p className="align-right muted">
-                                    상품 {won(total)} + 배송비 {won(shipping.fee)}{shipping.regionName && ` (${shipping.regionName} 추가 포함)`}
-                                </p>
-                            )}
-                            <p className="price align-right">{mode.totalLabel} {won(total + shipping.fee)}</p>
-                        </>
+                        purchase ? (
+                            <DiscountSelector postalCode={needsAddress ? receiver.postalCode : null} value={rewards} onChange={setRewards}
+                                              lines={[{productId, productOptionId: option ? option.id : null, quantity,
+                                                  discountId: discount ? discount.id : null}]}/>
+                        ) : <p className="price align-right">{mode.totalLabel} {won(total)}</p>
                     )}
                 <ErrorBanner error={error}/>
                 <div className="toolbar form-actions">

@@ -31,6 +31,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/files").authenticated()
                 .requestMatchers("/api/orders/**", "/api/orders", "/api/reservations/**", "/api/reservations",
                         "/api/payments/**", "/api/payments", "/api/subscriptions/**", "/api/cart/**", "/api/cart").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.POST, "/api/coupons/*/download").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/products/*/reviews", "/api/programs/*/reviews").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.DELETE, "/api/reviews/*").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/satisfactions").hasRole("MEMBER")

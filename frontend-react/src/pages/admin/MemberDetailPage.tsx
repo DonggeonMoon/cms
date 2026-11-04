@@ -4,6 +4,9 @@ import {memberAdminApi} from '../../api/members';
 import type {MemberResponse} from '../../api/types';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatDateTime} from '../../components/format';
+import {POINT_TYPE, pointApi, type PointLedger, type PointSummary} from '../../api/rewards';
+import type {Page} from '../../api/types';
+import {Pagination} from '../../components/Pagination';
 import {GRADE_CHANGE_REASON, gradeApi, type GradeHistory, type MyGrade, useGrades} from '../../api/grades';
 
 export function MemberDetailPage() {
@@ -55,6 +58,7 @@ export function MemberDetailPage() {
                 ))}
             </dl>
             <MemberGradePanel memberId={member.id}/>
+            <MemberPointPanel memberId={member.id}/>
             <Link to="/admin/members">목록으로</Link>
         </section>
     );
@@ -134,5 +138,68 @@ function MemberGradePanel({memberId}: { memberId: number }) {
                 </table>
             )}
         </section>
+    );
+}
+
+function MemberPointPanel({memberId}: { memberId: number }) {
+    const [summary, setSummary] = useState<PointSummary | null>(null);
+    const [page, setPage] = useState(0);
+    const [history, setHistory] = useState<Page<PointLedger> | null>(null);
+    const [form, setForm] = useState({amount: '', memo: ''});
+    const [error, setError] = useState<unknown>(null);
+    const load = useCallback(() => {
+        pointApi.ofMember(memberId).then(setSummary).catch(setError);
+        pointApi.historyOf(memberId, page).then(setHistory).catch(setError);
+    }, [memberId, page]);
+    useEffect(load, [load]);
+
+    const submit = async (event: FormEvent) => {
+        event.preventDefault();
+        setError(null);
+        try {
+            await pointApi.adjust(memberId, Number(form.amount), form.memo);
+            setForm({amount: '', memo: ''});
+            load();
+        } catch (e) {
+            setError(e);
+        }
+    };
+    return (
+        <section>
+            <h2>포인트</h2>
+            <p>잔액 <strong>{(summary?.balance ?? 0).toLocaleString('ko-KR')}P</strong>
+                {Number(summary?.expiringSoon) > 0 && <span className="muted"> · 30일 안에 소멸 {summary!.expiringSoon.toLocaleString('ko-KR')}P</span>}</p>
+            <form className="toolbar" onSubmit={submit}>
+                <input type="number" aria-label="조정 포인트" placeholder="+지급 / -차감" required value={form.amount}
+                       onChange={(e) => setForm({...form, amount: e.target.value})}/>
+                <input aria-label="조정 사유" className="wide-input" placeholder="사유" required value={form.memo}
+                       onChange={(e) => setForm({...form, memo: e.target.value})}/>
+                <button type="submit" className="primary">포인트 조정</button>
+            </form>
+            <ErrorBanner error={error}/>
+            <PointHistoryTable history={history}/>
+            {history && <Pagination page={page} totalPages={history.page.totalPages} onChange={setPage}/>}
+        </section>
+    );
+}
+
+export function PointHistoryTable({history}: { history: Page<PointLedger> | null }) {
+    return (
+        <table className="compact">
+            <thead><tr><th>일시</th><th>구분</th><th>포인트</th><th>잔액</th><th>소멸 예정</th><th>내용</th></tr></thead>
+            <tbody>
+            {history?.content.map((row) => (
+                <tr key={row.id}>
+                    <td>{formatDateTime(row.createdAt)}</td>
+                    <td>{POINT_TYPE[row.type]}</td>
+                    <td className={row.amount < 0 ? 'danger-text' : 'ok'}>{row.amount > 0 ? '+' : ''}{row.amount.toLocaleString('ko-KR')}</td>
+                    <td>{row.balanceAfter.toLocaleString('ko-KR')}</td>
+                    <td>{row.expiresAt ? formatDateTime(row.expiresAt) : '-'}</td>
+                    <td>{row.memo ?? (row.orderId ? `주문 #${row.orderId}` : '-')}</td>
+                </tr>
+            ))}
+            {history?.content.length === 0 && <tr><td colSpan={6} className="muted">내역이 없습니다.</td></tr>}
+            </tbody>
+        </table>
     );
 }

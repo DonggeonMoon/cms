@@ -4,6 +4,8 @@ import com.dgmoonlabs.cms.domain.business.order.dto.CartDtos.CartAddRequest;
 import com.dgmoonlabs.cms.domain.business.order.dto.CartDtos.CartQuantityRequest;
 import com.dgmoonlabs.cms.domain.business.order.dto.CartDtos.CartResponse;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.CartCheckoutRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderPreviewRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderPreviewResponse;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderResponse;
 import com.dgmoonlabs.cms.domain.business.order.service.CartService;
 import com.dgmoonlabs.cms.domain.business.order.service.OrderService;
@@ -55,6 +57,12 @@ public class CartController {
                                                   @RequestBody @Valid final CartCheckoutRequest request) {
         OrderResponse order = cartService.checkout(user.id(), request);
         return ResponseEntity.created(URI.create("/api/orders/" + order.id())).body(order);
+    }
+
+    @PostMapping("/api/orders/preview")
+    public ResponseEntity<OrderPreviewResponse> preview(@AuthenticationPrincipal final LoginUser user,
+                                                        @RequestBody @Valid final OrderPreviewRequest request) {
+        return ResponseEntity.ok(orderService.preview(user.id(), request));
     }
 
     @PostMapping("/api/orders/{orderId}/items/{itemId}/cancel")

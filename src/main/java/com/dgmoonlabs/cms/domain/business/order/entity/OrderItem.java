@@ -56,6 +56,24 @@ public class OrderItem extends BaseEntity {
     @Comment("결제 금액 (할인 적용 후)")
     private BigDecimal amount;
 
+    @Builder.Default
+    @Column(nullable = false, precision = 15, scale = 2)
+    @ColumnDefault("0")
+    @Comment("이 항목에 나눈 쿠폰 할인액")
+    private BigDecimal couponDiscount = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    @Comment("이 항목에 나눈 사용 포인트")
+    private long pointsUsed = 0;
+
+    @Builder.Default
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    @Comment("이 항목으로 적립한 포인트")
+    private long pointsEarned = 0;
+
     @Column(nullable = false)
     @ColumnDefault("true")
     @Comment("배송이 필요한 상품인지")
@@ -74,6 +92,23 @@ public class OrderItem extends BaseEntity {
 
     @Comment("취소 일시")
     private LocalDateTime canceledAt;
+
+    public void assignOrder(final Long orderId) {
+        this.orderId = orderId;
+    }
+
+    public void applyDiscounts(final BigDecimal couponDiscount, final long pointsUsed) {
+        this.couponDiscount = couponDiscount;
+        this.pointsUsed = pointsUsed;
+    }
+
+    public void recordEarned(final long pointsEarned) {
+        this.pointsEarned = pointsEarned;
+    }
+
+    public BigDecimal paidAmount() {
+        return amount.subtract(couponDiscount).subtract(BigDecimal.valueOf(pointsUsed));
+    }
 
     public boolean isActive() {
         return status == OrderItemStatus.ORDERED;

@@ -65,6 +65,8 @@ function SiteFrame() {
                     <NavLink to="/mypage" end>{t('mypage.profile', '회원정보')}</NavLink>
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/orders">{t('mypage.orders', '주문 내역')}</NavLink>}
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/subscriptions">{t('mypage.subscriptions', '구독')}</NavLink>}
+                    {isEnabled('PRODUCT') && <NavLink to="/mypage/points">{t('mypage.points', '포인트')}</NavLink>}
+                    {isEnabled('PRODUCT') && <NavLink to="/mypage/coupons">{t('mypage.coupons', '쿠폰함')}</NavLink>}
                     {isEnabled('PROGRAM') && <NavLink to="/mypage/reservations">{t('mypage.reservations', '예약 내역')}</NavLink>}
                     {isEnabled('APPLICATION') && <NavLink to="/mypage/applications">{t('mypage.applications', '신청 내역')}</NavLink>}
                     {isEnabled('REPORT') && <NavLink to="/mypage/reports">{t('mypage.reports', '신고')}</NavLink>}
