@@ -232,6 +232,8 @@ export const shopApi = {
     programs: (keyword: string, page: number) =>
         request<Page<D.Program>>('/api/programs', {query: {keyword, page}}),
     program: (id: number) => request<D.Program>(`/api/programs/${id}`),
+    availability: (id: number, query: { date?: string; from?: string; to?: string }) =>
+        request<D.Availability>(`/api/programs/${id}/availability`, {query}),
     programReviews: (id: number, page: number) => request<Page<D.Review>>(`/api/programs/${id}/reviews`, {query: {page}}),
     addProgramReview: (id: number, body: Body) => request<void>(`/api/programs/${id}/reviews`, {method: 'POST', body}),
     reserve: (body: Body) => request<D.Reservation>('/api/reservations', {method: 'POST', body}),

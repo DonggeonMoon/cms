@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.business.reservation.entity.program;
 
+import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
@@ -12,6 +13,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
 @Builder
@@ -35,6 +37,26 @@ public class Program extends BaseEntity {
     @Column(nullable = false, precision = 15, scale = 2)
     @Comment("참가비 (1인)")
     private BigDecimal price;
+
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "varchar(20)")
+    @ColumnDefault("'PROGRAM'")
+    @Enumerated(EnumType.STRING)
+    @Comment("예약 유형")
+    private ReservationType reservationType = ReservationType.PROGRAM;
+
+    @Comment("상담·대관 예약 단위(분)")
+    private Integer slotMinutes;
+
+    @Comment("상담·대관 운영 시작 시각")
+    private LocalTime openTime;
+
+    @Comment("상담·대관 운영 종료 시각")
+    private LocalTime closeTime;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Comment("공간 배치표 (좌석·객실·공간)")
+    private String layout;
 
     @Comment("최대 인원")
     private Integer maximumPerson;
@@ -98,6 +120,16 @@ public class Program extends BaseEntity {
         this.contentHtml = contentHtml;
         this.contentText = contentText;
         this.isEnabled = isEnabled;
+    }
+
+    public void changeReservationSettings(final ReservationType reservationType, final Integer slotMinutes,
+                                          final LocalTime openTime, final LocalTime closeTime, final String layout) {
+        this.reservationType = reservationType;
+        boolean timed = reservationType == ReservationType.CONSULTATION || reservationType == ReservationType.RENTAL;
+        this.slotMinutes = timed ? slotMinutes : null;
+        this.openTime = timed ? openTime : null;
+        this.closeTime = timed ? closeTime : null;
+        this.layout = reservationType.usesLayout() ? layout : null;
     }
 
     public boolean isOpenAt(final LocalDateTime now) {

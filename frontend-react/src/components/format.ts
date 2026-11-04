@@ -39,3 +39,7 @@ export function formatDuration(totalSeconds: number): string {
     const minutes = Math.floor((seconds % 3600) / 60);
     return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds % 60)}` : `${minutes}:${pad(seconds % 60)}`;
 }
+
+export function formatTime(value: string | null | undefined): string {
+    return value ? new Date(value).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}) : '';
+}

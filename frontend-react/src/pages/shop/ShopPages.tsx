@@ -6,6 +6,8 @@ import {useStatusLabels} from '../../api/statuses';
 import type {Page} from '../../api/types';
 import {useAuth} from '../../auth/AuthContext';
 import {won} from '../../components/AdminCrudPage';
+import {reservationUsage} from '../../components/reservationUsage';
+import {ReservationPicker} from './ReservationPicker';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {Field} from '../../components/Field';
 import {formatDateTime} from '../../components/format';
@@ -34,6 +36,7 @@ export function ProgramCard({program}: { program: Program }) {
         <Link to={`/programs/${program.id}`} className="product-card">
             <Thumbnail src={program.imageUrl} name={program.name}/>
             <strong className="product-name">{program.name}</strong>
+            <span className="badge">{RESERVATION_TYPE[program.reservationType]}</span>
             {program.startDateTime && <span className="muted small">{formatDateTime(program.startDateTime)}</span>}
             <span className="product-price">{Number(program.price) === 0 ? '무료' : won(program.price)}</span>
             {program.isOpen ? <span className="badge ok">접수 중</span> : <span className="badge">접수 마감</span>}
@@ -254,7 +257,7 @@ function escapeHtml(text: string) {
 }
 
 export function ProgramListPage() {
-    const programTitle = useFeatureMenuName('PROGRAM', '프로그램 신청');
+    const programTitle = useFeatureMenuName('PROGRAM', '예약');
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
     const keyword = params.get('keyword') ?? '';
@@ -278,6 +281,14 @@ export function ProgramListPage() {
         </section>
     );
 }
+
+const PRICE_UNIT: Record<ReservationType, string> = {
+    PROGRAM: '1인',
+    CONSULTATION: '1회',
+    RENTAL: '칸·예약 단위',
+    LODGING: '칸·1박',
+    EVENT: '좌석',
+};
 
 export function ProgramDetailPage() {
     const id = Number(useParams().id);
@@ -312,10 +323,12 @@ export function ProgramDetailPage() {
                 <h1>{program.name}</h1>
                 {program.description && <p className="muted">{program.description}</p>}
                 <dl className="meta">
-                    <dt>참가비</dt>
-                    <dd>{Number(program.price) === 0 ? '무료' : `${won(program.price)} / 1인`}</dd>
-                    <dt>진행 일정</dt>
-                    <dd>{formatDateTime(program.startDateTime)} ~ {formatDateTime(program.endDateTime)}</dd>
+                    <dt>유형</dt>
+                    <dd>{RESERVATION_TYPE[program.reservationType]}</dd>
+                    <dt>가격</dt>
+                    <dd>{Number(program.price) === 0 ? '무료' : `${won(program.price)} / ${PRICE_UNIT[program.reservationType]}`}</dd>
+                    <dt>{program.reservationType === 'EVENT' ? '공연 일시' : program.reservationType === 'PROGRAM' ? '진행 일정' : '예약 가능 기간'}</dt>
+                    <dd>{formatDateTime(program.startDateTime)}{program.endDateTime && ` ~ ${formatDateTime(program.endDateTime)}`}</dd>
                     <dt>신청 기간</dt>
                     <dd>{formatDateTime(program.applicationStartDateTime)} ~ {formatDateTime(program.applicationEndDateTime)}</dd>
                     {program.averageRating != null && (
@@ -324,11 +337,17 @@ export function ProgramDetailPage() {
                             <dd>{'★'.repeat(Math.round(program.averageRating))} {program.averageRating.toFixed(1)}</dd>
                         </>
                     )}
-                    <dt>잔여 인원</dt>
-                    <dd>{program.maximumPerson ? `${program.availablePerson} / ${program.maximumPerson}명` : '제한 없음'}</dd>
+                    {program.reservationType === 'PROGRAM' && (
+                        <>
+                            <dt>잔여 인원</dt>
+                            <dd>{program.maximumPerson ? `${program.availablePerson} / ${program.maximumPerson}명` : '제한 없음'}</dd>
+                        </>
+                    )}
                 </dl>
                 {!program.isOpen ? (
                     <p className="badge">지금은 신청할 수 없습니다.</p>
+                ) : user?.userType === 'MEMBER' && program.reservationType !== 'PROGRAM' ? (
+                    <ReservationPicker program={program}/>
                 ) : user?.userType === 'MEMBER' ? (
                     <form onSubmit={reserve}>
                         <Field label="인원" name="quantity" type="number" min={1} value={quantity}
@@ -498,13 +517,14 @@ export function MyReservationsPage() {
             <ErrorBanner error={error}/>
             <div className="table-wrap">
                 <table>
-                    <thead><tr><th>예약번호</th><th>프로그램</th><th>인원</th><th>금액</th><th>상태</th><th>결제</th><th>취소</th></tr></thead>
+                    <thead><tr><th>예약번호</th><th>예약 항목</th><th>이용</th><th>수량</th><th>금액</th><th>상태</th><th>결제</th><th>취소</th></tr></thead>
                     <tbody>
                     {data?.content.map((reservation) => (
                         <tr key={reservation.id}>
                             <td><code>{reservation.reservationNumber}</code></td>
                             <td><Link to={`/programs/${reservation.programId}`}>{reservation.programName}</Link></td>
-                            <td>{reservation.quantity}명</td>
+                            <td>{reservationUsage(reservation)}</td>
+                            <td>{reservation.quantity}</td>
                             <td>{won(reservation.totalPrice)}</td>
                             <td>{reservationStatus(reservation.status, reservation.customStatus)}</td>
                             <td className="button-cell">

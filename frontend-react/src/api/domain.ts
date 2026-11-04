@@ -384,6 +384,33 @@ export interface Order {
     address: string | null;
     detailAddress: string | null;
     createdAt: string;
+export type ReservationType = 'PROGRAM' | 'CONSULTATION' | 'RENTAL' | 'LODGING' | 'EVENT';
+export type CellKind = 'SEAT' | 'ROOM' | 'SPACE' | 'AISLE' | 'STAGE' | 'EMPTY';
+
+export interface LayoutCell {
+    key: string;
+    row: number;
+    col: number;
+    kind: CellKind;
+    label: string;
+    price: number | null;
+}
+
+export interface SpaceLayout {
+    rows: number;
+    cols: number;
+    cells: LayoutCell[];
+}
+
+export interface ReservationSlot {
+    startAt: string;
+    endAt: string;
+    remaining: number;
+}
+
+export interface Availability {
+    takenCells: string[];
+    slots: ReservationSlot[];
 }
 
 export interface Program {
@@ -393,6 +420,11 @@ export interface Program {
     imageFileId: number | null;
     imageUrl: string | null;
     price: number;
+    reservationType: ReservationType;
+    slotMinutes: number | null;
+    openTime: string | null;
+    closeTime: string | null;
+    layout: SpaceLayout | null;
     maximumPerson: number | null;
     availablePerson: number | null;
     startDateTime: string | null;
@@ -413,6 +445,10 @@ export interface Reservation {
     userId: number;
     programId: number;
     programName: string;
+    reservationType: ReservationType;
+    startAt: string | null;
+    endAt: string | null;
+    cells: string[];
     quantity: number;
     totalPrice: number;
     status: ReservationStatus;

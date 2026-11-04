@@ -3,6 +3,7 @@ package com.dgmoonlabs.cms.domain.business;
 import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.ProductDetail;
 import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.ProductSummary;
 import com.dgmoonlabs.cms.domain.business.order.service.ProductService;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.Availability;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ProgramResponse;
 import com.dgmoonlabs.cms.domain.business.reservation.service.ReservationService;
 import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewResponse;
@@ -11,8 +12,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @RestController
 @RequiredArgsConstructor
@@ -47,6 +52,15 @@ public class ShopController {
     @GetMapping("/api/programs/{id}")
     public ResponseEntity<ProgramResponse> program(@PathVariable final Long id) {
         return ResponseEntity.ok(reservationService.getProgram(id));
+    }
+
+    @GetMapping("/api/programs/{id}/availability")
+    public ResponseEntity<Availability> availability(
+            @PathVariable final Long id,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime to) {
+        return ResponseEntity.ok(reservationService.availability(id, date, from, to));
     }
 
     @GetMapping("/api/programs/{id}/reviews")

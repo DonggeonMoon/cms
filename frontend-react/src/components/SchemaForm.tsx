@@ -2,8 +2,10 @@ import {type FormEvent, lazy, type ReactNode, Suspense, useState} from 'react';
 import {ApiError} from '../api/client';
 import {fileApi} from '../api/files';
 import type {FileInfo} from '../api/types';
+import type {FormField, SpaceLayout} from '../api/domain';
 import {ErrorBanner} from './ErrorBanner';
 import {FormFieldsEditor} from './FormFieldsEditor';
+import {LayoutEditor} from './LayoutEditor';
 import {StableLabel} from './StableLabel';
 
 export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media';
@@ -185,6 +187,14 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
                     {help}
                 </div>
             );
+        case 'layout':
+            return (
+                <div className="field">
+                    {label}
+                    <LayoutEditor value={(value as SpaceLayout | null) ?? null} onChange={onChange}/>
+                    {help}
+                </div>
+            );
         case 'media':
             return <MediaField id={id} label={label} value={(value as MediaValue | null) ?? null} onChange={onChange} help={help}/>;
         case 'files':
@@ -194,7 +204,7 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
                 <div className="field">
                     {label}
                     <input id={id} type={field.type === 'number' ? 'number' : field.type === 'datetime' ? 'datetime-local'
-                        : field.type === 'password' ? 'password' : 'text'}
+                        : field.type === 'password' ? 'password' : field.type === 'time' ? 'time' : 'text'}
                            value={value == null ? '' : field.type === 'datetime' ? String(value).slice(0, 16) : String(value)}
                            required={field.required} placeholder={field.placeholder} min={field.min}
                            step={field.type === 'number' ? 'any' : undefined}

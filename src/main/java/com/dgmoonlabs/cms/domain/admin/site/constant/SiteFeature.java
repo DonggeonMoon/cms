@@ -16,7 +16,7 @@ public enum SiteFeature {
     MAP("지도", List.of("/api/map"), List.of("/api/admin/map")),
     PRODUCT("상품", List.of("/api/products", "/api/orders"),
             List.of("/api/admin/products", "/api/admin/discounts", "/api/admin/orders", "/api/admin/payments", "/api/admin/reviews")),
-    PROGRAM("프로그램", List.of("/api/programs", "/api/reservations"),
+    PROGRAM("예약", List.of("/api/programs", "/api/reservations"),
             List.of("/api/admin/programs", "/api/admin/reservations", "/api/admin/payments", "/api/admin/reviews")),
     APPLICATION("신청·지원", List.of("/api/applications"), List.of("/api/admin/applications")),
     MEDIA("스트리밍", List.of("/api/media"), List.of("/api/admin/media")),

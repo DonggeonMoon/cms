@@ -33,6 +33,28 @@ export const ENROLLMENT_STATUS: Record<EnrollmentStatus, string> = {
     IN_PROGRESS: '수강 중',
     COMPLETED: '수강 완료',
 };
+export const RESERVATION_TYPE: Record<ReservationType, string> = {
+    PROGRAM: '프로그램',
+    CONSULTATION: '상담',
+    RENTAL: '대관',
+    LODGING: '숙박·대실',
+    EVENT: '공연·행사',
+};
+
+export const RESERVATION_TYPE_GROUPS: { label: string; types: ReservationType[] }[] = [
+    {label: '시간 예약', types: ['PROGRAM', 'CONSULTATION']},
+    {label: '공간 예약', types: ['RENTAL', 'LODGING', 'EVENT']},
+];
+
+export const CELL_KIND: Record<CellKind, string> = {
+    SEAT: '좌석',
+    ROOM: '객실',
+    SPACE: '공간',
+    AISLE: '통로',
+    STAGE: '무대',
+    EMPTY: '빈칸',
+};
+
 export const SUBMISSION_STATUS: Record<SubmissionStatus, string> = {
     RECEIVED: '접수',
     REVIEWING: '검토 중',

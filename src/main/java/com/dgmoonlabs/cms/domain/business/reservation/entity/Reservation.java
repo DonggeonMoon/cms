@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.business.reservation.entity;
 
+import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationType;
 import com.dgmoonlabs.cms.global.crypto.EncryptedStringConverter;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
@@ -8,11 +9,14 @@ import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Builder
@@ -46,6 +50,23 @@ public class Reservation extends BaseEntity {
     @Comment("예약 당시 프로그램명")
     private String programName;
 
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "varchar(20)")
+    @ColumnDefault("'PROGRAM'")
+    @Enumerated(EnumType.STRING)
+    @Comment("예약 유형 (예약 당시)")
+    private ReservationType reservationType = ReservationType.PROGRAM;
+
+    @Comment("이용 시작 일시 (상담·대관 시작, 숙박 체크인)")
+    private LocalDateTime startAt;
+
+    @Comment("이용 종료 일시 (상담·대관 종료, 숙박 체크아웃)")
+    private LocalDateTime endAt;
+
+    @Column(length = 2000)
+    @Comment("예약한 칸 (배치표 칸 키, 쉼표로 구분)")
+    private String cells;
+
     @Comment("인원")
     private Integer quantity;
 
@@ -78,6 +99,14 @@ public class Reservation extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Comment("추가 필드")
     private String fields;
+
+    public List<String> cellKeys() {
+        return cells == null || cells.isBlank() ? List.of() : List.of(cells.split(","));
+    }
+
+    public boolean overlaps(final LocalDateTime from, final LocalDateTime to) {
+        return startAt == null || endAt == null || (startAt.isBefore(to) && endAt.isAfter(from));
+    }
 
     public void confirm() {
         this.customStatus = null;

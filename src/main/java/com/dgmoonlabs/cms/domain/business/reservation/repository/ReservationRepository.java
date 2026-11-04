@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
@@ -25,6 +26,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     Page<Reservation> findByReservationNumber(String reservationNumber, Pageable pageable);
 
     boolean existsByReservationNumber(String reservationNumber);
+
+    List<Reservation> findAllByProgramIdAndStatusNot(Long programId, ReservationStatus status);
 
     boolean existsByUserTypeAndUserIdAndProgramIdAndStatus(UserType userType, Long userId, Long programId, ReservationStatus status);
 

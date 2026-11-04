@@ -6,6 +6,7 @@ import {adminApi, shopApi} from '../../api/endpoints';
 import {statusApi, useStatusLabels} from '../../api/statuses';
 import {AdminCrudPage, won, YesNo} from '../../components/AdminCrudPage';
 import {formatDateTime} from '../../components/format';
+import {reservationUsage} from '../../components/reservationUsage';
 import {RegexBindingSelect} from '../../components/RegexBindingSelect';
 import {ORDER_STATUS, RESERVATION_STATUS, toOptions} from '../../components/labels';
 import type {FieldSpec, FormValues} from '../../components/SchemaForm';
@@ -198,13 +199,27 @@ export function OrderAdminPage() {
     );
 }
 
+const isType = (...types: ReservationType[]) => (values: FormValues) => types.includes(values.reservationType as ReservationType);
+
 const PROGRAM_FIELDS: FieldSpec[] = [
-    {name: 'name', label: '프로그램명', required: true, wide: true},
-    {name: 'price', label: '1인 참가비(원)', type: 'number', required: true, wide: true},
-    {name: 'maximumPerson', label: '정원', type: 'number', help: '비워두면 제한 없음', wide: true},
+    {name: 'reservationType', label: '예약 유형', type: 'select', required: true, wide: true,
+        options: RESERVATION_TYPE_GROUPS.flatMap((group) => group.types.map((type) => ({value: type, label: `${group.label} · ${RESERVATION_TYPE[type]}`}))),
+        help: '시간 예약은 회차나 시간대를, 공간 예약은 배치표의 좌석·객실·공간을 골라 예약합니다.'},
+    {name: 'name', label: '이름', required: true, wide: true},
+    {name: 'price', label: '기본 가격(원)', type: 'number', required: true, wide: true,
+        help: '프로그램은 1인, 상담은 1회, 대관은 칸·예약 단위당, 숙박은 칸·1박당, 공연은 좌석당 가격입니다. 배치표에서 칸별 가격을 따로 줄 수 있습니다.'},
+    {name: 'maximumPerson', label: '정원', type: 'number', wide: true, visibleWhen: isType('PROGRAM', 'CONSULTATION'),
+        help: '프로그램은 전체 인원, 상담은 시간대별 인원입니다(비우면 프로그램은 제한 없음, 상담은 1명).'},
     {name: 'isEnabled', label: '공개', type: 'checkbox', wide: true},
-    {name: 'startDateTime', label: '진행 시작', type: 'datetime', wide: true},
-    {name: 'endDateTime', label: '진행 종료', type: 'datetime', wide: true},
+    {name: 'startDateTime', label: '시작 일시', type: 'datetime', wide: true,
+        help: '프로그램은 진행 시작, 상담·대관·숙박은 예약을 받는 기간의 시작, 공연은 공연 일시입니다.'},
+    {name: 'endDateTime', label: '종료 일시', type: 'datetime', wide: true},
+    {name: 'slotMinutes', label: '예약 단위(분)', type: 'number', wide: true, visibleWhen: isType('CONSULTATION', 'RENTAL'),
+        help: '상담 1회 길이, 대관 최소 단위입니다.'},
+    {name: 'openTime', label: '운영 시작 시각', type: 'time', wide: true, visibleWhen: isType('CONSULTATION', 'RENTAL')},
+    {name: 'closeTime', label: '운영 종료 시각', type: 'time', wide: true, visibleWhen: isType('CONSULTATION', 'RENTAL')},
+    {name: 'layout', label: '배치표', type: 'layout', visibleWhen: isType('RENTAL', 'LODGING', 'EVENT'),
+        help: '좌석·객실·공간을 칠해 두면 사용자가 그 칸을 골라 예약합니다.'},
     {name: 'applicationStartDateTime', label: '신청 시작', type: 'datetime', wide: true},
     {name: 'applicationEndDateTime', label: '신청 마감', type: 'datetime', wide: true},
     {name: 'description', label: '요약 설명', wide: true},
@@ -217,19 +232,21 @@ const loadPrograms = (query: Query) => adminApi.programs.search(query);
 export function ProgramAdminPage() {
     return (
         <AdminCrudPage<Program>
-            title="프로그램"
+            title="예약"
+            description="시간 예약(프로그램·상담)과 공간 예약(대관·숙박·공연)을 등록합니다. 예약 내역은 하위 메뉴에서 확인합니다."
             load={loadPrograms}
-            fields={PROGRAM_FIELDS}
-            emptyForm={{isEnabled: true, price: 0, contentHtml: ''}}
+            fields={fields}
+            emptyForm={{reservationType: 'PROGRAM', isEnabled: true, price: 0, contentHtml: '', layout: EMPTY_LAYOUT}}
             columns={[
                 {label: 'ID', render: (p) => p.id},
+                {label: '유형', render: (p) => <span className="badge">{RESERVATION_TYPE[p.reservationType]}</span>},
                 {label: '이름', render: (p) => <Link to={`/programs/${p.id}`}>{p.name}</Link>},
-                {label: '참가비', render: (p) => won(p.price)},
-                {label: '잔여/정원', render: (p) => (p.maximumPerson ? `${p.availablePerson}/${p.maximumPerson}` : '제한 없음')},
+                {label: '기본 가격', render: (p) => won(p.price)},
+                {label: '잔여/정원', render: (p) => (p.reservationType !== 'PROGRAM' ? '-' : p.maximumPerson ? `${p.availablePerson}/${p.maximumPerson}` : '제한 없음')},
                 {label: '신청 기간', render: (p) => `${formatDateTime(p.applicationStartDateTime)} ~ ${formatDateTime(p.applicationEndDateTime)}`},
                 {label: '접수 중', render: (p) => <YesNo value={p.isOpen}/>},
             ]}
-            toForm={(p) => adminApi.programs.get(p.id).then((full) => ({...full}))}
+            toForm={(p) => adminApi.programs.get(p.id).then((full) => ({...full, layout: full.layout ?? EMPTY_LAYOUT}))}
             create={(v) => adminApi.programs.create(v)}
             update={(p, v) => adminApi.programs.update(p.id, v)}
             remove={(p) => adminApi.programs.remove(p.id)}
@@ -285,8 +302,9 @@ export function ReservationAdminPage() {
             }
             columns={[
                 {label: '예약번호', render: (r) => <code>{r.reservationNumber}</code>},
-                {label: '프로그램', render: (r) => r.programName},
-                {label: '인원', render: (r) => r.quantity},
+                {label: '예약 항목', render: (r) => <>{r.programName} <span className="badge">{RESERVATION_TYPE[r.reservationType]}</span></>},
+                {label: '이용', render: (r) => reservationUsage(r)},
+                {label: '수량', render: (r) => r.quantity},
                 {label: '금액', render: (r) => won(r.totalPrice)},
                 {label: '신청자', render: (r) => `${r.applicantName} (${r.phoneNumber})`},
                 {label: '상태', render: (r, reload) => (

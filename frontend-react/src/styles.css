@@ -2631,6 +2631,51 @@ input[type='checkbox'], input[type='radio'] {
     display: block;
     margin-top: 2px;
 }
+.space-grid {
+    display: grid;
+    gap: 4px;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.space-cell {
+    aspect-ratio: 1 / 1;
+    min-width: 2.4rem;
+    padding: 0;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    border: 1px solid var(--border);
+    background: transparent;
+}
+
+.space-cell.kind-seat { background: color-mix(in srgb, var(--primary) 14%, transparent); }
+.space-cell.kind-room { background: color-mix(in srgb, #0ea5e9 18%, transparent); }
+.space-cell.kind-space { background: color-mix(in srgb, #22c55e 18%, transparent); }
+.space-cell.kind-aisle { border-style: dashed; }
+.space-cell.kind-stage { background: color-mix(in srgb, var(--text) 75%, transparent); color: var(--bg); }
+.space-cell.kind-empty { border-color: transparent; }
+.space-cell.taken { background: color-mix(in srgb, var(--muted) 35%, transparent); color: var(--muted); text-decoration: line-through; }
+.space-cell.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+.space-cell:disabled { cursor: default; }
+
+.layout-editor .brush.active { outline: 2px solid var(--primary); }
+.layout-editor input[type='number'] { width: 5rem; }
+.layout-cell-editor { gap: 12px; flex-wrap: wrap; }
+
+.slot-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.reservation-picker label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .form-fields-editor {
     display: flex;
     flex-direction: column;

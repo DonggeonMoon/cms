@@ -7,7 +7,9 @@ import {won} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {Field} from '../../components/Field';
 import {formatDateTime} from '../../components/format';
+import {reservationUsage} from '../../components/reservationUsage';
 import {StableLabel} from '../../components/StableLabel';
+import {estimateReservation} from './ReservationPicker';
 
 const positive = (value: string | null, fallback = 1) => Math.max(fallback, Number(value) || fallback);
 
@@ -108,6 +110,8 @@ export function ReservationFormPage() {
     const navigate = useNavigate();
     const programId = Number(params.get('programId'));
     const quantity = positive(params.get('quantity'));
+    const selection = {startAt: params.get('startAt'), endAt: params.get('endAt'),
+        cells: (params.get('cells') ?? '').split(',').filter(Boolean)};
     const [program, setProgram] = useState<Program | null>(null);
     const [form, setForm] = useState({applicantName: '', phoneNumber: ''});
     const [error, setError] = useState<unknown>(null);
@@ -133,7 +137,7 @@ export function ReservationFormPage() {
         setSubmitting(true);
         setError(null);
         try {
-            const reservation = await shopApi.reserve({programId, quantity, ...form});
+            const reservation = await shopApi.reserve({programId, quantity, ...selection, ...form});
             navigate(reservation.status === 'PENDING_PAYMENT' ? `/checkout/RESERVATION/${reservation.id}` : '/mypage/reservations');
         } catch (e) {
             setError(e);
@@ -146,12 +150,22 @@ export function ReservationFormPage() {
         <section className="card">
             <h1>예약 정보 입력</h1>
             <dl className="meta">
-                <dt>프로그램</dt>
+                <dt>예약 항목</dt>
                 <dd><Link to={`/programs/${program.id}`}>{program.name}</Link></dd>
-                <dt>진행 일정</dt>
-                <dd>{formatDateTime(program.startDateTime)} ~ {formatDateTime(program.endDateTime)}</dd>
-                <dt>인원</dt>
-                <dd>{quantity}명</dd>
+                {program.reservationType === 'PROGRAM' ? (
+                    <>
+                        <dt>진행 일정</dt>
+                        <dd>{formatDateTime(program.startDateTime)} ~ {formatDateTime(program.endDateTime)}</dd>
+                        <dt>인원</dt>
+                        <dd>{quantity}명</dd>
+                    </>
+                ) : (
+                    <>
+                        <dt>이용</dt>
+                        <dd>{reservationUsage({reservationType: program.reservationType, ...selection,
+                            cells: selection.cells.map((key) => program.layout?.cells.find((c) => c.key === key)?.label ?? key)})}</dd>
+                    </>
+                )}
             </dl>
             <form onSubmit={submit}>
                 <fieldset>
@@ -161,7 +175,9 @@ export function ReservationFormPage() {
                     <Field label="연락처" name="phoneNumber" type="tel" required value={form.phoneNumber}
                            onChange={(e) => setForm({...form, phoneNumber: e.target.value})}/>
                 </fieldset>
-                <p className="price align-right">결제 금액 {Number(program.price) === 0 ? '무료' : won(Number(program.price) * quantity)}</p>
+                <p className="price align-right">결제 금액 {program.reservationType === 'PROGRAM'
+                    ? (Number(program.price) === 0 ? '무료' : won(Number(program.price) * quantity))
+                    : won(estimateReservation(program, selection))}</p>
                 <ErrorBanner error={error}/>
                 <div className="toolbar form-actions">
                     <button type="button" onClick={() => navigate(-1)}>이전</button>
