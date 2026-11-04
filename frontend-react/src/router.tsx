@@ -59,6 +59,8 @@ import {AdminLoginPage, LoginPage} from './pages/LoginPage';
 import {ApplicationDetailPage, ApplicationListPage, MyApplicationsPage} from './pages/ApplicationPages';
 import {MapPage} from './pages/MapPage';
 import {MediaDetailPage, MediaListPage, MyMediaPage} from './pages/MediaPages';
+import {CourseDetailPage, CourseListPage, MyCoursesPage} from './pages/CoursePages';
+import {CourseAdminPage} from './pages/admin/CourseAdminPage';
 import {MyPage, PasswordChangePage, QuitPage} from './pages/MyPage';
 import {PrivacyPolicyPage} from './pages/PolicyPage';
 import {MyReportsPage, ReportDetailPage, ReportWritePage} from './pages/ReportPages';
@@ -137,6 +139,8 @@ export const routes = [
                         children: [
                             {path: '/media', element: <MediaListPage/>},
                             {path: '/media/:id', element: <MediaDetailPage/>},
+                            {path: '/courses', element: <CourseListPage/>},
+                            {path: '/courses/:id', element: <CourseDetailPage/>},
                         ],
                     },
                     {
@@ -189,7 +193,7 @@ export const routes = [
                             },
                             {
                                 element: <RequireFeature feature="MEDIA"/>,
-                                children: [{path: '/mypage/media', element: <MyMediaPage/>}],
+                                children: [{path: '/mypage/media', element: <MyMediaPage/>}, {path: '/mypage/courses', element: <MyCoursesPage/>}],
                             },
                             {path: '/checkout/:type/:id', element: <CheckoutPage/>},
                         ],
@@ -259,7 +263,7 @@ export const routes = [
                             },
                             {
                                 element: <RequireFeature feature="MEDIA"/>,
-                                children: [{path: 'media', element: <MediaAdminPage/>}],
+                                children: [{path: 'media', element: <MediaAdminPage/>}, {path: 'courses', element: <CourseAdminPage/>}],
                             },
                             {
                                 element: <RequireFeature feature="APPLICATION"/>,

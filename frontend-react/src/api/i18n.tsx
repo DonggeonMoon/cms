@@ -30,6 +30,7 @@ export const DEFAULT_MESSAGES: Record<string, string> = {
     'mypage.points': '포인트',
     'mypage.coupons': '쿠폰함',
     'mypage.downloads': '내려받기',
+    'mypage.courses': '교육 과정',
     'nav.logout': '로그아웃',
     'nav.greeting': '{name}님',
     'mypage.profile': '회원정보',

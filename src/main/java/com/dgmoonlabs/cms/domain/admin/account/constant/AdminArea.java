@@ -13,7 +13,7 @@ public enum AdminArea {
     SITE("사이트", "sites", "menus", "banners", "configs"),
     CONTENT("컨텐츠", "contents", "boards", "archives", "questions", "map"),
     BUSINESS("비즈니스", "products", "product-categories", "discounts", "orders", "shipping-policy", "subscriptions",
-            "programs", "reservations", "applications", "media", "payments", "reviews", "statuses"),
+            "programs", "reservations", "applications", "media", "courses", "payments", "reviews", "statuses"),
     PUBLIC("공공", "reports", "satisfactions"),
     MEMBER("회원", "members", "grades", "points", "coupons", "policies"),
     COMMON("공통 설정", "chatbot", "regexes", "regex-bindings", "codes", "i18n", "files", "audit-logs"),

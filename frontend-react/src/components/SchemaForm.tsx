@@ -6,12 +6,14 @@ import type {FormField, SpaceLayout} from '../api/domain';
 import {ErrorBanner} from './ErrorBanner';
 import type {CategoryAttribute} from '../api/categories';
 import {CategoryAttributesEditor} from './CategoryAttributesEditor';
+import type {LessonDraft} from '../api/courses';
+import {CourseLessonsEditor} from './CourseLessonsEditor';
 import {FormFieldsEditor} from './FormFieldsEditor';
 import {LayoutEditor} from './LayoutEditor';
 import {StableLabel} from './StableLabel';
 import {type OptionSet, ProductOptionsEditor} from './ProductOptionsEditor';
 
-export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media' | 'time' | 'layout' | 'formFields' | 'productOptions' | 'categoryAttributes';
+export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media' | 'time' | 'layout' | 'formFields' | 'productOptions' | 'categoryAttributes' | 'courseLessons';
 
 export interface FieldSpec {
     name: string;
@@ -75,7 +77,7 @@ export function SchemaForm({fields, initial, onSubmit, onCancel, submitLabel = '
         <div className="schema-grid">
             {specs.filter((field) => !field.visibleWhen || field.visibleWhen(values)).map((field) => (
                 <div key={field.name} className={[
-                    field.wide || ['html', 'textarea', 'files', 'media', 'layout', 'formFields', 'productOptions', 'categoryAttributes'].includes(field.type ?? '') ? 'wide' : '',
+                    field.wide || ['html', 'textarea', 'files', 'media', 'layout', 'formFields', 'productOptions', 'categoryAttributes', 'courseLessons'].includes(field.type ?? '') ? 'wide' : '',
                     field.spaced ? 'spaced' : '',
                     field.newRow ? 'new-row' : '',
                     field.type === 'checkbox' && !field.wide ? 'inline-check' : '',
@@ -188,6 +190,14 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
                 <div className="field">
                     {label}
                     <FormFieldsEditor value={(value as FormField[]) ?? []} onChange={onChange}/>
+                    {help}
+                </div>
+            );
+        case 'courseLessons':
+            return (
+                <div className="field">
+                    {label}
+                    <CourseLessonsEditor value={(value as LessonDraft[]) ?? []} onChange={onChange}/>
                     {help}
                 </div>
             );

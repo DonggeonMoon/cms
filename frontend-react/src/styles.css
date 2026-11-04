@@ -3018,3 +3018,55 @@ fieldset.attribute-filter {
     margin: 8px 0;
 }
 
+.lessons-editor {
+    display: grid;
+    gap: 12px;
+}
+
+.lesson-row {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+}
+
+.quiz-row {
+    padding-left: 16px;
+}
+
+.lesson-list {
+    display: grid;
+    gap: 12px;
+    padding-left: 0;
+    list-style: none;
+}
+
+.lesson {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+}
+
+.lesson.done {
+    border-color: var(--primary);
+}
+
+.lesson.locked {
+    opacity: 0.7;
+}
+
+.lesson-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.quiz {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.quiz-question.wrong {
+    border-color: var(--danger);
+}

@@ -72,6 +72,7 @@ function SiteFrame() {
                     {isEnabled('APPLICATION') && <NavLink to="/mypage/applications">{t('mypage.applications', '신청 내역')}</NavLink>}
                     {isEnabled('REPORT') && <NavLink to="/mypage/reports">{t('mypage.reports', '신고')}</NavLink>}
                     {isEnabled('MEDIA') && <NavLink to="/mypage/media">{t('mypage.media', '수강 내역')}</NavLink>}
+                    {isEnabled('MEDIA') && <NavLink to="/mypage/courses">{t('mypage.courses', '교육 과정')}</NavLink>}
                     <NavLink to="/mypage/password">{t('mypage.password', '비밀번호 변경')}</NavLink>
                     <NavLink to="/mypage/quit">{t('mypage.quit', '회원 탈퇴')}</NavLink>
                 </nav>

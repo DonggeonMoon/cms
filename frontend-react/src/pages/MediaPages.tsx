@@ -58,6 +58,7 @@ export function MediaListPage() {
                 ))}
             </div>
             <ListSearch label={`${title} 검색`} placeholder="제목 검색"/>
+            <p className="small"><Link to="/courses">강의를 차시로 묶은 교육 과정 보기 →</Link></p>
             <ErrorBanner error={error}/>
             <div className="product-grid media-grid">
                 {data?.content.map((item) => (
