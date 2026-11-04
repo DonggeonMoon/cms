@@ -1,3 +1,4 @@
+import type {FileInfo} from '../../api/types';
 import {type FormEvent, useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import type {Query} from '../../api/client';
@@ -34,6 +35,12 @@ const PRODUCT_FIELDS: FieldSpec[] = [
     {name: 'requiresShipping', label: '배송 상품', type: 'checkbox', wide: true,
         help: '디지털·서비스 상품은 끄세요. 배송 상품이 있는 주문에만 배송비를 받습니다.'},
     {name: 'isEnabled', label: '판매 중', type: 'checkbox', wide: true},
+    {name: 'digitalFiles', label: '디지털 파일', type: 'files',
+        help: '결제한 회원이 마이페이지에서 내려받습니다. 여기에 넣은 파일은 공개 주소로 내려받을 수 없게 보호됩니다.'},
+    {name: 'downloadLimit', label: '내려받기 횟수', type: 'number', min: 1, help: '구매 한 건당 횟수입니다. 비워두면 무제한입니다.',
+        visibleWhen: (v) => ((v.digitalFiles as FileInfo[] | undefined) ?? []).length > 0},
+    {name: 'downloadDays', label: '내려받기 기간(일)', type: 'number', min: 1, help: '결제일부터 셉니다. 비워두면 무기한입니다.',
+        visibleWhen: (v) => ((v.digitalFiles as FileInfo[] | undefined) ?? []).length > 0},
     {name: 'description', label: '요약 설명', wide: true},
     {name: 'imageFileId', label: '대표 이미지', type: 'image', wide: true},
     {name: 'optionSet', label: '옵션', type: 'productOptions',
@@ -50,8 +57,9 @@ const productGradeFields = (grades: Grade[]): FieldSpec[] => [
         visibleWhen: (v) => Boolean(v.grantGradeId) && v.saleType !== 'SUBSCRIPTION'},
 ];
 
-const toProductBody = ({donationPresetsText, optionSet, ...values}: FormValues) => ({
+const toProductBody = ({donationPresetsText, optionSet, digitalFiles, ...values}: FormValues) => ({
     ...values,
+    digitalFileIds: ((digitalFiles as FileInfo[] | undefined) ?? []).map((file) => file.id),
     donationPresets: String(donationPresetsText ?? '').split(',').map((v) => Number(v.trim())).filter((v) => v > 0),
     ...optionSetBody(optionSet as OptionSet | undefined),
 });
@@ -79,6 +87,7 @@ export function ProductAdminPage() {
                 ...full,
                 optionSet: toOptionSet(full.optionGroups ?? [], full.options),
                 donationPresetsText: full.donationPresets.join(', '),
+                digitalFiles: full.digitalFiles ?? [],
             }))}
             create={(v) => adminApi.products.create(toProductBody(v))}
             update={(p, v) => adminApi.products.update(p.id, toProductBody(v))}

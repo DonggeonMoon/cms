@@ -177,6 +177,14 @@ export function ProductDetailPage() {
                     {product.donation && <DonationProgressBar product={product}/>}
                     {product.averageRating != null && <p>평점 {'★'.repeat(Math.round(product.averageRating))} {product.averageRating.toFixed(1)}</p>}
                     {product.saleType !== 'DONATION' && <p className="muted small">재고 {product.availableQuantity ?? '충분'}</p>}
+                    {product.digitalFileCount > 0 && (
+                        <p className="notice-box">
+                            결제하면 마이페이지 내려받기에서 파일 {product.digitalFileCount}개를 받을 수 있습니다.
+                            {product.downloadLimit != null && ` 최대 ${product.downloadLimit}회`}
+                            {product.downloadDays != null && `${product.downloadLimit != null ? ',' : ''} 결제 후 ${product.downloadDays}일 이내`}
+                            {(product.downloadLimit != null || product.downloadDays != null) && ' 받을 수 있습니다.'}
+                        </p>
+                    )}
                     {user?.userType === 'MEMBER' ? (
                         <form onSubmit={order}>
                             {product.saleType === 'DONATION' && (

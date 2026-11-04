@@ -68,6 +68,16 @@ public class Product extends BaseEntity {
     @Comment("배송이 필요한 상품인지 (디지털·서비스 상품은 false)")
     private boolean requiresShipping = true;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Comment("결제 후 내려받을 디지털 파일 ID 목록")
+    private List<Long> digitalFileIds;
+
+    @Comment("디지털 파일 내려받기 횟수 제한 (구매 한 건당, 없으면 무제한)")
+    private Integer downloadLimit;
+
+    @Comment("디지털 파일 내려받기 가능 일수 (결제일부터, 없으면 무기한)")
+    private Integer downloadDays;
+
     @Comment("구매 가능 등급 ID (없으면 누구나)")
     private Long accessGradeId;
 
@@ -129,6 +139,17 @@ public class Product extends BaseEntity {
 
     public boolean hasOptionGroups() {
         return optionGroups != null && !optionGroups.isEmpty();
+    }
+
+    public void changeDigitalFiles(final List<Long> fileIds, final Integer downloadLimit, final Integer downloadDays) {
+        boolean digital = fileIds != null && !fileIds.isEmpty();
+        this.digitalFileIds = digital ? List.copyOf(fileIds) : null;
+        this.downloadLimit = digital ? downloadLimit : null;
+        this.downloadDays = digital ? downloadDays : null;
+    }
+
+    public boolean hasDigitalFiles() {
+        return digitalFileIds != null && !digitalFileIds.isEmpty();
     }
 
     public void changeShipping(final boolean requiresShipping) {

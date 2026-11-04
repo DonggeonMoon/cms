@@ -234,6 +234,10 @@ export const archiveApi = {
         request<void>(`/api/archives/${id}/articles/${articleId}/comments/${commentId}`, {method: 'DELETE'}),
 };
 
+export const digitalApi = {
+    mine: (page: number) => request<Page<D.DigitalAccess>>('/api/digital/me', {query: {page}}),
+};
+
 export const shopApi = {
     products: (keyword: string, page: number) =>
         request<Page<D.ProductSummary>>('/api/products', {query: {keyword, page}}),

@@ -389,12 +389,38 @@ export interface ProductDetail extends ProductSummary {
     contentHtml: string;
     optionGroups: OptionGroup[];
     requiresShipping: boolean;
+    digitalFileCount: number;
+    downloadLimit: number | null;
+    downloadDays: number | null;
+    digitalFiles: FileInfo[] | null;
     options: ProductOption[];
     discounts: Discount[];
     averageRating: number | null;
     donationPresets: number[];
     goalAmount: number | null;
     donation: { raisedAmount: number; supporterCount: number } | null;
+}
+
+export interface DigitalFile {
+    id: number;
+    name: string;
+    size: number;
+    downloadUrl: string;
+}
+
+export interface DigitalAccess {
+    id: number;
+    orderId: number;
+    productId: number;
+    productName: string;
+    files: DigitalFile[];
+    downloadLimit: number | null;
+    downloadCount: number;
+    remainingDownloads: number | null;
+    expiresAt: string | null;
+    revokedAt: string | null;
+    usable: boolean;
+    createdAt: string;
 }
 
 export interface Subscription {

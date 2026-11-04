@@ -53,6 +53,15 @@ public class File extends BaseEntity {
     @Comment("다운로드 수")
     private int downloadCount;
 
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    @Comment("보호 파일 (판매용 디지털 파일처럼 공개 주소로 내려받을 수 없음)")
+    private boolean isProtected;
+
+    public void protect() {
+        this.isProtected = true;
+    }
+
     public void increaseDownloadCount() {
         this.downloadCount++;
     }

@@ -29,6 +29,7 @@ export const DEFAULT_MESSAGES: Record<string, string> = {
     'nav.cart': '장바구니',
     'mypage.points': '포인트',
     'mypage.coupons': '쿠폰함',
+    'mypage.downloads': '내려받기',
     'nav.logout': '로그아웃',
     'nav.greeting': '{name}님',
     'mypage.profile': '회원정보',

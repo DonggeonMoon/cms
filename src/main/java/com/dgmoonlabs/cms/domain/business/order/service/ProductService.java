@@ -62,7 +62,8 @@ public class ProductService {
                 reviewRepository.averageRating(id),
                 product.getSaleType() == ProductSaleType.DONATION
                         ? new DonationProgress(orderRepository.sumPaidDonations(id), orderRepository.countPaidDonations(id))
-                        : null
+                        : null,
+                CurrentUser.isAdmin() && product.hasDigitalFiles() ? fileService.getFiles(product.getDigitalFileIds()) : null
         );
     }
 
@@ -114,6 +115,12 @@ public class ProductService {
         product.changeGrades(gradeService.validGradeId(request.accessGradeId()),
                 gradeService.validGradeId(request.grantGradeId()), request.grantGradeDays());
         product.changeShipping(request.requiresShippingOrDefault());
+        List<Long> digitalFileIds = request.digitalFileIdsOrEmpty();
+        if (!digitalFileIds.isEmpty()) {
+            fileService.requireFilesExist(digitalFileIds);
+            fileService.protect(digitalFileIds);
+        }
+        product.changeDigitalFiles(digitalFileIds, request.downloadLimit(), request.downloadDays());
         product.changeOptionGroups(request.optionGroupsOrEmpty().stream().map(OptionGroupRequest::toGroup).toList());
     }
 

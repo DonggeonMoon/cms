@@ -49,6 +49,7 @@ import {HomePage, NotFoundPage} from './pages/HomePage';
 import {OrderFormPage, ReservationFormPage} from './pages/shop/CheckoutFormPages';
 import {CartOrderPage, CartPage} from './pages/shop/CartPages';
 import {MyCouponsPage, MyPointsPage} from './pages/shop/RewardPages';
+import {MyDownloadsPage} from './pages/shop/DigitalPages';
 import {CouponAdminPage, PointPolicyPage} from './pages/admin/RewardAdminPages';
 import {JoinPage} from './pages/JoinPage';
 import {SocialJoinPage} from './pages/SocialJoinPage';
@@ -165,6 +166,7 @@ export const routes = [
                                     {path: '/cart', element: <CartPage/>},
                                     {path: '/mypage/points', element: <MyPointsPage/>},
                                     {path: '/mypage/coupons', element: <MyCouponsPage/>},
+                                    {path: '/mypage/downloads', element: <MyDownloadsPage/>},
                                     {path: '/orders/cart', element: <CartOrderPage/>},
                                 ],
                             },

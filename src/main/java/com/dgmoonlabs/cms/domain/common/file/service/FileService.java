@@ -8,6 +8,7 @@ import com.dgmoonlabs.cms.domain.common.file.entity.ImageFile;
 import com.dgmoonlabs.cms.domain.common.file.repository.FileRepository;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
+import com.dgmoonlabs.cms.global.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -74,7 +75,7 @@ public class FileService {
 
     @Transactional(readOnly = true)
     public FileResponse getFile(final Long id) {
-        return FileResponse.from(findFile(id));
+        return FileResponse.from(findPublicFile(id));
     }
 
     @Transactional(readOnly = true)
@@ -102,20 +103,34 @@ public class FileService {
 
     @Transactional
     public DownloadableFile download(final Long id) {
-        File file = findFile(id);
+        return downloadFile(findPublicFile(id));
+    }
+
+    /** 내려받을 권한을 호출한 쪽에서 이미 확인한 보호 파일을 내려준다. */
+    @Transactional
+    public DownloadableFile downloadProtected(final Long id) {
+        return downloadFile(findFile(id));
+    }
+
+    @Transactional
+    public void protect(final Collection<Long> ids) {
+        fileRepository.findAllById(ids).forEach(File::protect);
+    }
+
+    private DownloadableFile downloadFile(final File file) {
         file.increaseDownloadCount();
         return new DownloadableFile(fileStorage.load(file.getPath()), file.getOriginalName(), file.getMimeType());
     }
 
     @Transactional(readOnly = true)
     public DownloadableFile view(final Long id) {
-        File file = findFile(id);
+        File file = findPublicFile(id);
         return new DownloadableFile(fileStorage.load(file.getPath()), file.getOriginalName(), file.getMimeType());
     }
 
     @Transactional(readOnly = true)
     public DownloadableFile thumbnail(final Long id) {
-        if (!(findFile(id) instanceof ImageFile image) || image.getThumbnailPath() == null) {
+        if (!(findPublicFile(id) instanceof ImageFile image) || image.getThumbnailPath() == null) {
             throw BusinessException.notFound();
         }
         return new DownloadableFile(fileStorage.load(image.getThumbnailPath()), "thumbnail.png", "image/png");
@@ -144,6 +159,14 @@ public class FileService {
                 .thumbnailWidth(info == null ? 0 : info.thumbnailWidth())
                 .thumbnailHeight(info == null ? 0 : info.thumbnailHeight())
                 .build();
+    }
+
+    private File findPublicFile(final Long id) {
+        File file = findFile(id);
+        if (file.isProtected() && !CurrentUser.isAdmin()) {
+            throw BusinessException.notFound();
+        }
+        return file;
     }
 
     private File findFile(final Long id) {

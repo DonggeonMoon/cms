@@ -5,6 +5,7 @@ import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
 import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountResponse;
 import com.dgmoonlabs.cms.domain.business.order.entity.product.Product;
 import com.dgmoonlabs.cms.domain.business.order.entity.product.ProductOption;
+import com.dgmoonlabs.cms.domain.common.file.dto.FileResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
@@ -58,8 +59,15 @@ public final class ProductDtos {
             boolean isEnabled,
             @Valid @Size(max = 5) List<OptionGroupRequest> optionGroups,
             @Valid @Size(max = 300) List<OptionRequest> options,
-            Boolean requiresShipping
+            Boolean requiresShipping,
+            @Size(max = 20) List<@NotNull Long> digitalFileIds,
+            @Positive @Max(10_000) Integer downloadLimit,
+            @Positive @Max(36_500) Integer downloadDays
     ) {
+        public List<Long> digitalFileIdsOrEmpty() {
+            return digitalFileIds == null ? List.of() : digitalFileIds.stream().distinct().toList();
+        }
+
         public List<OptionGroupRequest> optionGroupsOrEmpty() {
             return optionGroups == null ? List.of() : optionGroups;
         }
@@ -110,10 +118,11 @@ public final class ProductDtos {
                                 String imageUrl, String contentHtml, List<OptionResponse> options,
                                 List<DiscountResponse> discounts, Double averageRating, Long accessGradeId,
                                 Long grantGradeId, Integer grantGradeDays, List<Product.OptionGroup> optionGroups,
-                                boolean requiresShipping) {
+                                boolean requiresShipping, int digitalFileCount, Integer downloadLimit, Integer downloadDays,
+                                List<FileResponse> digitalFiles) {
         public static ProductDetail of(final Product product, final List<OptionResponse> options,
                                        final List<DiscountResponse> discounts, final Double averageRating,
-                                       final DonationProgress donation) {
+                                       final DonationProgress donation, final List<FileResponse> digitalFiles) {
             List<Integer> presets = product.getDonationPresets() == null || product.getDonationPresets().isBlank() ? List.of()
                     : Arrays.stream(product.getDonationPresets().split(",")).map(String::trim).map(Integer::valueOf).toList();
             return new ProductDetail(product.getId(), product.getName(), product.getDescription(), product.getPrice(),
@@ -121,7 +130,9 @@ public final class ProductDtos {
                     product.getAvailableQuantity(), product.isEnabled(), product.getImageFileId(),
                     toImageUrl(product.getImageFileId()), product.getContentHtml(), options, discounts, averageRating,
                     product.getAccessGradeId(), product.getGrantGradeId(), product.getGrantGradeDays(),
-                    product.getOptionGroups() == null ? List.of() : product.getOptionGroups(), product.isRequiresShipping());
+                    product.getOptionGroups() == null ? List.of() : product.getOptionGroups(), product.isRequiresShipping(),
+                    product.hasDigitalFiles() ? product.getDigitalFileIds().size() : 0, product.getDownloadLimit(),
+                    product.getDownloadDays(), digitalFiles);
         }
     }
 
