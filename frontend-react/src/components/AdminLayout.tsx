@@ -71,6 +71,7 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
             {to: '/admin/chatbot', label: '챗봇', features: ['CHATBOT']},
             {to: '/admin/regexes', label: '정규식'},
             {to: '/admin/codes', label: '공통 코드'},
+            {to: '/admin/i18n', label: '국제화'},
             {to: '/admin/files', label: '파일'},
             {to: '/admin/audit-logs', label: '작업 로그'},
         ],

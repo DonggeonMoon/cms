@@ -2664,3 +2664,17 @@ input[type='checkbox'], input[type='radio'] {
     min-width: 260px;
 }
 
+.bundle-editor textarea {
+    width: 100%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem;
+}
+
+.language-select {
+    padding: 4px 8px;
+}
+
+.row.wrap {
+    flex-wrap: wrap;
+}
+

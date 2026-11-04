@@ -24,6 +24,7 @@ import {MemberDetailPage} from './pages/admin/MemberDetailPage';
 import {MemberJoinSettingPage} from './pages/admin/MemberJoinSettingPage';
 import {ChatbotAdminPage} from './pages/admin/ChatbotAdminPage';
 import {MemberListPage} from './pages/admin/MemberListPage';
+import {I18nAdminPage} from './pages/admin/I18nAdminPage';
 import {PasswordHashPage} from './pages/admin/PasswordHashPage';
 import {PolicyAdminPage} from './pages/admin/PolicyAdminPage';
 import {RegexAdminPage} from './pages/admin/RegexAdminPage';
@@ -267,6 +268,7 @@ export const routes = [
                             {path: 'policies/:type', element: <PolicyAdminPage/>},
                             {path: 'regexes', element: <RegexAdminPage/>},
                             {path: 'codes', element: <CodePage/>},
+                            {path: 'i18n', element: <I18nAdminPage/>},
                             {path: 'files', element: <FilePage/>},
                             {path: 'audit-logs', element: <AuditLogPage/>},
                             {path: 'password-hash', element: <PasswordHashPage/>},

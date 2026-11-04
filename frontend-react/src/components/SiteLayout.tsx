@@ -4,20 +4,24 @@ import type {Menu, SiteFeature} from '../api/domain';
 import {siteApi} from '../api/endpoints';
 import {useAuth} from '../auth/AuthContext';
 import {FEATURE_PATHS, menuHref, SiteProvider, useSite} from './SiteContext';
+import {I18nProvider, LANGUAGE_NAMES, useI18n} from '../api/i18n';
 import {ChatbotWidget} from './ChatbotWidget';
 import {TopBar} from './TopBar';
 
 export function SiteLayout() {
     return (
-        <SiteProvider>
-            <SiteFrame/>
-        </SiteProvider>
+        <I18nProvider>
+            <SiteProvider>
+                <SiteFrame/>
+            </SiteProvider>
+        </I18nProvider>
     );
 }
 
 function SiteFrame() {
     const {user, logout} = useAuth();
     const {site, name, menus, configs, isEnabled} = useSite();
+    const {t, language, languages, setLanguage} = useI18n();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -46,7 +50,13 @@ function SiteFrame() {
                             <button type="button" className="link-button" onClick={handleLogout}>로그아웃</button>
                         </>
                     )}
-                    {!user && <NavLink to="/login">로그인</NavLink>}
+                    {!user && <NavLink to="/login">{t('nav.login', '로그인')}</NavLink>}
+                    {languages.length > 1 && (
+                        <select className="language-select" aria-label={t('language.label', '언어')} value={language}
+                                onChange={(e) => setLanguage(e.target.value)}>
+                            {languages.map((code) => <option key={code} value={code}>{LANGUAGE_NAMES[code] ?? code}</option>)}
+                        </select>
+                    )}
                 </nav>
             </header>
             {user?.userType === 'MEMBER' && location.pathname.startsWith('/mypage') && (
@@ -65,7 +75,7 @@ function SiteFrame() {
             </main>
             <footer className="site-footer">
                 <nav className="footer-links" aria-label="사이트 정보">
-                    <Link to="/privacy"><strong>개인정보처리방침</strong></Link>
+                    <Link to="/privacy"><strong>{t('footer.privacy', '개인정보처리방침')}</strong></Link>
                 </nav>
                 <div>{configs['site.footer'] ?? `ⓒ ${new Date().getFullYear()}. dgmoonlabs All Rights Reserved`}</div>
             </footer>

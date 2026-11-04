@@ -3,6 +3,7 @@ import {Outlet} from 'react-router';
 import type {Archive, Board, Menu, Site, SiteFeature} from '../api/domain';
 import {archiveApi, boardApi, siteApi} from '../api/endpoints';
 import {NotFoundPage} from '../pages/HomePage';
+import {useI18n} from '../api/i18n';
 
 const FALLBACK_NAME = 'cms';
 
@@ -48,7 +49,8 @@ export function SiteProvider({children}: { children: ReactNode }) {
 
     useEffect(reload, [reload]);
 
-    const name = site?.name || FALLBACK_NAME;
+    const {t} = useI18n();
+    const name = t('site.name', site?.name || FALLBACK_NAME);
     useEffect(() => {
         document.title = name;
     }, [name]);
@@ -59,14 +61,14 @@ export function SiteProvider({children}: { children: ReactNode }) {
             site,
             siteLoaded,
             name,
-            menus: visibleMenus(menus, isEnabled),
+            menus: translateMenus(visibleMenus(menus, isEnabled), t),
             unlistedBoards: isEnabled('BOARD') ? boards.filter((board) => !linksTo(menus, `/boards/${board.id}`)) : [],
             unlistedArchives: isEnabled('ARCHIVE') ? archives.filter((archive) => !linksTo(menus, `/archives/${archive.id}`)) : [],
-            configs,
+            configs: configs['site.footer'] ? {...configs, 'site.footer': t('site.footer', configs['site.footer'])} : configs,
             isEnabled,
             reload,
         };
-    }, [site, siteLoaded, name, menus, boards, archives, configs, reload]);
+    }, [site, siteLoaded, name, menus, boards, archives, configs, reload, t]);
 
     return <SiteContext.Provider value={value}>{children}</SiteContext.Provider>;
 }
@@ -88,6 +90,10 @@ function visibleMenus(menus: Menu[], isEnabled: (feature: SiteFeature) => boolea
             return menu.isUsing !== false && (!feature || isEnabled(feature));
         })
         .map((menu) => ({...menu, children: visibleMenus(menu.children, isEnabled)}));
+}
+
+function translateMenus(menus: Menu[], t: (key: string, fallback: string) => string): Menu[] {
+    return menus.map((menu) => ({...menu, name: t(`menu.${menu.id}`, menu.name), children: translateMenus(menu.children, t)}));
 }
 
 export function useSite() {
