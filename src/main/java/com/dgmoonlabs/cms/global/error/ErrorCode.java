@@ -59,6 +59,8 @@ public enum ErrorCode {
     INVALID_LESSON(HttpStatus.BAD_REQUEST, "차시에는 강의나 퀴즈가 있어야 하고, 퀴즈 정답은 선택지 중 하나여야 합니다."),
     COURSE_NOT_ENROLLED(HttpStatus.BAD_REQUEST, "먼저 과정을 수강 신청해 주세요."),
     LESSON_LOCKED(HttpStatus.FORBIDDEN, "앞 차시를 먼저 마쳐야 합니다."),
+    MEDIA_PRICE_REQUIRED(HttpStatus.BAD_REQUEST, "유료 스트리밍은 가격을 정해야 합니다."),
+    MEDIA_PURCHASE_REQUIRED(HttpStatus.FORBIDDEN, "구매한 회원만 볼 수 있습니다."),
     MEDIA_FILE_REQUIRED(HttpStatus.BAD_REQUEST, "동영상이나 음악 파일을 올려야 합니다."),
     MEDIA_THUMBNAIL_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "썸네일은 이미지 파일이어야 합니다."),
     GUEST_CONTACT_REQUIRED(HttpStatus.BAD_REQUEST, "연락받을 연락처나 이메일을 입력해 주세요."),

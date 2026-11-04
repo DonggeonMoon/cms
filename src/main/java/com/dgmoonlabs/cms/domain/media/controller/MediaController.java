@@ -5,6 +5,10 @@ import com.dgmoonlabs.cms.domain.media.dto.MediaDtos.*;
 import com.dgmoonlabs.cms.domain.media.service.MediaService;
 import com.dgmoonlabs.cms.global.security.LoginUser;
 import jakarta.validation.Valid;
+import com.dgmoonlabs.cms.domain.common.file.service.FileService.DownloadableFile;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -13,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
 import java.net.URI;
 
 @RestController
@@ -30,6 +35,18 @@ public class MediaController {
     @GetMapping("/api/media/{id:\\d+}")
     public ResponseEntity<MediaResponse> get(@PathVariable final Long id) {
         return ResponseEntity.ok(mediaService.getMedia(id));
+    }
+
+    @GetMapping("/api/media/{id:\\d+}/stream")
+    public ResponseEntity<Resource> stream(@PathVariable final Long id) {
+        DownloadableFile file = mediaService.stream(id);
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.parseMediaType(file.mimeType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.inline().filename(file.filename(), StandardCharsets.UTF_8).build().toString())
+                .header("X-Content-Type-Options", "nosniff")
+                .header(HttpHeaders.CACHE_CONTROL, "private, no-store")
+                .body(file.resource());
     }
 
     @PostMapping("/api/media/{id:\\d+}/start")

@@ -1,3 +1,4 @@
+import {won} from '../components/AdminCrudPage';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {Link, useParams, useSearchParams} from 'react-router';
 import type {MediaItem, MediaProgress, MyMedia} from '../api/domain';
@@ -74,6 +75,7 @@ export function MediaListPage() {
                         <strong className="product-name">{item.title}</strong>
                         <span className="row align-center">
                             <span className="badge">{mediaLabel(item)}</span>
+                            {item.paid && <span className="badge">{item.playable ? '구매함' : won(item.price ?? 0)}</span>}
                             <GradeBadge gradeId={item.accessGradeId}/>
                             {item.myProgress && <ProgressSummary progress={item.myProgress}/>}
                         </span>
@@ -105,9 +107,22 @@ export function MediaDetailPage() {
             <p className="muted">
                 {mediaLabel(item)} · {formatDuration(item.durationSeconds)} · 진도율 {item.completionRate}% 이상 재생하면 수강 완료
             </p>
-            {user?.userType === 'MEMBER'
-                ? <MediaPlayer item={item}/>
-                : <MemberOnlyNotice message="스트리밍은 회원만 재생할 수 있습니다. 진도는 회원별로 저장됩니다."/>}
+            {user?.userType !== 'MEMBER'
+                ? <MemberOnlyNotice message={item.paid ? '회원으로 로그인한 뒤 구매해 주세요.' : '스트리밍은 회원만 재생할 수 있습니다. 진도는 회원별로 저장됩니다.'}/>
+                : item.playable ? (
+                    <>
+                        {item.paid && (
+                            <p className="muted small">구매한 강의입니다.{item.accessExpiresAt && ` ${formatDateTime(item.accessExpiresAt)}까지 볼 수 있습니다.`}</p>
+                        )}
+                        <MediaPlayer item={item}/>
+                    </>
+                ) : (
+                    <div className="notice-box media-purchase">
+                        <p><strong>{won(item.price ?? 0)}</strong>
+                            {item.accessDays != null ? ` · 결제 후 ${item.accessDays}일 동안 시청` : ' · 결제 후 기간 제한 없이 시청'}</p>
+                        <Link className="button primary" to={`/orders/new?productId=${item.productId}&quantity=1`}>구매하기</Link>
+                    </div>
+                )}
             {item.description && <p className="media-description">{item.description}</p>}
             <p><Link to="/media">목록으로</Link></p>
         </section>
@@ -218,7 +233,7 @@ function MediaPlayer({item}: { item: MediaItem }) {
 
     const mediaProps = {
         ref: mediaRef,
-        src: item.mediaUrl,
+        src: item.mediaUrl ?? undefined,
         controls: true,
         preload: 'metadata' as const,
         controlsList: 'nodownload',

@@ -8,8 +8,8 @@ import {routes} from '../router';
 const SITE = {id: 1, name: '우리 기관', description: null, domain: null, theme: null, type: null, locale: 'ko', isDefault: true, features: {}};
 const ITEM = {
     id: 7, title: '현장 영상', description: '첫 촬영', fileId: 3, fileName: 'field.mp4', mediaType: 'VIDEO',
-    mediaUrl: '/api/files/3/view', thumbnailFileId: 4, thumbnailUrl: '/api/files/4/thumbnail', posterUrl: '/api/files/4/view', durationSeconds: 100, completionRate: 90, isUsing: true, createdAt: '2026-11-01T10:00:00',
-    myProgress: null,
+    mediaUrl: '/api/media/7/stream', thumbnailFileId: 4, thumbnailUrl: '/api/files/4/thumbnail', posterUrl: '/api/files/4/view', durationSeconds: 100, completionRate: 90, isUsing: true, createdAt: '2026-11-01T10:00:00',
+    myProgress: null, paid: false, price: null, accessDays: null, productId: null, playable: true, accessExpiresAt: null,
 };
 const PROGRESS = {status: 'IN_PROGRESS', progressRate: 0, watchedSeconds: 0, lastPositionSeconds: 0, startedAt: '2026-11-03T10:00:00', lastWatchedAt: null, completedAt: null};
 
@@ -27,6 +27,9 @@ function stubApi(member: boolean, calls: { url: string; body: unknown }[] = [], 
                 return member ? respond(200, {id: 1, username: 'learner', name: '학습자', userType: 'MEMBER'}) : respond(401, {code: 'UNAUTHENTICATED'});
             case '/api/media/7':
                 return respond(200, ITEM);
+            case '/api/media/9':
+                return respond(200, {...ITEM, id: 9, title: '유료 강의', mediaUrl: null, paid: true, price: 30000, accessDays: 30,
+                    productId: 55, playable: false});
             case '/api/media/7/start':
                 return respond(200, PROGRESS);
             case '/api/media/7/progress':
@@ -102,5 +105,14 @@ describe('media pages', () => {
         expect(calls.some((call) => call.url === '/api/media/7/start')).toBe(true);
         const report = calls.find((call) => call.url === '/api/media/7/progress');
         expect(report?.body).toEqual({ranges: [{start: 0, end: 3}, {start: 30, end: 31}], position: 31});
+    });
+
+    it('offers paid media for purchase instead of playing it', async () => {
+        stubApi(true);
+        renderAt('/media/9');
+        expect(await screen.findByText('30,000원')).toBeInTheDocument();
+        expect(screen.getByText(/결제 후 30일 동안 시청/)).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '구매하기'})).toHaveAttribute('href', '/orders/new?productId=55&quantity=1');
+        expect(document.querySelector('video')).toBeNull();
     });
 });

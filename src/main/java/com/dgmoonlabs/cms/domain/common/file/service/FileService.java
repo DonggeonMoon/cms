@@ -112,6 +112,12 @@ public class FileService {
         return downloadFile(findFile(id));
     }
 
+    @Transactional(readOnly = true)
+    public DownloadableFile viewProtected(final Long id) {
+        File file = findFile(id);
+        return new DownloadableFile(fileStorage.load(file.getPath()), file.getOriginalName(), file.getMimeType());
+    }
+
     @Transactional
     public void protect(final Collection<Long> ids) {
         fileRepository.findAllById(ids).forEach(File::protect);

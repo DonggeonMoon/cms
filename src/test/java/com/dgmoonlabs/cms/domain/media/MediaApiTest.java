@@ -83,8 +83,10 @@ class MediaApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.thumbnailUrl").value("/api/files/" + imageId + "/thumbnail"))
                 .andExpect(jsonPath("$.posterUrl").value("/api/files/" + imageId + "/view"));
 
-        mockMvc.perform(get("/api/files/" + videoId + "/view").header(HttpHeaders.RANGE, "bytes=0-3"))
+        getJson("/api/media/" + mediaId, null).andExpect(jsonPath("$.mediaUrl").value("/api/media/" + mediaId + "/stream"));
+        mockMvc.perform(get("/api/media/" + mediaId + "/stream").header(HttpHeaders.RANGE, "bytes=0-3"))
                 .andExpect(status().isPartialContent());
+        mockMvc.perform(get("/api/files/" + videoId + "/view")).andExpect(status().isNotFound());
     }
 
     @Test

@@ -7,6 +7,8 @@ import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
+import java.math.BigDecimal;
+
 @Entity
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -55,6 +57,31 @@ public class Media extends BaseEntity {
 
     @Comment("시청 가능 등급 ID (없으면 누구나)")
     private Long accessGradeId;
+
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    @Comment("유료 여부 (결제한 회원만 시청)")
+    private boolean paid;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("판매 가격")
+    private BigDecimal price;
+
+    @Comment("구매 후 시청 가능 일수 (없으면 무기한)")
+    private Integer accessDays;
+
+    @Comment("판매용으로 자동 관리하는 상품 ID")
+    private Long productId;
+
+    public void changeSale(final boolean paid, final BigDecimal price, final Integer accessDays) {
+        this.paid = paid;
+        this.price = paid ? price : null;
+        this.accessDays = paid ? accessDays : null;
+    }
+
+    public void linkProduct(final Long productId) {
+        this.productId = productId;
+    }
 
     public void changeAccessGrade(final Long accessGradeId) {
         this.accessGradeId = accessGradeId;

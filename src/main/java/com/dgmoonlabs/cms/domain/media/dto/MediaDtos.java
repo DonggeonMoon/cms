@@ -9,6 +9,7 @@ import com.dgmoonlabs.cms.domain.media.entity.MediaProgress;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,8 +25,15 @@ public final class MediaDtos {
             @NotNull @Min(1) @Max(86_400) Integer durationSeconds,
             @Min(1) @Max(100) Integer completionRate,
             Boolean isUsing,
-            Long accessGradeId
+            Long accessGradeId,
+            Boolean paid,
+            @PositiveOrZero BigDecimal price,
+            @Positive @Max(36_500) Integer accessDays
     ) {
+        public boolean paidOrDefault() {
+            return Boolean.TRUE.equals(paid);
+        }
+
         public int completionRateOrDefault() {
             return completionRate == null ? Media.DEFAULT_COMPLETION_RATE : completionRate;
         }
@@ -50,13 +58,18 @@ public final class MediaDtos {
     public record MediaResponse(Long id, String title, String description, Long fileId, String fileName,
                                 MediaType mediaType, String mediaUrl, Long thumbnailFileId, String thumbnailUrl,
                                 String posterUrl, int durationSeconds, int completionRate, boolean isUsing,
-                                LocalDateTime createdAt, MyProgress myProgress, Long accessGradeId) {
-        public static MediaResponse of(final Media media, final FileResponse file, final MyProgress myProgress) {
+                                LocalDateTime createdAt, MyProgress myProgress, Long accessGradeId, boolean paid,
+                                BigDecimal price, Integer accessDays, Long productId, boolean playable,
+                                LocalDateTime accessExpiresAt) {
+        /** 재생 주소는 권한을 확인하는 스트림 주소를 쓰고, 볼 수 없으면(유료 미구매) 비워 둔다. */
+        public static MediaResponse of(final Media media, final FileResponse file, final MyProgress myProgress,
+                                       final boolean playable, final LocalDateTime accessExpiresAt) {
             return new MediaResponse(media.getId(), media.getTitle(), media.getDescription(), media.getFileId(),
                     file == null ? null : file.originalName(), media.getMediaType(),
-                    "/api/files/" + media.getFileId() + "/view", media.getThumbnailFileId(), MediaDtos.thumbnailUrl(media),
-                    MediaDtos.posterUrl(media), media.getDurationSeconds(), media.getCompletionRate(), media.isUsing(),
-                    media.getCreatedAt(), myProgress, media.getAccessGradeId());
+                    playable ? "/api/media/" + media.getId() + "/stream" : null, media.getThumbnailFileId(),
+                    MediaDtos.thumbnailUrl(media), MediaDtos.posterUrl(media), media.getDurationSeconds(),
+                    media.getCompletionRate(), media.isUsing(), media.getCreatedAt(), myProgress, media.getAccessGradeId(),
+                    media.isPaid(), media.getPrice(), media.getAccessDays(), media.getProductId(), playable, accessExpiresAt);
         }
     }
 

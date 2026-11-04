@@ -41,7 +41,7 @@ public class SitemapService {
         }
         if (siteService.isEnabled(SiteFeature.PRODUCT)) {
             productRepository.findAllByIsEnabledTrueAndDeletedAtIsNullOrderByIdAsc().stream()
-                    .filter(product -> product.getAccessGradeId() == null)
+                    .filter(product -> product.getAccessGradeId() == null && product.getMediaId() == null)
                     .forEach(product -> entries.add(new Entry("/products/" + product.getId(), product.getModifiedAt())));
         }
         if (siteService.isEnabled(SiteFeature.PROGRAM)) {

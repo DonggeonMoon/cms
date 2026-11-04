@@ -3,6 +3,7 @@ package com.dgmoonlabs.cms.domain.media.service;
 import com.dgmoonlabs.cms.domain.common.file.constant.MediaType;
 import com.dgmoonlabs.cms.domain.common.file.dto.FileResponse;
 import com.dgmoonlabs.cms.domain.common.file.service.FileService;
+import com.dgmoonlabs.cms.domain.common.file.service.FileService.DownloadableFile;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.domain.common.user.entity.member.Member;
 import com.dgmoonlabs.cms.domain.common.user.repository.MemberRepository;
@@ -12,6 +13,7 @@ import com.dgmoonlabs.cms.domain.media.entity.Media;
 import com.dgmoonlabs.cms.domain.media.entity.MediaEnrollment;
 import com.dgmoonlabs.cms.domain.media.entity.MediaProgress;
 import com.dgmoonlabs.cms.domain.media.entity.WatchedRanges;
+import com.dgmoonlabs.cms.domain.media.repository.MediaAccessRepository;
 import com.dgmoonlabs.cms.domain.media.repository.MediaEnrollmentRepository;
 import com.dgmoonlabs.cms.domain.media.repository.MediaProgressRepository;
 import com.dgmoonlabs.cms.domain.media.repository.MediaRepository;
@@ -27,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -42,6 +45,8 @@ public class MediaService {
     private final MediaEnrollmentRepository enrollmentRepository;
     private final MemberRepository memberRepository;
     private final FileService fileService;
+    private final MediaAccessRepository accessRepository;
+    private final MediaSalesService salesService;
 
     @Transactional(readOnly = true)
     public Page<MediaResponse> getMediaList(final String keyword, final MediaType mediaType, final Pageable pageable) {
@@ -60,6 +65,7 @@ public class MediaService {
     public MyProgress start(final Long id, final LoginUser member) {
         Media media = findPublic(id);
         gradeService.require(media.getAccessGradeId());
+        requirePurchased(media, member.id());
         MediaEnrollment enrollment = enrollmentOf(media.getId(), member.id());
         MediaProgress progress = progressRepository.findByMediaIdAndMemberId(media.getId(), member.id())
                 .orElseGet(() -> progressRepository.save(MediaProgress.start(media.getId(), member.id())));
@@ -70,6 +76,7 @@ public class MediaService {
     public MyProgress record(final Long id, final LoginUser member, final ProgressRequest request) {
         Media media = findPublic(id);
         gradeService.require(media.getAccessGradeId());
+        requirePurchased(media, member.id());
         MediaEnrollment enrollment = enrollmentOf(media.getId(), member.id());
         MediaProgress progress = progressRepository.findForUpdate(media.getId(), member.id())
                 .orElseGet(() -> progressRepository.save(MediaProgress.start(media.getId(), member.id())));
@@ -113,9 +120,24 @@ public class MediaService {
         return toResponses(mediaRepository.search(Objects.requireNonNullElse(keyword, ""), typesOf(mediaType), false, pageable), null);
     }
 
+    /** 파일 주소를 직접 열지 못하게 보호해 두고, 권한을 확인한 뒤에만 내려준다. 범위 요청(Range)으로 건너뛰며 재생할 수 있다. */
+    @Transactional(readOnly = true)
+    public DownloadableFile stream(final Long id) {
+        boolean admin = CurrentUser.isAdmin();
+        Media media = admin ? findMedia(id) : findPublic(id);
+        if (!admin) {
+            gradeService.require(media.getAccessGradeId());
+            if (!canPlay(media, currentMemberId(), LocalDateTime.now())) {
+                throw new BusinessException(ErrorCode.MEDIA_PURCHASE_REQUIRED);
+            }
+        }
+        return fileService.viewProtected(media.getFileId());
+    }
+
     @Transactional
     public Long createMedia(final MediaSaveRequest request) {
-        return mediaRepository.save(Media.builder()
+        requirePrice(request);
+        Media media = mediaRepository.save(Media.builder()
                 .title(request.title().trim())
                 .description(request.description())
                 .fileId(request.fileId())
@@ -125,20 +147,49 @@ public class MediaService {
                 .completionRate(request.completionRateOrDefault())
                 .isUsing(request.isUsingOrDefault())
                 .accessGradeId(gradeService.validGradeId(request.accessGradeId()))
-                .build()).getId();
+                .build());
+        applySale(media, request);
+        return media.getId();
     }
 
     @Transactional
     public void updateMedia(final Long id, final MediaSaveRequest request) {
-        findMedia(id).update(request.title().trim(), request.description(), request.fileId(),
+        requirePrice(request);
+        Media media = findMedia(id);
+        media.update(request.title().trim(), request.description(), request.fileId(),
                 requireImage(request.thumbnailFileId()), playableType(request.fileId()),
                 request.durationSeconds(), request.completionRateOrDefault(), request.isUsingOrDefault());
-        findMedia(id).changeAccessGrade(gradeService.validGradeId(request.accessGradeId()));
+        media.changeAccessGrade(gradeService.validGradeId(request.accessGradeId()));
+        applySale(media, request);
     }
 
     @Transactional
     public void deleteMedia(final Long id) {
-        findMedia(id).delete();
+        Media media = findMedia(id);
+        media.delete();
+        salesService.syncProduct(media);
+    }
+
+    private void applySale(final Media media, final MediaSaveRequest request) {
+        media.changeSale(request.paidOrDefault(), request.price(), request.accessDays());
+        fileService.protect(List.of(media.getFileId()));
+        salesService.syncProduct(media);
+    }
+
+    private static void requirePrice(final MediaSaveRequest request) {
+        if (request.paidOrDefault() && (request.price() == null || request.price().signum() <= 0)) {
+            throw new BusinessException(ErrorCode.MEDIA_PRICE_REQUIRED);
+        }
+    }
+
+    private void requirePurchased(final Media media, final Long memberId) {
+        if (!canPlay(media, memberId, LocalDateTime.now())) {
+            throw new BusinessException(ErrorCode.MEDIA_PURCHASE_REQUIRED);
+        }
+    }
+
+    private boolean canPlay(final Media media, final Long memberId, final LocalDateTime now) {
+        return !media.isPaid() || (memberId != null && !accessRepository.findActive(memberId, List.of(media.getId()), now).isEmpty());
     }
 
     @Transactional(readOnly = true)
@@ -165,8 +216,20 @@ public class MediaService {
         Map<Long, MediaProgress> progresses = memberId == null ? Map.of() : byKey(
                 progressRepository.findAllByMemberIdAndMediaIdIn(memberId, mediaIds), MediaProgress::getMediaId);
         Map<Long, FileResponse> files = filesOf(mediaItems);
-        return mediaItems.stream().map(media -> MediaResponse.of(media, files.get(media.getFileId()),
-                MyProgress.of(enrollments.get(media.getId()), progresses.get(media.getId())))).toList();
+        LocalDateTime now = LocalDateTime.now();
+        boolean admin = CurrentUser.isAdmin();
+        Map<Long, LocalDateTime> purchased = new HashMap<>();
+        if (memberId != null) {
+            accessRepository.findActive(memberId, mediaIds, now).forEach(access -> purchased.merge(access.getMediaId(),
+                    access.getExpiresAt() == null ? LocalDateTime.MAX : access.getExpiresAt(), (a, b) -> a.isAfter(b) ? a : b));
+        }
+        return mediaItems.stream().map(media -> {
+            LocalDateTime until = purchased.get(media.getId());
+            boolean playable = admin || !media.isPaid() || until != null;
+            return MediaResponse.of(media, files.get(media.getFileId()),
+                    MyProgress.of(enrollments.get(media.getId()), progresses.get(media.getId())), playable,
+                    until == null || until.equals(LocalDateTime.MAX) ? null : until);
+        }).toList();
     }
 
     private Map<Long, FileResponse> filesOf(final Collection<Media> mediaItems) {

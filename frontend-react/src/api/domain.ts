@@ -55,7 +55,7 @@ export interface MediaItem {
     fileId: number;
     fileName: string | null;
     mediaType: MediaType | null;
-    mediaUrl: string;
+    mediaUrl: string | null;
     thumbnailFileId: number | null;
     thumbnailUrl: string | null;
     posterUrl: string | null;
@@ -64,6 +64,12 @@ export interface MediaItem {
     isUsing: boolean;
     createdAt: string;
     myProgress: MediaProgress | null;
+    paid: boolean;
+    price: number | null;
+    accessDays: number | null;
+    productId: number | null;
+    playable: boolean;
+    accessExpiresAt: string | null;
 }
 
 export interface MyMedia {

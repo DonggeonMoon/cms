@@ -31,6 +31,9 @@ public class Product extends BaseEntity {
     @Comment("상품 설명")
     private String description;
 
+    @Comment("판매하는 스트리밍 ID (스트리밍 설정에서 자동 관리, 상품 목록에는 나오지 않음)")
+    private Long mediaId;
+
     @Comment("카테고리 ID")
     private Long categoryId;
 

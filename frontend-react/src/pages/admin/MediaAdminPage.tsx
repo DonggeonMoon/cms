@@ -3,7 +3,7 @@ import type {Query} from '../../api/client';
 import type {Learner, MediaItem} from '../../api/domain';
 import {adminApi} from '../../api/endpoints';
 import type {MediaType, Page} from '../../api/types';
-import {AdminCrudPage, YesNo} from '../../components/AdminCrudPage';
+import {AdminCrudPage, won, YesNo} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatDateTime, formatDuration} from '../../components/format';
 import {ENROLLMENT_STATUS} from '../../components/labels';
@@ -18,6 +18,11 @@ const FIELDS: FieldSpec[] = [
     {name: 'completionRate', label: '수강 완료 진도율(%)', type: 'number', required: true, min: 1,
         help: '실제로 재생한 구간이 이 비율 이상이면 수강 완료로 기록합니다.'},
     {name: 'isUsing', label: '공개', type: 'checkbox'},
+    {name: 'paid', label: '유료', type: 'checkbox',
+        help: '켜면 결제한 회원만 볼 수 있습니다. 판매용 상품이 자동으로 만들어지고(상품 목록에는 나오지 않음) 쿠폰·포인트를 쓸 수 있습니다.'},
+    {name: 'price', label: '가격(원)', type: 'number', min: 1, required: true, visibleWhen: (v) => Boolean(v.paid)},
+    {name: 'accessDays', label: '시청 가능 기간(일)', type: 'number', min: 1, visibleWhen: (v) => Boolean(v.paid),
+        help: '결제일부터 셉니다. 비워두면 무기한입니다.'},
     {name: 'description', label: '설명', type: 'textarea'},
 ];
 
@@ -71,6 +76,7 @@ export function MediaAdminPage() {
                 {label: '종류', render: (l) => (l.mediaType === 'AUDIO' ? '음악' : '동영상')},
                 {label: '재생 시간', render: (l) => formatDuration(l.durationSeconds)},
                 {label: '완료 기준', render: (l) => `${l.completionRate}%`},
+                {label: '판매', render: (l) => (l.paid ? `유료 ${won(l.price ?? 0)}` : '무료')},
                 {label: '공개', render: (l) => <YesNo value={l.isUsing}/>},
                 {label: '등록일', render: (l) => formatDateTime(l.createdAt)},
             ]}
