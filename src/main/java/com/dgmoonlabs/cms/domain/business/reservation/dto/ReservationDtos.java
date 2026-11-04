@@ -86,6 +86,13 @@ public final class ReservationDtos {
         }
     }
 
+    public record WorkerRequest(@NotBlank @Size(max = 50) String workerName,
+                                @Size(max = 30) @MatchesRegex(RegexTarget.PHONE_NUMBER) String workerPhone) {
+    }
+
+    public record WorkCompleteRequest(@Size(max = 5000) String report, @Size(max = 20) List<@NotNull Long> photoFileIds) {
+    }
+
     public record ReturnRequest(@PositiveOrZero BigDecimal deduction, @Size(max = 500) String memo) {
     }
 
@@ -97,7 +104,11 @@ public final class ReservationDtos {
             @NotBlank @Size(max = 30) @MatchesRegex(RegexTarget.PHONE_NUMBER) String phoneNumber,
             LocalDateTime startAt,
             LocalDateTime endAt,
-            @Size(max = 100) List<@NotBlank @Size(max = 20) String> cells
+            @Size(max = 100) List<@NotBlank @Size(max = 20) String> cells,
+            @Size(max = 10) String visitPostalCode,
+            @Size(max = 200) String visitAddress,
+            @Size(max = 200) String visitDetailAddress,
+            @Size(max = 1000) String requestMemo
     ) {
         public List<String> cellsOrEmpty() {
             return cells == null ? List.of() : cells;
@@ -109,7 +120,10 @@ public final class ReservationDtos {
                                       List<String> cells, int quantity, BigDecimal totalPrice, ReservationStatus status, String customStatus,
                                       String applicantName, String phoneNumber, BigDecimal depositAmount,
                                       LocalDateTime returnedAt, BigDecimal depositRefunded, String returnMemo,
-                                      boolean overdue, long lateDays, LocalDateTime createdAt) {
+                                      boolean overdue, long lateDays, String visitPostalCode, String visitAddress,
+                                      String visitDetailAddress, String requestMemo, String workerName, String workerPhone,
+                                      LocalDateTime workerAssignedAt, LocalDateTime workCompletedAt, String workReport,
+                                      List<String> workPhotoUrls, LocalDateTime createdAt) {
         public static ReservationResponse from(final Reservation reservation) {
             LocalDateTime now = LocalDateTime.now();
             return new ReservationResponse(reservation.getId(), reservation.getReservationNumber(),
@@ -119,7 +133,13 @@ public final class ReservationDtos {
                     reservation.getCustomStatus(),
                     reservation.getApplicantName(), reservation.getPhoneNumber(), reservation.getDepositAmount(),
                     reservation.getReturnedAt(), reservation.getDepositRefunded(), reservation.getReturnMemo(),
-                    reservation.isOverdueAt(now), reservation.lateDaysAt(now), reservation.getCreatedAt());
+                    reservation.isOverdueAt(now), reservation.lateDaysAt(now), reservation.getVisitPostalCode(),
+                    reservation.getVisitAddress(), reservation.getVisitDetailAddress(), reservation.getRequestMemo(),
+                    reservation.getWorkerName(), reservation.getWorkerPhone(), reservation.getWorkerAssignedAt(),
+                    reservation.getWorkCompletedAt(), reservation.getWorkReport(),
+                    reservation.getWorkPhotoFileIds() == null ? List.of()
+                            : reservation.getWorkPhotoFileIds().stream().map(id -> "/api/files/" + id + "/view").toList(),
+                    reservation.getCreatedAt());
         }
     }
 }

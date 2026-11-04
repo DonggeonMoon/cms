@@ -20,7 +20,7 @@ const minutesBetween = (from: string, to: string) => (new Date(to).getTime() - n
 
 export function estimateReservation(program: Program, selection: ReservationSelection): number {
     const price = Number(program.price);
-    if (program.reservationType === 'CONSULTATION') {
+    if (program.reservationType === 'CONSULTATION' || program.reservationType === 'VISIT') {
         return price;
     }
     if (program.reservationType === 'ITEM_RENTAL') {
@@ -57,7 +57,7 @@ export function ReservationPicker({program}: { program: Program }) {
     const type = program.reservationType;
 
     useEffect(() => {
-        const query = type === 'CONSULTATION' ? {date}
+        const query = type === 'CONSULTATION' || type === 'VISIT' ? {date}
             : type === 'RENTAL' ? {date, ...(startAt && endAt ? {from: startAt, to: endAt} : {})}
                 : type === 'LODGING' || type === 'ITEM_RENTAL' ? (date && checkOut ? {from: `${date}T00:00:00`, to: `${checkOut}T00:00:00`} : null)
                     : {};
@@ -75,7 +75,7 @@ export function ReservationPicker({program}: { program: Program }) {
     const selection: ReservationSelection = byDates
         ? {startAt: date && checkOut ? `${date}T00:00:00` : null, endAt: checkOut ? `${checkOut}T00:00:00` : null, cells, quantity}
         : {startAt, endAt, cells};
-    const needsCells = type !== 'CONSULTATION' && type !== 'ITEM_RENTAL';
+    const needsCells = type !== 'CONSULTATION' && type !== 'ITEM_RENTAL' && type !== 'VISIT';
     const remaining = availability?.remainingItems ?? null;
     const rentalDays = selection.startAt && selection.endAt ? Math.round(minutesBetween(selection.startAt, selection.endAt) / 1440) : 0;
     const rentalReady = type !== 'ITEM_RENTAL' || (rentalDays > 0 && (program.maxRentalDays == null || rentalDays <= program.maxRentalDays)
@@ -98,7 +98,7 @@ export function ReservationPicker({program}: { program: Program }) {
 
     return (
         <form className="reservation-picker" onSubmit={submit}>
-            {(type === 'CONSULTATION' || type === 'RENTAL' || byDates) && (
+            {(type === 'CONSULTATION' || type === 'VISIT' || type === 'RENTAL' || byDates) && (
                 <div className="row align-center">
                     <label>{type === 'LODGING' ? '체크인' : type === 'ITEM_RENTAL' ? '대여일' : '날짜'}{' '}
                         <input type="date" value={date} min={firstDay} max={dateOf(program.endDateTime) || undefined}
@@ -121,8 +121,8 @@ export function ReservationPicker({program}: { program: Program }) {
                     )}
                 </div>
             )}
-            {type === 'CONSULTATION' && (
-                <div className="slot-list" role="radiogroup" aria-label="상담 시간">
+            {(type === 'CONSULTATION' || type === 'VISIT') && (
+                <div className="slot-list" role="radiogroup" aria-label={type === 'VISIT' ? '방문 시간' : '상담 시간'}>
                     {slots.map((slot) => (
                         <button key={slot.startAt} type="button" role="radio" aria-checked={startAt === slot.startAt}
                                 className={startAt === slot.startAt ? 'primary' : ''} disabled={slot.remaining <= 0}

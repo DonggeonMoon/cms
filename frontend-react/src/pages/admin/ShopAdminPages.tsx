@@ -1,3 +1,4 @@
+import {fileApi} from '../../api/files';
 import {attributesToForm, productCategoryFields, splitCategoryValues, useCategories} from '../../api/categories';
 import type {FileInfo} from '../../api/types';
 import {type FormEvent, useEffect, useMemo, useState} from 'react';
@@ -406,20 +407,20 @@ const PROGRAM_FIELDS: FieldSpec[] = [
     {name: 'name', label: '이름', required: true, wide: true},
     {name: 'price', label: '기본 가격(원)', type: 'number', required: true, wide: true,
         help: '프로그램은 1인, 상담은 1회, 대관은 칸·예약 단위당, 숙박은 칸·1박당, 공연은 좌석당, 물품 대여는 1개·1일당 가격입니다. 배치표에서 칸별 가격을 따로 줄 수 있습니다.'},
-    {name: 'maximumPerson', label: '정원·수량', type: 'number', wide: true, visibleWhen: isType('PROGRAM', 'CONSULTATION', 'ITEM_RENTAL'),
-        help: '프로그램은 전체 인원, 상담은 시간대별 인원(비우면 프로그램은 제한 없음, 상담은 1명), 물품 대여는 보유 수량(필수)입니다.'},
+    {name: 'maximumPerson', label: '정원·수량', type: 'number', wide: true, visibleWhen: isType('PROGRAM', 'CONSULTATION', 'VISIT', 'ITEM_RENTAL'),
+        help: '프로그램은 전체 인원, 상담·방문은 시간대별 동시 예약 수(비우면 프로그램은 제한 없음, 상담·방문은 1건), 물품 대여는 보유 수량(필수)입니다.'},
     {name: 'depositAmount', label: '보증금(원, 1개당)', type: 'number', wide: true, visibleWhen: isType('ITEM_RENTAL'),
         help: '결제 금액에 더해 받고, 반납 처리할 때 차감액을 뺀 만큼 돌려줍니다.'},
     {name: 'maxRentalDays', label: '최대 대여 일수', type: 'number', min: 1, wide: true, visibleWhen: isType('ITEM_RENTAL'),
         help: '비워두면 제한이 없습니다.'},
     {name: 'isEnabled', label: '공개', type: 'checkbox', wide: true},
     {name: 'startDateTime', label: '시작 일시', type: 'datetime', wide: true,
-        help: '프로그램은 진행 시작, 상담·대관·숙박은 예약을 받는 기간의 시작, 공연은 공연 일시입니다.'},
+        help: '프로그램은 진행 시작, 상담·방문·대관·숙박은 예약을 받는 기간의 시작, 공연은 공연 일시입니다.'},
     {name: 'endDateTime', label: '종료 일시', type: 'datetime', wide: true},
-    {name: 'slotMinutes', label: '예약 단위(분)', type: 'number', wide: true, visibleWhen: isType('CONSULTATION', 'RENTAL'),
-        help: '상담 1회 길이, 대관 최소 단위입니다.'},
-    {name: 'openTime', label: '운영 시작 시각', type: 'time', wide: true, visibleWhen: isType('CONSULTATION', 'RENTAL')},
-    {name: 'closeTime', label: '운영 종료 시각', type: 'time', wide: true, visibleWhen: isType('CONSULTATION', 'RENTAL')},
+    {name: 'slotMinutes', label: '예약 단위(분)', type: 'number', wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL'),
+        help: '상담·방문 1회 길이, 대관 최소 단위입니다.'},
+    {name: 'openTime', label: '운영 시작 시각', type: 'time', wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL')},
+    {name: 'closeTime', label: '운영 종료 시각', type: 'time', wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL')},
     {name: 'layout', label: '배치표', type: 'layout', visibleWhen: isType('RENTAL', 'LODGING', 'EVENT'),
         help: '좌석·객실·공간을 칠해 두면 사용자가 그 칸을 골라 예약합니다.'},
     {name: 'applicationStartDateTime', label: '신청 시작', type: 'datetime', wide: true},
@@ -521,7 +522,8 @@ export function ReservationAdminPage() {
                                             onApply={(code) => void statusApi.applyToReservation(r.id, code).then(reload)}/>
                     </>
                 )},
-                {label: '반납', render: (r, reload) => r.reservationType === 'ITEM_RENTAL' && <ReturnCell reservation={r} onDone={reload}/>},
+                {label: '반납·방문', render: (r, reload) => r.reservationType === 'ITEM_RENTAL' ? <ReturnCell reservation={r} onDone={reload}/>
+                        : r.reservationType === 'VISIT' && <VisitCell reservation={r} onDone={reload}/>},
                 {label: '상태 처리', className: 'button-cell', render: (r, reload) => r.status === 'PENDING_PAYMENT' && (
                     <button type="button" onClick={() => {
                         if (window.confirm('결제를 받은 것으로 보고 예약을 확정할까요? 결제 내역에는 기록되지 않습니다.')) {
@@ -538,6 +540,55 @@ export function ReservationAdminPage() {
                 )},
             ]}
         />
+    );
+}
+
+function VisitCell({reservation, onDone}: { reservation: Reservation; onDone: () => void }) {
+    const [workerName, setWorkerName] = useState(reservation.workerName ?? '');
+    const [workerPhone, setWorkerPhone] = useState(reservation.workerPhone ?? '');
+    const [report, setReport] = useState('');
+    const [photoIds, setPhotoIds] = useState<number[]>([]);
+    const [error, setError] = useState<unknown>(null);
+    const run = (pending: Promise<unknown>) => {
+        setError(null);
+        pending.then(onDone).catch(setError);
+    };
+    const address = [reservation.visitPostalCode && `(${reservation.visitPostalCode})`, reservation.visitAddress, reservation.visitDetailAddress]
+        .filter(Boolean).join(' ');
+    return (
+        <div className="small">
+            <div>{address}</div>
+            {reservation.requestMemo && <div className="muted">요청: {reservation.requestMemo}</div>}
+            {reservation.workCompletedAt ? (
+                <div>{formatDateTime(reservation.workCompletedAt)} 완료 · {reservation.workerName}{reservation.workReport && ` · ${reservation.workReport}`}</div>
+            ) : reservation.status === 'CONFIRMED' && (
+                <div className="review-cell">
+                    <input aria-label="작업자 이름" placeholder="작업자" value={workerName} onChange={(e) => setWorkerName(e.target.value)}/>
+                    <input aria-label="작업자 연락처" placeholder="연락처" value={workerPhone} onChange={(e) => setWorkerPhone(e.target.value)}/>
+                    <button type="button" disabled={!workerName.trim()}
+                            onClick={() => run(adminApi.reservations.assignWorker(reservation.id, {workerName, workerPhone}))}>
+                        {reservation.workerName ? '작업자 변경' : '작업자 배정'}
+                    </button>
+                    {reservation.workerName && (
+                        <>
+                            <input aria-label="완료 보고" placeholder="작업 내용" value={report} onChange={(e) => setReport(e.target.value)}/>
+                            <input type="file" accept="image/*" multiple aria-label="완료 사진" onChange={(e) => {
+                                const files = Array.from(e.target.files ?? []);
+                                Promise.all(files.map((file) => fileApi.upload(file)))
+                                    .then((uploaded) => setPhotoIds(uploaded.map((file) => file.id)))
+                                    .catch(setError);
+                            }}/>
+                            <button type="button" className="primary" onClick={() => {
+                                if (window.confirm('작업 완료로 처리할까요? 완료한 예약은 취소할 수 없습니다.')) {
+                                    run(adminApi.reservations.completeWork(reservation.id, {report, photoFileIds: photoIds}));
+                                }
+                            }}>작업 완료</button>
+                        </>
+                    )}
+                </div>
+            )}
+            <ErrorBanner error={error}/>
+        </div>
     );
 }
 

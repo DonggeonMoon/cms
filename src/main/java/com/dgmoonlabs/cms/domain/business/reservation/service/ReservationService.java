@@ -138,6 +138,10 @@ public class ReservationService {
                 yield new Booking(request.quantity(), program.getPrice().multiply(BigDecimal.valueOf(request.quantity())), null, null, null);
             }
             case CONSULTATION -> bookConsultation(program, request.startAt());
+            case VISIT -> {
+                requireVisitAddress(request);
+                yield bookConsultation(program, request.startAt());
+            }
             case RENTAL -> bookSpace(program, request.cellsOrEmpty(), rentalPeriod(program, request.startAt(), request.endAt()));
             case LODGING -> bookSpace(program, request.cellsOrEmpty(), lodgingPeriod(program, request.startAt(), request.endAt()));
             case EVENT -> bookSpace(program, request.cellsOrEmpty(), new Period(program.getStartDateTime(),
@@ -162,6 +166,10 @@ public class ReservationService {
                 .status(status)
                 .applicantName(request.applicantName())
                 .phoneNumber(request.phoneNumber())
+                .visitPostalCode(program.getReservationType() == ReservationType.VISIT ? blankToNull(request.visitPostalCode()) : null)
+                .visitAddress(program.getReservationType() == ReservationType.VISIT ? request.visitAddress().trim() : null)
+                .visitDetailAddress(program.getReservationType() == ReservationType.VISIT ? blankToNull(request.visitDetailAddress()) : null)
+                .requestMemo(blankToNull(request.requestMemo()))
                 .build());
         return ReservationResponse.from(reservation);
     }
@@ -233,6 +241,34 @@ public class ReservationService {
             remaining = Math.min(remaining, stock - held);
         }
         return Math.max(0, remaining);
+    }
+
+    @Transactional
+    public ReservationResponse assignWorker(final Long reservationId, final WorkerRequest request) {
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound);
+        reservation.assignWorker(request.workerName().trim(), blankToNull(request.workerPhone()), LocalDateTime.now());
+        return ReservationResponse.from(reservation);
+    }
+
+    @Transactional
+    public ReservationResponse completeWork(final Long reservationId, final WorkCompleteRequest request) {
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound);
+        List<Long> photos = request.photoFileIds() == null ? List.of() : request.photoFileIds().stream().distinct().toList();
+        if (!photos.isEmpty()) {
+            fileService.requireFilesExist(photos);
+        }
+        reservation.completeWork(blankToNull(request.report()), photos, LocalDateTime.now());
+        return ReservationResponse.from(reservation);
+    }
+
+    private static void requireVisitAddress(final ReservationCreateRequest request) {
+        if (request.visitAddress() == null || request.visitAddress().isBlank()) {
+            throw new BusinessException(ErrorCode.VISIT_ADDRESS_REQUIRED);
+        }
+    }
+
+    private static String blankToNull(final String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     @Transactional
@@ -326,7 +362,7 @@ public class ReservationService {
         Program program = findProgram(programId);
         return switch (program.getReservationType()) {
             case PROGRAM -> new Availability(List.of(), List.of());
-            case CONSULTATION -> new Availability(List.of(), slotsOf(program, date));
+            case CONSULTATION, VISIT -> new Availability(List.of(), slotsOf(program, date));
             case RENTAL -> new Availability(from == null || to == null ? List.of() : sorted(takenCells(programId, from, to)),
                     slotsOf(program, date));
             case LODGING -> new Availability(from == null || to == null ? List.of()
@@ -351,7 +387,7 @@ public class ReservationService {
             request.layout().validate();
             layout = jsonMapper.writeValueAsString(request.layout());
         }
-        boolean timed = type == ReservationType.CONSULTATION || type == ReservationType.RENTAL;
+        boolean timed = type.usesSlots();
         if (timed && (request.slotMinutes() == null || request.openTime() == null || request.closeTime() == null
                 || !request.closeTime().isAfter(request.openTime()) || request.startDateTime() == null || request.endDateTime() == null)) {
             throw new BusinessException(ErrorCode.RESERVATION_SETTINGS_REQUIRED);

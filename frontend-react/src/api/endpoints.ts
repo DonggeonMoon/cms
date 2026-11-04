@@ -147,6 +147,10 @@ export const adminApi = {
             request<D.Reservation>('/api/admin/reservations', {method: 'POST', body, query: {paid}}),
         confirm: (id: number) => request<void>(`/api/admin/reservations/${id}/confirm`, {method: 'POST'}),
         cancel: (id: number) => request<void>(`/api/admin/reservations/${id}/cancel`, {method: 'POST'}),
+        assignWorker: (id: number, body: { workerName: string; workerPhone: string }) =>
+            request<D.Reservation>(`/api/admin/reservations/${id}/worker`, {method: 'PUT', body}),
+        completeWork: (id: number, body: { report: string; photoFileIds: number[] }) =>
+            request<D.Reservation>(`/api/admin/reservations/${id}/complete`, {method: 'POST', body}),
         returnItems: (id: number, body: { deduction: number; memo: string }) =>
             request<D.Reservation>(`/api/admin/reservations/${id}/return`, {method: 'POST', body}),
     },

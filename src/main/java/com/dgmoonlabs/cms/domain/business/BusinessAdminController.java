@@ -17,6 +17,8 @@ import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.Progra
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationCreateRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationResponse;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReturnRequest;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.WorkCompleteRequest;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.WorkerRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.service.ReservationService;
 import com.dgmoonlabs.cms.domain.business.review.constant.ReviewTargetType;
 import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewResponse;
@@ -173,6 +175,17 @@ public class BusinessAdminController {
     public ResponseEntity<Void> confirmReservation(@PathVariable final Long id) {
         reservationService.confirmReservation(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/reservations/{id}/worker")
+    public ResponseEntity<ReservationResponse> assignWorker(@PathVariable final Long id, @RequestBody @Valid final WorkerRequest request) {
+        return ResponseEntity.ok(reservationService.assignWorker(id, request));
+    }
+
+    @PostMapping("/reservations/{id}/complete")
+    public ResponseEntity<ReservationResponse> completeWork(@PathVariable final Long id,
+                                                            @RequestBody @Valid final WorkCompleteRequest request) {
+        return ResponseEntity.ok(reservationService.completeWork(id, request));
     }
 
     @PostMapping("/reservations/{id}/return")

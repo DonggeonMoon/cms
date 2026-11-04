@@ -542,7 +542,7 @@ export interface ShippingPolicy {
     defaultCourier: string | null;
 }
 
-export type ReservationType = 'PROGRAM' | 'CONSULTATION' | 'RENTAL' | 'LODGING' | 'EVENT' | 'ITEM_RENTAL';
+export type ReservationType = 'PROGRAM' | 'CONSULTATION' | 'RENTAL' | 'LODGING' | 'EVENT' | 'ITEM_RENTAL' | 'VISIT';
 export type CellKind = 'SEAT' | 'ROOM' | 'SPACE' | 'AISLE' | 'STAGE' | 'EMPTY';
 
 export interface LayoutCell {
@@ -623,6 +623,16 @@ export interface Reservation {
     returnMemo: string | null;
     overdue: boolean;
     lateDays: number;
+    visitPostalCode: string | null;
+    visitAddress: string | null;
+    visitDetailAddress: string | null;
+    requestMemo: string | null;
+    workerName: string | null;
+    workerPhone: string | null;
+    workerAssignedAt: string | null;
+    workCompletedAt: string | null;
+    workReport: string | null;
+    workPhotoUrls: string[];
     createdAt: string;
 }
 

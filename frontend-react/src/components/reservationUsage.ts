@@ -5,6 +5,7 @@ export function reservationUsage(reservation: Pick<Reservation, 'reservationType
     const cells = reservation.cells.length ? ` · ${reservation.cells.join(', ')}` : '';
     switch (reservation.reservationType) {
         case 'CONSULTATION':
+        case 'VISIT':
         case 'RENTAL':
             return `${formatDateTime(reservation.startAt)} ~ ${formatTime(reservation.endAt)}${cells}`;
         case 'LODGING':

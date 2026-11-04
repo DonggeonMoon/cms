@@ -139,7 +139,7 @@ public class Program extends BaseEntity {
     public void changeReservationSettings(final ReservationType reservationType, final Integer slotMinutes,
                                           final LocalTime openTime, final LocalTime closeTime, final String layout) {
         this.reservationType = reservationType;
-        boolean timed = reservationType == ReservationType.CONSULTATION || reservationType == ReservationType.RENTAL;
+        boolean timed = reservationType.usesSlots();
         this.slotMinutes = timed ? slotMinutes : null;
         this.openTime = timed ? openTime : null;
         this.closeTime = timed ? closeTime : null;

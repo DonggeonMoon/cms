@@ -154,6 +154,7 @@ export function ReservationFormPage() {
         cells: (params.get('cells') ?? '').split(',').filter(Boolean), quantity};
     const [program, setProgram] = useState<Program | null>(null);
     const [form, setForm] = useState({applicantName: '', phoneNumber: ''});
+    const [visit, setVisit] = useState({visitPostalCode: '', visitAddress: '', visitDetailAddress: '', requestMemo: ''});
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
 
@@ -177,7 +178,8 @@ export function ReservationFormPage() {
         setSubmitting(true);
         setError(null);
         try {
-            const reservation = await shopApi.reserve({programId, ...selection, quantity, ...form});
+            const reservation = await shopApi.reserve({programId, ...selection, quantity, ...form,
+                ...(program.reservationType === 'VISIT' ? visit : {})});
             navigate(reservation.status === 'PENDING_PAYMENT' ? `/checkout/RESERVATION/${reservation.id}` : '/mypage/reservations');
         } catch (e) {
             setError(e);
@@ -221,6 +223,22 @@ export function ReservationFormPage() {
                     <Field label="연락처" name="phoneNumber" type="tel" required value={form.phoneNumber}
                            onChange={(e) => setForm({...form, phoneNumber: e.target.value})}/>
                 </fieldset>
+                {program.reservationType === 'VISIT' && (
+                    <fieldset>
+                        <legend>방문 정보</legend>
+                        <Field label="우편번호" name="visitPostalCode" value={visit.visitPostalCode}
+                               onChange={(e) => setVisit({...visit, visitPostalCode: e.target.value})}/>
+                        <Field label="방문 주소" name="visitAddress" required value={visit.visitAddress}
+                               onChange={(e) => setVisit({...visit, visitAddress: e.target.value})}/>
+                        <Field label="상세 주소" name="visitDetailAddress" value={visit.visitDetailAddress}
+                               onChange={(e) => setVisit({...visit, visitDetailAddress: e.target.value})}/>
+                        <div className="field">
+                            <label htmlFor="requestMemo">요청 사항</label>
+                            <textarea id="requestMemo" rows={3} placeholder="주차, 출입 방법, 증상 등" value={visit.requestMemo}
+                                      onChange={(e) => setVisit({...visit, requestMemo: e.target.value})}/>
+                        </div>
+                    </fieldset>
+                )}
                 <p className="price align-right">결제 금액 {program.reservationType === 'PROGRAM'
                     ? (Number(program.price) === 0 ? '무료' : won(Number(program.price) * quantity))
                     : won(estimateReservation(program, selection))}</p>

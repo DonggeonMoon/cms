@@ -11,7 +11,8 @@ public enum ReservationType {
     RENTAL("대관", Kind.SPACE),
     LODGING("숙박·대실", Kind.SPACE),
     EVENT("공연·행사", Kind.SPACE),
-    ITEM_RENTAL("물품 대여", Kind.ITEM);
+    ITEM_RENTAL("물품 대여", Kind.ITEM),
+    VISIT("출장·방문", Kind.TIME);
 
     public enum Kind {
         TIME, SPACE, ITEM
@@ -19,6 +20,10 @@ public enum ReservationType {
 
     private final String label;
     private final Kind kind;
+
+    public boolean usesSlots() {
+        return this == CONSULTATION || this == RENTAL || this == VISIT;
+    }
 
     public boolean usesLayout() {
         return kind == Kind.SPACE;

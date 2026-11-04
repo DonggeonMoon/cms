@@ -3070,3 +3070,17 @@ fieldset.attribute-filter {
 .quiz-question.wrong {
     border-color: var(--danger);
 }
+
+.work-photos {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.work-photos img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+

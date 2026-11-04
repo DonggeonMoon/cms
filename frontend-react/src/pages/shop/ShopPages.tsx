@@ -385,6 +385,7 @@ const PRICE_UNIT: Record<ReservationType, string> = {
     LODGING: '칸·1박',
     EVENT: '좌석',
     ITEM_RENTAL: '1개·1일',
+    VISIT: '1회',
 };
 
 export function ProgramDetailPage() {
@@ -657,6 +658,20 @@ export function MyReservationsPage() {
                             </td>
                             <td>{reservationStatus(reservation.status, reservation.customStatus)}
                                 {reservation.overdue && <div><span className="badge danger">반납 {reservation.lateDays}일 지연</span></div>}
+                                {reservation.reservationType === 'VISIT' && (
+                                    <div className="muted small">
+                                        {reservation.workCompletedAt
+                                            ? `${formatDate(reservation.workCompletedAt)} 작업 완료${reservation.workReport ? ` · ${reservation.workReport}` : ''}`
+                                            : reservation.workerName
+                                                ? `작업자 ${reservation.workerName}${reservation.workerPhone ? ` (${reservation.workerPhone})` : ''}`
+                                                : '작업자 배정 전'}
+                                    </div>
+                                )}
+                                {reservation.workPhotoUrls.length > 0 && (
+                                    <div className="work-photos">
+                                        {reservation.workPhotoUrls.map((url, i) => <a key={url} href={url}><img src={url} alt={`작업 사진 ${i + 1}`}/></a>)}
+                                    </div>
+                                )}
                                 {reservation.returnedAt && (
                                     <div className="muted small">
                                         {formatDate(reservation.returnedAt)} 반납 · 보증금 {won(reservation.depositRefunded ?? 0)} 환불
@@ -670,7 +685,7 @@ export function MyReservationsPage() {
                                 )}
                             </td>
                             <td className="button-cell">
-                                {reservation.status !== 'CANCELED' && !reservation.returnedAt && (
+                                {reservation.status !== 'CANCELED' && !reservation.returnedAt && !reservation.workCompletedAt && (
                                     <button type="button" className="danger" onClick={() => {
                                         if (window.confirm('예약을 취소할까요?')) {
                                             shopApi.cancelReservation(reservation.id).then(reload).catch(setError);

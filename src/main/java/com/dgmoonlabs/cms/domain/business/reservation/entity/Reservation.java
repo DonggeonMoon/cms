@@ -102,6 +102,49 @@ public class Reservation extends BaseEntity {
     @Comment("추가 필드")
     private String fields;
 
+    @Comment("방문 우편번호")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
+    private String visitPostalCode;
+
+    @Comment("방문 주소")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
+    private String visitAddress;
+
+    @Comment("방문 상세 주소")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
+    private String visitDetailAddress;
+
+    @Column(length = 1000)
+    @Comment("요청 사항")
+    private String requestMemo;
+
+    @Comment("배정한 작업자 이름")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
+    private String workerName;
+
+    @Comment("작업자 연락처")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
+    private String workerPhone;
+
+    @Comment("작업자 배정 일시")
+    private LocalDateTime workerAssignedAt;
+
+    @Comment("작업 완료 일시")
+    private LocalDateTime workCompletedAt;
+
+    @Column(columnDefinition = "text")
+    @Comment("작업 완료 보고")
+    private String workReport;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Comment("작업 완료 사진 파일 ID 목록")
+    private List<Long> workPhotoFileIds;
+
     @Column(precision = 15, scale = 2)
     @Comment("물품 대여 보증금 합계 (총 금액에 포함)")
     private BigDecimal depositAmount;
@@ -131,6 +174,35 @@ public class Reservation extends BaseEntity {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
         this.status = ReservationStatus.CONFIRMED;
+    }
+
+    public void assignWorker(final String name, final String phone, final LocalDateTime now) {
+        requireOpenVisit();
+        this.workerName = name;
+        this.workerPhone = phone;
+        this.workerAssignedAt = now;
+    }
+
+    public void completeWork(final String report, final List<Long> photoFileIds, final LocalDateTime now) {
+        requireOpenVisit();
+        if (workerName == null) {
+            throw new BusinessException(ErrorCode.WORKER_NOT_ASSIGNED);
+        }
+        this.workCompletedAt = now;
+        this.workReport = report;
+        this.workPhotoFileIds = photoFileIds == null || photoFileIds.isEmpty() ? null : List.copyOf(photoFileIds);
+    }
+
+    private void requireOpenVisit() {
+        if (reservationType != ReservationType.VISIT) {
+            throw new BusinessException(ErrorCode.NOT_VISIT);
+        }
+        if (workCompletedAt != null) {
+            throw new BusinessException(ErrorCode.WORK_ALREADY_COMPLETED);
+        }
+        if (status != ReservationStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
     }
 
     public void markReturned(final LocalDateTime now, final BigDecimal refund, final String memo) {
@@ -173,6 +245,9 @@ public class Reservation extends BaseEntity {
         this.customStatus = null;
         if (returnedAt != null) {
             throw new BusinessException(ErrorCode.ALREADY_RETURNED);
+        }
+        if (workCompletedAt != null) {
+            throw new BusinessException(ErrorCode.WORK_ALREADY_COMPLETED);
         }
         if (!status.isCancelable()) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
