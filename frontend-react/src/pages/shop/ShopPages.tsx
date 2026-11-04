@@ -21,6 +21,8 @@ import {StableLabel} from '../../components/StableLabel';
 import {useFeatureMenuName} from '../../components/SiteContext';
 import {GradeBadge} from '../../components/GradeBadge';
 import {OptionPicker} from './OptionPicker';
+import {CategoryFilters} from './CategoryFilters';
+import {useCategories} from '../../api/categories';
 import {OrderAmount, OrderItemsTable} from './OrderItems';
 
 export function ProductCard({product}: { product: ProductSummary }) {
@@ -58,23 +60,31 @@ export function ProductListPage() {
     const keyword = params.get('keyword') ?? '';
     const [data, setData] = useState<Page<ProductSummary> | null>(null);
     const [error, setError] = useState<unknown>(null);
+    const categories = useCategories();
+    const query = params.toString();
+    const filtered = [...params.keys()].some((key) => key === 'categoryId' || /^(attr|min|max)\./.test(key));
 
     useEffect(() => {
-        shopApi.products(keyword, page).then(setData).catch(setError);
-    }, [keyword, page]);
+        shopApi.searchProducts(new URLSearchParams(query)).then(setData).catch(setError);
+    }, [query]);
 
     return (
         <section className="card">
             <h1>{productTitle}</h1>
-            <ListSearch label="상품 검색" placeholder="상품명 검색"/>
+            <ListSearch label="상품 검색" placeholder="상품명 검색" keepFilters/>
+            {categories.length > 0 && <CategoryFilters categories={categories}/>}
             <ErrorBanner error={error}/>
             <div className="product-grid">
                 {data?.content.map((product) => <ProductCard key={product.id} product={product}/>)}
             </div>
             {data?.content.length === 0 && (
-                <p className="muted">{keyword ? `'${keyword}'에 맞는 상품이 없습니다.` : '판매 중인 상품이 없습니다.'}</p>
+                <p className="muted">{keyword || filtered ? '조건에 맞는 상품이 없습니다.' : '판매 중인 상품이 없습니다.'}</p>
             )}
-            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={(next) => setParams(keyword ? {keyword, page: String(next)} : {page: String(next)})}/>}
+            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={(next) => {
+                const nextParams = new URLSearchParams(params);
+                nextParams.set('page', String(next));
+                setParams(nextParams);
+            }}/>}
         </section>
     );
 }
@@ -177,6 +187,16 @@ export function ProductDetailPage() {
                     {product.donation && <DonationProgressBar product={product}/>}
                     {product.averageRating != null && <p>평점 {'★'.repeat(Math.round(product.averageRating))} {product.averageRating.toFixed(1)}</p>}
                     {product.saleType !== 'DONATION' && <p className="muted small">재고 {product.availableQuantity ?? '충분'}</p>}
+                    {product.specs.length > 0 && (
+                        <table className="spec-table">
+                            <caption>상품 사양</caption>
+                            <tbody>
+                            {product.specs.map((spec) => (
+                                <tr key={spec.key}><th scope="row">{spec.label}</th><td>{String(spec.value)}{spec.unit ? ` ${spec.unit}` : ''}</td></tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    )}
                     {product.digitalFileCount > 0 && (
                         <p className="notice-box">
                             결제하면 마이페이지 내려받기에서 파일 {product.digitalFileCount}개를 받을 수 있습니다.

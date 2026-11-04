@@ -242,6 +242,8 @@ export const shopApi = {
     products: (keyword: string, page: number) =>
         request<Page<D.ProductSummary>>('/api/products', {query: {keyword, page}}),
     product: (id: number) => request<D.ProductDetail>(`/api/products/${id}`),
+    searchProducts: (params: URLSearchParams) =>
+        request<Page<D.ProductSummary>>(params.size > 0 ? `/api/products?${params}` : '/api/products'),
     reviews: (id: number, page: number) => request<Page<D.Review>>(`/api/products/${id}/reviews`, {query: {page}}),
     addReview: (id: number, body: Body) => request<void>(`/api/products/${id}/reviews`, {method: 'POST', body}),
     removeReview: (id: number) => request<void>(`/api/reviews/${id}`, {method: 'DELETE'}),

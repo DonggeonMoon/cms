@@ -1,5 +1,6 @@
+import {attributesToForm, productCategoryFields, splitCategoryValues, useCategories} from '../../api/categories';
 import type {FileInfo} from '../../api/types';
-import {type FormEvent, useEffect, useState} from 'react';
+import {type FormEvent, useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router';
 import type {Query} from '../../api/client';
 import type {Discount, Order, OrderStatus, Payment, ProductSummary, Program, Reservation, ReservationType, Review, ReviewTargetType, Subscription} from '../../api/domain';
@@ -57,17 +58,28 @@ const productGradeFields = (grades: Grade[]): FieldSpec[] => [
         visibleWhen: (v) => Boolean(v.grantGradeId) && v.saleType !== 'SUBSCRIPTION'},
 ];
 
-const toProductBody = ({donationPresetsText, optionSet, digitalFiles, ...values}: FormValues) => ({
+const toProductBody = (form: FormValues) => {
+    const {rest, categoryId, attributes} = splitCategoryValues(form);
+    const {donationPresetsText, optionSet, digitalFiles, ...values} = rest;
+    return {
     ...values,
+    categoryId,
+    attributes,
     digitalFileIds: ((digitalFiles as FileInfo[] | undefined) ?? []).map((file) => file.id),
     donationPresets: String(donationPresetsText ?? '').split(',').map((v) => Number(v.trim())).filter((v) => v > 0),
     ...optionSetBody(optionSet as OptionSet | undefined),
-});
+    };
+};
 
 const loadProducts = (query: Query) => adminApi.products.search(query);
 
 export function ProductAdminPage() {
-    const fields = useWithGradeFields(PRODUCT_FIELDS, productGradeFields);
+    const categories = useCategories();
+    const base = useMemo(() => {
+        const at = PRODUCT_FIELDS.findIndex((field) => field.name === 'requiresShipping');
+        return [...PRODUCT_FIELDS.slice(0, at), ...productCategoryFields(categories), ...PRODUCT_FIELDS.slice(at)];
+    }, [categories]);
+    const fields = useWithGradeFields(base, productGradeFields);
     return (
         <AdminCrudPage<ProductSummary>
             title="상품"
@@ -88,6 +100,8 @@ export function ProductAdminPage() {
                 optionSet: toOptionSet(full.optionGroups ?? [], full.options),
                 donationPresetsText: full.donationPresets.join(', '),
                 digitalFiles: full.digitalFiles ?? [],
+                categoryId: full.categoryId == null ? '' : String(full.categoryId),
+                ...attributesToForm(full.categoryId, full.attributes),
             }))}
             create={(v) => adminApi.products.create(toProductBody(v))}
             update={(p, v) => adminApi.products.update(p.id, toProductBody(v))}

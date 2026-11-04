@@ -51,6 +51,7 @@ import {CartOrderPage, CartPage} from './pages/shop/CartPages';
 import {MyCouponsPage, MyPointsPage} from './pages/shop/RewardPages';
 import {MyDownloadsPage} from './pages/shop/DigitalPages';
 import {CouponAdminPage, PointPolicyPage} from './pages/admin/RewardAdminPages';
+import {CategoryAdminPage} from './pages/admin/CategoryAdminPage';
 import {JoinPage} from './pages/JoinPage';
 import {SocialJoinPage} from './pages/SocialJoinPage';
 import {AdminLoginPage, LoginPage} from './pages/LoginPage';
@@ -241,6 +242,7 @@ export const routes = [
                                 element: <RequireFeature feature="PRODUCT"/>,
                                 children: [
                                     {path: 'products', element: <ProductAdminPage/>},
+                                    {path: 'product-categories', element: <CategoryAdminPage/>},
                                     {path: 'discounts', element: <DiscountAdminPage/>},
                                     {path: 'shipping', element: <ShippingPolicyPage/>},
                                     {path: 'orders', element: <OrderAdminPage/>},

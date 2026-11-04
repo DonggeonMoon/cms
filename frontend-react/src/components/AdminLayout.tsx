@@ -42,6 +42,7 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
         title: '비즈니스',
         items: [
             {to: '/admin/products', label: '상품', features: ['PRODUCT']},
+            {to: '/admin/product-categories', label: '카테고리', sub: true, features: ['PRODUCT']},
             {to: '/admin/discounts', label: '할인', sub: true, features: ['PRODUCT']},
             {to: '/admin/orders', label: '주문', sub: true, features: ['PRODUCT']},
             {to: '/admin/shipping', label: '배송비', sub: true, features: ['PRODUCT']},

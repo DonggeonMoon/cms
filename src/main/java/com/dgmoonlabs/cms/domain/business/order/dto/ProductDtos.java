@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.business.order.dto;
 
+import com.dgmoonlabs.cms.domain.business.category.dto.CategoryDtos.Spec;
 import com.dgmoonlabs.cms.domain.business.order.constant.BillingCycle;
 import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
 import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountResponse;
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class ProductDtos {
@@ -62,7 +64,9 @@ public final class ProductDtos {
             Boolean requiresShipping,
             @Size(max = 20) List<@NotNull Long> digitalFileIds,
             @Positive @Max(10_000) Integer downloadLimit,
-            @Positive @Max(36_500) Integer downloadDays
+            @Positive @Max(36_500) Integer downloadDays,
+            Long categoryId,
+            @Size(max = 30) Map<String, Object> attributes
     ) {
         public List<Long> digitalFileIdsOrEmpty() {
             return digitalFileIds == null ? List.of() : digitalFileIds.stream().distinct().toList();
@@ -100,12 +104,13 @@ public final class ProductDtos {
 
     public record ProductSummary(Long id, String name, String description, BigDecimal price, ProductSaleType saleType,
                                  BillingCycle billingCycle, Integer availableQuantity, boolean isEnabled, String imageUrl,
-                                 Long accessGradeId, Long grantGradeId, Integer grantGradeDays, LocalDateTime createdAt) {
+                                 Long accessGradeId, Long grantGradeId, Integer grantGradeDays, Long categoryId,
+                                 LocalDateTime createdAt) {
         public static ProductSummary from(final Product product) {
             return new ProductSummary(product.getId(), product.getName(), product.getDescription(), product.getPrice(),
                     product.getSaleType(), product.getBillingCycle(), product.getAvailableQuantity(), product.isEnabled(),
                     toImageUrl(product.getImageFileId()), product.getAccessGradeId(), product.getGrantGradeId(),
-                    product.getGrantGradeDays(), product.getCreatedAt());
+                    product.getGrantGradeDays(), product.getCategoryId(), product.getCreatedAt());
         }
     }
 
@@ -119,10 +124,12 @@ public final class ProductDtos {
                                 List<DiscountResponse> discounts, Double averageRating, Long accessGradeId,
                                 Long grantGradeId, Integer grantGradeDays, List<Product.OptionGroup> optionGroups,
                                 boolean requiresShipping, int digitalFileCount, Integer downloadLimit, Integer downloadDays,
-                                List<FileResponse> digitalFiles) {
+                                List<FileResponse> digitalFiles, Long categoryId, Map<String, Object> attributes,
+                                List<Spec> specs) {
         public static ProductDetail of(final Product product, final List<OptionResponse> options,
                                        final List<DiscountResponse> discounts, final Double averageRating,
-                                       final DonationProgress donation, final List<FileResponse> digitalFiles) {
+                                       final DonationProgress donation, final List<FileResponse> digitalFiles,
+                                       final Map<String, Object> attributes, final List<Spec> specs) {
             List<Integer> presets = product.getDonationPresets() == null || product.getDonationPresets().isBlank() ? List.of()
                     : Arrays.stream(product.getDonationPresets().split(",")).map(String::trim).map(Integer::valueOf).toList();
             return new ProductDetail(product.getId(), product.getName(), product.getDescription(), product.getPrice(),
@@ -132,7 +139,7 @@ public final class ProductDtos {
                     product.getAccessGradeId(), product.getGrantGradeId(), product.getGrantGradeDays(),
                     product.getOptionGroups() == null ? List.of() : product.getOptionGroups(), product.isRequiresShipping(),
                     product.hasDigitalFiles() ? product.getDigitalFileIds().size() : 0, product.getDownloadLimit(),
-                    product.getDownloadDays(), digitalFiles);
+                    product.getDownloadDays(), digitalFiles, product.getCategoryId(), attributes, specs);
         }
     }
 

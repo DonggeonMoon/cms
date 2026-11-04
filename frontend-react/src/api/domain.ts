@@ -1,3 +1,4 @@
+import type {Spec} from './categories';
 import type {FileInfo, MediaType} from './types';
 
 export type MenuType = 'CONTENT' | 'BOARD' | 'ARCHIVE' | 'LINK' | 'FEATURE';
@@ -366,6 +367,7 @@ export interface ProductSummary {
     availableQuantity: number | null;
     isEnabled: boolean;
     imageUrl: string | null;
+    categoryId: number | null;
     createdAt: string;
 }
 
@@ -393,6 +395,8 @@ export interface ProductDetail extends ProductSummary {
     downloadLimit: number | null;
     downloadDays: number | null;
     digitalFiles: FileInfo[] | null;
+    attributes: Record<string, string | number>;
+    specs: Spec[];
     options: ProductOption[];
     discounts: Discount[];
     averageRating: number | null;

@@ -2,6 +2,7 @@ package com.dgmoonlabs.cms.domain.business;
 
 import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.ProductDetail;
 import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.ProductSummary;
+import com.dgmoonlabs.cms.domain.business.order.service.AttributeFilters;
 import com.dgmoonlabs.cms.domain.business.order.service.ProductService;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.Availability;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ProgramResponse;
@@ -14,6 +15,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -28,8 +30,11 @@ public class ShopController {
 
     @GetMapping("/api/products")
     public ResponseEntity<PagedModel<ProductSummary>> products(@RequestParam(required = false) final String keyword,
+                                                               @RequestParam(required = false) final Long categoryId,
+                                                               @RequestParam final MultiValueMap<String, String> params,
                                                                @PageableDefault(size = 12) final Pageable pageable) {
-        return ResponseEntity.ok(new PagedModel<>(productService.getProducts(keyword, pageable)));
+        return ResponseEntity.ok(new PagedModel<>(productService.getProducts(keyword, categoryId,
+                AttributeFilters.from(params), pageable)));
     }
 
     @GetMapping("/api/products/{id}")

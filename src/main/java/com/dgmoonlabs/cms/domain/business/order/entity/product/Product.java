@@ -31,6 +31,9 @@ public class Product extends BaseEntity {
     @Comment("상품 설명")
     private String description;
 
+    @Comment("카테고리 ID")
+    private Long categoryId;
+
     @Comment("대표 이미지 파일 ID")
     private Long imageFileId;
 
@@ -139,6 +142,10 @@ public class Product extends BaseEntity {
 
     public boolean hasOptionGroups() {
         return optionGroups != null && !optionGroups.isEmpty();
+    }
+
+    public void changeCategory(final Long categoryId) {
+        this.categoryId = categoryId;
     }
 
     public void changeDigitalFiles(final List<Long> fileIds, final Integer downloadLimit, final Integer downloadDays) {

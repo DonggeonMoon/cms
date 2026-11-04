@@ -4,12 +4,14 @@ import {fileApi} from '../api/files';
 import type {FileInfo} from '../api/types';
 import type {FormField, SpaceLayout} from '../api/domain';
 import {ErrorBanner} from './ErrorBanner';
+import type {CategoryAttribute} from '../api/categories';
+import {CategoryAttributesEditor} from './CategoryAttributesEditor';
 import {FormFieldsEditor} from './FormFieldsEditor';
 import {LayoutEditor} from './LayoutEditor';
 import {StableLabel} from './StableLabel';
 import {type OptionSet, ProductOptionsEditor} from './ProductOptionsEditor';
 
-export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media' | 'time' | 'layout' | 'formFields' | 'productOptions';
+export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media' | 'time' | 'layout' | 'formFields' | 'productOptions' | 'categoryAttributes';
 
 export interface FieldSpec {
     name: string;
@@ -73,7 +75,7 @@ export function SchemaForm({fields, initial, onSubmit, onCancel, submitLabel = '
         <div className="schema-grid">
             {specs.filter((field) => !field.visibleWhen || field.visibleWhen(values)).map((field) => (
                 <div key={field.name} className={[
-                    field.wide || ['html', 'textarea', 'files', 'media', 'layout', 'formFields', 'productOptions'].includes(field.type ?? '') ? 'wide' : '',
+                    field.wide || ['html', 'textarea', 'files', 'media', 'layout', 'formFields', 'productOptions', 'categoryAttributes'].includes(field.type ?? '') ? 'wide' : '',
                     field.spaced ? 'spaced' : '',
                     field.newRow ? 'new-row' : '',
                     field.type === 'checkbox' && !field.wide ? 'inline-check' : '',
@@ -186,6 +188,14 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
                 <div className="field">
                     {label}
                     <FormFieldsEditor value={(value as FormField[]) ?? []} onChange={onChange}/>
+                    {help}
+                </div>
+            );
+        case 'categoryAttributes':
+            return (
+                <div className="field">
+                    {label}
+                    <CategoryAttributesEditor value={(value as CategoryAttribute[]) ?? []} onChange={onChange}/>
                     {help}
                 </div>
             );

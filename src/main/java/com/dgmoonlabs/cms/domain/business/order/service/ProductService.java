@@ -1,11 +1,14 @@
 package com.dgmoonlabs.cms.domain.business.order.service;
 
+import com.dgmoonlabs.cms.domain.business.category.service.CategoryService;
+import com.dgmoonlabs.cms.domain.business.category.service.ProductAttributeService;
 import com.dgmoonlabs.cms.domain.business.discount.service.DiscountService;
 import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.*;
 import com.dgmoonlabs.cms.domain.business.order.entity.product.Product;
 import com.dgmoonlabs.cms.domain.business.order.entity.product.ProductOption;
 import com.dgmoonlabs.cms.domain.business.order.repository.ProductOptionRepository;
 import com.dgmoonlabs.cms.domain.business.order.repository.ProductRepository;
+import com.dgmoonlabs.cms.domain.business.order.repository.ProductSearchCondition;
 import com.dgmoonlabs.cms.domain.business.review.repository.ReviewRepository;
 import com.dgmoonlabs.cms.domain.common.file.service.FileService;
 import com.dgmoonlabs.cms.global.error.BusinessException;
@@ -39,14 +42,15 @@ public class ProductService {
     private final HtmlSanitizer htmlSanitizer;
     private final OrderRepository orderRepository;
     private final GradeService gradeService;
+    private final CategoryService categoryService;
+    private final ProductAttributeService attributeService;
 
     @Transactional(readOnly = true)
-    public Page<ProductSummary> getProducts(final String keyword, final Pageable pageable) {
-        String term = keyword == null ? "" : keyword;
-        Page<Product> products = CurrentUser.isAdmin()
-                ? productRepository.findAllByDeletedAtIsNullAndNameContainingIgnoreCaseOrderByIdDesc(term, pageable)
-                : productRepository.findAllByIsEnabledTrueAndDeletedAtIsNullAndNameContainingIgnoreCaseOrderByIdDesc(term, pageable);
-        return products.map(ProductSummary::from);
+    public Page<ProductSummary> getProducts(final String keyword, final Long categoryId, final AttributeFilters filters,
+                                            final Pageable pageable) {
+        List<Long> categoryIds = categoryId == null ? null : categoryService.selfAndChildIds(categoryId);
+        return productRepository.search(new ProductSearchCondition(keyword, categoryIds, !CurrentUser.isAdmin(),
+                filters.choices(), filters.ranges()), pageable).map(ProductSummary::from);
     }
 
     @Transactional(readOnly = true)
@@ -63,7 +67,9 @@ public class ProductService {
                 product.getSaleType() == ProductSaleType.DONATION
                         ? new DonationProgress(orderRepository.sumPaidDonations(id), orderRepository.countPaidDonations(id))
                         : null,
-                CurrentUser.isAdmin() && product.hasDigitalFiles() ? fileService.getFiles(product.getDigitalFileIds()) : null
+                CurrentUser.isAdmin() && product.hasDigitalFiles() ? fileService.getFiles(product.getDigitalFileIds()) : null,
+                attributeService.values(id),
+                attributeService.specs(product)
         );
     }
 
@@ -83,6 +89,7 @@ public class ProductService {
                 .build());
         changeSaleType(product, request);
         syncOptions(product, request.optionsOrEmpty());
+        changeCategory(product, request);
         return product.getId();
     }
 
@@ -95,6 +102,12 @@ public class ProductService {
                 request.availableQuantity(), html, htmlSanitizer.toPlainText(html), request.isEnabled());
         changeSaleType(product, request);
         syncOptions(product, request.optionsOrEmpty());
+        changeCategory(product, request);
+    }
+
+    private void changeCategory(final Product product, final ProductSaveRequest request) {
+        product.changeCategory(request.categoryId() == null ? null : categoryService.find(request.categoryId()).getId());
+        attributeService.save(product, request.attributes());
     }
 
     @Transactional
