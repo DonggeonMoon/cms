@@ -1,20 +1,23 @@
 package com.dgmoonlabs.cms.global.config;
 
 import com.dgmoonlabs.cms.domain.admin.account.service.AdminAreaInterceptor;
+import com.dgmoonlabs.cms.global.web.SeoIndexRenderer;
 import com.dgmoonlabs.cms.domain.admin.logging.AdminAuditInterceptor;
 import com.dgmoonlabs.cms.domain.admin.site.SiteFeatureInterceptor;
 import com.dgmoonlabs.cms.global.security.ReauthenticationInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 @RequiredArgsConstructor
@@ -24,6 +27,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final SiteFeatureInterceptor siteFeatureInterceptor;
     private final ReauthenticationInterceptor reauthenticationInterceptor;
     private final AdminAreaInterceptor adminAreaInterceptor;
+    private final SeoIndexRenderer seoIndexRenderer;
 
     @Override
     public void addInterceptors(final InterceptorRegistry registry) {
@@ -50,8 +54,19 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         if (resourcePath.startsWith("api/") || resourcePath.contains(".")) {
                             return null;
                         }
-                        Resource index = new ClassPathResource("/static/index.html");
-                        return index.exists() ? index : null;
+                        return seoIndexRenderer.render(ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString())
+                                .map(html -> (Resource) new ByteArrayResource(html.getBytes(StandardCharsets.UTF_8)) {
+                                    @Override
+                                    public String getFilename() {
+                                        return "index.html";
+                                    }
+
+                                    @Override
+                                    public long lastModified() {
+                                        return System.currentTimeMillis();
+                                    }
+                                })
+                                .orElse(null);
                     }
                 });
     }

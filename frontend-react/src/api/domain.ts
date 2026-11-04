@@ -98,6 +98,16 @@ export interface Site {
     isDefault: boolean;
     homeContentId: number | null;
     features: Record<SiteFeature, boolean>;
+    faviconFileId?: number | null;
+    faviconUrl?: string | null;
+    seoTitle?: string | null;
+    metaDescription?: string | null;
+    metaKeywords?: string | null;
+    ogImageFileId?: number | null;
+    ogImageUrl?: string | null;
+    searchIndexing?: boolean;
+    googleVerification?: string | null;
+    naverVerification?: string | null;
 }
 
 export type OptionType = 'TEXT' | 'RADIO' | 'CHECKBOX' | 'TEXTAREA';

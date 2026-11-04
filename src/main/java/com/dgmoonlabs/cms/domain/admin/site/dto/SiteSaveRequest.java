@@ -4,6 +4,7 @@ import com.dgmoonlabs.cms.domain.admin.menu.constant.MenuType;
 import com.dgmoonlabs.cms.domain.admin.site.constant.SiteFeature;
 import com.dgmoonlabs.cms.domain.admin.site.entity.Site;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
@@ -20,8 +21,20 @@ public record SiteSaveRequest(
         @Size(max = 20) String locale,
         boolean isDefault,
         Long homeContentId,
-        Set<SiteFeature> disabledFeatures
+        Set<SiteFeature> disabledFeatures,
+        Long faviconFileId,
+        @Size(max = 100) String seoTitle,
+        @Size(max = 300) String metaDescription,
+        @Size(max = 300) String metaKeywords,
+        Long ogImageFileId,
+        Boolean searchIndexing,
+        @Size(max = 100) @Pattern(regexp = "^[A-Za-z0-9_-]*$") String googleVerification,
+        @Size(max = 100) @Pattern(regexp = "^[A-Za-z0-9_-]*$") String naverVerification
 ) {
+    public boolean searchIndexingOrDefault() {
+        return searchIndexing == null || searchIndexing;
+    }
+
     public Set<SiteFeature> disabledFeaturesOrEmpty() {
         return disabledFeatures == null ? Set.of() : disabledFeatures;
     }

@@ -6,10 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long>, ProductSearchRepository {
     long countByCategoryIdAndDeletedAtIsNull(Long categoryId);
+
+    List<Product> findAllByIsEnabledTrueAndDeletedAtIsNullOrderByIdAsc();
 
     Optional<Product> findByIdAndDeletedAtIsNull(Long id);
 

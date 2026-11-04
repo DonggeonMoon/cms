@@ -47,6 +47,38 @@ public class Site extends BaseEntity {
     @Comment("기본 사이트 여부")
     private boolean isDefault;
 
+    @Comment("파비콘 파일 ID")
+    private Long faviconFileId;
+
+    @Column(length = 100)
+    @Comment("검색·공유에 쓸 제목 (없으면 사이트 이름)")
+    private String seoTitle;
+
+    @Column(length = 300)
+    @Comment("메타 설명 (검색 결과·공유 미리보기 문구)")
+    private String metaDescription;
+
+    @Column(length = 300)
+    @Comment("메타 키워드 (쉼표로 구분)")
+    private String metaKeywords;
+
+    @Comment("공유 미리보기 이미지(OG) 파일 ID")
+    private Long ogImageFileId;
+
+    @Builder.Default
+    @Column(nullable = false)
+    @ColumnDefault("true")
+    @Comment("검색엔진 노출 허용")
+    private boolean searchIndexing = true;
+
+    @Column(length = 100)
+    @Comment("구글 서치 콘솔 소유 확인 코드")
+    private String googleVerification;
+
+    @Column(length = 100)
+    @Comment("네이버 서치어드바이저 소유 확인 코드")
+    private String naverVerification;
+
     @Comment("홈 화면으로 쓰는 컨텐츠 ID (없으면 기본 홈)")
     private Long homeContentId;
 
@@ -69,6 +101,19 @@ public class Site extends BaseEntity {
         this.homeContentId = homeContentId;
         this.disabledFeatures.clear();
         this.disabledFeatures.addAll(disabledFeatures);
+    }
+
+    public void changeSeo(final Long faviconFileId, final String seoTitle, final String metaDescription, final String metaKeywords,
+                          final Long ogImageFileId, final boolean searchIndexing, final String googleVerification,
+                          final String naverVerification) {
+        this.faviconFileId = faviconFileId;
+        this.seoTitle = seoTitle;
+        this.metaDescription = metaDescription;
+        this.metaKeywords = metaKeywords;
+        this.ogImageFileId = ogImageFileId;
+        this.searchIndexing = searchIndexing;
+        this.googleVerification = googleVerification;
+        this.naverVerification = naverVerification;
     }
 
     public void unmarkDefault() {

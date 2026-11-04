@@ -52,8 +52,20 @@ export function SiteProvider({children}: { children: ReactNode }) {
     const {t} = useI18n();
     const name = t('site.name', site?.name || FALLBACK_NAME);
     useEffect(() => {
-        document.title = name;
-    }, [name]);
+        document.title = site?.seoTitle || name;
+    }, [name, site?.seoTitle]);
+    useEffect(() => {
+        if (!site?.faviconUrl) {
+            return;
+        }
+        let icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+        if (!icon) {
+            icon = document.createElement('link');
+            icon.rel = 'icon';
+            document.head.appendChild(icon);
+        }
+        icon.href = site.faviconUrl;
+    }, [site?.faviconUrl]);
 
     const value = useMemo<SiteState>(() => {
         const isEnabled = (feature: SiteFeature) => site?.features?.[feature] ?? true;

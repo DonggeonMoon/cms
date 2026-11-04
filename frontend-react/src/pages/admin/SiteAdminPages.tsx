@@ -19,6 +19,21 @@ const SITE_FIELDS: FieldSpec[] = [
         help: '선택 안 함이면 기본 테마를 씁니다.'},
     {name: 'locale', label: '로케일', placeholder: 'ko'},
     ...SITE_FEATURES.map((feature): FieldSpec => ({name: featureField(feature.value), label: feature.label, type: 'checkbox', group: '기능'})),
+    {name: 'faviconFileId', label: '파비콘', type: 'image', wide: true, group: '검색·공유 (SEO)',
+        help: '브라우저 탭에 보이는 아이콘입니다. 정사각형 PNG(32×32 이상)나 ICO 파일을 권장합니다.'},
+    {name: 'seoTitle', label: '검색·공유 제목', wide: true, group: '검색·공유 (SEO)', placeholder: '사이트 이름 | 한 줄 소개',
+        help: '브라우저 제목, 검색 결과, 링크 미리보기에 쓰입니다. 비워두면 사이트 이름을 씁니다.'},
+    {name: 'metaDescription', label: '설명 (meta description)', type: 'textarea', group: '검색·공유 (SEO)',
+        help: '검색 결과와 링크 미리보기에 보이는 문구입니다. 80~160자를 권장합니다.'},
+    {name: 'metaKeywords', label: '키워드', wide: true, group: '검색·공유 (SEO)', placeholder: '카페, 원두, 핸드드립'},
+    {name: 'ogImageFileId', label: '공유 미리보기 이미지 (OG 이미지)', type: 'image', wide: true, group: '검색·공유 (SEO)',
+        help: '카카오톡·페이스북 등에 링크를 붙였을 때 보이는 이미지입니다. 1200×630 크기를 권장합니다.'},
+    {name: 'searchIndexing', label: '검색엔진 노출 허용', type: 'checkbox', wide: true, group: '검색·공유 (SEO)',
+        help: '끄면 검색엔진이 사이트를 수집하지 않도록 robots.txt 와 메타 태그로 알립니다.'},
+    {name: 'googleVerification', label: '구글 서치 콘솔 확인 코드', wide: true, group: '검색·공유 (SEO)',
+        help: 'google-site-verification 메타 태그의 content 값만 넣습니다.'},
+    {name: 'naverVerification', label: '네이버 서치어드바이저 확인 코드', wide: true, group: '검색·공유 (SEO)',
+        help: 'naver-site-verification 메타 태그의 content 값만 넣습니다. 사이트맵은 /sitemap.xml 입니다.'},
 ];
 
 const ALL_FEATURES_ON = Object.fromEntries(SITE_FEATURES.map((feature) => [featureField(feature.value), true]));
@@ -61,7 +76,7 @@ export function SiteAdminPage() {
             }
             load={loadSites}
             fields={fields}
-            emptyForm={{isDefault: true, locale: 'ko', ...ALL_FEATURES_ON}}
+            emptyForm={{isDefault: true, locale: 'ko', searchIndexing: true, ...ALL_FEATURES_ON}}
             toForm={siteToForm}
             columns={[
                 {label: '이름', render: (s) => s.name},
