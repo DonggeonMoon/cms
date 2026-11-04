@@ -60,6 +60,11 @@ public class ApplicationSubmission extends BaseEntity {
         this.adminMemo = adminMemo;
     }
 
+    public void drawResult(final boolean won) {
+        this.status = won ? SubmissionStatus.ACCEPTED : SubmissionStatus.REJECTED;
+        this.resultMessage = won ? "추첨에 당첨되었습니다." : "아쉽게도 추첨에 당첨되지 않았습니다.";
+    }
+
     public void withdraw() {
         if (status != SubmissionStatus.RECEIVED) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);

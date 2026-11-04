@@ -65,4 +65,43 @@ class ApplicationApiTest extends ApiTestSupport {
         postJson("/api/applications/%d/submissions".formatted(formId), member("second"), answers)
                 .andExpect(jsonPath("$.code").value("APPLICATION_FULL"));
     }
+
+    @Test
+    void lotteryPicksTheWinnerCountOnceAndClosesTheForm() throws Exception {
+        MockHttpSession admin = admin();
+        String lottery = FORM.replace("\"maximumSubmissions\":2", "\"selectionMethod\":\"LOTTERY\"");
+        postJson("/api/admin/applications", admin, lottery).andExpect(jsonPath("$.code").value("WINNER_COUNT_REQUIRED"));
+        long formId = createdId(postJson("/api/admin/applications", admin, lottery.replace("\"LOTTERY\"", "\"LOTTERY\",\"winnerCount\":2"))
+                .andExpect(status().isCreated()));
+        String answers = "{\"answers\":{\"company\":\"A\",\"stage\":\"예비 창업\",\"agree\":true}}";
+        long withdrawnId = 0;
+        for (String name : new String[]{"lucky1", "lucky2", "lucky3", "lucky4"}) {
+            MockHttpSession session = member(name);
+            long id = body(postJson("/api/applications/%d/submissions".formatted(formId), session, answers)
+                    .andExpect(status().isCreated())).get("id").asLong();
+            if (name.equals("lucky4")) {
+                withdrawnId = id;
+                postJson("/api/applications/submissions/%d/withdraw".formatted(id), session, "").andExpect(status().isOk());
+            }
+        }
+        long noticeOnly = createdId(postJson("/api/admin/applications", admin, FORM));
+        postJson("/api/admin/applications/%d/draw".formatted(noticeOnly), admin, "").andExpect(jsonPath("$.code").value("NOT_LOTTERY"));
+
+        postJson("/api/admin/applications/%d/draw".formatted(formId), admin, "")
+                .andExpect(jsonPath("$.candidates").value(3))
+                .andExpect(jsonPath("$.winners").value(2));
+        postJson("/api/admin/applications/%d/draw".formatted(formId), admin, "").andExpect(jsonPath("$.code").value("ALREADY_DRAWN"));
+        getJson("/api/admin/applications/%d/submissions?status=ACCEPTED".formatted(formId), admin)
+                .andExpect(jsonPath("$.page.totalElements").value(2))
+                .andExpect(jsonPath("$.content[0].resultMessage").value("추첨에 당첨되었습니다."));
+        getJson("/api/admin/applications/%d/submissions?status=REJECTED".formatted(formId), admin)
+                .andExpect(jsonPath("$.page.totalElements").value(1));
+        getJson("/api/admin/applications/%d/submissions?status=WITHDRAWN".formatted(formId), admin)
+                .andExpect(jsonPath("$.content[0].id").value(withdrawnId));
+        getJson("/api/applications/" + formId, null)
+                .andExpect(jsonPath("$.isOpen").value(false))
+                .andExpect(jsonPath("$.drawnAt").exists());
+        postJson("/api/applications/%d/submissions".formatted(formId), member("late"), answers)
+                .andExpect(jsonPath("$.code").value("APPLICATION_NOT_OPEN"));
+    }
 }

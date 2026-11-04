@@ -7,7 +7,7 @@ import type {Page} from '../../api/types';
 import {AdminCrudPage, YesNo} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatDateTime} from '../../components/format';
-import {SUBMISSION_STATUS, toOptions} from '../../components/labels';
+import {SELECTION_METHOD, SUBMISSION_STATUS, toOptions} from '../../components/labels';
 import {Pagination} from '../../components/Pagination';
 import type {FieldSpec, FormValues} from '../../components/SchemaForm';
 
@@ -18,6 +18,9 @@ const FIELDS: FieldSpec[] = [
     {name: 'endDateTime', label: '접수 마감', type: 'datetime'},
     {name: 'maximumSubmissions', label: '최대 접수 건수', type: 'number', help: '비워두면 제한 없음'},
     {name: 'allowMultiple', label: '한 회원이 여러 번 신청 가능', type: 'checkbox'},
+    {name: 'selectionMethod', label: '선정 방식', type: 'select', required: true, options: toOptions(SELECTION_METHOD), newRow: true,
+        help: '추첨은 접수(검토 중 포함)된 신청 중에서 무작위로 뽑고, 추첨하면 접수를 마감합니다.'},
+    {name: 'winnerCount', label: '당첨 인원', type: 'number', min: 1, visibleWhen: (v) => v.selectionMethod === 'LOTTERY'},
     {name: 'fields', label: '입력 항목', type: 'formFields', help: '신청자가 입력할 항목입니다. 형식에 맞게 검사합니다(이메일·전화번호는 정규식 설정을 따름).'},
     {name: 'contentHtml', label: '안내', type: 'html'},
 ];
@@ -34,7 +37,7 @@ export function ApplicationAdminPage() {
             description="교육·행사 신청, 지원 사업 접수처럼 신청서를 받습니다. 입력 항목을 직접 구성하고, 접수된 신청을 검토해 결과를 알립니다."
             load={loadForms}
             fields={FIELDS}
-            emptyForm={{isEnabled: true, allowMultiple: false, contentHtml: '',
+            emptyForm={{isEnabled: true, allowMultiple: false, selectionMethod: 'REVIEW', contentHtml: '',
                 fields: [{key: 'field1', label: '이름', type: 'TEXT', required: true, options: null, help: null}]}}
             toForm={(form) => ({...form})}
             create={(values: FormValues) => adminApi.applications.create(values)}
@@ -45,6 +48,8 @@ export function ApplicationAdminPage() {
                 {label: '제목', render: (f) => <Link to={`/applications/${f.id}`}>{f.title}</Link>},
                 {label: '접수 기간', render: (f) => `${formatDateTime(f.startDateTime)} ~ ${formatDateTime(f.endDateTime)}`},
                 {label: '접수', render: (f) => `${f.submissionCount}${f.maximumSubmissions ? ` / ${f.maximumSubmissions}` : ''}건`},
+                {label: '선정', render: (f) => f.selectionMethod === 'LOTTERY'
+                        ? `추첨 ${f.winnerCount}명${f.drawnAt ? ' (추첨 완료)' : ''}` : SELECTION_METHOD.REVIEW},
                 {label: '접수 중', render: (f) => <YesNo value={f.isOpen}/>},
             ]}
             actions={(f) => (
@@ -56,6 +61,8 @@ export function ApplicationAdminPage() {
 }
 
 function Submissions({form}: { form: ApplicationForm }) {
+    const [drawnAt, setDrawnAt] = useState(form.drawnAt);
+    const [drawMessage, setDrawMessage] = useState<string | null>(null);
     const [status, setStatus] = useState<SubmissionStatus | ''>('');
     const [page, setPage] = useState(0);
     const [data, setData] = useState<Page<Submission> | null>(null);
@@ -64,6 +71,21 @@ function Submissions({form}: { form: ApplicationForm }) {
         adminApi.applications.submissions(form.id, {status, page}).then(setData).catch(setError);
     }, [form.id, status, page]);
     useEffect(reload, [reload]);
+
+    const draw = async () => {
+        if (!window.confirm(`접수된 신청 중 ${form.winnerCount}명을 추첨합니다. 추첨하면 접수가 마감되고 다시 뽑을 수 없습니다.`)) {
+            return;
+        }
+        setError(null);
+        try {
+            const result = await adminApi.applications.draw(form.id);
+            setDrawnAt(result.drawnAt);
+            setDrawMessage(`대상 ${result.candidates}명 중 ${result.winners}명이 당첨되었습니다.`);
+            reload();
+        } catch (e) {
+            setError(e);
+        }
+    };
 
     const answer = (submission: Submission, key: string) => {
         const field = form.fields.find((f) => f.key === key)!;
@@ -87,7 +109,11 @@ function Submissions({form}: { form: ApplicationForm }) {
                     <option value="">전체 상태</option>
                     {toOptions(SUBMISSION_STATUS).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
+                {form.selectionMethod === 'LOTTERY' && (drawnAt
+                    ? <span className="muted small">{formatDateTime(drawnAt)} 추첨 완료</span>
+                    : <button type="button" className="primary" onClick={draw}>추첨하기</button>)}
             </div>
+            {drawMessage && <p className="notice-box">{drawMessage}</p>}
             <ErrorBanner error={error}/>
             <div className="table-wrap">
                 <table>

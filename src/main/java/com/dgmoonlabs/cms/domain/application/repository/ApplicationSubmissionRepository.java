@@ -7,11 +7,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface ApplicationSubmissionRepository extends JpaRepository<ApplicationSubmission, Long> {
     @Query("select count(s) from ApplicationSubmission s where s.formId = :formId and s.status <> :excluded")
     long countActive(Long formId, SubmissionStatus excluded);
+
+    List<ApplicationSubmission> findAllByFormIdAndStatusIn(Long formId, Collection<SubmissionStatus> statuses);
 
     boolean existsByFormIdAndMemberIdAndStatusNot(Long formId, Long memberId, SubmissionStatus status);
 

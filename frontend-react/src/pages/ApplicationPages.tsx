@@ -70,9 +70,12 @@ export function ApplicationDetailPage() {
             <p className="muted">
                 접수 기간 {period(form)}
                 {form.maximumSubmissions && ` · 모집 ${form.maximumSubmissions}명 (접수 ${form.submissionCount}명)`}
+                {form.selectionMethod === 'LOTTERY' && ` · 추첨으로 ${form.winnerCount}명 선정`}
             </p>
             {form.contentHtml && <HtmlView html={form.contentHtml}/>}
-            {!form.isOpen ? (
+            {form.drawnAt ? (
+                <p className="notice-box">추첨을 마쳤습니다. 결과는 <Link to="/mypage/applications">신청 내역</Link>에서 확인하세요.</p>
+            ) : !form.isOpen ? (
                 <p className="notice-box">지금은 신청을 받지 않습니다.</p>
             ) : user?.userType !== 'MEMBER' ? (
                 <MemberOnlyNotice message="회원만 신청할 수 있습니다."/>

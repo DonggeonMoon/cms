@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.application.dto;
 
+import com.dgmoonlabs.cms.domain.application.constant.SelectionMethod;
 import com.dgmoonlabs.cms.domain.application.constant.SubmissionStatus;
 import com.dgmoonlabs.cms.domain.application.entity.ApplicationForm;
 import com.dgmoonlabs.cms.domain.application.entity.ApplicationSubmission;
@@ -26,19 +27,29 @@ public final class ApplicationDtos {
             LocalDateTime endDateTime,
             @Positive Integer maximumSubmissions,
             boolean allowMultiple,
-            boolean isEnabled
+            boolean isEnabled,
+            SelectionMethod selectionMethod,
+            @Positive Integer winnerCount
     ) {
+        public SelectionMethod selectionMethodOrDefault() {
+            return selectionMethod == null ? SelectionMethod.REVIEW : selectionMethod;
+        }
     }
 
     public record FormResponse(Long id, String title, String contentHtml, List<FormField> fields, LocalDateTime startDateTime,
                                LocalDateTime endDateTime, Integer maximumSubmissions, long submissionCount,
-                               boolean allowMultiple, boolean isEnabled, boolean isOpen, boolean applied, LocalDateTime createdAt) {
+                               boolean allowMultiple, boolean isEnabled, SelectionMethod selectionMethod, Integer winnerCount,
+                               LocalDateTime drawnAt, boolean isOpen, boolean applied, LocalDateTime createdAt) {
         public static FormResponse of(final ApplicationForm form, final List<FormField> fields, final long submissionCount,
                                       final boolean isOpen, final boolean applied) {
             return new FormResponse(form.getId(), form.getTitle(), form.getContentHtml(), fields, form.getStartDateTime(),
                     form.getEndDateTime(), form.getMaximumSubmissions(), submissionCount, form.isAllowMultiple(),
-                    form.isEnabled(), isOpen, applied, form.getCreatedAt());
+                    form.isEnabled(), form.getSelectionMethod(), form.getWinnerCount(), form.getDrawnAt(), isOpen, applied,
+                    form.getCreatedAt());
         }
+    }
+
+    public record DrawResponse(int candidates, int winners, LocalDateTime drawnAt) {
     }
 
     public record SubmitRequest(@NotNull Map<String, Object> answers) {

@@ -735,6 +735,7 @@ export interface ReencryptResult {
 }
 
 export type FormFieldType = 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'DATE' | 'EMAIL' | 'PHONE' | 'SELECT' | 'RADIO' | 'CHECKBOX' | 'FILE';
+export type SelectionMethod = 'REVIEW' | 'LOTTERY';
 export type SubmissionStatus = 'RECEIVED' | 'REVIEWING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
 
 export interface FormField {
@@ -757,9 +758,18 @@ export interface ApplicationForm {
     submissionCount: number;
     allowMultiple: boolean;
     isEnabled: boolean;
+    selectionMethod: SelectionMethod;
+    winnerCount: number | null;
+    drawnAt: string | null;
     isOpen: boolean;
     applied: boolean;
     createdAt: string;
+}
+
+export interface DrawResult {
+    candidates: number;
+    winners: number;
+    drawnAt: string;
 }
 
 export interface Submission {

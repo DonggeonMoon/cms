@@ -77,6 +77,11 @@ public class ApplicationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/api/admin/applications/{id}/draw")
+    public ResponseEntity<DrawResponse> draw(@PathVariable final Long id) {
+        return ResponseEntity.ok(applicationService.draw(id));
+    }
+
     @GetMapping("/api/admin/applications/{id}/submissions")
     public ResponseEntity<PagedModel<SubmissionResponse>> submissions(@PathVariable final Long id,
                                                                       @RequestParam(required = false) final SubmissionStatus status,

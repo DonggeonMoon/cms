@@ -1,6 +1,7 @@
 package com.dgmoonlabs.cms.domain.application.service;
 
 import com.dgmoonlabs.cms.domain.application.constant.FormFieldType;
+import com.dgmoonlabs.cms.domain.application.constant.SelectionMethod;
 import com.dgmoonlabs.cms.domain.application.constant.SubmissionStatus;
 import com.dgmoonlabs.cms.domain.application.dto.ApplicationDtos.*;
 import com.dgmoonlabs.cms.domain.application.entity.ApplicationForm;
@@ -29,6 +30,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
@@ -39,6 +41,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ApplicationService {
     private static final int MAX_TEXT = 5000;
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final ApplicationFormRepository formRepository;
     private final ApplicationSubmissionRepository submissionRepository;
@@ -68,6 +71,7 @@ public class ApplicationService {
 
     @Transactional
     public Long createForm(final FormSaveRequest request) {
+        Integer winnerCount = requireWinnerCount(request);
         String html = htmlSanitizer.sanitize(request.contentHtml());
         return formRepository.save(ApplicationForm.builder()
                 .title(request.title().trim())
@@ -78,19 +82,37 @@ public class ApplicationService {
                 .maximumSubmissions(request.maximumSubmissions())
                 .allowMultiple(request.allowMultiple())
                 .isEnabled(request.isEnabled())
+                .selectionMethod(request.selectionMethodOrDefault())
+                .winnerCount(winnerCount)
                 .build()).getId();
     }
 
     @Transactional
     public void updateForm(final Long id, final FormSaveRequest request) {
+        Integer winnerCount = requireWinnerCount(request);
         findForm(id).update(request.title().trim(), htmlSanitizer.sanitize(request.contentHtml()), writeFields(request.fields()),
                 request.startDateTime(), request.endDateTime(), request.maximumSubmissions(), request.allowMultiple(),
-                request.isEnabled());
+                request.isEnabled(), request.selectionMethodOrDefault(), winnerCount);
     }
 
     @Transactional
     public void deleteForm(final Long id) {
         findForm(id).delete();
+    }
+
+    @Transactional
+    public DrawResponse draw(final Long formId) {
+        ApplicationForm form = formRepository.findForUpdate(formId).orElseThrow(BusinessException::notFound);
+        LocalDateTime now = LocalDateTime.now();
+        form.markDrawn(now);
+        List<ApplicationSubmission> candidates = new ArrayList<>(submissionRepository.findAllByFormIdAndStatusIn(formId,
+                EnumSet.of(SubmissionStatus.RECEIVED, SubmissionStatus.REVIEWING)));
+        Collections.shuffle(candidates, RANDOM);
+        int winners = Math.min(form.getWinnerCount(), candidates.size());
+        for (int i = 0; i < candidates.size(); i++) {
+            candidates.get(i).drawResult(i < winners);
+        }
+        return new DrawResponse(candidates.size(), winners, now);
     }
 
     @Transactional
@@ -242,6 +264,16 @@ public class ApplicationService {
 
     private ApplicationForm findForm(final Long id) {
         return formRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(BusinessException::notFound);
+    }
+
+    private static Integer requireWinnerCount(final FormSaveRequest request) {
+        if (request.selectionMethodOrDefault() != SelectionMethod.LOTTERY) {
+            return null;
+        }
+        if (request.winnerCount() == null) {
+            throw new BusinessException(ErrorCode.WINNER_COUNT_REQUIRED);
+        }
+        return request.winnerCount();
     }
 
     private static String blankToNull(final String value) {

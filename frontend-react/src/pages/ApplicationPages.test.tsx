@@ -7,7 +7,7 @@ import {routes} from '../router';
 
 const FORM = {
     id: 3, title: '청년 창업 지원금', contentHtml: '<p>안내</p>', startDateTime: null, endDateTime: null, maximumSubmissions: null,
-    submissionCount: 0, allowMultiple: false, isEnabled: true, isOpen: true, applied: false, createdAt: '2026-11-01T00:00:00',
+    submissionCount: 0, allowMultiple: false, isEnabled: true, selectionMethod: 'REVIEW', winnerCount: null, drawnAt: null, isOpen: true, applied: false, createdAt: '2026-11-01T00:00:00',
     fields: [
         {key: 'company', label: '회사명', type: 'TEXT', required: true, options: null, help: null},
         {key: 'stage', label: '사업 단계', type: 'RADIO', required: true, options: ['예비 창업', '초기 창업'], help: null},
@@ -44,5 +44,22 @@ describe('application pages', () => {
 
         expect(await screen.findByText('회사명을(를) 입력해 주세요.')).toBeInTheDocument();
         expect(sent[0]).toEqual({answers: {stage: '초기 창업'}});
+    });
+
+    it('tells applicants that a finished lottery is closed and where to find the result', async () => {
+        vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+            if (url === '/api/auth/me') return respond(200, {id: 1, username: 'founder', name: '창업자', userType: 'MEMBER'});
+            if (url === '/api/applications/3') return respond(200, {...FORM, selectionMethod: 'LOTTERY', winnerCount: 5,
+                drawnAt: '2026-11-03T10:00:00', isOpen: false, applied: true});
+            if (url === '/api/site') return respond(200, {id: 1, name: '사이트', features: {}});
+            if (url === '/api/configs') return respond(200, {});
+            return url.startsWith('/api/menus') || url.startsWith('/api/banners') || ['/api/boards', '/api/archives', '/api/contents'].includes(url)
+                ? respond(200, []) : respond(204);
+        }));
+        render(<AuthProvider><RouterProvider router={createMemoryRouter(routes, {initialEntries: ['/applications/3']})}/></AuthProvider>);
+
+        expect(await screen.findByText(/추첨을 마쳤습니다/)).toBeInTheDocument();
+        expect(screen.getByText(/추첨으로 5명 선정/)).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '신청하기'})).not.toBeInTheDocument();
     });
 });

@@ -1,6 +1,9 @@
 package com.dgmoonlabs.cms.domain.application.entity;
 
+import com.dgmoonlabs.cms.domain.application.constant.SelectionMethod;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
+import com.dgmoonlabs.cms.global.error.BusinessException;
+import com.dgmoonlabs.cms.global.error.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -52,9 +55,21 @@ public class ApplicationForm extends BaseEntity {
     @Comment("공개 여부")
     private boolean isEnabled;
 
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "varchar(20) default 'REVIEW'")
+    @Enumerated(EnumType.STRING)
+    @Comment("선정 방식 (심사 / 추첨)")
+    private SelectionMethod selectionMethod = SelectionMethod.REVIEW;
+
+    @Comment("추첨 당첨 인원")
+    private Integer winnerCount;
+
+    @Comment("추첨한 일시")
+    private LocalDateTime drawnAt;
+
     public void update(final String title, final String contentHtml, final String fields, final LocalDateTime startDateTime,
                        final LocalDateTime endDateTime, final Integer maximumSubmissions, final boolean allowMultiple,
-                       final boolean isEnabled) {
+                       final boolean isEnabled, final SelectionMethod selectionMethod, final Integer winnerCount) {
         this.title = title;
         this.contentHtml = contentHtml;
         this.fields = fields;
@@ -63,10 +78,24 @@ public class ApplicationForm extends BaseEntity {
         this.maximumSubmissions = maximumSubmissions;
         this.allowMultiple = allowMultiple;
         this.isEnabled = isEnabled;
+        if (drawnAt == null) {
+            this.selectionMethod = selectionMethod;
+            this.winnerCount = winnerCount;
+        }
+    }
+
+    public void markDrawn(final LocalDateTime now) {
+        if (selectionMethod != SelectionMethod.LOTTERY) {
+            throw new BusinessException(ErrorCode.NOT_LOTTERY);
+        }
+        if (drawnAt != null) {
+            throw new BusinessException(ErrorCode.ALREADY_DRAWN);
+        }
+        this.drawnAt = now;
     }
 
     public boolean isOpenAt(final LocalDateTime now) {
-        return isEnabled && getDeletedAt() == null
+        return isEnabled && getDeletedAt() == null && drawnAt == null
                 && (startDateTime == null || !now.isBefore(startDateTime))
                 && (endDateTime == null || !now.isAfter(endDateTime));
     }

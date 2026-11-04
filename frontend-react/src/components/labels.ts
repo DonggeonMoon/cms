@@ -1,4 +1,4 @@
-import type {BillingCycle, CellKind, FormFieldType, ReservationType, SubmissionStatus, EnrollmentStatus, OrderStatus, ProductSaleType, PublishStatus, ReportStatus, ReservationStatus} from '../api/domain';
+import type {BillingCycle, CellKind, FormFieldType, ReservationType, SelectionMethod, SubmissionStatus, EnrollmentStatus, OrderStatus, ProductSaleType, PublishStatus, ReportStatus, ReservationStatus} from '../api/domain';
 
 export const ORDER_STATUS: Record<OrderStatus, string> = {
     QUOTE_REQUESTED: '견적 요청',
@@ -68,6 +68,11 @@ export const CELL_KIND: Record<CellKind, string> = {
     AISLE: '통로',
     STAGE: '무대',
     EMPTY: '빈칸',
+};
+
+export const SELECTION_METHOD: Record<SelectionMethod, string> = {
+    REVIEW: '심사',
+    LOTTERY: '추첨',
 };
 
 export const SUBMISSION_STATUS: Record<SubmissionStatus, string> = {
