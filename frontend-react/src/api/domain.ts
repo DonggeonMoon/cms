@@ -282,12 +282,20 @@ export interface ContentSummary {
     title: string;
 }
 
+export type ContentStatus = 'DRAFT' | 'IN_REVIEW' | 'REJECTED' | 'SCHEDULED' | 'PUBLISHED';
+
 export interface Content {
     id: number;
     accessGradeId: number | null;
     title: string;
     contentHtml: string;
-    status: PublishStatus;
+    status: ContentStatus;
+    reviewRequestedBy: string | null;
+    reviewRequestedAt: string | null;
+    reviewedBy: string | null;
+    reviewComment: string | null;
+    publishAt: string | null;
+    publishedAt: string | null;
     version: number;
     lastWorker: string | null;
     memo: string;

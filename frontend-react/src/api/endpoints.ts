@@ -65,7 +65,15 @@ export const adminApi = {
         options: () => request<D.ApiKeyOption[]>('/api/admin/api-keys/options'),
     },
     banners: resource<D.Banner>('/api/admin/banners'),
-    contents: resource<D.Content>('/api/admin/contents'),
+    contents: {
+        ...resource<D.Content>('/api/admin/contents'),
+        reviews: (query: Query) => request<Page<D.Content>>('/api/admin/contents/reviews', {query}),
+        requestReview: (id: number, publishAt: string | null) =>
+            request<D.Content>(`/api/admin/contents/${id}/review-request`, {method: 'POST', body: {publishAt}}),
+        approve: (id: number) => request<D.Content>(`/api/admin/contents/${id}/approve`, {method: 'POST'}),
+        reject: (id: number, comment: string) => request<D.Content>(`/api/admin/contents/${id}/reject`, {method: 'POST', body: {comment}}),
+        unpublish: (id: number) => request<D.Content>(`/api/admin/contents/${id}/unpublish`, {method: 'POST'}),
+    },
     discounts: resource<D.Discount>('/api/admin/discounts'),
     products: resource<D.ProductDetail>('/api/products', (id) => `/api/products/${id}`, '/api/admin/products',
         (id) => `/api/admin/products/${id}`),

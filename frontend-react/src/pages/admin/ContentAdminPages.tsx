@@ -10,7 +10,7 @@ import {GuestPostingToggle} from '../../components/GuestPostingToggle';
 import {HOME_BLOCKS} from '../../components/HomeBlocks';
 import {formatDateTime} from '../../components/format';
 import {HtmlView} from '../../components/HtmlView';
-import {PUBLISH_STATUS, toOptions} from '../../components/labels';
+import {CONTENT_STATUS, PUBLISH_STATUS, toOptions} from '../../components/labels';
 import {type Grade, gradeSelectField, useWithGradeFields} from '../../api/grades';
 import {type FieldSpec, SchemaForm} from '../../components/SchemaForm';
 import {StableLabel} from '../../components/StableLabel';
@@ -80,7 +80,8 @@ export function BoardAdminPage() {
 }
 
 const CONTENT_FIELDS: FieldSpec[] = [
-    {name: 'status', label: '상태', type: 'select', required: true, options: toOptions(PUBLISH_STATUS)},
+    {name: 'status', label: '저장 방식', type: 'select', required: true, options: toOptions(PUBLISH_STATUS),
+        help: '보통은 임시 저장한 뒤 목록에서 검토를 요청합니다. 바로 게시는 최고 관리자만 할 수 있습니다. 검토 중인 글을 고치면 임시 저장으로 돌아갑니다.'},
     {name: 'title', label: '제목', required: true, newRow: true},
     {name: 'contentHtml', label: '내용', type: 'html'},
     {name: 'memo', label: '작업 메모', wide: true},
@@ -90,10 +91,68 @@ const contentGradeFields = (grades: Grade[]) => [
     gradeSelectField('accessGradeId', '열람 등급', grades, '이 등급 이상 회원만 볼 수 있습니다.'),
 ];
 
-const loadContents = (query: Query) => adminApi.contents.search(query);
+const loadContents = ({view, ...query}: Query) => (view === 'reviews' ? adminApi.contents.reviews(query) : adminApi.contents.search(query));
+
+function ContentStatusCell({content}: { content: Content }) {
+    return (
+        <>
+            <span className={content.status === 'REJECTED' ? 'badge danger' : content.status === 'PUBLISHED' ? 'badge ok' : 'badge'}>
+                {CONTENT_STATUS[content.status]}
+            </span>
+            {content.status === 'IN_REVIEW' && <div className="muted small">{content.reviewRequestedBy} 요청 · {formatDateTime(content.reviewRequestedAt)}</div>}
+            {content.publishAt && content.status !== 'PUBLISHED' && <div className="muted small">{formatDateTime(content.publishAt)} 게시 예정</div>}
+            {content.status === 'REJECTED' && content.reviewComment && <div className="small">반려: {content.reviewComment}</div>}
+            {content.status === 'PUBLISHED' && content.publishedAt && (
+                <div className="muted small">{formatDateTime(content.publishedAt)}{content.reviewedBy && ` · ${content.reviewedBy} 승인`}</div>
+            )}
+        </>
+    );
+}
+
+function ContentWorkflowActions({content, onDone}: { content: Content; onDone: () => void }) {
+    const [publishAt, setPublishAt] = useState('');
+    const [error, setError] = useState<unknown>(null);
+    const run = (pending: Promise<unknown>) => {
+        setError(null);
+        pending.then(onDone).catch(setError);
+    };
+    return (
+        <div className="review-cell">
+            {(content.status === 'DRAFT' || content.status === 'REJECTED') && (
+                <>
+                    <input type="datetime-local" aria-label={`${content.title} 예약 발행 일시`} value={publishAt}
+                           onChange={(e) => setPublishAt(e.target.value)}/>
+                    <button type="button" onClick={() => run(adminApi.contents.requestReview(content.id, publishAt ? `${publishAt}:00` : null))}>
+                        검토 요청
+                    </button>
+                </>
+            )}
+            {content.status === 'IN_REVIEW' && (
+                <>
+                    <button type="button" className="primary" onClick={() => run(adminApi.contents.approve(content.id))}>승인</button>
+                    <button type="button" className="danger" onClick={() => {
+                        const comment = window.prompt('반려 사유를 입력해 주세요.');
+                        if (comment?.trim()) {
+                            run(adminApi.contents.reject(content.id, comment.trim()));
+                        }
+                    }}>반려</button>
+                </>
+            )}
+            {(content.status === 'PUBLISHED' || content.status === 'SCHEDULED') && (
+                <button type="button" onClick={() => {
+                    if (window.confirm(content.status === 'PUBLISHED' ? '게시를 내리고 임시 저장으로 돌릴까요?' : '게시 예약을 취소할까요?')) {
+                        run(adminApi.contents.unpublish(content.id));
+                    }
+                }}>{content.status === 'PUBLISHED' ? '게시 취소' : '예약 취소'}</button>
+            )}
+            <ErrorBanner error={error}/>
+        </div>
+    );
+}
 
 export function ContentAdminPage() {
     const fields = useWithGradeFields(CONTENT_FIELDS, contentGradeFields);
+    const [reviewOnly, setReviewOnly] = useState(false);
     return (
         <AdminCrudPage<Content>
             title="컨텐츠"
@@ -117,14 +176,21 @@ export function ContentAdminPage() {
             load={loadContents}
             fields={fields}
             emptyForm={{status: 'DRAFT', contentHtml: ''}}
+            extraQuery={reviewOnly ? {view: 'reviews'} : undefined}
+            filters={
+                <label className="checkbox">
+                    <input type="checkbox" checked={reviewOnly} onChange={(e) => setReviewOnly(e.target.checked)}/> 검토 대기만 보기
+                </label>
+            }
             columns={[
                 {label: 'ID', render: (c) => c.id},
                 {label: '제목', render: (c) => c.status === 'PUBLISHED' ? <Link to={`/contents/${c.id}`}>{c.title}</Link> : c.title},
-                {label: '상태', render: (c) => PUBLISH_STATUS[c.status]},
+                {label: '상태', render: (c) => <ContentStatusCell content={c}/>},
+                {label: '발행', className: 'button-cell', render: (c, reload) => <ContentWorkflowActions content={c} onDone={reload}/>},
                 {label: '버전', render: (c) => `v${c.version}`},
                 {label: '마지막 작업', render: (c) => `${c.lastWorker ?? '-'} · ${formatDateTime(c.modifiedAt)}`},
             ]}
-            toForm={(c) => adminApi.contents.get(c.id).then((full) => ({...full}))}
+            toForm={(c) => adminApi.contents.get(c.id).then((full) => ({...full, status: full.status === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT'}))}
             create={(v) => adminApi.contents.create(v)}
             update={(c, v) => adminApi.contents.update(c.id, v)}
             remove={(c) => adminApi.contents.remove(c.id)}

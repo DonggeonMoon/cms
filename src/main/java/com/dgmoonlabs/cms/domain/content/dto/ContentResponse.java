@@ -15,11 +15,19 @@ public record ContentResponse(
         String memo,
         LocalDateTime createdAt,
         LocalDateTime modifiedAt,
-        Long accessGradeId
+        Long accessGradeId,
+        String reviewRequestedBy,
+        LocalDateTime reviewRequestedAt,
+        String reviewedBy,
+        String reviewComment,
+        LocalDateTime publishAt,
+        LocalDateTime publishedAt
 ) {
     public static ContentResponse from(final Content content) {
         return new ContentResponse(content.getId(), content.getTitle(), content.getContentHtml(), content.getStatus(),
                 content.getVersion(), content.getLastWorker(), content.getMemo(), content.getCreatedAt(),
-                content.getModifiedAt(), content.getAccessGradeId());
+                content.getModifiedAt(), content.getAccessGradeId(), content.getReviewRequestedBy(),
+                content.getReviewRequestedAt(), content.getReviewedBy(), content.getReviewComment(), content.getPublishAt(),
+                content.getPublishedAt());
     }
 }

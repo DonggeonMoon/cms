@@ -1,4 +1,4 @@
-import type {BillingCycle, CellKind, FormFieldType, ReservationType, SelectionMethod, SubmissionStatus, EnrollmentStatus, OrderStatus, ProductSaleType, PublishStatus, ReportStatus, ReservationStatus} from '../api/domain';
+import type {BillingCycle, CellKind, ContentStatus, FormFieldType, ReservationType, SelectionMethod, SubmissionStatus, EnrollmentStatus, OrderStatus, ProductSaleType, PublishStatus, ReportStatus, ReservationStatus} from '../api/domain';
 
 export const ORDER_STATUS: Record<OrderStatus, string> = {
     QUOTE_REQUESTED: '견적 요청',
@@ -25,6 +25,14 @@ export const REPORT_STATUS: Record<ReportStatus, string> = {
 
 export const PUBLISH_STATUS: Record<PublishStatus, string> = {
     DRAFT: '임시 저장',
+    PUBLISHED: '게시',
+};
+
+export const CONTENT_STATUS: Record<ContentStatus, string> = {
+    DRAFT: '임시 저장',
+    IN_REVIEW: '검토 중',
+    REJECTED: '반려',
+    SCHEDULED: '게시 예약',
     PUBLISHED: '게시',
 };
 

@@ -1,6 +1,8 @@
 package com.dgmoonlabs.cms.domain.content.controller;
 
 import com.dgmoonlabs.cms.domain.content.dto.ContentResponse;
+import com.dgmoonlabs.cms.domain.content.dto.ContentWorkflowDtos.RejectRequest;
+import com.dgmoonlabs.cms.domain.content.dto.ContentWorkflowDtos.ReviewRequest;
 import com.dgmoonlabs.cms.domain.content.dto.ContentSaveRequest;
 import com.dgmoonlabs.cms.domain.content.dto.ContentSummaryResponse;
 import com.dgmoonlabs.cms.domain.content.service.ContentService;
@@ -50,6 +52,31 @@ public class ContentController {
     public ResponseEntity<Void> update(@PathVariable final Long id, @RequestBody @Valid final ContentSaveRequest request) {
         contentService.updateContent(id, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/api/admin/contents/reviews")
+    public ResponseEntity<PagedModel<ContentResponse>> reviewQueue(@PageableDefault final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(contentService.reviewQueue(pageable)));
+    }
+
+    @PostMapping("/api/admin/contents/{id}/review-request")
+    public ResponseEntity<ContentResponse> requestReview(@PathVariable final Long id, @RequestBody final ReviewRequest request) {
+        return ResponseEntity.ok(contentService.requestReview(id, request));
+    }
+
+    @PostMapping("/api/admin/contents/{id}/approve")
+    public ResponseEntity<ContentResponse> approve(@PathVariable final Long id) {
+        return ResponseEntity.ok(contentService.approve(id));
+    }
+
+    @PostMapping("/api/admin/contents/{id}/reject")
+    public ResponseEntity<ContentResponse> reject(@PathVariable final Long id, @RequestBody @Valid final RejectRequest request) {
+        return ResponseEntity.ok(contentService.reject(id, request));
+    }
+
+    @PostMapping("/api/admin/contents/{id}/unpublish")
+    public ResponseEntity<ContentResponse> unpublish(@PathVariable final Long id) {
+        return ResponseEntity.ok(contentService.unpublish(id));
     }
 
     @DeleteMapping("/api/admin/contents/{id}")

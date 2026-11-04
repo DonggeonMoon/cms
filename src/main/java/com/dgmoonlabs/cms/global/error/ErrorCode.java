@@ -65,6 +65,9 @@ public enum ErrorCode {
     ADMIN_GRADE_IN_USE(HttpStatus.CONFLICT, "최고 관리자 등급이나 관리자가 쓰고 있는 등급은 삭제할 수 없습니다."),
     LAST_SUPER_ADMIN(HttpStatus.CONFLICT, "최고 관리자가 한 명은 있어야 합니다. 다른 관리자를 먼저 최고 관리자로 정해 주세요."),
     CANNOT_DELETE_SELF(HttpStatus.BAD_REQUEST, "자기 계정은 삭제할 수 없습니다."),
+    PUBLISH_REVIEW_REQUIRED(HttpStatus.FORBIDDEN, "검토 요청 후 승인을 받아야 발행할 수 있습니다. 바로 발행은 최고 관리자만 할 수 있습니다."),
+    SELF_REVIEW_NOT_ALLOWED(HttpStatus.FORBIDDEN, "자기가 검토를 요청한 글은 다른 관리자가 승인·반려해야 합니다."),
+    INVALID_PUBLISH_AT(HttpStatus.BAD_REQUEST, "예약 발행 일시는 지금보다 뒤여야 합니다."),
     REAUTHENTICATION_FAILED(HttpStatus.BAD_REQUEST, "비밀번호가 올바르지 않습니다."),
 
     CODE_HAS_CHILDREN(HttpStatus.CONFLICT, "하위 코드가 있어 삭제할 수 없습니다."),
