@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.common.user.service;
 
+import com.dgmoonlabs.cms.domain.admin.account.service.AdminAccountService;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.domain.common.user.dto.LoginRequest;
 import com.dgmoonlabs.cms.domain.common.user.entity.admin.entity.Admin;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    private final AdminAccountService adminAccountService;
     private final MemberRepository memberRepository;
     private final AdminRepository adminRepository;
     private final PasswordEncoder passwordEncoder;
@@ -74,6 +76,7 @@ public class AuthService {
             admin.changePassword(passwordEncoder.encode(request.password()));
         }
         admin.recordLoginSuccess();
+        adminAccountService.ensureSuperAdmin();
         return new LoginUser(admin.getId(), admin.getUsername(), admin.getName(), UserType.ADMIN);
     }
 

@@ -1,25 +1,20 @@
 package com.dgmoonlabs.cms.domain.common.code;
 
+import com.dgmoonlabs.cms.support.ApiTestSupport;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.mock.web.MockHttpSession;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
-@WithMockUser(roles = "ADMIN")
-class CodeApiTest {
-    @Autowired
-    MockMvc mockMvc;
+class CodeApiTest extends ApiTestSupport {
+    private MockHttpSession admin;
+
+    @BeforeEach
+    void loginAsAdmin() throws Exception {
+        admin = admin();
+    }
 
     @Test
     void manageCodeTree() throws Exception {
@@ -38,35 +33,34 @@ class CodeApiTest {
                 {"parentId":%d,"name":"미사용","order":3,"isUsing":false}
                 """.formatted(rootId));
 
-        mockMvc.perform(get("/api/codes").param("parentId", String.valueOf(rootId)))
+        getJson("/api/codes?parentId=" + rootId, null)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].name").value("자유"))
                 .andExpect(jsonPath("$[0].depth").value(1));
 
-        mockMvc.perform(get("/api/admin/codes").param("parentId", String.valueOf(rootId)))
+        getJson("/api/admin/codes?parentId=" + rootId, admin)
                 .andExpect(jsonPath("$.page.totalElements").value(3));
-        mockMvc.perform(get("/api/admin/codes").param("keyword", "board_cat"))
+        getJson("/api/admin/codes?keyword=board_cat", admin)
                 .andExpect(jsonPath("$.content[0].id").value(rootId));
 
-        mockMvc.perform(delete(rootLocation).with(csrf()))
+        deleteJson(rootLocation, admin, null)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CODE_HAS_CHILDREN"));
 
-        mockMvc.perform(put(rootLocation).with(csrf()).contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"name":"분류","order":5,"isUsing":false}
-                                """))
+        putJson(rootLocation, admin, """
+                {"name":"분류","order":5,"isUsing":false}
+                """)
                 .andExpect(status().isNoContent());
-        mockMvc.perform(get(rootLocation))
+        getJson(rootLocation, admin)
                 .andExpect(jsonPath("$.name").value("분류"))
                 .andExpect(jsonPath("$.isUsing").value(false));
 
-        mockMvc.perform(get("/api/admin/codes/999999")).andExpect(status().isNotFound());
+        getJson("/api/admin/codes/999999", admin).andExpect(status().isNotFound());
     }
 
     private String create(final String body) throws Exception {
-        return mockMvc.perform(post("/api/admin/codes").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body))
+        return postJson("/api/admin/codes", admin, body)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getHeader("Location");
     }

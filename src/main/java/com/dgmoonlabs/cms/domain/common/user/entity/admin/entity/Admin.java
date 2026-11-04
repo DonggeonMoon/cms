@@ -43,6 +43,9 @@ public class Admin extends BaseEntity {
     @Comment("그룹")
     private Long groupId;
 
+    @Comment("관리자 등급 ID (없으면 보안·관리자 관리를 뺀 모든 영역)")
+    private Long gradeId;
+
     @Comment("약관 동의 확인 일시")
     private LocalDate termConfirmationDate;
 
@@ -107,6 +110,10 @@ public class Admin extends BaseEntity {
 
     public void recordLoginFailure() {
         this.loginTryCount++;
+    }
+
+    public void changeGrade(final Long gradeId) {
+        this.gradeId = gradeId;
     }
 
     public void unlock() {

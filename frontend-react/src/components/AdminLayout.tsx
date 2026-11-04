@@ -1,4 +1,5 @@
 import {Link, NavLink, Outlet, useNavigate} from 'react-router';
+import {type AdminArea, useMyPermissions} from '../api/admins';
 import type {SiteFeature} from '../api/domain';
 import {useAuth} from '../auth/AuthContext';
 import {SiteProvider, useSite} from './SiteContext';
@@ -9,11 +10,14 @@ interface MenuItem {
     end?: boolean;
     sub?: boolean;
     features?: SiteFeature[];
+    area?: AdminArea;
+    superOnly?: boolean;
 }
 
-const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
+const MENU_GROUPS: { title: string; area?: AdminArea; items: MenuItem[] }[] = [
     {
         title: '현황',
+        area: 'STATUS',
         items: [
             {to: '/admin', label: '대시보드', end: true},
             {to: '/admin/statistics', label: '방문 통계'},
@@ -21,6 +25,7 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
     },
     {
         title: '사이트',
+        area: 'SITE',
         items: [
             {to: '/admin/sites', label: '사이트'},
             {to: '/admin/menus', label: '메뉴'},
@@ -30,6 +35,7 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
     },
     {
         title: '컨텐츠',
+        area: 'CONTENT',
         items: [
             {to: '/admin/contents', label: '컨텐츠', features: ['CONTENT']},
             {to: '/admin/boards', label: '게시판', features: ['BOARD']},
@@ -40,6 +46,7 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
     },
     {
         title: '비즈니스',
+        area: 'BUSINESS',
         items: [
             {to: '/admin/products', label: '상품', features: ['PRODUCT']},
             {to: '/admin/product-categories', label: '카테고리', sub: true, features: ['PRODUCT']},
@@ -57,6 +64,7 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
     },
     {
         title: '공공',
+        area: 'PUBLIC',
         items: [
             {to: '/admin/reports', label: '신고', features: ['REPORT']},
             {to: '/admin/satisfactions', label: '만족도 조사', features: ['SATISFACTION']},
@@ -64,17 +72,18 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
     },
     {
         title: '공통',
+        area: 'COMMON',
         items: [
-            {to: '/admin/members', label: '회원'},
-            {to: '/admin/grades', label: '회원 등급', sub: true},
-            {to: '/admin/points', label: '포인트', sub: true},
-            {to: '/admin/coupons', label: '쿠폰', sub: true},
-            {to: '/admin/join-settings', label: '회원가입 설정', sub: true},
-            {to: '/admin/policies/privacy-policy', label: '개인정보처리방침', sub: true},
-            {to: '/admin/policies/privacy-consent', label: '개인정보 수집·이용 동의', sub: true},
-            {to: '/admin/policies/mail-reception', label: '이메일 수신 동의', sub: true},
-            {to: '/admin/policies/sms-reception', label: 'SMS 수신 동의', sub: true},
-            {to: '/admin/policies/marketing-usage', label: '마케팅 활용 동의', sub: true},
+            {to: '/admin/members', label: '회원', area: 'MEMBER'},
+            {to: '/admin/grades', label: '회원 등급', sub: true, area: 'MEMBER'},
+            {to: '/admin/points', label: '포인트', sub: true, area: 'MEMBER'},
+            {to: '/admin/coupons', label: '쿠폰', sub: true, area: 'MEMBER'},
+            {to: '/admin/join-settings', label: '회원가입 설정', sub: true, area: 'MEMBER'},
+            {to: '/admin/policies/privacy-policy', label: '개인정보처리방침', sub: true, area: 'MEMBER'},
+            {to: '/admin/policies/privacy-consent', label: '개인정보 수집·이용 동의', sub: true, area: 'MEMBER'},
+            {to: '/admin/policies/mail-reception', label: '이메일 수신 동의', sub: true, area: 'MEMBER'},
+            {to: '/admin/policies/sms-reception', label: 'SMS 수신 동의', sub: true, area: 'MEMBER'},
+            {to: '/admin/policies/marketing-usage', label: '마케팅 활용 동의', sub: true, area: 'MEMBER'},
             {to: '/admin/chatbot', label: '챗봇', features: ['CHATBOT']},
             {to: '/admin/regexes', label: '정규식'},
             {to: '/admin/codes', label: '공통 코드'},
@@ -85,7 +94,9 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
     },
     {
         title: '보안',
+        area: 'SECURITY',
         items: [
+            {to: '/admin/admins', label: '관리자 관리', superOnly: true},
             {to: '/admin/api-keys', label: 'API 키 관리'},
             {to: '/admin/password-hash', label: '해시 알고리즘 관리'},
             {to: '/admin/crypto-key', label: '암호화 키 관리'},
@@ -105,10 +116,19 @@ function AdminFrame() {
     const {user, logout} = useAuth();
     const {name, isEnabled} = useSite();
     const navigate = useNavigate();
+    const permissions = useMyPermissions();
+    const allowed = (item: MenuItem, groupArea?: AdminArea) => {
+        if (item.superOnly) {
+            return permissions?.superAdmin === true;
+        }
+        const area = item.area ?? groupArea;
+        return !permissions || permissions.superAdmin || !area || permissions.areas.includes(area);
+    };
     const visibleGroups = MENU_GROUPS
         .map((group) => ({
             ...group,
-            items: group.items.filter((item) => !item.features || item.features.some((feature) => isEnabled(feature))),
+            items: group.items.filter((item) => allowed(item, group.area)
+                && (!item.features || item.features.some((feature) => isEnabled(feature)))),
         }))
         .filter((group) => group.items.length > 0);
 

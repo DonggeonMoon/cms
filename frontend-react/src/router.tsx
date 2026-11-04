@@ -52,6 +52,7 @@ import {MyCouponsPage, MyPointsPage} from './pages/shop/RewardPages';
 import {MyDownloadsPage} from './pages/shop/DigitalPages';
 import {CouponAdminPage, PointPolicyPage} from './pages/admin/RewardAdminPages';
 import {CategoryAdminPage} from './pages/admin/CategoryAdminPage';
+import {AdminAccountPage} from './pages/admin/AdminAccountPage';
 import {JoinPage} from './pages/JoinPage';
 import {SocialJoinPage} from './pages/SocialJoinPage';
 import {AdminLoginPage, LoginPage} from './pages/LoginPage';
@@ -295,6 +296,7 @@ export const routes = [
                             {path: 'password-hash', element: <PasswordHashPage/>},
                             {path: 'crypto-key', element: <CryptoKeyPage/>},
                             {path: 'api-keys', element: <ApiKeyPage/>},
+                            {path: 'admins', element: <AdminAccountPage/>},
                         ],
                     },
                 ],

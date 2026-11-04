@@ -3006,3 +3006,15 @@ fieldset.attribute-filter {
     font-weight: 500;
 }
 
+.grade-editor,
+.inline-form {
+    margin: 12px 0;
+}
+
+.area-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 8px 0;
+}
+
