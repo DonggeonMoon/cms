@@ -10,10 +10,11 @@ public enum ReservationType {
     CONSULTATION("상담", Kind.TIME),
     RENTAL("대관", Kind.SPACE),
     LODGING("숙박·대실", Kind.SPACE),
-    EVENT("공연·행사", Kind.SPACE);
+    EVENT("공연·행사", Kind.SPACE),
+    ITEM_RENTAL("물품 대여", Kind.ITEM);
 
     public enum Kind {
-        TIME, SPACE
+        TIME, SPACE, ITEM
     }
 
     private final String label;

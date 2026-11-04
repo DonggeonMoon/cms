@@ -16,6 +16,7 @@ import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ProgramSaveRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationCreateRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationResponse;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReturnRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.service.ReservationService;
 import com.dgmoonlabs.cms.domain.business.review.constant.ReviewTargetType;
 import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewResponse;
@@ -172,6 +173,11 @@ public class BusinessAdminController {
     public ResponseEntity<Void> confirmReservation(@PathVariable final Long id) {
         reservationService.confirmReservation(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reservations/{id}/return")
+    public ResponseEntity<ReservationResponse> returnItems(@PathVariable final Long id, @RequestBody @Valid final ReturnRequest request) {
+        return ResponseEntity.ok(reservationService.returnItems(id, request));
     }
 
     @PostMapping("/reservations/{id}/cancel")

@@ -9,6 +9,8 @@ export function reservationUsage(reservation: Pick<Reservation, 'reservationType
             return `${formatDateTime(reservation.startAt)} ~ ${formatTime(reservation.endAt)}${cells}`;
         case 'LODGING':
             return `${formatDate(reservation.startAt)} ~ ${formatDate(reservation.endAt)}${cells}`;
+        case 'ITEM_RENTAL':
+            return `${formatDate(reservation.startAt)} 대여 ~ ${formatDate(reservation.endAt)} 반납`;
         case 'EVENT':
             return `${formatDateTime(reservation.startAt)}${cells}`;
         default:

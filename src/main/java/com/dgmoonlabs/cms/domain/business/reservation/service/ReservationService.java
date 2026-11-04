@@ -142,6 +142,7 @@ public class ReservationService {
             case LODGING -> bookSpace(program, request.cellsOrEmpty(), lodgingPeriod(program, request.startAt(), request.endAt()));
             case EVENT -> bookSpace(program, request.cellsOrEmpty(), new Period(program.getStartDateTime(),
                     program.getEndDateTime() != null ? program.getEndDateTime() : program.getStartDateTime().plusMinutes(1), 1));
+            case ITEM_RENTAL -> bookItems(program, request.quantity(), request.startAt(), request.endAt());
         };
         ReservationStatus status = paid || booking.total().signum() == 0 ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING_PAYMENT;
         Reservation reservation = reservationRepository.save(Reservation.builder()
@@ -157,6 +158,7 @@ public class ReservationService {
                 .cells(booking.cells())
                 .quantity(booking.quantity())
                 .totalPrice(booking.total())
+                .depositAmount(booking.deposit())
                 .status(status)
                 .applicantName(request.applicantName())
                 .phoneNumber(request.phoneNumber())
@@ -164,7 +166,12 @@ public class ReservationService {
         return ReservationResponse.from(reservation);
     }
 
-    private record Booking(int quantity, BigDecimal total, LocalDateTime startAt, LocalDateTime endAt, String cells) {
+    private record Booking(int quantity, BigDecimal total, LocalDateTime startAt, LocalDateTime endAt, String cells,
+                           BigDecimal deposit) {
+        Booking(final int quantity, final BigDecimal total, final LocalDateTime startAt, final LocalDateTime endAt,
+                final String cells) {
+            this(quantity, total, startAt, endAt, cells, null);
+        }
     }
 
     // units: 이용 단위 수 (대관은 시간 단위 수, 숙박은 박 수)
@@ -193,6 +200,54 @@ public class ReservationService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         String joined = String.join(",", cells.stream().map(SpaceLayout.Cell::key).toList());
         return new Booking(cells.size(), perUnit.multiply(BigDecimal.valueOf(period.units())), period.from(), period.to(), joined);
+    }
+
+    /** 대여일부터 반납일 전날까지를 대여 일수로 센다. 금액은 1일 대여료 × 일수 × 수량에 보증금을 더한다. */
+    private Booking bookItems(final Program program, final int quantity, final LocalDateTime startAt, final LocalDateTime endAt) {
+        if (startAt == null || endAt == null) {
+            throw new BusinessException(ErrorCode.INVALID_RESERVATION_TIME);
+        }
+        LocalDate from = startAt.toLocalDate();
+        LocalDate to = endAt.toLocalDate();
+        int days = (int) ChronoUnit.DAYS.between(from, to);
+        if (days <= 0 || from.isBefore(LocalDate.now()) || !withinPeriod(program, from) || !withinPeriod(program, to.minusDays(1))
+                || (program.getMaxRentalDays() != null && days > program.getMaxRentalDays())) {
+            throw new BusinessException(ErrorCode.INVALID_RESERVATION_TIME);
+        }
+        if (remainingItems(program, from, to) < quantity) {
+            throw new BusinessException(ErrorCode.RENTAL_OUT_OF_STOCK);
+        }
+        BigDecimal deposit = (program.getDepositAmount() == null ? BigDecimal.ZERO : program.getDepositAmount())
+                .multiply(BigDecimal.valueOf(quantity));
+        BigDecimal fee = program.getPrice().multiply(BigDecimal.valueOf((long) days * quantity));
+        return new Booking(quantity, fee.add(deposit), from.atStartOfDay(), to.atStartOfDay(), null, deposit);
+    }
+
+    private int remainingItems(final Program program, final LocalDate from, final LocalDate to) {
+        int stock = program.getMaximumPerson() == null ? 0 : program.getMaximumPerson();
+        List<Reservation> active = activeReservations(program.getId());
+        int remaining = stock;
+        for (LocalDate day = from; day.isBefore(to); day = day.plusDays(1)) {
+            LocalDate date = day;
+            int held = active.stream().filter(reservation -> reservation.holdsItemOn(date)).mapToInt(Reservation::getQuantity).sum();
+            remaining = Math.min(remaining, stock - held);
+        }
+        return Math.max(0, remaining);
+    }
+
+    @Transactional
+    public ReservationResponse returnItems(final Long reservationId, final ReturnRequest request) {
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound);
+        BigDecimal deposit = reservation.getDepositAmount() == null ? BigDecimal.ZERO : reservation.getDepositAmount();
+        BigDecimal deduction = request.deduction() == null ? BigDecimal.ZERO : request.deduction();
+        if (deduction.compareTo(deposit) > 0) {
+            throw new BusinessException(ErrorCode.INVALID_DEPOSIT_DEDUCTION);
+        }
+        BigDecimal refund = deposit.subtract(deduction);
+        String memo = request.memo() == null || request.memo().isBlank() ? null : request.memo().trim();
+        reservation.markReturned(LocalDateTime.now(), refund, memo);
+        paymentService.refundPartially(PaymentTargetType.RESERVATION, reservation.getId(), refund);
+        return ReservationResponse.from(reservation);
     }
 
     private Period rentalPeriod(final Program program, final LocalDateTime startAt, final LocalDateTime endAt) {
@@ -277,6 +332,8 @@ public class ReservationService {
             case LODGING -> new Availability(from == null || to == null ? List.of()
                     : sorted(takenCells(programId, from.toLocalDate().atStartOfDay(), to.toLocalDate().atStartOfDay())), List.of());
             case EVENT -> new Availability(sorted(takenCells(programId, null, null)), List.of());
+            case ITEM_RENTAL -> new Availability(List.of(), List.of(), from == null || to == null || !to.toLocalDate().isAfter(from.toLocalDate())
+                    ? null : remainingItems(program, from.toLocalDate(), to.toLocalDate()));
         };
     }
 
@@ -303,7 +360,11 @@ public class ReservationService {
                 || (type == ReservationType.EVENT && request.startDateTime() == null)) {
             throw new BusinessException(ErrorCode.RESERVATION_SETTINGS_REQUIRED);
         }
+        if (type == ReservationType.ITEM_RENTAL && request.maximumPerson() == null) {
+            throw new BusinessException(ErrorCode.RESERVATION_SETTINGS_REQUIRED);
+        }
         program.changeReservationSettings(type, request.slotMinutes(), request.openTime(), request.closeTime(), layout);
+        program.changeRentalSettings(request.depositAmount(), request.maxRentalDays());
     }
 
     private SpaceLayout layoutOf(final Program program) {

@@ -38,7 +38,9 @@ public final class ReservationDtos {
             LocalTime openTime,
             LocalTime closeTime,
             @Valid SpaceLayout layout,
-            Long accessGradeId
+            Long accessGradeId,
+            @PositiveOrZero BigDecimal depositAmount,
+            @Positive @Max(365) Integer maxRentalDays
     ) {
         public ReservationType reservationTypeOrDefault() {
             return reservationType == null ? ReservationType.PROGRAM : reservationType;
@@ -60,7 +62,7 @@ public final class ReservationDtos {
                                   LocalDateTime startDateTime, LocalDateTime endDateTime,
                                   LocalDateTime applicationStartDateTime, LocalDateTime applicationEndDateTime,
                                   String contentHtml, boolean isEnabled, boolean isOpen, Double averageRating,
-                                  Long accessGradeId) {
+                                  Long accessGradeId, BigDecimal depositAmount, Integer maxRentalDays) {
         public static ProgramResponse of(final Program program, final SpaceLayout layout, final boolean isOpen,
                                          final Double averageRating) {
             return new ProgramResponse(program.getId(), program.getName(), program.getDescription(),
@@ -70,14 +72,21 @@ public final class ReservationDtos {
                     program.getCloseTime(), layout, program.getMaximumPerson(), program.getAvailablePerson(),
                     program.getStartDateTime(), program.getEndDateTime(), program.getApplicationStartDateTime(),
                     program.getApplicationEndDateTime(), program.getContentHtml(), program.isEnabled(), isOpen, averageRating,
-                    program.getAccessGradeId());
+                    program.getAccessGradeId(), program.getDepositAmount(), program.getMaxRentalDays());
         }
     }
 
     public record Slot(LocalDateTime startAt, LocalDateTime endAt, int remaining) {
     }
 
-    public record Availability(List<String> takenCells, List<Slot> slots) {
+    /** remainingItems: 물품 대여에서 고른 기간 동안 남는 수량(가장 적게 남는 날 기준). */
+    public record Availability(List<String> takenCells, List<Slot> slots, Integer remainingItems) {
+        public Availability(final List<String> takenCells, final List<Slot> slots) {
+            this(takenCells, slots, null);
+        }
+    }
+
+    public record ReturnRequest(@PositiveOrZero BigDecimal deduction, @Size(max = 500) String memo) {
     }
 
     @Builder
@@ -98,14 +107,19 @@ public final class ReservationDtos {
     public record ReservationResponse(Long id, String reservationNumber, Long userId, Long programId, String programName,
                                       ReservationType reservationType, LocalDateTime startAt, LocalDateTime endAt,
                                       List<String> cells, int quantity, BigDecimal totalPrice, ReservationStatus status, String customStatus,
-                                      String applicantName, String phoneNumber, LocalDateTime createdAt) {
+                                      String applicantName, String phoneNumber, BigDecimal depositAmount,
+                                      LocalDateTime returnedAt, BigDecimal depositRefunded, String returnMemo,
+                                      boolean overdue, long lateDays, LocalDateTime createdAt) {
         public static ReservationResponse from(final Reservation reservation) {
+            LocalDateTime now = LocalDateTime.now();
             return new ReservationResponse(reservation.getId(), reservation.getReservationNumber(),
                     reservation.getUserId(), reservation.getProgramId(), reservation.getProgramName(),
                     reservation.getReservationType(), reservation.getStartAt(), reservation.getEndAt(),
                     reservation.cellKeys(), reservation.getQuantity(), reservation.getTotalPrice(), reservation.getStatus(),
                     reservation.getCustomStatus(),
-                    reservation.getApplicantName(), reservation.getPhoneNumber(), reservation.getCreatedAt());
+                    reservation.getApplicantName(), reservation.getPhoneNumber(), reservation.getDepositAmount(),
+                    reservation.getReturnedAt(), reservation.getDepositRefunded(), reservation.getReturnMemo(),
+                    reservation.isOverdueAt(now), reservation.lateDaysAt(now), reservation.getCreatedAt());
         }
     }
 }

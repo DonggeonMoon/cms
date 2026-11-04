@@ -139,6 +139,8 @@ export const adminApi = {
             request<D.Reservation>('/api/admin/reservations', {method: 'POST', body, query: {paid}}),
         confirm: (id: number) => request<void>(`/api/admin/reservations/${id}/confirm`, {method: 'POST'}),
         cancel: (id: number) => request<void>(`/api/admin/reservations/${id}/cancel`, {method: 'POST'}),
+        returnItems: (id: number, body: { deduction: number; memo: string }) =>
+            request<D.Reservation>(`/api/admin/reservations/${id}/return`, {method: 'POST', body}),
     },
     payments: (query: Query) => request<Page<D.Payment>>('/api/admin/payments', {query}),
     cryptoKey: {

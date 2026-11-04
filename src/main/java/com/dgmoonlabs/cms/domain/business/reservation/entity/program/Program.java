@@ -58,6 +58,13 @@ public class Program extends BaseEntity {
     @Comment("공간 배치표 (좌석·객실·공간)")
     private String layout;
 
+    @Column(precision = 15, scale = 2)
+    @Comment("물품 대여 보증금 (1개)")
+    private BigDecimal depositAmount;
+
+    @Comment("물품 대여 최대 일수 (없으면 제한 없음)")
+    private Integer maxRentalDays;
+
     @Comment("예약 가능 등급 ID (없으면 누구나)")
     private Long accessGradeId;
 
@@ -137,6 +144,12 @@ public class Program extends BaseEntity {
         this.openTime = timed ? openTime : null;
         this.closeTime = timed ? closeTime : null;
         this.layout = reservationType.usesLayout() ? layout : null;
+    }
+
+    public void changeRentalSettings(final BigDecimal depositAmount, final Integer maxRentalDays) {
+        boolean rental = reservationType == ReservationType.ITEM_RENTAL;
+        this.depositAmount = rental ? depositAmount : null;
+        this.maxRentalDays = rental ? maxRentalDays : null;
     }
 
     public boolean isOpenAt(final LocalDateTime now) {

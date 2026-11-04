@@ -11,7 +11,7 @@ import {reservationUsage} from '../../components/reservationUsage';
 import {ReservationPicker} from './ReservationPicker';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {Field} from '../../components/Field';
-import {formatDateTime} from '../../components/format';
+import {formatDate, formatDateTime} from '../../components/format';
 import {HtmlView} from '../../components/HtmlView';
 import {ListSearch, pageParams} from '../../components/ListSearch';
 import {BILLING_CYCLE, ORDER_STATUS, RESERVATION_STATUS, RESERVATION_TYPE, SALE_TYPE} from '../../components/labels';
@@ -384,6 +384,7 @@ const PRICE_UNIT: Record<ReservationType, string> = {
     RENTAL: '칸·예약 단위',
     LODGING: '칸·1박',
     EVENT: '좌석',
+    ITEM_RENTAL: '1개·1일',
 };
 
 export function ProgramDetailPage() {
@@ -649,15 +650,27 @@ export function MyReservationsPage() {
                             <td><Link to={`/programs/${reservation.programId}`}>{reservation.programName}</Link></td>
                             <td>{reservationUsage(reservation)}</td>
                             <td>{reservation.quantity}</td>
-                            <td>{won(reservation.totalPrice)}</td>
-                            <td>{reservationStatus(reservation.status, reservation.customStatus)}</td>
+                            <td>{won(reservation.totalPrice)}
+                                {reservation.depositAmount != null && Number(reservation.depositAmount) > 0 && (
+                                    <div className="muted small">보증금 {won(reservation.depositAmount)} 포함</div>
+                                )}
+                            </td>
+                            <td>{reservationStatus(reservation.status, reservation.customStatus)}
+                                {reservation.overdue && <div><span className="badge danger">반납 {reservation.lateDays}일 지연</span></div>}
+                                {reservation.returnedAt && (
+                                    <div className="muted small">
+                                        {formatDate(reservation.returnedAt)} 반납 · 보증금 {won(reservation.depositRefunded ?? 0)} 환불
+                                        {reservation.returnMemo && ` (${reservation.returnMemo})`}
+                                    </div>
+                                )}
+                            </td>
                             <td className="button-cell">
                                 {reservation.status === 'PENDING_PAYMENT' && (
                                     <Link className="button primary" to={`/checkout/RESERVATION/${reservation.id}`}>결제</Link>
                                 )}
                             </td>
                             <td className="button-cell">
-                                {reservation.status !== 'CANCELED' && (
+                                {reservation.status !== 'CANCELED' && !reservation.returnedAt && (
                                     <button type="button" className="danger" onClick={() => {
                                         if (window.confirm('예약을 취소할까요?')) {
                                             shopApi.cancelReservation(reservation.id).then(reload).catch(setError);

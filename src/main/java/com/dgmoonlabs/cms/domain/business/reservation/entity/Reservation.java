@@ -15,7 +15,9 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Entity
@@ -100,6 +102,21 @@ public class Reservation extends BaseEntity {
     @Comment("추가 필드")
     private String fields;
 
+    @Column(precision = 15, scale = 2)
+    @Comment("물품 대여 보증금 합계 (총 금액에 포함)")
+    private BigDecimal depositAmount;
+
+    @Comment("물품 반납 일시")
+    private LocalDateTime returnedAt;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("돌려준 보증금")
+    private BigDecimal depositRefunded;
+
+    @Column(length = 500)
+    @Comment("반납 메모 (파손·연체로 보증금을 차감한 사유 등)")
+    private String returnMemo;
+
     public List<String> cellKeys() {
         return cells == null || cells.isBlank() ? List.of() : List.of(cells.split(","));
     }
@@ -116,8 +133,47 @@ public class Reservation extends BaseEntity {
         this.status = ReservationStatus.CONFIRMED;
     }
 
+    public void markReturned(final LocalDateTime now, final BigDecimal refund, final String memo) {
+        if (reservationType != ReservationType.ITEM_RENTAL) {
+            throw new BusinessException(ErrorCode.NOT_ITEM_RENTAL);
+        }
+        if (returnedAt != null) {
+            throw new BusinessException(ErrorCode.ALREADY_RETURNED);
+        }
+        if (status != ReservationStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        this.returnedAt = now;
+        this.depositRefunded = refund;
+        this.returnMemo = memo;
+    }
+
+    public boolean isOverdueAt(final LocalDateTime now) {
+        return reservationType == ReservationType.ITEM_RENTAL && status == ReservationStatus.CONFIRMED && returnedAt == null
+                && endAt != null && now.isAfter(endAt);
+    }
+
+    /** 반납 예정일 다음 날부터 하루씩 센다. 아직 반납하지 않았으면 오늘까지. */
+    public long lateDaysAt(final LocalDateTime now) {
+        if (reservationType != ReservationType.ITEM_RENTAL || endAt == null || status == ReservationStatus.CANCELED) {
+            return 0;
+        }
+        LocalDateTime until = returnedAt != null ? returnedAt : now;
+        return Math.max(0, ChronoUnit.DAYS.between(endAt.toLocalDate(), until.toLocalDate()));
+    }
+
+    /** 반납한 날부터는 물품이 돌아온 것으로 보고 재고에서 빼지 않는다. */
+    public boolean holdsItemOn(final LocalDate date) {
+        return status != ReservationStatus.CANCELED && startAt != null && endAt != null
+                && !date.isBefore(startAt.toLocalDate()) && date.isBefore(endAt.toLocalDate())
+                && (returnedAt == null || date.isBefore(returnedAt.toLocalDate()));
+    }
+
     public void cancel() {
         this.customStatus = null;
+        if (returnedAt != null) {
+            throw new BusinessException(ErrorCode.ALREADY_RETURNED);
+        }
         if (!status.isCancelable()) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }

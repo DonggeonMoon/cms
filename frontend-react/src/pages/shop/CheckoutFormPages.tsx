@@ -151,7 +151,7 @@ export function ReservationFormPage() {
     const programId = Number(params.get('programId'));
     const quantity = positive(params.get('quantity'));
     const selection = {startAt: params.get('startAt'), endAt: params.get('endAt'),
-        cells: (params.get('cells') ?? '').split(',').filter(Boolean)};
+        cells: (params.get('cells') ?? '').split(',').filter(Boolean), quantity};
     const [program, setProgram] = useState<Program | null>(null);
     const [form, setForm] = useState({applicantName: '', phoneNumber: ''});
     const [error, setError] = useState<unknown>(null);
@@ -177,7 +177,7 @@ export function ReservationFormPage() {
         setSubmitting(true);
         setError(null);
         try {
-            const reservation = await shopApi.reserve({programId, quantity, ...selection, ...form});
+            const reservation = await shopApi.reserve({programId, ...selection, quantity, ...form});
             navigate(reservation.status === 'PENDING_PAYMENT' ? `/checkout/RESERVATION/${reservation.id}` : '/mypage/reservations');
         } catch (e) {
             setError(e);
@@ -204,6 +204,12 @@ export function ReservationFormPage() {
                         <dt>이용</dt>
                         <dd>{reservationUsage({reservationType: program.reservationType, ...selection,
                             cells: selection.cells.map((key) => program.layout?.cells.find((c) => c.key === key)?.label ?? key)})}</dd>
+                        {program.reservationType === 'ITEM_RENTAL' && (
+                            <>
+                                <dt>수량</dt>
+                                <dd>{quantity}개{Number(program.depositAmount ?? 0) > 0 && ` · 보증금 ${won(Number(program.depositAmount) * quantity)} 포함`}</dd>
+                            </>
+                        )}
                     </>
                 )}
             </dl>

@@ -405,9 +405,13 @@ const PROGRAM_FIELDS: FieldSpec[] = [
         help: '시간 예약은 회차나 시간대를, 공간 예약은 배치표의 좌석·객실·공간을 골라 예약합니다.'},
     {name: 'name', label: '이름', required: true, wide: true},
     {name: 'price', label: '기본 가격(원)', type: 'number', required: true, wide: true,
-        help: '프로그램은 1인, 상담은 1회, 대관은 칸·예약 단위당, 숙박은 칸·1박당, 공연은 좌석당 가격입니다. 배치표에서 칸별 가격을 따로 줄 수 있습니다.'},
-    {name: 'maximumPerson', label: '정원', type: 'number', wide: true, visibleWhen: isType('PROGRAM', 'CONSULTATION'),
-        help: '프로그램은 전체 인원, 상담은 시간대별 인원입니다(비우면 프로그램은 제한 없음, 상담은 1명).'},
+        help: '프로그램은 1인, 상담은 1회, 대관은 칸·예약 단위당, 숙박은 칸·1박당, 공연은 좌석당, 물품 대여는 1개·1일당 가격입니다. 배치표에서 칸별 가격을 따로 줄 수 있습니다.'},
+    {name: 'maximumPerson', label: '정원·수량', type: 'number', wide: true, visibleWhen: isType('PROGRAM', 'CONSULTATION', 'ITEM_RENTAL'),
+        help: '프로그램은 전체 인원, 상담은 시간대별 인원(비우면 프로그램은 제한 없음, 상담은 1명), 물품 대여는 보유 수량(필수)입니다.'},
+    {name: 'depositAmount', label: '보증금(원, 1개당)', type: 'number', wide: true, visibleWhen: isType('ITEM_RENTAL'),
+        help: '결제 금액에 더해 받고, 반납 처리할 때 차감액을 뺀 만큼 돌려줍니다.'},
+    {name: 'maxRentalDays', label: '최대 대여 일수', type: 'number', min: 1, wide: true, visibleWhen: isType('ITEM_RENTAL'),
+        help: '비워두면 제한이 없습니다.'},
     {name: 'isEnabled', label: '공개', type: 'checkbox', wide: true},
     {name: 'startDateTime', label: '시작 일시', type: 'datetime', wide: true,
         help: '프로그램은 진행 시작, 상담·대관·숙박은 예약을 받는 기간의 시작, 공연은 공연 일시입니다.'},
@@ -436,7 +440,7 @@ export function ProgramAdminPage() {
     return (
         <AdminCrudPage<Program>
             title="예약"
-            description="시간 예약(프로그램·상담)과 공간 예약(대관·숙박·공연)을 등록합니다. 예약 내역은 하위 메뉴에서 확인합니다."
+            description="시간 예약(프로그램·상담), 공간 예약(대관·숙박·공연), 물품 대여를 등록합니다. 예약 내역은 하위 메뉴에서 확인합니다."
             load={loadPrograms}
             fields={fields}
             emptyForm={{reservationType: 'PROGRAM', isEnabled: true, price: 0, contentHtml: '', layout: EMPTY_LAYOUT}}
@@ -517,6 +521,7 @@ export function ReservationAdminPage() {
                                             onApply={(code) => void statusApi.applyToReservation(r.id, code).then(reload)}/>
                     </>
                 )},
+                {label: '반납', render: (r, reload) => r.reservationType === 'ITEM_RENTAL' && <ReturnCell reservation={r} onDone={reload}/>},
                 {label: '상태 처리', className: 'button-cell', render: (r, reload) => r.status === 'PENDING_PAYMENT' && (
                     <button type="button" onClick={() => {
                         if (window.confirm('결제를 받은 것으로 보고 예약을 확정할까요? 결제 내역에는 기록되지 않습니다.')) {
@@ -533,6 +538,46 @@ export function ReservationAdminPage() {
                 )},
             ]}
         />
+    );
+}
+
+function ReturnCell({reservation, onDone}: { reservation: Reservation; onDone: () => void }) {
+    const [deduction, setDeduction] = useState('');
+    const [memo, setMemo] = useState('');
+    const [error, setError] = useState<unknown>(null);
+    if (reservation.returnedAt) {
+        return (
+            <span className="small">
+                {formatDateTime(reservation.returnedAt)} 반납{reservation.lateDays > 0 && ` · ${reservation.lateDays}일 연체`}
+                <br/>보증금 {won(reservation.depositRefunded ?? 0)} 환불{reservation.returnMemo && ` · ${reservation.returnMemo}`}
+            </span>
+        );
+    }
+    if (reservation.status !== 'CONFIRMED') {
+        return <span className="muted small">-</span>;
+    }
+    const submit = async () => {
+        const amount = Number(deduction || 0);
+        if (!window.confirm(`보증금 ${won(reservation.depositAmount ?? 0)} 중 ${won(amount)}을 차감하고 반납 처리할까요?`)) {
+            return;
+        }
+        setError(null);
+        try {
+            await adminApi.reservations.returnItems(reservation.id, {deduction: amount, memo});
+            onDone();
+        } catch (e) {
+            setError(e);
+        }
+    };
+    return (
+        <div className="review-cell">
+            {reservation.overdue && <span className="badge danger">{reservation.lateDays}일 연체</span>}
+            <input type="number" min={0} aria-label="보증금 차감액" placeholder="차감액(원)" value={deduction}
+                   onChange={(e) => setDeduction(e.target.value)}/>
+            <input aria-label="반납 메모" placeholder="메모(파손 등)" value={memo} onChange={(e) => setMemo(e.target.value)}/>
+            <button type="button" onClick={submit}>반납 처리</button>
+            <ErrorBanner error={error}/>
+        </div>
     );
 }
 

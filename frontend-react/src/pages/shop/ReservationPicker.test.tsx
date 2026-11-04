@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {createMemoryRouter, RouterProvider} from 'react-router';
@@ -53,5 +53,36 @@ describe('layout editor', () => {
         await userEvent.click(screen.getAllByRole('gridcell')[3]);
         expect(screen.getByText(/"kind":"ROOM","label":"202"/)).toBeInTheDocument();
         expect(screen.getByText('예약 가능한 칸 1개')).toBeInTheDocument();
+    });
+
+    it('prices item rentals by days and quantity with the deposit and stops at the remaining stock', async () => {
+        const queries: string[] = [];
+        vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+            queries.push(decodeURIComponent(url));
+            return new Response(JSON.stringify({takenCells: [], slots: [], remainingItems: 2}), {status: 200});
+        }));
+        const tent = {
+            id: 4, name: '텐트', price: 10000, reservationType: 'ITEM_RENTAL', layout: null, startDateTime: '2030-01-01T00:00:00',
+            endDateTime: null, slotMinutes: null, openTime: null, closeTime: null, depositAmount: 50000, maxRentalDays: 5,
+        } as unknown as Program;
+        const router = createMemoryRouter([
+            {path: '/', element: <ReservationPicker program={tent}/>},
+            {path: '/reservations/new', element: <p>예약 정보 입력</p>},
+        ]);
+        render(<RouterProvider router={router}/>);
+
+        const returnDay = await screen.findByLabelText(/반납일/);
+        await userEvent.type(returnDay, '2030-01-04');
+        expect(await screen.findByText(/이 기간에 2개를 빌릴 수 있습니다/)).toBeInTheDocument();
+        expect(queries.at(-1)).toContain('from=2030-01-01T00:00:00&to=2030-01-04T00:00:00');
+        expect(screen.getByText(/예상 금액 80,000원/)).toBeInTheDocument();
+
+        const quantity = screen.getByLabelText(/수량/);
+        fireEvent.change(quantity, {target: {value: '3'}});
+        expect(screen.getByRole('button', {name: '예약하기'})).toBeDisabled();
+        fireEvent.change(quantity, {target: {value: '2'}});
+        expect(screen.getByText(/예상 금액 160,000원/)).toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '예약하기'}));
+        expect(await screen.findByText('예약 정보 입력')).toBeInTheDocument();
     });
 });

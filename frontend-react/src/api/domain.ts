@@ -534,7 +534,7 @@ export interface ShippingPolicy {
     defaultCourier: string | null;
 }
 
-export type ReservationType = 'PROGRAM' | 'CONSULTATION' | 'RENTAL' | 'LODGING' | 'EVENT';
+export type ReservationType = 'PROGRAM' | 'CONSULTATION' | 'RENTAL' | 'LODGING' | 'EVENT' | 'ITEM_RENTAL';
 export type CellKind = 'SEAT' | 'ROOM' | 'SPACE' | 'AISLE' | 'STAGE' | 'EMPTY';
 
 export interface LayoutCell {
@@ -561,6 +561,7 @@ export interface ReservationSlot {
 export interface Availability {
     takenCells: string[];
     slots: ReservationSlot[];
+    remainingItems: number | null;
 }
 
 export interface Program {
@@ -586,6 +587,8 @@ export interface Program {
     isEnabled: boolean;
     isOpen: boolean;
     averageRating: number | null;
+    depositAmount: number | null;
+    maxRentalDays: number | null;
 }
 
 export type ReservationStatus = 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELED';
@@ -606,6 +609,12 @@ export interface Reservation {
     customStatus: string | null;
     applicantName: string;
     phoneNumber: string;
+    depositAmount: number | null;
+    returnedAt: string | null;
+    depositRefunded: number | null;
+    returnMemo: string | null;
+    overdue: boolean;
+    lateDays: number;
     createdAt: string;
 }
 
