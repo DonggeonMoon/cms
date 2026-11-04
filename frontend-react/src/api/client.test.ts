@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {ApiError, request, withQuery} from './client';
+import {ApiError, isConnectionError, request, withQuery} from './client';
 
 function jsonResponse(status: number, body?: unknown): Response {
     return new Response(body === undefined ? null : JSON.stringify(body), {
@@ -64,5 +64,45 @@ describe('withQuery', () => {
     it('skips empty values', () => {
         expect(withQuery('/api/x', {a: 'b', empty: '', none: undefined, zero: 0, flag: false}))
             .toBe('/api/x?a=b&zero=0&flag=false');
+    });
+});
+
+describe('api client connection errors', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        vi.useRealTimers();
+    });
+
+    it('explains that the server cannot be reached instead of the browser error', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => {
+            throw new TypeError('Failed to fetch');
+        }));
+        const error = await request('/api/site').catch((e: unknown) => e);
+        expect(isConnectionError(error)).toBe(true);
+        expect((error as ApiError).message).toContain('서버에 연결할 수 없습니다');
+    });
+
+    it('treats proxy and gateway failures without a JSON body as the server being down', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response('Bad Gateway', {status: 502})));
+        await expect(request('/api/site')).rejects.toMatchObject({code: 'SERVER_UNAVAILABLE', status: 502});
+        vi.stubGlobal('fetch', vi.fn(async () => new Response('', {status: 500})));
+        await expect(request('/api/site')).rejects.toMatchObject({code: 'SERVER_UNAVAILABLE'});
+    });
+
+    it('keeps the server message for handled errors and flags unreadable responses', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({code: 'INTERNAL_ERROR', message: '서버 오류입니다.'}), {status: 500})));
+        await expect(request('/api/site')).rejects.toMatchObject({code: 'INTERNAL_ERROR', message: '서버 오류입니다.'});
+        vi.stubGlobal('fetch', vi.fn(async () => new Response('<!doctype html><html></html>', {status: 200})));
+        await expect(request('/api/site')).rejects.toMatchObject({code: 'INVALID_RESPONSE'});
+    });
+
+    it('gives up on requests that take too long', async () => {
+        vi.useFakeTimers();
+        vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) => new Promise((_, reject) => {
+            init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+        })));
+        const pending = request('/api/site').catch((e: unknown) => e);
+        await vi.advanceTimersByTimeAsync(30_000);
+        expect(await pending).toMatchObject({code: 'TIMEOUT'});
     });
 });

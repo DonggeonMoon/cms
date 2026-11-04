@@ -30,6 +30,38 @@ export class ApiError extends Error {
     }
 }
 
+export const CONNECTION_ERROR_CODES = ['NETWORK_ERROR', 'SERVER_UNAVAILABLE', 'TIMEOUT', 'INVALID_RESPONSE'] as const;
+
+const CONNECTION_MESSAGES: Record<(typeof CONNECTION_ERROR_CODES)[number], string> = {
+    NETWORK_ERROR: '서버에 연결할 수 없습니다. 인터넷 연결을 확인하거나, 서버가 켜져 있는지 확인한 뒤 다시 시도해 주세요.',
+    SERVER_UNAVAILABLE: '서버가 응답하지 않습니다. 서버가 꺼져 있거나 점검 중일 수 있으니 잠시 후 다시 시도해 주세요.',
+    TIMEOUT: '서버 응답이 너무 늦어 요청을 멈췄습니다. 잠시 후 다시 시도해 주세요.',
+    INVALID_RESPONSE: '서버에서 알 수 없는 응답이 왔습니다. 서버가 제대로 실행 중인지 확인해 주세요.',
+};
+
+const TIMEOUT_MS = 30_000;
+
+function connectionError(code: keyof typeof CONNECTION_MESSAGES, status = 0): ApiError {
+    return new ApiError(status, {code, message: CONNECTION_MESSAGES[code]});
+}
+
+export function isConnectionError(error: unknown): boolean {
+    return error instanceof ApiError && (CONNECTION_ERROR_CODES as readonly string[]).includes(error.code);
+}
+
+/** 네트워크가 끊기거나 서버가 꺼져 있을 때 브라우저 기본 메시지(Failed to fetch 등) 대신 연결 문제임을 알리는 오류로 바꾼다. */
+async function send(url: string, init: RequestInit, timeoutMs: number | null): Promise<Response> {
+    const controller = new AbortController();
+    const timer = timeoutMs == null ? undefined : setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, {...init, signal: controller.signal});
+    } catch (error) {
+        throw connectionError(controller.signal.aborted ? 'TIMEOUT' : 'NETWORK_ERROR');
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 function readCookie(name: string): string | undefined {
     return document.cookie
         .split(';')
@@ -41,7 +73,7 @@ function readCookie(name: string): string | undefined {
 async function ensureCsrfToken(): Promise<string | undefined> {
     let token = readCookie(XSRF_COOKIE);
     if (!token) {
-        await fetch('/api/auth/csrf', {credentials: 'same-origin'});
+        await send('/api/auth/csrf', {credentials: 'same-origin'}, TIMEOUT_MS);
         token = readCookie(XSRF_COOKIE);
     }
     return token ? decodeURIComponent(token) : undefined;
@@ -85,20 +117,28 @@ export async function request<T>(path: string, {method = 'GET', body, query}: Re
         }
     }
 
-    const response = await fetch(withQuery(path, query), {
+    const response = await send(withQuery(path, query), {
         method,
         headers,
         credentials: 'same-origin',
         body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
-    });
+    }, isForm ? null : TIMEOUT_MS);
 
     if (!response.ok) {
-        const errorBody = await response.json().catch(() => ({}));
-        throw new ApiError(response.status, errorBody as Partial<ErrorBody>);
+        const errorBody = await response.json().catch(() => null) as Partial<ErrorBody> | null;
+        // 개발 서버 프록시·게이트웨이는 백엔드가 꺼져 있으면 JSON 이 아닌 5xx 를 돌려준다.
+        if ([502, 503, 504].includes(response.status) || (response.status >= 500 && !errorBody?.code)) {
+            throw connectionError('SERVER_UNAVAILABLE', response.status);
+        }
+        throw new ApiError(response.status, errorBody ?? {});
     }
     if (response.status === 204 || response.headers.get('Content-Length') === '0') {
         return undefined as T;
     }
     const text = await response.text();
-    return (text ? JSON.parse(text) : undefined) as T;
+    try {
+        return (text ? JSON.parse(text) : undefined) as T;
+    } catch {
+        throw connectionError('INVALID_RESPONSE', response.status);
+    }
 }
