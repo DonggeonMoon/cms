@@ -14,7 +14,7 @@ public enum MenuType {
     FEATURE(null);
 
     public static final Set<SiteFeature> FEATURE_MENU_TARGETS = EnumSet.of(
-            SiteFeature.BOARD, SiteFeature.ARCHIVE, SiteFeature.PRODUCT, SiteFeature.PROGRAM,
+            SiteFeature.BOARD, SiteFeature.ARCHIVE, SiteFeature.PRODUCT, SiteFeature.PROGRAM, SiteFeature.APPLICATION,
             SiteFeature.QNA, SiteFeature.REPORT, SiteFeature.MAP, SiteFeature.MEDIA);
 
     private final SiteFeature feature;

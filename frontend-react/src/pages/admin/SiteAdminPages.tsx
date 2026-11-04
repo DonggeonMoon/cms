@@ -237,7 +237,8 @@ const MENU_KINDS: MenuKind[] = [
     featureKind('ARCHIVE', '아카이브 (전체)'),
     {value: 'ARCHIVE', label: '아카이브 (하나 지정)', type: 'ARCHIVE', feature: 'ARCHIVE'},
     featureKind('PRODUCT', '상품'),
-    featureKind('PROGRAM', '프로그램'),
+    featureKind('PROGRAM', '예약'),
+    featureKind('APPLICATION', '신청·지원'),
     featureKind('QNA', '질문답변'),
     featureKind('REPORT', '신고'),
     featureKind('MAP', '지도'),
@@ -365,7 +366,7 @@ export function MenuAdminPage() {
             <h1>메뉴</h1>
             <div className="muted page-description">
                 <p>사이트 상단 내비게이션에 순서대로 표시되며, ↑/↓ 버튼으로 같은 단계 안의 순서를 바꿀 수 있습니다. 하위 메뉴가 있는 메뉴는 삭제할 수 없습니다.</p>
-                <p>메뉴 종류로 <strong>게시판·아카이브·상품·프로그램·스트리밍·질문답변·신고·지도</strong> 기능을 고를 수 있고,
+                <p>메뉴 종류로 <strong>게시판·아카이브·상품·예약·신청·지원·스트리밍·질문답변·신고·지도</strong> 기능을 고를 수 있고,
                     사이트에서 꺼 둔 기능은 고를 수 없습니다. 게시판·아카이브 (전체) 메뉴에는 등록된 게시판·아카이브가 하위 목록으로
                     자동으로 붙고, 따로 메뉴로 연결한 항목은 빠집니다. 기능 메뉴 아래에는 하위 메뉴를 둘 수 없으며,
                     기능을 끄면 사용 여부와 관계없이 숨겨집니다.</p>

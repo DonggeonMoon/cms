@@ -109,6 +109,13 @@ export const adminApi = {
         markPaid: (id: number) => request<void>(`/api/admin/orders/${id}/pay`, {method: 'POST'}),
         changeStatus: (id: number, status: D.OrderStatus) =>
             request<void>(`/api/admin/orders/${id}/status`, {method: 'PUT', body: {status}}),
+    applications: {
+        ...resource<D.ApplicationForm>('/api/admin/applications'),
+        submissions: (id: number, query: Query) =>
+            request<Page<D.Submission>>(`/api/admin/applications/${id}/submissions`, {query}),
+        review: (submissionId: number, body: Body) =>
+            request<D.Submission>(`/api/admin/applications/submissions/${submissionId}`, {method: 'PUT', body}),
+    },
     },
     reservations: {
         search: (query: Query) => request<Page<D.Reservation>>('/api/admin/reservations', {query}),
@@ -254,6 +261,15 @@ export const mediaApi = {
     record: (id: number, ranges: { start: number; end: number }[], position: number) =>
         request<D.MediaProgress>(`/api/media/${id}/progress`, {method: 'POST', body: {ranges, position}}),
     mine: (page: number) => request<Page<D.MyMedia>>('/api/media/me', {query: {page}}),
+};
+
+export const applicationApi = {
+    list: (keyword: string, page: number) => request<Page<D.ApplicationForm>>('/api/applications', {query: {keyword, page}}),
+    get: (id: number) => request<D.ApplicationForm>(`/api/applications/${id}`),
+    submit: (id: number, answers: Record<string, unknown>) =>
+        request<D.Submission>(`/api/applications/${id}/submissions`, {method: 'POST', body: {answers}}),
+    mine: (page: number) => request<Page<D.Submission>>('/api/applications/me', {query: {page}}),
+    withdraw: (id: number) => request<D.Submission>(`/api/applications/submissions/${id}/withdraw`, {method: 'POST'}),
 };
 
 export const chatbotApi = {

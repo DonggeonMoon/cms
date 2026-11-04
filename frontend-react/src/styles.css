@@ -2631,3 +2631,36 @@ input[type='checkbox'], input[type='radio'] {
     display: block;
     margin-top: 2px;
 }
+.form-fields-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-field-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.form-field-row .wide-input {
+    flex: 1 1 220px;
+}
+
+.form-field-row .actions {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+}
+
+.review-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 260px;
+}
+

@@ -3,6 +3,7 @@ import {ApiError} from '../api/client';
 import {fileApi} from '../api/files';
 import type {FileInfo} from '../api/types';
 import {ErrorBanner} from './ErrorBanner';
+import {FormFieldsEditor} from './FormFieldsEditor';
 import {StableLabel} from './StableLabel';
 
 export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media';
@@ -176,6 +177,14 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
             return <HtmlField id={id} label={label} labelText={field.label} value={(value as string) ?? ''} onChange={onChange} help={help}/>;
         case 'image':
             return <ImageField id={id} label={label} value={value as number | null} onChange={onChange} help={help}/>;
+        case 'formFields':
+            return (
+                <div className="field">
+                    {label}
+                    <FormFieldsEditor value={(value as FormField[]) ?? []} onChange={onChange}/>
+                    {help}
+                </div>
+            );
         case 'media':
             return <MediaField id={id} label={label} value={(value as MediaValue | null) ?? null} onChange={onChange} help={help}/>;
         case 'files':

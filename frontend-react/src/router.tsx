@@ -16,6 +16,7 @@ import {
 } from './pages/admin/ContentAdminPages';
 import {DashboardPage} from './pages/admin/DashboardPage';
 import {FilePage} from './pages/admin/FilePage';
+import {ApplicationAdminPage} from './pages/admin/ApplicationAdminPage';
 import {MapAdminPage} from './pages/admin/MapAdminPage';
 import {MediaAdminPage} from './pages/admin/MediaAdminPage';
 import {ReportAdminPage, SatisfactionAdminPage} from './pages/admin/GovAdminPages';
@@ -45,6 +46,7 @@ import {OrderFormPage, ReservationFormPage} from './pages/shop/CheckoutFormPages
 import {JoinPage} from './pages/JoinPage';
 import {SocialJoinPage} from './pages/SocialJoinPage';
 import {AdminLoginPage, LoginPage} from './pages/LoginPage';
+import {ApplicationDetailPage, ApplicationListPage, MyApplicationsPage} from './pages/ApplicationPages';
 import {MapPage} from './pages/MapPage';
 import {MediaDetailPage, MediaListPage, MyMediaPage} from './pages/MediaPages';
 import {MyPage, PasswordChangePage, QuitPage} from './pages/MyPage';
@@ -127,6 +129,13 @@ export const routes = [
                         ],
                     },
                     {
+                        element: <RequireFeature feature="APPLICATION"/>,
+                        children: [
+                            {path: '/applications', element: <ApplicationListPage/>},
+                            {path: '/applications/:id', element: <ApplicationDetailPage/>},
+                        ],
+                    },
+                    {
                         element: <RequireFeature feature="REPORT"/>,
                         children: [
                             {path: '/reports/new', element: <ReportWritePage/>},
@@ -156,6 +165,10 @@ export const routes = [
                             {
                                 element: <RequireFeature feature="REPORT"/>,
                                 children: [{path: '/mypage/reports', element: <MyReportsPage/>}],
+                            },
+                            {
+                                element: <RequireFeature feature="APPLICATION"/>,
+                                children: [{path: '/mypage/applications', element: <MyApplicationsPage/>}],
                             },
                             {
                                 element: <RequireFeature feature="MEDIA"/>,
@@ -227,6 +240,10 @@ export const routes = [
                             {
                                 element: <RequireFeature feature="MEDIA"/>,
                                 children: [{path: 'media', element: <MediaAdminPage/>}],
+                            },
+                            {
+                                element: <RequireFeature feature="APPLICATION"/>,
+                                children: [{path: 'applications', element: <ApplicationAdminPage/>}],
                             },
                             {
                                 element: <RequireFeature feature={['PRODUCT', 'PROGRAM']}/>,

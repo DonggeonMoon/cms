@@ -16,7 +16,7 @@ export interface Menu {
     children: Menu[];
 }
 
-export type SiteFeature = 'CONTENT' | 'BOARD' | 'ARCHIVE' | 'QNA' | 'MAP' | 'PRODUCT' | 'PROGRAM' | 'REPORT' | 'SATISFACTION' | 'MEDIA' | 'CHATBOT';
+export type SiteFeature = 'CONTENT' | 'BOARD' | 'ARCHIVE' | 'QNA' | 'MAP' | 'PRODUCT' | 'PROGRAM' | 'REPORT' | 'SATISFACTION' | 'APPLICATION' | 'MEDIA' | 'CHATBOT';
 
 export const SITE_FEATURES: { value: SiteFeature; label: string }[] = [
     {value: 'CONTENT', label: '소개 페이지(컨텐츠)'},
@@ -25,7 +25,8 @@ export const SITE_FEATURES: { value: SiteFeature; label: string }[] = [
     {value: 'QNA', label: '질문답변'},
     {value: 'MAP', label: '지도'},
     {value: 'PRODUCT', label: '상품'},
-    {value: 'PROGRAM', label: '프로그램'},
+    {value: 'PROGRAM', label: '예약'},
+    {value: 'APPLICATION', label: '신청·지원'},
     {value: 'MEDIA', label: '스트리밍'},
     {value: 'REPORT', label: '신고'},
     {value: 'SATISFACTION', label: '만족도 조사'},
@@ -573,3 +574,45 @@ export interface ReencryptResult {
     key: CryptoKey;
     reencryptedValues: number;
 }
+
+export type FormFieldType = 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'DATE' | 'EMAIL' | 'PHONE' | 'SELECT' | 'RADIO' | 'CHECKBOX' | 'FILE';
+export type SubmissionStatus = 'RECEIVED' | 'REVIEWING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
+
+export interface FormField {
+    key: string;
+    label: string;
+    type: FormFieldType;
+    required: boolean;
+    options: string[] | null;
+    help: string | null;
+}
+
+export interface ApplicationForm {
+    id: number;
+    title: string;
+    contentHtml: string | null;
+    fields: FormField[];
+    startDateTime: string | null;
+    endDateTime: string | null;
+    maximumSubmissions: number | null;
+    submissionCount: number;
+    allowMultiple: boolean;
+    isEnabled: boolean;
+    isOpen: boolean;
+    applied: boolean;
+    createdAt: string;
+}
+
+export interface Submission {
+    id: number;
+    formId: number;
+    formTitle: string;
+    memberId: number;
+    username: string | null;
+    answers: Record<string, unknown>;
+    status: SubmissionStatus;
+    resultMessage: string | null;
+    adminMemo: string | null;
+    createdAt: string;
+}
+

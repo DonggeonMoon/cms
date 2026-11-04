@@ -33,3 +33,23 @@ export const ENROLLMENT_STATUS: Record<EnrollmentStatus, string> = {
     IN_PROGRESS: '수강 중',
     COMPLETED: '수강 완료',
 };
+export const SUBMISSION_STATUS: Record<SubmissionStatus, string> = {
+    RECEIVED: '접수',
+    REVIEWING: '검토 중',
+    ACCEPTED: '선정',
+    REJECTED: '미선정',
+    WITHDRAWN: '취소',
+};
+
+export const FORM_FIELD_TYPE: Record<FormFieldType, string> = {
+    TEXT: '짧은 글',
+    TEXTAREA: '긴 글',
+    NUMBER: '숫자',
+    DATE: '날짜',
+    EMAIL: '이메일',
+    PHONE: '전화번호',
+    SELECT: '선택(목록)',
+    RADIO: '선택(하나)',
+    CHECKBOX: '체크(여러 개/동의)',
+    FILE: '파일 첨부',
+};

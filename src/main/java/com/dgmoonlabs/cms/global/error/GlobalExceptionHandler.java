@@ -17,7 +17,15 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusiness(final BusinessException e) {
-        return respond(e.getErrorCode());
+        ErrorCode errorCode = e.getErrorCode();
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(new ErrorResponse(errorCode.name(), e.getMessage(), List.of()));
+    }
+
+    @ExceptionHandler(FieldValidationException.class)
+    public ResponseEntity<ErrorResponse> handleFieldValidation(final FieldValidationException e) {
+        return ResponseEntity.status(ErrorCode.INVALID_INPUT.getStatus())
+                .body(new ErrorResponse(ErrorCode.INVALID_INPUT.name(), ErrorCode.INVALID_INPUT.getMessage(), e.getFieldErrors()));
     }
 
     @ExceptionHandler(BindException.class)

@@ -74,7 +74,7 @@ export function SiteProvider({children}: { children: ReactNode }) {
 const MENU_FEATURE: Partial<Record<Menu['type'], SiteFeature>> = {CONTENT: 'CONTENT', BOARD: 'BOARD', ARCHIVE: 'ARCHIVE'};
 
 export const FEATURE_PATHS: Partial<Record<SiteFeature, string>> = {
-    PRODUCT: '/products', PROGRAM: '/programs', QNA: '/qna', REPORT: '/reports/new', MAP: '/map', MEDIA: '/media',
+    PRODUCT: '/products', PROGRAM: '/programs', QNA: '/qna', REPORT: '/reports/new', MAP: '/map', MEDIA: '/media', APPLICATION: '/applications',
 };
 
 function linksTo(menus: Menu[], href: string): boolean {
