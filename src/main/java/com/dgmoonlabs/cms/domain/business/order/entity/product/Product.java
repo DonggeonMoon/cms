@@ -35,6 +35,15 @@ public class Product extends BaseEntity {
     @Comment("가격")
     private BigDecimal price;
 
+    @Comment("구매 가능 등급 ID (없으면 누구나)")
+    private Long accessGradeId;
+
+    @Comment("결제하면 부여할 등급 ID")
+    private Long grantGradeId;
+
+    @Comment("부여한 등급 유지 일수 (구매 상품, 없으면 무기한)")
+    private Integer grantGradeDays;
+
     @Comment("재고 수량 (null: 무제한)")
     private Integer availableQuantity;
 

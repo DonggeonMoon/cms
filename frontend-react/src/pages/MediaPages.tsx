@@ -12,6 +12,7 @@ import {MemberOnlyNotice} from '../components/MemberOnlyNotice';
 import {Pagination} from '../components/Pagination';
 import {useFeatureMenuName} from '../components/SiteContext';
 import {Thumbnail} from '../components/Thumbnail';
+import {GradeBadge} from '../components/GradeBadge';
 
 const REPORT_INTERVAL_MS = 10_000;
 // timeupdate 사이 간격이 이보다 크면 재생이 아니라 건너뛰기로 본다.
@@ -72,6 +73,7 @@ export function MediaListPage() {
                         <strong className="product-name">{item.title}</strong>
                         <span className="row align-center">
                             <span className="badge">{mediaLabel(item)}</span>
+                            <GradeBadge gradeId={item.accessGradeId}/>
                             {item.myProgress && <ProgressSummary progress={item.myProgress}/>}
                         </span>
                     </Link>

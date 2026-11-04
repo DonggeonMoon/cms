@@ -20,6 +20,7 @@ import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.html.HtmlSanitizer;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
 import com.dgmoonlabs.cms.global.security.LoginUser;
+import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -44,6 +45,7 @@ public class BoardArticleService {
     private final FileService fileService;
     private final PasswordEncoder passwordEncoder;
     private final HtmlSanitizer htmlSanitizer;
+    private final GradeService gradeService;
 
     @Transactional(readOnly = true)
     public ArticleListResponse getArticles(final Long boardId, final String keyword, final int page) {
@@ -82,6 +84,7 @@ public class BoardArticleService {
         if (!permissions.canRead()) {
             throw new BusinessException(ErrorCode.BOARD_PERMISSION_DENIED);
         }
+        gradeService.require(config.getReadGradeId());
         BoardArticle article = findArticle(boardId, articleId);
         if (article.isHidden() && !permissions.isAdmin()) {
             throw BusinessException.notFound();
@@ -97,6 +100,7 @@ public class BoardArticleService {
     @Transactional
     public Long createArticle(final Long boardId, final ArticleSaveRequest request, final String ipAddress) {
         BoardConfig config = boardService.findConfig(boardId);
+        gradeService.require(config.getWriteGradeId());
         Permissions permissions = boardService.permissionsOf(config);
         if (!permissions.canWrite()) {
             throw new BusinessException(ErrorCode.BOARD_PERMISSION_DENIED);

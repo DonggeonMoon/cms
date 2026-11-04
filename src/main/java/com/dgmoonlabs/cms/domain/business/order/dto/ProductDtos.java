@@ -30,6 +30,9 @@ public final class ProductDtos {
             Long imageFileId,
             @NotNull @PositiveOrZero BigDecimal price,
             @PositiveOrZero Integer availableQuantity,
+            Long accessGradeId,
+            Long grantGradeId,
+            @Positive @Max(36_500) Integer grantGradeDays,
             @Size(max = 200_000) String contentHtml,
             boolean isEnabled,
             @Valid @Size(max = 50) List<OptionRequest> options

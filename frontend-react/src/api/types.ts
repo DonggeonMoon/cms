@@ -102,6 +102,8 @@ export interface MemberSummary {
     name: string | null;
     email: string | null;
     isLocked: boolean;
+    gradeName: string | null;
+    gradeExpiresAt: string | null;
     lastLoginDateTime: string | null;
     createdAt: string;
 }

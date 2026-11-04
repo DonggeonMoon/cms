@@ -14,11 +14,12 @@ public record ContentResponse(
         String lastWorker,
         String memo,
         LocalDateTime createdAt,
-        LocalDateTime modifiedAt
+        LocalDateTime modifiedAt,
+        Long accessGradeId
 ) {
     public static ContentResponse from(final Content content) {
         return new ContentResponse(content.getId(), content.getTitle(), content.getContentHtml(), content.getStatus(),
                 content.getVersion(), content.getLastWorker(), content.getMemo(), content.getCreatedAt(),
-                content.getModifiedAt());
+                content.getModifiedAt(), content.getAccessGradeId());
     }
 }

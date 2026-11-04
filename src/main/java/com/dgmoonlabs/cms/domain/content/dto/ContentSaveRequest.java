@@ -11,7 +11,8 @@ public record ContentSaveRequest(
         @NotBlank @Size(max = 200) String title,
         @Size(max = 500_000) String contentHtml,
         @NotNull ContentStatus status,
-        @Size(max = 500) String memo
+        @Size(max = 500) String memo,
+        Long accessGradeId
 ) {
     public String memoOrEmpty() {
         return memo == null ? "" : memo;

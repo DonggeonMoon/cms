@@ -58,6 +58,9 @@ public class Program extends BaseEntity {
     @Comment("공간 배치표 (좌석·객실·공간)")
     private String layout;
 
+    @Comment("예약 가능 등급 ID (없으면 누구나)")
+    private Long accessGradeId;
+
     @Comment("최대 인원")
     private Integer maximumPerson;
 
@@ -120,6 +123,10 @@ public class Program extends BaseEntity {
         this.contentHtml = contentHtml;
         this.contentText = contentText;
         this.isEnabled = isEnabled;
+    }
+
+    public void changeAccessGrade(final Long accessGradeId) {
+        this.accessGradeId = accessGradeId;
     }
 
     public void changeReservationSettings(final ReservationType reservationType, final Integer slotMinutes,

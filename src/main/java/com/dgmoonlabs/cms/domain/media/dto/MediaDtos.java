@@ -23,7 +23,8 @@ public final class MediaDtos {
             Long thumbnailFileId,
             @NotNull @Min(1) @Max(86_400) Integer durationSeconds,
             @Min(1) @Max(100) Integer completionRate,
-            Boolean isUsing
+            Boolean isUsing,
+            Long accessGradeId
     ) {
         public int completionRateOrDefault() {
             return completionRate == null ? Media.DEFAULT_COMPLETION_RATE : completionRate;
@@ -49,13 +50,13 @@ public final class MediaDtos {
     public record MediaResponse(Long id, String title, String description, Long fileId, String fileName,
                                 MediaType mediaType, String mediaUrl, Long thumbnailFileId, String thumbnailUrl,
                                 String posterUrl, int durationSeconds, int completionRate, boolean isUsing,
-                                LocalDateTime createdAt, MyProgress myProgress) {
+                                LocalDateTime createdAt, MyProgress myProgress, Long accessGradeId) {
         public static MediaResponse of(final Media media, final FileResponse file, final MyProgress myProgress) {
             return new MediaResponse(media.getId(), media.getTitle(), media.getDescription(), media.getFileId(),
                     file == null ? null : file.originalName(), media.getMediaType(),
                     "/api/files/" + media.getFileId() + "/view", media.getThumbnailFileId(), MediaDtos.thumbnailUrl(media),
                     MediaDtos.posterUrl(media), media.getDurationSeconds(), media.getCompletionRate(), media.isUsing(),
-                    media.getCreatedAt(), myProgress);
+                    media.getCreatedAt(), myProgress, media.getAccessGradeId());
         }
     }
 

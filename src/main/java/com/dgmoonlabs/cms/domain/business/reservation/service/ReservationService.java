@@ -20,6 +20,7 @@ import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
 import com.dgmoonlabs.cms.domain.common.regex.service.RegexService;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationType;
 import com.dgmoonlabs.cms.domain.business.reservation.layout.SpaceLayout;
+import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +46,8 @@ public class ReservationService {
     private final FileService fileService;
     private final HtmlSanitizer htmlSanitizer;
     private final RegexService regexService;
+    private final JsonMapper jsonMapper;
+    private final GradeService gradeService;
 
     @Transactional(readOnly = true)
     public Page<ProgramResponse> getPrograms(final String keyword, final Pageable pageable) {
@@ -84,7 +87,10 @@ public class ReservationService {
                 .contentHtml(html)
                 .contentText(htmlSanitizer.toPlainText(html))
                 .isEnabled(request.isEnabled())
-                .build()).getId();
+                .build());
+        applySettings(program, request);
+        program.changeAccessGrade(gradeService.validGradeId(request.accessGradeId()));
+        return program.getId();
     }
 
     @Transactional
@@ -98,6 +104,8 @@ public class ReservationService {
                         request.maximumPerson(), request.startDateTime(), request.endDateTime(),
                         request.applicationStartDateTime(), request.applicationEndDateTime(), html,
                         htmlSanitizer.toPlainText(html), request.isEnabled());
+        applySettings(program, request);
+        program.changeAccessGrade(gradeService.validGradeId(request.accessGradeId()));
     }
 
     @Transactional
@@ -110,6 +118,7 @@ public class ReservationService {
         Program program = programRepository.findForUpdate(request.programId())
                 .filter(found -> found.isOpenAt(LocalDateTime.now()))
                 .orElseThrow(() -> new BusinessException(ErrorCode.PROGRAM_NOT_OPEN));
+        gradeService.require(program.getAccessGradeId());
         return create(UserType.MEMBER, memberId, program, request, false);
     }
 

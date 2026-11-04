@@ -23,15 +23,16 @@ public final class ArchiveDtos {
             @NotNull BoardType type,
             boolean supportsComment,
             boolean supportsLike,
-            @Min(1) @Max(100) int pageSize
+            @Min(1) @Max(100) int pageSize,
+            Long accessGradeId
     ) {
     }
 
     public record ArchiveResponse(Long id, String name, String description, BoardType type, boolean supportsComment,
-                                  boolean supportsLike, int pageSize) {
+                                  boolean supportsLike, int pageSize, Long accessGradeId) {
         public static ArchiveResponse from(final Archive archive) {
             return new ArchiveResponse(archive.getId(), archive.getName(), archive.getDescription(), archive.getType(),
-                    archive.isSupportsComment(), archive.isSupportsLike(), archive.getPageSize());
+                    archive.isSupportsComment(), archive.isSupportsLike(), archive.getPageSize(), archive.getAccessGradeId());
         }
     }
 

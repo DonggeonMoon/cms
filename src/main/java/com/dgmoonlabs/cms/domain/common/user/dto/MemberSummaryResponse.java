@@ -11,10 +11,12 @@ public record MemberSummaryResponse(
         String name,
         String email,
         boolean isLocked,
+        String gradeName,
+        LocalDateTime gradeExpiresAt,
         LocalDateTime lastLoginDateTime,
         LocalDateTime createdAt
 ) {
-    public static MemberSummaryResponse of(final Member member, final int maxLoginTryCount) {
+    public static MemberSummaryResponse of(final Member member, final int maxLoginTryCount, final String gradeName) {
         return new MemberSummaryResponse(
                 member.getId(),
                 member.getUsername(),
@@ -22,6 +24,8 @@ public record MemberSummaryResponse(
                 member.getName(),
                 member.getEmail(),
                 member.isLocked(maxLoginTryCount),
+                gradeName,
+                member.isGradeExpired(LocalDateTime.now()) ? null : member.getGradeExpiresAt(),
                 member.getLastLoginDateTime(),
                 member.getCreatedAt()
         );

@@ -54,6 +54,7 @@ export function MemberListPage() {
                             <th>닉네임</th>
                             <th>이름</th>
                             <th>이메일</th>
+                            <th>등급</th>
                             <th>상태</th>
                             <th>가입일</th>
                             <th>마지막 로그인</th>
@@ -67,6 +68,8 @@ export function MemberListPage() {
                                 <td>{member.nickname ?? '-'}</td>
                                 <td>{member.name ?? '-'}</td>
                                 <td>{member.email ?? '-'}</td>
+                                <td>{member.gradeName ?? '-'}{member.gradeExpiresAt && (
+                                    <span className="muted"> ~{formatDateTime(member.gradeExpiresAt)}</span>)}</td>
                                 <td>{member.isLocked ? <span className="badge danger">잠김</span> : '정상'}</td>
                                 <td>{formatDateTime(member.createdAt)}</td>
                                 <td>{formatDateTime(member.lastLoginDateTime)}</td>

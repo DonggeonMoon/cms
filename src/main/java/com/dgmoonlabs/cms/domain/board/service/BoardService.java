@@ -10,6 +10,7 @@ import com.dgmoonlabs.cms.domain.board.repository.BoardRepository;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
+import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import java.util.List;
 public class BoardService {
     private final BoardRepository boardRepository;
     private final BoardConfigRepository boardConfigRepository;
+    private final GradeService gradeService;
 
     @Transactional(readOnly = true)
     public List<BoardResponse> getBoards() {
@@ -37,6 +39,7 @@ public class BoardService {
 
     @Transactional
     public Long createBoard(final BoardSaveRequest request) {
+        validateGrades(request);
         if (boardRepository.existsByName(request.name())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
@@ -51,6 +54,7 @@ public class BoardService {
 
     @Transactional
     public void updateBoard(final Long id, final BoardSaveRequest request) {
+        validateGrades(request);
         if (boardRepository.existsByNameAndIdNot(request.name(), id)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
@@ -68,9 +72,16 @@ public class BoardService {
             return new Permissions(true, true, true, true);
         }
         if (CurrentUser.isMember()) {
-            return new Permissions(config.isMemberAccessible(), config.isMemberReadable(), config.isMemberWritable(), false);
+            return new Permissions(config.isMemberAccessible(), config.isMemberReadable(),
+                    config.isMemberWritable() && gradeService.meets(config.getWriteGradeId()), false);
         }
-        return new Permissions(config.isGuestAccessible(), config.isGuestReadable(), config.isGuestWritable(), false);
+        return new Permissions(config.isGuestAccessible(), config.isGuestReadable(),
+                config.isGuestWritable() && config.getWriteGradeId() == null, false);
+    }
+
+    private void validateGrades(final BoardSaveRequest request) {
+        gradeService.validGradeId(request.readGradeId());
+        gradeService.validGradeId(request.writeGradeId());
     }
 
     Board findBoard(final Long id) {

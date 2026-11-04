@@ -62,6 +62,7 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
         title: '공통',
         items: [
             {to: '/admin/members', label: '회원'},
+            {to: '/admin/grades', label: '회원 등급', sub: true},
             {to: '/admin/join-settings', label: '회원가입 설정', sub: true},
             {to: '/admin/policies/privacy-policy', label: '개인정보처리방침', sub: true},
             {to: '/admin/policies/privacy-consent', label: '개인정보 수집·이용 동의', sub: true},

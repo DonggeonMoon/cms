@@ -95,6 +95,15 @@ public class Member extends BaseEntity {
     @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String mobilePhoneNumber;
 
+    @Comment("회원 등급 ID (없으면 기본 등급)")
+    private Long gradeId;
+
+    @Comment("회원 등급 만료 일시 (없으면 무기한)")
+    private LocalDateTime gradeExpiresAt;
+
+    @Comment("등급 만료 후 돌아갈 등급 ID (없으면 기본 등급)")
+    private Long baseGradeId;
+
     public String displayName() {
         return Stream.of(nickname, username, name)
                 .filter(value -> value != null && !value.isBlank())
@@ -134,5 +143,19 @@ public class Member extends BaseEntity {
 
     public void unlock() {
         this.loginTryCount = 0;
+    }
+
+    public boolean isGradeExpired(final LocalDateTime now) {
+        return gradeExpiresAt != null && !gradeExpiresAt.isAfter(now);
+    }
+
+    public Long currentGradeId(final LocalDateTime now) {
+        return isGradeExpired(now) ? baseGradeId : gradeId;
+    }
+
+    public void changeGrade(final Long gradeId, final LocalDateTime expiresAt, final Long baseGradeId) {
+        this.gradeId = gradeId;
+        this.gradeExpiresAt = expiresAt;
+        this.baseGradeId = expiresAt == null ? null : baseGradeId;
     }
 }

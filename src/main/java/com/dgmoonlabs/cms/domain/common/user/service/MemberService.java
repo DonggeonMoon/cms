@@ -16,12 +16,15 @@ import com.dgmoonlabs.cms.domain.common.user.repository.MemberRepository;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.security.SecurityProperties;
+import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +37,7 @@ public class MemberService {
     private final SecurityProperties securityProperties;
     private final MemberJoinSettingService joinSettingService;
     private final PolicyService policyService;
+    private final GradeService gradeService;
 
     @Transactional
     public Long join(final MemberJoinRequest request) {
@@ -78,8 +82,9 @@ public class MemberService {
     @Transactional(readOnly = true)
     public Page<MemberSummaryResponse> searchMembers(final String keyword, final Pageable pageable) {
         int maxLoginTryCount = securityProperties.maxLoginTryCount();
+        Function<Member, String> gradeName = gradeService.gradeNamer();
         return memberRepository.search(keyword, pageable)
-                .map(member -> MemberSummaryResponse.of(member, maxLoginTryCount));
+                .map(member -> MemberSummaryResponse.of(member, maxLoginTryCount, gradeName.apply(member)));
     }
 
     @Transactional

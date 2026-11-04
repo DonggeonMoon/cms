@@ -9,6 +9,7 @@ import {ErrorBanner} from '../components/ErrorBanner';
 import {Field} from '../components/Field';
 import {formatDateTime} from '../components/format';
 import {normalizeProfile, ProfileFields} from './ProfileFields';
+import {gradeApi, type MyGrade} from '../api/grades';
 
 export function MyPage() {
     const [member, setMember] = useState<MemberResponse | null>(null);
@@ -41,6 +42,11 @@ function ProfileSection({member, settings, onSaved}: {
     const [form, setForm] = useState<MemberProfile>(member);
     const [error, setError] = useState<unknown>(null);
     const [saved, setSaved] = useState(false);
+    const [grade, setGrade] = useState<MyGrade | null>(null);
+
+    useEffect(() => {
+        gradeApi.mine().then(setGrade).catch(() => setGrade(null));
+    }, []);
 
     const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
@@ -65,6 +71,13 @@ function ProfileSection({member, settings, onSaved}: {
                 <dd>{formatDateTime(member.createdAt)}</dd>
                 <dt>마지막 로그인</dt>
                 <dd>{formatDateTime(member.lastLoginDateTime)}</dd>
+                {grade?.gradeName && (
+                    <>
+                        <dt>회원 등급</dt>
+                        <dd>{grade.gradeName}{grade.expiresAt && (
+                            <span className="muted"> · {formatDateTime(grade.expiresAt)}까지 (이후 {grade.baseGradeName ?? '기본 등급'})</span>)}</dd>
+                    </>
+                )}
             </dl>
             <form onSubmit={handleSubmit}>
                 <ProfileFields value={form} onChange={setForm} settings={settings}

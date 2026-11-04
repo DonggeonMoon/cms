@@ -18,6 +18,7 @@ import {Pagination} from '../../components/Pagination';
 import {Thumbnail} from '../../components/Thumbnail';
 import {StableLabel} from '../../components/StableLabel';
 import {useFeatureMenuName} from '../../components/SiteContext';
+import {GradeBadge} from '../../components/GradeBadge';
 
 export function ProductCard({product}: { product: ProductSummary }) {
     return (
@@ -27,6 +28,7 @@ export function ProductCard({product}: { product: ProductSummary }) {
             {product.description && <span className="product-summary muted small">{product.description}</span>}
             <span className="product-price">{won(product.price)}</span>
             {product.availableQuantity === 0 && <span className="badge danger">품절</span>}
+            <GradeBadge gradeId={product.accessGradeId}/>
         </Link>
     );
 }
@@ -40,6 +42,7 @@ export function ProgramCard({program}: { program: Program }) {
             {program.startDateTime && <span className="muted small">{formatDateTime(program.startDateTime)}</span>}
             <span className="product-price">{Number(program.price) === 0 ? '무료' : won(program.price)}</span>
             {program.isOpen ? <span className="badge ok">접수 중</span> : <span className="badge">접수 마감</span>}
+            <GradeBadge gradeId={program.accessGradeId}/>
         </Link>
     );
 }
@@ -122,7 +125,7 @@ export function ProductDetailPage() {
                     <Thumbnail src={product.imageUrl} name={product.name}/>
                 </div>
                 <div>
-                    <h1>{product.name}</h1>
+                    <h1>{product.name} <GradeBadge gradeId={product.accessGradeId}/></h1>
                     {product.description && <p className="muted">{product.description}</p>}
                     <p className="price">{won(product.price)}</p>
                     {product.averageRating != null && <p>평점 {'★'.repeat(Math.round(product.averageRating))} {product.averageRating.toFixed(1)}</p>}
@@ -320,7 +323,7 @@ export function ProgramDetailPage() {
                     <Thumbnail src={program.imageUrl} name={program.name}/>
                 </div>
                 <div>
-                <h1>{program.name}</h1>
+                <h1>{program.name} <GradeBadge gradeId={program.accessGradeId}/></h1>
                 {program.description && <p className="muted">{program.description}</p>}
                 <dl className="meta">
                     <dt>유형</dt>

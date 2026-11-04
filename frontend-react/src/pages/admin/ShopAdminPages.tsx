@@ -10,6 +10,7 @@ import {reservationUsage} from '../../components/reservationUsage';
 import {RegexBindingSelect} from '../../components/RegexBindingSelect';
 import {ORDER_STATUS, RESERVATION_STATUS, toOptions} from '../../components/labels';
 import type {FieldSpec, FormValues} from '../../components/SchemaForm';
+import {type Grade, gradeSelectField, useWithGradeFields} from '../../api/grades';
 
 const PRODUCT_FIELDS: FieldSpec[] = [
     {name: 'name', label: '상품명', required: true, wide: true},
@@ -34,6 +35,7 @@ const toProductBody = (values: FormValues) => ({
 const loadProducts = (query: Query) => adminApi.products.search(query);
 
 export function ProductAdminPage() {
+    const fields = useWithGradeFields(PRODUCT_FIELDS, productGradeFields);
     return (
         <AdminCrudPage<ProductSummary>
             title="상품"
@@ -227,9 +229,14 @@ const PROGRAM_FIELDS: FieldSpec[] = [
     {name: 'contentHtml', label: '상세 설명', type: 'html'},
 ];
 
+const programGradeFields = (grades: Grade[]) => [
+    gradeSelectField('accessGradeId', '예약 가능 등급', grades, '이 등급 이상 회원만 예약할 수 있습니다.'),
+];
+
 const loadPrograms = (query: Query) => adminApi.programs.search(query);
 
 export function ProgramAdminPage() {
+    const fields = useWithGradeFields(PROGRAM_FIELDS, programGradeFields);
     return (
         <AdminCrudPage<Program>
             title="예약"

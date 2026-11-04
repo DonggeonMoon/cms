@@ -48,6 +48,13 @@ public class Content extends BaseEntity {
     @Comment("메모")
     private String memo;
 
+    @Comment("열람 가능 등급 ID (없으면 누구나)")
+    private Long accessGradeId;
+
+    public void changeAccessGrade(final Long accessGradeId) {
+        this.accessGradeId = accessGradeId;
+    }
+
     public void update(final String title, final String contentHtml, final String contentText, final ContentStatus status,
                        final String memo, final String worker) {
         this.title = title;

@@ -32,7 +32,13 @@ public final class ReservationDtos {
             LocalDateTime applicationStartDateTime,
             LocalDateTime applicationEndDateTime,
             @Size(max = 200_000) String contentHtml,
-            boolean isEnabled
+            boolean isEnabled,
+            ReservationType reservationType,
+            @Min(10) @Max(1440) Integer slotMinutes,
+            LocalTime openTime,
+            LocalTime closeTime,
+            @Valid SpaceLayout layout,
+            Long accessGradeId
     ) {
         public ReservationType reservationTypeOrDefault() {
             return reservationType == null ? ReservationType.PROGRAM : reservationType;
@@ -53,19 +59,18 @@ public final class ReservationDtos {
                                   Integer maximumPerson, Integer availablePerson,
                                   LocalDateTime startDateTime, LocalDateTime endDateTime,
                                   LocalDateTime applicationStartDateTime, LocalDateTime applicationEndDateTime,
-                                  String contentHtml, boolean isEnabled, boolean isOpen, Double averageRating) {
-        public static ProgramResponse of(final Program program, final boolean isOpen) {
-            return of(program, isOpen, null);
-        }
-
-        public static ProgramResponse of(final Program program, final boolean isOpen, final Double averageRating) {
+                                  String contentHtml, boolean isEnabled, boolean isOpen, Double averageRating,
+                                  Long accessGradeId) {
+        public static ProgramResponse of(final Program program, final SpaceLayout layout, final boolean isOpen,
+                                         final Double averageRating) {
             return new ProgramResponse(program.getId(), program.getName(), program.getDescription(),
                     program.getImageFileId(),
                     program.getImageFileId() == null ? null : "/api/files/" + program.getImageFileId() + "/view",
                     program.getPrice(), program.getReservationType(), program.getSlotMinutes(), program.getOpenTime(),
                     program.getCloseTime(), layout, program.getMaximumPerson(), program.getAvailablePerson(),
                     program.getStartDateTime(), program.getEndDateTime(), program.getApplicationStartDateTime(),
-                    program.getApplicationEndDateTime(), program.getContentHtml(), program.isEnabled(), isOpen, averageRating);
+                    program.getApplicationEndDateTime(), program.getContentHtml(), program.isEnabled(), isOpen, averageRating,
+                    program.getAccessGradeId());
         }
     }
 

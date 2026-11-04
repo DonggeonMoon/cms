@@ -11,6 +11,7 @@ import com.dgmoonlabs.cms.domain.common.file.service.FileService;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.html.HtmlSanitizer;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
+import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,8 @@ public class ProductService {
     private final DiscountService discountService;
     private final FileService fileService;
     private final HtmlSanitizer htmlSanitizer;
+    private final OrderRepository orderRepository;
+    private final GradeService gradeService;
 
     @Transactional(readOnly = true)
     public Page<ProductSummary> getProducts(final String keyword, final Pageable pageable) {

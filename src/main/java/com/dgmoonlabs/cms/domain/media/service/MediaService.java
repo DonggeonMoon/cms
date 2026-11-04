@@ -19,6 +19,7 @@ import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
 import com.dgmoonlabs.cms.global.security.LoginUser;
+import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 public class MediaService {
     private static final Set<MediaType> PLAYABLE = EnumSet.of(MediaType.VIDEO, MediaType.AUDIO);
 
+    private final GradeService gradeService;
     private final MediaRepository mediaRepository;
     private final MediaProgressRepository progressRepository;
     private final MediaEnrollmentRepository enrollmentRepository;
@@ -49,12 +51,15 @@ public class MediaService {
 
     @Transactional(readOnly = true)
     public MediaResponse getMedia(final Long id) {
-        return toResponses(List.of(findPublic(id)), currentMemberId()).getFirst();
+        Media media = findPublic(id);
+        gradeService.require(media.getAccessGradeId());
+        return toResponses(List.of(media), currentMemberId()).getFirst();
     }
 
     @Transactional
     public MyProgress start(final Long id, final LoginUser member) {
         Media media = findPublic(id);
+        gradeService.require(media.getAccessGradeId());
         MediaEnrollment enrollment = enrollmentOf(media.getId(), member.id());
         MediaProgress progress = progressRepository.findByMediaIdAndMemberId(media.getId(), member.id())
                 .orElseGet(() -> progressRepository.save(MediaProgress.start(media.getId(), member.id())));
@@ -64,6 +69,7 @@ public class MediaService {
     @Transactional
     public MyProgress record(final Long id, final LoginUser member, final ProgressRequest request) {
         Media media = findPublic(id);
+        gradeService.require(media.getAccessGradeId());
         MediaEnrollment enrollment = enrollmentOf(media.getId(), member.id());
         MediaProgress progress = progressRepository.findForUpdate(media.getId(), member.id())
                 .orElseGet(() -> progressRepository.save(MediaProgress.start(media.getId(), member.id())));
@@ -118,6 +124,7 @@ public class MediaService {
                 .durationSeconds(request.durationSeconds())
                 .completionRate(request.completionRateOrDefault())
                 .isUsing(request.isUsingOrDefault())
+                .accessGradeId(gradeService.validGradeId(request.accessGradeId()))
                 .build()).getId();
     }
 
@@ -126,6 +133,7 @@ public class MediaService {
         findMedia(id).update(request.title().trim(), request.description(), request.fileId(),
                 requireImage(request.thumbnailFileId()), playableType(request.fileId()),
                 request.durationSeconds(), request.completionRateOrDefault(), request.isUsingOrDefault());
+        findMedia(id).changeAccessGrade(gradeService.validGradeId(request.accessGradeId()));
     }
 
     @Transactional

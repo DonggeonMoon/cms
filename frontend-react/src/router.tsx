@@ -28,6 +28,7 @@ import {I18nAdminPage} from './pages/admin/I18nAdminPage';
 import {PasswordHashPage} from './pages/admin/PasswordHashPage';
 import {PolicyAdminPage} from './pages/admin/PolicyAdminPage';
 import {RegexAdminPage} from './pages/admin/RegexAdminPage';
+import {GradeAdminPage} from './pages/admin/GradeAdminPage';
 import {
     DiscountAdminPage,
     OrderAdminPage,
@@ -264,6 +265,7 @@ export const routes = [
                             {path: 'members', element: <MemberListPage/>},
                             {path: 'members/:id', element: <MemberDetailPage/>},
                             {path: 'join-settings', element: <MemberJoinSettingPage/>},
+                            {path: 'grades', element: <GradeAdminPage/>},
                             {path: 'chatbot', element: <ChatbotAdminPage/>},
                             {path: 'policies/:type', element: <PolicyAdminPage/>},
                             {path: 'regexes', element: <RegexAdminPage/>},

@@ -22,6 +22,7 @@ import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.html.HtmlSanitizer;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
 import com.dgmoonlabs.cms.global.security.LoginUser;
+import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 public class ArchiveService {
     private static final int MAX_COMMENT_DEPTH = 1;
 
+    private final GradeService gradeService;
     private final ArchiveRepository archiveRepository;
     private final ArchiveArticleRepository articleRepository;
     private final ArchiveArticleFileRepository articleFileRepository;
@@ -64,6 +66,7 @@ public class ArchiveService {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         return archiveRepository.save(Archive.builder()
+                .accessGradeId(gradeService.validGradeId(request.accessGradeId()))
                 .name(request.name())
                 .description(request.description())
                 .type(request.type())
@@ -80,6 +83,7 @@ public class ArchiveService {
         }
         findArchive(id).update(request.name(), request.description(), request.type(), request.supportsComment(),
                 request.supportsLike(), request.pageSize());
+        findArchive(id).changeAccessGrade(gradeService.validGradeId(request.accessGradeId()));
     }
 
     @Transactional
@@ -103,6 +107,7 @@ public class ArchiveService {
         if (article.getStatus() != ArchiveStatus.PUBLISHED && !CurrentUser.isAdmin()) {
             throw BusinessException.notFound();
         }
+        gradeService.require(findArchive(archiveId).getAccessGradeId());
         article.increaseHit();
         return ArchiveArticleDetail.of(article, filesOf(articleId));
     }

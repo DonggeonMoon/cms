@@ -53,6 +53,13 @@ public class Media extends BaseEntity {
     @Comment("공개 여부")
     private boolean isUsing;
 
+    @Comment("시청 가능 등급 ID (없으면 누구나)")
+    private Long accessGradeId;
+
+    public void changeAccessGrade(final Long accessGradeId) {
+        this.accessGradeId = accessGradeId;
+    }
+
     public void update(final String title, final String description, final Long fileId, final Long thumbnailFileId,
                        final MediaType mediaType, final int durationSeconds, final int completionRate, final boolean isUsing) {
         this.title = title;

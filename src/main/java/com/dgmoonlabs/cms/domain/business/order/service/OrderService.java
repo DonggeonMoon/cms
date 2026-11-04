@@ -13,6 +13,9 @@ import com.dgmoonlabs.cms.domain.business.order.repository.ProductOptionReposito
 import com.dgmoonlabs.cms.domain.business.order.repository.ProductRepository;
 import com.dgmoonlabs.cms.domain.business.payment.constant.PaymentTargetType;
 import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
+import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
+import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
+import com.dgmoonlabs.cms.domain.common.regex.service.RegexService;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
@@ -35,6 +38,11 @@ public class OrderService {
     private final DiscountService discountService;
     private final PaymentService paymentService;
     private final RegexService regexService;
+    private final GradeService gradeService;
+
+    public record Line(Long productId, Long productOptionId, int quantity, Long discountId) {
+    }
+
 
     @Transactional
     public OrderResponse createOrder(final Long memberId, final OrderCreateRequest request) {
@@ -51,6 +59,7 @@ public class OrderService {
         Product product = productRepository.findForUpdate(request.productId())
                 .filter(Product::isOnSale)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_AVAILABLE));
+        gradeService.require(product.getAccessGradeId());
 
         BigDecimal unitPrice = product.getPrice();
         String productName = product.getName();

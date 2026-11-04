@@ -11,6 +11,7 @@ import {HOME_BLOCKS} from '../../components/HomeBlocks';
 import {formatDateTime} from '../../components/format';
 import {HtmlView} from '../../components/HtmlView';
 import {PUBLISH_STATUS, toOptions} from '../../components/labels';
+import {type Grade, gradeSelectField, useWithGradeFields} from '../../api/grades';
 import {type FieldSpec, SchemaForm} from '../../components/SchemaForm';
 import {StableLabel} from '../../components/StableLabel';
 
@@ -34,6 +35,11 @@ const BOARD_FIELDS: FieldSpec[] = [
     {name: 'supportsAttachment', label: '첨부파일 기능', type: 'checkbox', group: '기능'},
 ];
 
+const boardGradeFields = (grades: Grade[]) => [
+    gradeSelectField('readGradeId', '글 읽기 등급', grades, '이 등급 이상 회원만 글을 읽습니다. 목록은 그대로 보입니다.'),
+    gradeSelectField('writeGradeId', '글쓰기 등급', grades, '이 등급 이상 회원만 글을 씁니다. 지정하면 비회원은 쓸 수 없습니다.'),
+];
+
 const BOARD_DEFAULTS = {
     type: 'NORMAL', pageSize: 10, maximumFileCount: 5,
     isMemberAccessible: true, isMemberReadable: true, isMemberWritable: true,
@@ -44,6 +50,7 @@ const BOARD_DEFAULTS = {
 const loadBoards = () => adminApi.boards.list();
 
 export function BoardAdminPage() {
+    const fields = useWithGradeFields(BOARD_FIELDS, boardGradeFields);
     return (
         <AdminCrudPage<Board>
             title="게시판"
@@ -56,7 +63,7 @@ export function BoardAdminPage() {
             }
             searchable={false}
             load={loadBoards}
-            fields={BOARD_FIELDS}
+            fields={fields}
             emptyForm={BOARD_DEFAULTS}
             columns={[
                 {label: 'ID', render: (b) => b.id},
@@ -79,9 +86,14 @@ const CONTENT_FIELDS: FieldSpec[] = [
     {name: 'memo', label: '작업 메모', wide: true},
 ];
 
+const contentGradeFields = (grades: Grade[]) => [
+    gradeSelectField('accessGradeId', '열람 등급', grades, '이 등급 이상 회원만 볼 수 있습니다.'),
+];
+
 const loadContents = (query: Query) => adminApi.contents.search(query);
 
 export function ContentAdminPage() {
+    const fields = useWithGradeFields(CONTENT_FIELDS, contentGradeFields);
     return (
         <AdminCrudPage<Content>
             title="컨텐츠"
@@ -103,7 +115,7 @@ export function ContentAdminPage() {
                 </>
             }
             load={loadContents}
-            fields={CONTENT_FIELDS}
+            fields={fields}
             emptyForm={{status: 'DRAFT', contentHtml: ''}}
             columns={[
                 {label: 'ID', render: (c) => c.id},
@@ -130,9 +142,14 @@ const ARCHIVE_FIELDS: FieldSpec[] = [
     {name: 'supportsLike', label: '추천', type: 'checkbox', group: '기능'},
 ];
 
+const archiveGradeFields = (grades: Grade[]) => [
+    gradeSelectField('accessGradeId', '글 읽기 등급', grades, '이 등급 이상 회원만 글을 읽습니다. 목록은 그대로 보입니다.'),
+];
+
 const loadArchives = () => adminApi.archives.list();
 
 export function ArchiveAdminPage() {
+    const fields = useWithGradeFields(ARCHIVE_FIELDS, archiveGradeFields);
     return (
         <AdminCrudPage<Archive>
             title="아카이브"
@@ -145,7 +162,7 @@ export function ArchiveAdminPage() {
             }
             searchable={false}
             load={loadArchives}
-            fields={ARCHIVE_FIELDS}
+            fields={fields}
             emptyForm={{type: 'NORMAL', pageSize: 10, supportsComment: false, supportsLike: false}}
             columns={[
                 {label: 'ID', render: (a) => a.id},

@@ -89,6 +89,12 @@ public class BoardConfig extends BaseEntity {
     @Comment("페이지 당 글 수")
     private int pageSize = 10;
 
+    @Comment("글 읽기 가능 등급 ID (없으면 제한 없음)")
+    private Long readGradeId;
+
+    @Comment("글쓰기 가능 등급 ID (없으면 제한 없음)")
+    private Long writeGradeId;
+
     public static BoardConfig of(final Long boardId, final BoardSaveRequest request) {
         BoardConfig config = BoardConfig.builder().boardId(boardId).build();
         config.update(request);
@@ -96,6 +102,8 @@ public class BoardConfig extends BaseEntity {
     }
 
     public void update(final BoardSaveRequest request) {
+        this.readGradeId = request.readGradeId();
+        this.writeGradeId = request.writeGradeId();
         this.isMemberAccessible = request.isMemberAccessible();
         this.isMemberReadable = request.isMemberReadable();
         this.isMemberWritable = request.isMemberWritable();

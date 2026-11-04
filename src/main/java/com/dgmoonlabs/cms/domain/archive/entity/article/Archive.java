@@ -52,6 +52,13 @@ public class Archive extends BaseEntity {
     @Comment("페이지 당 글 수")
     private int pageSize = 10;
 
+    @Comment("열람 가능 등급 ID (없으면 누구나)")
+    private Long accessGradeId;
+
+    public void changeAccessGrade(final Long accessGradeId) {
+        this.accessGradeId = accessGradeId;
+    }
+
     public void update(final String name, final String description, final BoardType type, final boolean supportsComment,
                        final boolean supportsLike, final int pageSize) {
         this.name = name;

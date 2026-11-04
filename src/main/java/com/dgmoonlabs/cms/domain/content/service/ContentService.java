@@ -10,6 +10,7 @@ import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.html.HtmlSanitizer;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
 import com.dgmoonlabs.cms.global.security.LoginUser;
+import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ContentService {
+    private final GradeService gradeService;
     private final ContentRepository contentRepository;
     private final HtmlSanitizer htmlSanitizer;
 
@@ -44,9 +46,10 @@ public class ContentService {
 
     @Transactional(readOnly = true)
     public ContentResponse getPublishedContent(final Long id) {
-        return contentRepository.findByIdAndStatusAndDeletedAtIsNull(id, ContentStatus.PUBLISHED)
-                .map(ContentResponse::from)
+        Content content = contentRepository.findByIdAndStatusAndDeletedAtIsNull(id, ContentStatus.PUBLISHED)
                 .orElseThrow(BusinessException::notFound);
+        gradeService.require(content.getAccessGradeId());
+        return ContentResponse.from(content);
     }
 
     @Transactional
@@ -60,6 +63,7 @@ public class ContentService {
                 .memo(request.memoOrEmpty())
                 .version(1)
                 .lastWorker(currentWorker())
+                .accessGradeId(gradeService.validGradeId(request.accessGradeId()))
                 .build();
         return contentRepository.save(content).getId();
     }
@@ -69,6 +73,7 @@ public class ContentService {
         String html = htmlSanitizer.sanitize(request.contentHtml());
         findContent(id).update(request.title(), html, htmlSanitizer.toPlainText(html), request.status(),
                 request.memoOrEmpty(), currentWorker());
+        findContent(id).changeAccessGrade(gradeService.validGradeId(request.accessGradeId()));
     }
 
     @Transactional

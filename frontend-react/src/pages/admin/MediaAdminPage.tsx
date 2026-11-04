@@ -9,6 +9,7 @@ import {formatDateTime, formatDuration} from '../../components/format';
 import {ENROLLMENT_STATUS} from '../../components/labels';
 import {Pagination} from '../../components/Pagination';
 import type {FieldSpec, FormValues, MediaValue} from '../../components/SchemaForm';
+import {type Grade, gradeSelectField, useWithGradeFields} from '../../api/grades';
 
 const FIELDS: FieldSpec[] = [
     {name: 'title', label: '제목', required: true, wide: true},
@@ -18,6 +19,10 @@ const FIELDS: FieldSpec[] = [
         help: '실제로 재생한 구간이 이 비율 이상이면 수강 완료로 기록합니다.'},
     {name: 'isUsing', label: '공개', type: 'checkbox'},
     {name: 'description', label: '설명', type: 'textarea'},
+];
+
+const mediaGradeFields = (grades: Grade[]) => [
+    gradeSelectField('accessGradeId', '시청 등급', grades, '이 등급 이상 회원만 재생할 수 있습니다.'),
 ];
 
 const toBody = (values: FormValues) => {
@@ -31,6 +36,7 @@ const loadMedia = (query: Query) => adminApi.media.search(query);
 export function MediaAdminPage() {
     const [openId, setOpenId] = useState<number | null>(null);
     const [mediaType, setMediaType] = useState<MediaType | ''>('');
+    const fields = useWithGradeFields(FIELDS, mediaGradeFields);
     return (
         <AdminCrudPage<MediaItem>
             title="스트리밍"
@@ -44,13 +50,14 @@ export function MediaAdminPage() {
                     <option value="AUDIO">음악</option>
                 </select>
             }
-            fields={FIELDS}
+            fields={fields}
             emptyForm={{completionRate: 90, isUsing: true, media: null}}
             toForm={(item) => ({
                 title: item.title,
                 description: item.description ?? '',
                 completionRate: item.completionRate,
                 isUsing: item.isUsing,
+                accessGradeId: item.accessGradeId,
                 media: {id: item.fileId, name: item.fileName ?? `파일 #${item.fileId}`, durationSeconds: item.durationSeconds,
                     thumbnailId: item.thumbnailFileId},
             })}

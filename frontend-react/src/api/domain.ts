@@ -47,6 +47,7 @@ export interface MediaProgress {
 
 export interface MediaItem {
     id: number;
+    accessGradeId: number | null;
     title: string;
     description: string | null;
     fileId: number;
@@ -182,6 +183,8 @@ export type BoardType = 'NORMAL' | 'GALLERY';
 
 export interface Board {
     id: number;
+    readGradeId: number | null;
+    writeGradeId: number | null;
     name: string;
     description: string | null;
     type: BoardType;
@@ -280,6 +283,7 @@ export interface ContentSummary {
 
 export interface Content {
     id: number;
+    accessGradeId: number | null;
     title: string;
     contentHtml: string;
     status: PublishStatus;
@@ -292,6 +296,7 @@ export interface Content {
 
 export interface Archive {
     id: number;
+    accessGradeId: number | null;
     name: string;
     description: string | null;
     type: BoardType;
@@ -347,6 +352,9 @@ export interface Discount {
 
 export interface ProductSummary {
     id: number;
+    accessGradeId: number | null;
+    grantGradeId: number | null;
+    grantGradeDays: number | null;
     name: string;
     description: string | null;
     price: number;
@@ -415,6 +423,7 @@ export interface Availability {
 
 export interface Program {
     id: number;
+    accessGradeId: number | null;
     name: string;
     description: string | null;
     imageFileId: number | null;

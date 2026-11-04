@@ -25,6 +25,8 @@ public record BoardSaveRequest(
         boolean supportsLike,
         boolean supportsAttachment,
         @Min(0) @Max(20) int maximumFileCount,
-        @Min(1) @Max(100) int pageSize
+        @Min(1) @Max(100) int pageSize,
+        Long readGradeId,
+        Long writeGradeId
 ) {
 }
