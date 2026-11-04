@@ -12,10 +12,10 @@ public enum AdminArea {
     STATUS("현황", "dashboard", "statistics"),
     SITE("사이트", "sites", "menus", "banners", "configs"),
     CONTENT("컨텐츠", "contents", "boards", "archives", "questions", "map"),
-    BUSINESS("비즈니스", "products", "product-categories", "discounts", "orders", "shipping-policy", "store-setting", "store-orders", "subscriptions",
+    BUSINESS("비즈니스", "products", "product-categories", "discounts", "points", "coupons", "orders", "shipping-policy", "store-setting", "store-orders", "subscriptions",
             "programs", "reservations", "applications", "media", "courses", "payments", "reviews", "statuses"),
     PUBLIC("공공", "reports", "satisfactions"),
-    MEMBER("회원", "members", "grades", "points", "coupons", "policies"),
+    MEMBER("회원", "members", "grades", "policies"),
     COMMON("공통 설정", "chatbot", "regexes", "regex-bindings", "codes", "i18n", "files", "audit-logs"),
     SECURITY("보안", "api-keys", "password-hash", "crypto-key", "social-logins");
 

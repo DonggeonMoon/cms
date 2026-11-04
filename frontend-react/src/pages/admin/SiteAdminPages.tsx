@@ -253,13 +253,13 @@ const MENU_KINDS: MenuKind[] = [
     {value: 'BOARD', label: '게시판 (하나 지정)', type: 'BOARD', feature: 'BOARD'},
     featureKind('ARCHIVE', '아카이브 (전체)'),
     {value: 'ARCHIVE', label: '아카이브 (하나 지정)', type: 'ARCHIVE', feature: 'ARCHIVE'},
+    featureKind('QNA', '질문답변'),
+    featureKind('MAP', '지도'),
     featureKind('PRODUCT', '상품'),
+    featureKind('MEDIA', '스트리밍'),
     featureKind('PROGRAM', '예약'),
     featureKind('APPLICATION', '신청·지원'),
-    featureKind('QNA', '질문답변'),
     featureKind('REPORT', '신고'),
-    featureKind('MAP', '지도'),
-    featureKind('MEDIA', '스트리밍'),
     {value: 'LINK', label: '링크', type: 'LINK'},
 ];
 
