@@ -22,6 +22,7 @@ public record SiteSaveRequest(
         boolean isDefault,
         Long homeContentId,
         Set<SiteFeature> disabledFeatures,
+        Boolean darkModeEnabled,
         Long faviconFileId,
         @Size(max = 100) String seoTitle,
         @Size(max = 300) String metaDescription,
@@ -31,6 +32,10 @@ public record SiteSaveRequest(
         @Size(max = 100) @Pattern(regexp = "^[A-Za-z0-9_-]*$") String googleVerification,
         @Size(max = 100) @Pattern(regexp = "^[A-Za-z0-9_-]*$") String naverVerification
 ) {
+    public boolean darkModeEnabledOrDefault() {
+        return darkModeEnabled == null || darkModeEnabled;
+    }
+
     public boolean searchIndexingOrDefault() {
         return searchIndexing == null || searchIndexing;
     }

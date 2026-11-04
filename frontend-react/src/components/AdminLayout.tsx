@@ -1,5 +1,6 @@
 import {Link, NavLink, Outlet, useNavigate} from 'react-router';
 import {type AdminArea, useMyPermissions} from '../api/admins';
+import {ColorModeToggle, useColorMode} from './ColorMode';
 import type {SiteFeature} from '../api/domain';
 import {useAuth} from '../auth/AuthContext';
 import {SiteProvider, useSite} from './SiteContext';
@@ -120,6 +121,7 @@ function AdminFrame() {
     const {name, isEnabled} = useSite();
     const navigate = useNavigate();
     const permissions = useMyPermissions();
+    const [colorMode, setColorMode] = useColorMode('cms-admin-color-mode');
     const allowed = (item: MenuItem, groupArea?: AdminArea) => {
         if (item.superOnly) {
             return permissions?.superAdmin === true;
@@ -145,6 +147,7 @@ function AdminFrame() {
             <header className="admin-header">
                 <Link to="/admin" className="brand">{name} 관리자</Link>
                 <div className="admin-account">
+                    <ColorModeToggle mode={colorMode} onChange={setColorMode}/>
                     <span className="muted">{user?.name}</span>
                     <Link to="/">사이트로 이동</Link>
                     <button type="button" onClick={handleLogout}>로그아웃</button>

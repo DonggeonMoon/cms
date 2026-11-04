@@ -1,4 +1,5 @@
 import {useEffect} from 'react';
+import {ColorModeToggle, useColorMode} from './ColorMode';
 import {Link, NavLink, Outlet, useLocation, useNavigate} from 'react-router';
 import type {Menu, SiteFeature} from '../api/domain';
 import {siteApi} from '../api/endpoints';
@@ -34,6 +35,8 @@ function SiteFrame() {
         navigate('/');
     };
 
+    const darkModeEnabled = site?.darkModeEnabled !== false;
+    const [colorMode, setColorMode] = useColorMode('cms-site-color-mode', darkModeEnabled);
     return (
         <div className="site" data-theme={site?.theme || undefined}>
             <TopBar/>
@@ -52,6 +55,7 @@ function SiteFrame() {
                         </>
                     )}
                     {!user && <NavLink to="/login">{t('nav.login', '로그인')}</NavLink>}
+                    {darkModeEnabled && <ColorModeToggle mode={colorMode} onChange={setColorMode}/>}
                     {languages.length > 1 && (
                         <select className="language-select" aria-label={t('language.label', '언어')} value={language}
                                 onChange={(e) => setLanguage(e.target.value)}>

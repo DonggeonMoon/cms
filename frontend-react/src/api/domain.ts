@@ -98,6 +98,7 @@ export interface Site {
     isDefault: boolean;
     homeContentId: number | null;
     features: Record<SiteFeature, boolean>;
+    darkModeEnabled?: boolean;
     faviconFileId?: number | null;
     faviconUrl?: string | null;
     seoTitle?: string | null;

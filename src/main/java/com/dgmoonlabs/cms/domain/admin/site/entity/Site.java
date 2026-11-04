@@ -47,6 +47,12 @@ public class Site extends BaseEntity {
     @Comment("기본 사이트 여부")
     private boolean isDefault;
 
+    @Builder.Default
+    @Column(nullable = false)
+    @ColumnDefault("true")
+    @Comment("다크 모드 사용 (끄면 항상 라이트 모드)")
+    private boolean darkModeEnabled = true;
+
     @Comment("파비콘 파일 ID")
     private Long faviconFileId;
 
@@ -101,6 +107,10 @@ public class Site extends BaseEntity {
         this.homeContentId = homeContentId;
         this.disabledFeatures.clear();
         this.disabledFeatures.addAll(disabledFeatures);
+    }
+
+    public void changeDarkMode(final boolean darkModeEnabled) {
+        this.darkModeEnabled = darkModeEnabled;
     }
 
     public void changeSeo(final Long faviconFileId, final String seoTitle, final String metaDescription, final String metaKeywords,

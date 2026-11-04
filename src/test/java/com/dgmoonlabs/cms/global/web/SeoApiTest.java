@@ -28,6 +28,7 @@ class SeoApiTest extends ApiTestSupport {
                  "metaKeywords":"카페, 원두","googleVerification":"abc_123"}
                 """));
         getJson("/api/site", null)
+                .andExpect(jsonPath("$.darkModeEnabled").value(true))
                 .andExpect(jsonPath("$.seoTitle").value("동네 카페 | 핸드드립"))
                 .andExpect(jsonPath("$.searchIndexing").value(true));
         long contentId = createdId(postJson("/api/admin/contents", admin,
@@ -43,8 +44,9 @@ class SeoApiTest extends ApiTestSupport {
         mockMvc.perform(get("/sitemap.xml"))
                 .andExpect(content().string(containsString("<loc>http://localhost/contents/" + contentId + "</loc>")));
 
-        putJson("/api/admin/sites/" + siteId, admin, "{\"name\":\"동네 카페\",\"isDefault\":true,\"searchIndexing\":false}")
+        putJson("/api/admin/sites/" + siteId, admin, "{\"name\":\"동네 카페\",\"isDefault\":true,\"searchIndexing\":false,\"darkModeEnabled\":false}")
                 .andExpect(status().isNoContent());
+        getJson("/api/site", null).andExpect(jsonPath("$.darkModeEnabled").value(false));
         mockMvc.perform(get("/robots.txt")).andExpect(content().string("User-agent: *\nDisallow: /\n"));
         mockMvc.perform(get("/"))
                 .andExpect(content().string(containsString("<meta name=\"robots\" content=\"noindex, nofollow\"/>")))
@@ -53,7 +55,7 @@ class SeoApiTest extends ApiTestSupport {
 
     @Test
     void replacesTheTitleAndFaviconOfARealIndexPage() {
-        SiteResponse site = new SiteResponse(1L, "카페", null, null, null, null, null, true, null, Map.of(), 3L, "/api/files/3/view",
+        SiteResponse site = new SiteResponse(1L, "카페", null, null, null, null, null, true, null, Map.of(), true, 3L, "/api/files/3/view",
                 null, "설명", null, 4L, "/api/files/4/view", true, null, null, null);
         String html = SeoIndexRenderer.inject("<html><head><link rel=\"icon\" href=\"/favicon.ico\"/><title>cms</title></head><body></body></html>",
                 site, "https://cafe.example");

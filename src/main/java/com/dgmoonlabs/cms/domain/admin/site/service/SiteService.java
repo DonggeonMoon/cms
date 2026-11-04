@@ -73,6 +73,7 @@ public class SiteService {
     }
 
     private void changeSeo(final Site site, final SiteSaveRequest request) {
+        site.changeDarkMode(request.darkModeEnabledOrDefault());
         List<Long> images = Stream.of(request.faviconFileId(), request.ogImageFileId()).filter(Objects::nonNull).toList();
         if (!images.isEmpty()) {
             fileService.requireFilesExist(images);

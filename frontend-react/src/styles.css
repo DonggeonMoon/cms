@@ -18,7 +18,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-color-mode='light']) {
         --bg: #14161a;
         --surface: #1d2026;
         --text: #e6e8eb;
@@ -29,6 +29,18 @@
         --ok: #4cc27a;
         color-scheme: dark;
     }
+}
+
+:root[data-color-mode='dark'] {
+    --bg: #14161a;
+    --surface: #1d2026;
+    --text: #e6e8eb;
+    --muted: #9aa1ab;
+    --border: #30353d;
+    --primary: #5b80ff;
+    --danger: #ef6b6b;
+    --ok: #4cc27a;
+    color-scheme: dark;
 }
 
 * {
@@ -1490,7 +1502,7 @@ h1 .badge {
 }
 
 @media (prefers-color-scheme: dark) {
-    .site[data-theme='market'] {
+    :root:not([data-color-mode='light']) .site[data-theme='market'] {
         --bg: #121614;
         --surface: #1b211e;
         --text: #e9ecea;
@@ -1499,6 +1511,16 @@ h1 .badge {
         --primary: #34c99c;
         --primary-text: #0b1d16;
     }
+}
+
+:root[data-color-mode='dark'] .site[data-theme='market'] {
+    --bg: #121614;
+    --surface: #1b211e;
+    --text: #e9ecea;
+    --muted: #98a29d;
+    --border: #2b332f;
+    --primary: #34c99c;
+    --primary-text: #0b1d16;
 }
 
 .site[data-theme='market'] .site-header {
@@ -1735,9 +1757,13 @@ h1 .badge {
 }
 
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-color-mode='light']) {
         --subtle: #22262d;
     }
+}
+
+:root[data-color-mode='dark'] {
+    --subtle: #22262d;
 }
 
 h1, h2, h3 {
@@ -1841,9 +1867,13 @@ input[type='checkbox'], input[type='radio'] {
 }
 
 @media (prefers-color-scheme: dark) {
-    .site {
+    :root:not([data-color-mode='light']) .site {
         --bg: #111317;
     }
+}
+
+:root[data-color-mode='dark'] .site {
+    --bg: #111317;
 }
 
 .site-header {
@@ -3118,3 +3148,8 @@ fieldset.attribute-filter {
     font-size: 1.5rem;
 }
 
+.color-mode-toggle {
+    font-size: 0.85rem;
+    padding: 4px 10px;
+    white-space: nowrap;
+}

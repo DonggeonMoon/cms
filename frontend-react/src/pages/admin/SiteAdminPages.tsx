@@ -17,6 +17,8 @@ const SITE_FIELDS: FieldSpec[] = [
     {name: 'description', label: '설명', wide: true, help: '홈 화면에 소개 문구로 표시됩니다.'},
     {name: 'theme', label: '테마', type: 'select', options: [{value: 'market', label: '마켓 (중고거래·쇼핑몰)'}],
         help: '선택 안 함이면 기본 테마를 씁니다.'},
+    {name: 'darkModeEnabled', label: '다크 모드 사용', type: 'checkbox',
+        help: '켜면 방문자가 시스템·라이트·다크 중에서 고를 수 있고, 끄면 항상 라이트 모드로 보입니다.'},
     {name: 'locale', label: '로케일', placeholder: 'ko'},
     ...SITE_FEATURES.map((feature): FieldSpec => ({name: featureField(feature.value), label: feature.label, type: 'checkbox', group: '기능'})),
     {name: 'faviconFileId', label: '파비콘', type: 'image', wide: true, group: '검색·공유 (SEO)',
@@ -76,7 +78,7 @@ export function SiteAdminPage() {
             }
             load={loadSites}
             fields={fields}
-            emptyForm={{isDefault: true, locale: 'ko', searchIndexing: true, ...ALL_FEATURES_ON}}
+            emptyForm={{isDefault: true, locale: 'ko', darkModeEnabled: true, searchIndexing: true, ...ALL_FEATURES_ON}}
             toForm={siteToForm}
             columns={[
                 {label: '이름', render: (s) => s.name},

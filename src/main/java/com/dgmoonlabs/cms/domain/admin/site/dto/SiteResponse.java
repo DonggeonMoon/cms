@@ -21,6 +21,7 @@ public record SiteResponse(
         boolean isDefault,
         Long homeContentId,
         Map<SiteFeature, Boolean> features,
+        boolean darkModeEnabled,
         Long faviconFileId,
         String faviconUrl,
         String seoTitle,
@@ -47,6 +48,7 @@ public record SiteResponse(
                 site.isDefault(),
                 site.getHomeContentId(),
                 features(site.getDisabledFeatures()),
+                site.isDarkModeEnabled(),
                 site.getFaviconFileId(),
                 fileUrl(site.getFaviconFileId()),
                 site.getSeoTitle(),
@@ -62,7 +64,7 @@ public record SiteResponse(
     }
 
     public static SiteResponse fallback() {
-        return new SiteResponse(null, FALLBACK_NAME, null, null, null, null, null, true, null, features(Set.of()),
+        return new SiteResponse(null, FALLBACK_NAME, null, null, null, null, null, true, null, features(Set.of()), true,
                 null, null, null, null, null, null, null, true, null, null, null);
     }
 
