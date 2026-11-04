@@ -53,6 +53,8 @@ const MENU_GROUPS: { title: string; area?: AdminArea; items: MenuItem[] }[] = [
             {to: '/admin/discounts', label: '할인', sub: true, features: ['PRODUCT']},
             {to: '/admin/orders', label: '주문', sub: true, features: ['PRODUCT']},
             {to: '/admin/shipping', label: '배송비', sub: true, features: ['PRODUCT']},
+            {to: '/admin/store', label: '매장 주문', sub: true, features: ['PRODUCT']},
+            {to: '/admin/store-orders', label: '주문 접수', sub: true, features: ['PRODUCT']},
             {to: '/admin/subscriptions', label: '구독', sub: true, features: ['PRODUCT']},
             {to: '/admin/programs', label: '예약', features: ['PROGRAM']},
             {to: '/admin/reservations', label: '예약 내역', sub: true, features: ['PROGRAM']},

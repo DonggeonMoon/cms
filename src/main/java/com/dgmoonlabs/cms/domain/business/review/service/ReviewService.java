@@ -29,7 +29,8 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class ReviewService {
-    private static final Set<OrderStatus> PURCHASED = EnumSet.of(OrderStatus.PAID, OrderStatus.SHIPPING, OrderStatus.DELIVERED);
+    private static final Set<OrderStatus> PURCHASED = EnumSet.of(OrderStatus.PAID, OrderStatus.SHIPPING, OrderStatus.DELIVERED,
+            OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.COMPLETED);
 
     private final ReviewRepository reviewRepository;
     private final OrderRepository orderRepository;

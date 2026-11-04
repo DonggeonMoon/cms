@@ -66,7 +66,8 @@ public final class ProductDtos {
             @Positive @Max(10_000) Integer downloadLimit,
             @Positive @Max(36_500) Integer downloadDays,
             Long categoryId,
-            @Size(max = 30) Map<String, Object> attributes
+            @Size(max = 30) Map<String, Object> attributes,
+            Boolean storeOrder
     ) {
         public List<Long> digitalFileIdsOrEmpty() {
             return digitalFileIds == null ? List.of() : digitalFileIds.stream().distinct().toList();
@@ -105,12 +106,12 @@ public final class ProductDtos {
     public record ProductSummary(Long id, String name, String description, BigDecimal price, ProductSaleType saleType,
                                  BillingCycle billingCycle, Integer availableQuantity, boolean isEnabled, String imageUrl,
                                  Long accessGradeId, Long grantGradeId, Integer grantGradeDays, Long categoryId,
-                                 LocalDateTime createdAt) {
+                                 boolean storeOrder, LocalDateTime createdAt) {
         public static ProductSummary from(final Product product) {
             return new ProductSummary(product.getId(), product.getName(), product.getDescription(), product.getPrice(),
                     product.getSaleType(), product.getBillingCycle(), product.getAvailableQuantity(), product.isEnabled(),
                     toImageUrl(product.getImageFileId()), product.getAccessGradeId(), product.getGrantGradeId(),
-                    product.getGrantGradeDays(), product.getCategoryId(), product.getCreatedAt());
+                    product.getGrantGradeDays(), product.getCategoryId(), product.isStoreOrder(), product.getCreatedAt());
         }
     }
 
@@ -125,7 +126,7 @@ public final class ProductDtos {
                                 Long grantGradeId, Integer grantGradeDays, List<Product.OptionGroup> optionGroups,
                                 boolean requiresShipping, int digitalFileCount, Integer downloadLimit, Integer downloadDays,
                                 List<FileResponse> digitalFiles, Long categoryId, Map<String, Object> attributes,
-                                List<Spec> specs) {
+                                List<Spec> specs, boolean storeOrder) {
         public static ProductDetail of(final Product product, final List<OptionResponse> options,
                                        final List<DiscountResponse> discounts, final Double averageRating,
                                        final DonationProgress donation, final List<FileResponse> digitalFiles,
@@ -139,7 +140,7 @@ public final class ProductDtos {
                     product.getAccessGradeId(), product.getGrantGradeId(), product.getGrantGradeDays(),
                     product.getOptionGroups() == null ? List.of() : product.getOptionGroups(), product.isRequiresShipping(),
                     product.hasDigitalFiles() ? product.getDigitalFileIds().size() : 0, product.getDownloadLimit(),
-                    product.getDownloadDays(), digitalFiles, product.getCategoryId(), attributes, specs);
+                    product.getDownloadDays(), digitalFiles, product.getCategoryId(), attributes, specs, product.isStoreOrder());
         }
     }
 

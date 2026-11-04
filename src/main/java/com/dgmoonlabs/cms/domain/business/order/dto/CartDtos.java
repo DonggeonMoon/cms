@@ -19,7 +19,7 @@ public final class CartDtos {
 
     public record CartItemResponse(Long id, Long productId, Long productOptionId, String productName, String optionName,
                                    String imageUrl, BigDecimal unitPrice, int quantity, BigDecimal amount,
-                                   Integer stock, boolean requiresShipping, boolean available) {
+                                   Integer stock, boolean requiresShipping, boolean storeOrder, boolean available) {
     }
 
     public record CartResponse(List<CartItemResponse> items, BigDecimal itemsAmount, BigDecimal shippingFee,

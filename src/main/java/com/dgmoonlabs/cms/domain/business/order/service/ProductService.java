@@ -128,6 +128,7 @@ public class ProductService {
         product.changeGrades(gradeService.validGradeId(request.accessGradeId()),
                 gradeService.validGradeId(request.grantGradeId()), request.grantGradeDays());
         product.changeShipping(request.requiresShippingOrDefault());
+        product.changeStoreOrder(Boolean.TRUE.equals(request.storeOrder()));
         List<Long> digitalFileIds = request.digitalFileIdsOrEmpty();
         if (!digitalFileIds.isEmpty()) {
             fileService.requireFilesExist(digitalFileIds);

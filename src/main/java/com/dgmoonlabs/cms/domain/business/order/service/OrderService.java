@@ -2,6 +2,7 @@ package com.dgmoonlabs.cms.domain.business.order.service;
 
 import com.dgmoonlabs.cms.domain.business.BusinessNumbers;
 import com.dgmoonlabs.cms.domain.business.discount.service.DiscountService;
+import com.dgmoonlabs.cms.domain.business.order.constant.FulfillmentType;
 import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
 import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderCreateRequest;
@@ -17,6 +18,7 @@ import com.dgmoonlabs.cms.domain.business.order.repository.OrderItemRepository;
 import com.dgmoonlabs.cms.domain.business.order.repository.OrderRepository;
 import com.dgmoonlabs.cms.domain.business.order.repository.ProductOptionRepository;
 import com.dgmoonlabs.cms.domain.business.order.repository.ProductRepository;
+import com.dgmoonlabs.cms.domain.business.store.service.StoreService;
 import com.dgmoonlabs.cms.domain.business.payment.constant.PaymentTargetType;
 import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
 import com.dgmoonlabs.cms.domain.business.shipping.service.ShippingService;
@@ -38,6 +40,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.EnumSet;
+import java.time.LocalDate;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,8 +64,17 @@ public class OrderService {
     private final GradeService gradeService;
     private final CouponService couponService;
     private final PointService pointService;
+    private final StoreService storeService;
 
     public record Line(Long productId, Long productOptionId, int quantity, Long discountId) {
+    }
+
+    public record Fulfillment(FulfillmentType type, String tableName, String requestMessage) {
+        public static final Fulfillment DELIVERY = new Fulfillment(FulfillmentType.DELIVERY, null, null);
+
+        public static Fulfillment of(final FulfillmentType type, final String tableName, final String requestMessage) {
+            return new Fulfillment(type == null ? FulfillmentType.DELIVERY : type, tableName, requestMessage);
+        }
     }
 
     public record Discounts(Long couponIssueId, long usePoints) {
@@ -107,18 +120,25 @@ public class OrderService {
             case PURCHASE -> place(userType, userId,
                     List.of(new Line(product.getId(), request.productOptionId(), request.quantity(), request.discountId())),
                     Receiver.of(request), new Discounts(request.couponIssueId(), request.usePoints() == null ? 0 : request.usePoints()),
-                    paid);
+                    Fulfillment.of(request.fulfillmentType(), request.tableName(), request.requestMessage()), paid);
             default -> createSingle(userType, userId, product, request, paid);
         };
     }
 
+    /** 매장 주문 전용 상품은 포장·매장 식사로만, 나머지 상품은 배송 주문으로만 받는다. */
     @Transactional
     public OrderResponse place(final UserType userType, final Long userId, final List<Line> lines, final Receiver receiver,
-                               final Discounts discounts, final boolean paid) {
+                               final Discounts discounts, final Fulfillment fulfillment, final boolean paid) {
+        boolean store = fulfillment.type().isStore();
+        String tableName = store ? storeService.requireOrderable(fulfillment.type(), fulfillment.tableName()) : null;
+        if (productRepository.findAllById(lines.stream().map(Line::productId).toList()).stream()
+                .anyMatch(product -> product.isStoreOrder() != store)) {
+            throw new BusinessException(store ? ErrorCode.NOT_STORE_PRODUCT : ErrorCode.STORE_ORDER_ONLY);
+        }
         Long memberId = userType == UserType.MEMBER ? userId : null;
         Priced priced = price(memberId, lines, receiver, memberId == null ? Discounts.NONE : discounts, true);
         List<OrderItem> items = priced.items();
-        if (items.stream().anyMatch(OrderItem::isRequiresShipping) && !receiver.hasAddress() && memberId != null) {
+        if (!store && items.stream().anyMatch(OrderItem::isRequiresShipping) && !receiver.hasAddress() && memberId != null) {
             throw new BusinessException(ErrorCode.ADDRESS_REQUIRED);
         }
         BigDecimal total = priced.total();
@@ -146,6 +166,11 @@ public class OrderService {
                 .postalCode(receiver.postalCode())
                 .address(receiver.address())
                 .detailAddress(receiver.detailAddress())
+                .fulfillmentType(fulfillment.type())
+                .tableName(tableName)
+                .pickupNumber(store ? orderRepository.maxPickupNumberSince(FulfillmentType.DELIVERY,
+                        LocalDate.now().atStartOfDay()) + 1 : null)
+                .requestMessage(blankToNull(fulfillment.requestMessage()))
                 .build());
         items.forEach(item -> item.assignOrder(order.getId()));
         List<OrderItem> saved = itemRepository.saveAll(items);
@@ -383,6 +408,14 @@ public class OrderService {
     public void markPaid(final Long orderId) {
         findOrder(orderId).markPaid();
         events.publishEvent(new OrderPaidEvent(orderId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> storeQueue() {
+        return orderRepository.findAllByFulfillmentTypeInAndStatusInOrderByIdAsc(
+                        EnumSet.of(FulfillmentType.PICKUP, FulfillmentType.DINE_IN),
+                        EnumSet.of(OrderStatus.PAID, OrderStatus.PREPARING, OrderStatus.READY))
+                .stream().map(this::toResponse).toList();
     }
 
     @Transactional

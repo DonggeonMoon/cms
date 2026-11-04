@@ -3084,3 +3084,37 @@ fieldset.attribute-filter {
     border-radius: 4px;
 }
 
+.kitchen-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.kitchen-ticket {
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    display: grid;
+    gap: 8px;
+}
+
+.kitchen-ticket.status-paid {
+    border-color: var(--danger);
+}
+
+.kitchen-ticket.status-ready {
+    border-color: var(--primary);
+}
+
+.kitchen-ticket header,
+.kitchen-ticket footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.ticket-number {
+    font-size: 1.5rem;
+}
+

@@ -571,7 +571,11 @@ export function MyOrdersPage() {
                     <tbody>
                     {data?.content.map((order) => (
                         <tr key={order.id}>
-                            <td><code>{order.orderNumber}</code></td>
+                            <td><code>{order.orderNumber}</code>
+                                {order.pickupNumber != null && (
+                                    <div className="small"><strong>{order.pickupNumber}번</strong> · {order.fulfillmentType === 'DINE_IN' ? `${order.tableName} 테이블` : '포장'}</div>
+                                )}
+                            </td>
                             <td>
                                 {order.items.length > 1 ? order.productName
                                     : <><Link to={`/products/${order.productId}`}>{order.productName}</Link> × {order.quantity}</>}

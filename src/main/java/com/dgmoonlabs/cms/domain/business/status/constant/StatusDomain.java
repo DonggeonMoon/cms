@@ -16,7 +16,8 @@ public enum StatusDomain {
         if (this == ORDER) {
             Map<OrderStatus, String> labels = Map.of(OrderStatus.QUOTE_REQUESTED, "견적 요청", OrderStatus.QUOTED, "견적 회신",
                     OrderStatus.PENDING_PAYMENT, "결제 대기", OrderStatus.PAID, "결제 완료", OrderStatus.SHIPPING, "배송 중",
-                    OrderStatus.DELIVERED, "배송 완료", OrderStatus.CANCELED, "취소");
+                    OrderStatus.DELIVERED, "배송 완료", OrderStatus.PREPARING, "준비 중", OrderStatus.READY, "준비 완료",
+                    OrderStatus.COMPLETED, "전달 완료", OrderStatus.CANCELED, "취소");
             Arrays.stream(OrderStatus.values()).forEach(status -> statuses.put(status.name(), labels.get(status)));
         } else {
             Map<ReservationStatus, String> labels = Map.of(ReservationStatus.PENDING_PAYMENT, "결제 대기",

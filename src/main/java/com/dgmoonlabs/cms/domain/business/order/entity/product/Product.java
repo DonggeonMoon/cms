@@ -81,6 +81,11 @@ public class Product extends BaseEntity {
     @Comment("디지털 파일 내려받기 가능 일수 (결제일부터, 없으면 무기한)")
     private Integer downloadDays;
 
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    @Comment("매장 주문 전용 상품 (포장·매장 식사로만 주문)")
+    private boolean storeOrder;
+
     @Comment("구매 가능 등급 ID (없으면 누구나)")
     private Long accessGradeId;
 
@@ -157,6 +162,10 @@ public class Product extends BaseEntity {
 
     public boolean hasDigitalFiles() {
         return digitalFileIds != null && !digitalFileIds.isEmpty();
+    }
+
+    public void changeStoreOrder(final boolean storeOrder) {
+        this.storeOrder = storeOrder;
     }
 
     public void changeShipping(final boolean requiresShipping) {

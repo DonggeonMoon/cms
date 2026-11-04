@@ -53,6 +53,7 @@ import {MyDownloadsPage} from './pages/shop/DigitalPages';
 import {CouponAdminPage, PointPolicyPage} from './pages/admin/RewardAdminPages';
 import {CategoryAdminPage} from './pages/admin/CategoryAdminPage';
 import {AdminAccountPage} from './pages/admin/AdminAccountPage';
+import {StoreOrderQueuePage, StoreSettingPage} from './pages/admin/StoreAdminPages';
 import {JoinPage} from './pages/JoinPage';
 import {SocialJoinPage} from './pages/SocialJoinPage';
 import {AdminLoginPage, LoginPage} from './pages/LoginPage';
@@ -250,6 +251,8 @@ export const routes = [
                                     {path: 'product-categories', element: <CategoryAdminPage/>},
                                     {path: 'discounts', element: <DiscountAdminPage/>},
                                     {path: 'shipping', element: <ShippingPolicyPage/>},
+                                    {path: 'store', element: <StoreSettingPage/>},
+                                    {path: 'store-orders', element: <StoreOrderQueuePage/>},
                                     {path: 'orders', element: <OrderAdminPage/>},
                                     {path: 'subscriptions', element: <SubscriptionAdminPage/>},
                                 ],

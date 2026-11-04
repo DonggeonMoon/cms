@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.business.order.repository;
 
+import com.dgmoonlabs.cms.domain.business.order.constant.FulfillmentType;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
 import com.dgmoonlabs.cms.domain.business.order.entity.Order;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -16,6 +18,11 @@ import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByIdAndUserTypeAndUserId(Long id, UserType userType, Long userId);
+
+    @Query("select coalesce(max(o.pickupNumber), 0) from Order o where o.fulfillmentType <> :delivery and o.createdAt >= :since")
+    int maxPickupNumberSince(FulfillmentType delivery, LocalDateTime since);
+
+    List<Order> findAllByFulfillmentTypeInAndStatusInOrderByIdAsc(Collection<FulfillmentType> types, Collection<OrderStatus> statuses);
 
     Page<Order> findAllByUserTypeAndUserIdOrderByIdDesc(UserType userType, Long userId, Pageable pageable);
 

@@ -1,6 +1,7 @@
 import {type FormEvent, useEffect, useState} from 'react';
 import {Link, useNavigate, useSearchParams} from 'react-router';
 import type {ProductDetail, ProductSaleType, Program} from '../../api/domain';
+import {EMPTY_STORE_CHOICE, type StoreChoice, StoreOrderFields} from './StoreOrderFields';
 import {type DiscountChoice, DiscountSelector, NO_DISCOUNT} from './DiscountSelector';
 import {shopApi} from '../../api/endpoints';
 import {memberApi} from '../../api/members';
@@ -33,6 +34,8 @@ export function OrderFormPage() {
     const [requestMessage, setRequestMessage] = useState('');
     const [product, setProduct] = useState<ProductDetail | null>(null);
     const [rewards, setRewards] = useState<DiscountChoice>(NO_DISCOUNT);
+    const [storeChoice, setStoreChoice] = useState<StoreChoice>(EMPTY_STORE_CHOICE);
+    const [storeOpen, setStoreOpen] = useState(true);
     const [receiver, setReceiver] = useState({receiverName: '', phoneNumber: '', postalCode: '', address: '', detailAddress: ''});
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -61,7 +64,8 @@ export function OrderFormPage() {
         : discount ? Math.round(subtotal * (100 - Number(discount.rate)) / 100) : subtotal;
     const mode = MODES[product.saleType ?? 'PURCHASE'];
     const purchase = (product.saleType ?? 'PURCHASE') === 'PURCHASE';
-    const needsAddress = purchase && product.requiresShipping !== false;
+    const store = purchase && product.storeOrder;
+    const needsAddress = purchase && !store && product.requiresShipping !== false;
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
@@ -73,9 +77,10 @@ export function OrderFormPage() {
                 productOptionId: option ? option.id : null,
                 discountId: discount ? discount.id : null,
                 quantity,
-                ...(product.saleType === 'DONATION' ? {receiverName: receiver.receiverName, phoneNumber: receiver.phoneNumber} : receiver),
+                ...(product.saleType === 'DONATION' || store ? {receiverName: receiver.receiverName, phoneNumber: receiver.phoneNumber} : receiver),
+                ...(store ? storeChoice : {}),
                 amount: product.saleType === 'DONATION' ? amount : null,
-                requestMessage: product.saleType === 'QUOTE' ? requestMessage : null,
+                ...(store ? {} : {requestMessage: product.saleType === 'QUOTE' ? requestMessage : null}),
                 ...(purchase ? rewards : {}),
             });
             navigate(product.saleType === 'QUOTE' ? '/mypage/orders' : `/checkout/ORDER/${created.id}`);
@@ -106,14 +111,15 @@ export function OrderFormPage() {
                                   onChange={(e) => setRequestMessage(e.target.value)}/>
                     </div>
                 )}
+                {store && <StoreOrderFields value={storeChoice} onChange={setStoreChoice} onAvailability={setStoreOpen}/>}
                 <fieldset>
-                    <legend>{mode.receiverLegend}</legend>
-                    <Field label={product.saleType === 'DONATION' ? '후원자 이름' : product.saleType === 'QUOTE' ? '담당자 이름' : '수령인'}
+                    <legend>{store ? '주문자 정보' : mode.receiverLegend}</legend>
+                    <Field label={product.saleType === 'DONATION' ? '후원자 이름' : product.saleType === 'QUOTE' ? '담당자 이름' : store ? '주문자' : '수령인'}
                            name="receiverName" required value={receiver.receiverName}
                            onChange={(e) => setReceiver({...receiver, receiverName: e.target.value})}/>
                     <Field label="연락처" name="phoneNumber" type="tel" required value={receiver.phoneNumber}
                            onChange={(e) => setReceiver({...receiver, phoneNumber: e.target.value})}/>
-                    {product.saleType !== 'DONATION' && (
+                    {product.saleType !== 'DONATION' && !store && (
                         <>
                             <Field label="우편번호" name="postalCode" value={receiver.postalCode}
                                    onChange={(e) => setReceiver({...receiver, postalCode: e.target.value})}/>
@@ -136,7 +142,7 @@ export function OrderFormPage() {
                 <ErrorBanner error={error}/>
                 <div className="toolbar form-actions">
                     <button type="button" onClick={() => navigate(-1)}>이전</button>
-                    <button type="submit" className="primary" disabled={submitting}>
+                    <button type="submit" className="primary" disabled={submitting || (store && !storeOpen)}>
                         <StableLabel current={submitting ? '보내는 중…' : mode.submit} labels={['보내는 중…', mode.submit]}/>
                     </button>
                 </div>

@@ -7,6 +7,9 @@ export const ORDER_STATUS: Record<OrderStatus, string> = {
     PAID: '결제 완료',
     SHIPPING: '배송 중',
     DELIVERED: '배송 완료',
+    PREPARING: '준비 중',
+    READY: '준비 완료',
+    COMPLETED: '전달 완료',
     CANCELED: '취소',
 };
 

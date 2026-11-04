@@ -41,7 +41,8 @@ public class DashboardService {
                 orderRepository.countByStatus(OrderStatus.PENDING_PAYMENT),
                 orderRepository.countByStatus(OrderStatus.PAID),
                 orderRepository.sumTotalPriceSince(
-                        EnumSet.of(OrderStatus.PAID, OrderStatus.SHIPPING, OrderStatus.DELIVERED),
+                        EnumSet.of(OrderStatus.PAID, OrderStatus.SHIPPING, OrderStatus.DELIVERED, OrderStatus.PREPARING,
+                                OrderStatus.READY, OrderStatus.COMPLETED),
                         today.minusDays(29).atStartOfDay()),
                 reservationRepository.countByStatus(ReservationStatus.CONFIRMED),
                 reportRepository.countByStatusAndDeletedAtIsNull(ReportStatus.RECEIVED),

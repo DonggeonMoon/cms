@@ -1,4 +1,5 @@
 import type {Spec} from './categories';
+import type {FulfillmentType} from './store';
 import type {FileInfo, MediaType} from './types';
 
 export type MenuType = 'CONTENT' | 'BOARD' | 'ARCHIVE' | 'LINK' | 'FEATURE';
@@ -376,6 +377,7 @@ export interface ProductSummary {
     isEnabled: boolean;
     imageUrl: string | null;
     categoryId: number | null;
+    storeOrder: boolean;
     createdAt: string;
 }
 
@@ -449,7 +451,8 @@ export interface Subscription {
     canceledAt: string | null;
 }
 
-export type OrderStatus = 'QUOTE_REQUESTED' | 'QUOTED' | 'PENDING_PAYMENT' | 'PAID' | 'SHIPPING' | 'DELIVERED' | 'CANCELED';
+export type OrderStatus = 'QUOTE_REQUESTED' | 'QUOTED' | 'PENDING_PAYMENT' | 'PAID' | 'SHIPPING' | 'DELIVERED' | 'PREPARING' | 'READY'
+    | 'COMPLETED' | 'CANCELED';
 
 export interface Order {
     id: number;
@@ -465,6 +468,9 @@ export interface Order {
     totalPrice: number | null;
     status: OrderStatus;
     customStatus: string | null;
+    fulfillmentType: FulfillmentType;
+    tableName: string | null;
+    pickupNumber: number | null;
     requestMessage: string | null;
     quoteMessage: string | null;
     quotedAt: string | null;
@@ -516,6 +522,7 @@ export interface CartItem {
     amount: number;
     stock: number | null;
     requiresShipping: boolean;
+    storeOrder: boolean;
     available: boolean;
 }
 

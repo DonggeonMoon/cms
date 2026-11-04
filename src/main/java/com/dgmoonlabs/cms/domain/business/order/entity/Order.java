@@ -1,6 +1,7 @@
 package com.dgmoonlabs.cms.domain.business.order.entity;
 
 import com.dgmoonlabs.cms.global.crypto.EncryptedStringConverter;
+import com.dgmoonlabs.cms.domain.business.order.constant.FulfillmentType;
 import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
 import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
@@ -56,8 +57,21 @@ public class Order extends BaseEntity {
     @Comment("정기 결제로 만들어진 주문의 구독 ID")
     private Long subscriptionId;
 
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "varchar(20) default 'DELIVERY'")
+    @Enumerated(EnumType.STRING)
+    @Comment("받는 방식 (배송 / 포장 / 매장 식사)")
+    private FulfillmentType fulfillmentType = FulfillmentType.DELIVERY;
+
+    @Column(length = 30)
+    @Comment("매장 식사 테이블")
+    private String tableName;
+
+    @Comment("매장 주문 번호 (날마다 1부터)")
+    private Integer pickupNumber;
+
     @Column(columnDefinition = "text")
-    @Comment("견적 요청 내용")
+    @Comment("요청 사항 (견적 요청 내용 포함)")
     private String requestMessage;
 
     @Column(columnDefinition = "text")
@@ -201,7 +215,7 @@ public class Order extends BaseEntity {
 
     public void moveTo(final OrderStatus next) {
         this.customStatus = null;
-        if (!status.canMoveTo(next)) {
+        if (!status.canMoveTo(next, fulfillmentType.isStore())) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
         this.status = next;
@@ -246,7 +260,7 @@ public class Order extends BaseEntity {
 
     public void ship(final String courier, final String trackingNumber) {
         this.customStatus = null;
-        if (status != OrderStatus.PAID && status != OrderStatus.SHIPPING) {
+        if (fulfillmentType.isStore() || (status != OrderStatus.PAID && status != OrderStatus.SHIPPING)) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
         this.courier = courier;

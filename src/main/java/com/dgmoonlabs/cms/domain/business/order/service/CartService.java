@@ -97,7 +97,7 @@ public class CartService {
                 new OrderService.Receiver(request.receiverName(), request.phoneNumber(), request.postalCode(),
                         request.address(), request.detailAddress()),
                 new OrderService.Discounts(request.couponIssueId(), request.usePoints() == null ? 0 : request.usePoints()),
-                false);
+                OrderService.Fulfillment.of(request.fulfillmentType(), request.tableName(), request.requestMessage()), false);
         cartRepository.deleteAll(items);
         return order;
     }
@@ -122,7 +122,7 @@ public class CartService {
     private static CartItemResponse toLine(final CartItem item, final Product product, final ProductOption option) {
         if (product == null) {
             return new CartItemResponse(item.getId(), item.getProductId(), item.getProductOptionId(), "삭제된 상품", null, null,
-                    BigDecimal.ZERO, item.getQuantity(), BigDecimal.ZERO, 0, false, false);
+                    BigDecimal.ZERO, item.getQuantity(), BigDecimal.ZERO, 0, false, false, false);
         }
         BigDecimal unitPrice = product.getPrice().add(option == null ? BigDecimal.ZERO : option.getAdditionalPrice());
         Integer stock = product.getAvailableQuantity();
@@ -138,6 +138,6 @@ public class CartService {
                 option == null ? null : option.getName(),
                 product.getImageFileId() == null ? null : "/api/files/" + product.getImageFileId() + "/view",
                 unitPrice, item.getQuantity(), unitPrice.multiply(BigDecimal.valueOf(item.getQuantity())), stock,
-                product.isRequiresShipping(), available);
+                product.isRequiresShipping(), product.isStoreOrder(), available);
     }
 }

@@ -12,7 +12,7 @@ class StatusApiTest extends ApiTestSupport {
     @Test
     void adminsRenameBaseStatusesAndAddDetailStatusesUnderThem() throws Exception {
         MockHttpSession admin = admin();
-        JsonNode statuses = body(getJson("/api/statuses/ORDER", null).andExpect(jsonPath("$.length()").value(7)));
+        JsonNode statuses = body(getJson("/api/statuses/ORDER", null).andExpect(jsonPath("$.length()").value(10)));
         long paidId = -1;
         for (JsonNode status : statuses) {
             if (status.get("code").asString().equals("PAID")) {

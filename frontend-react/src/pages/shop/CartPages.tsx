@@ -9,6 +9,7 @@ import {Field} from '../../components/Field';
 import {estimateShipping} from '../../components/shipping';
 import {Thumbnail} from '../../components/Thumbnail';
 import {type DiscountChoice, DiscountSelector, NO_DISCOUNT} from './DiscountSelector';
+import {EMPTY_STORE_CHOICE, type StoreChoice, StoreOrderFields} from './StoreOrderFields';
 
 function ShippingLine({policy, items, postalCode}: { policy: ShippingPolicy | null; items: CartItem[]; postalCode?: string | null }) {
     const shippable = items.filter((item) => item.requiresShipping);
@@ -114,6 +115,8 @@ export function CartOrderPage() {
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
     const [discount, setDiscount] = useState<DiscountChoice>(NO_DISCOUNT);
+    const [storeChoice, setStoreChoice] = useState<StoreChoice>(EMPTY_STORE_CHOICE);
+    const [storeOpen, setStoreOpen] = useState(true);
 
     useEffect(() => {
         shopApi.cart().then((cart) => setItems(cart.items.filter((item) => item.available && ids.includes(item.id)))).catch(setError);
@@ -129,14 +132,17 @@ export function CartOrderPage() {
     if (!items) {
         return error ? <ErrorBanner error={error}/> : <p className="muted">불러오는 중…</p>;
     }
-    const needsAddress = items.some((item) => item.requiresShipping);
+    const store = items.length > 0 && items.every((item) => item.storeOrder);
+    const mixed = items.some((item) => item.storeOrder) && !store;
+    const needsAddress = !store && items.some((item) => item.requiresShipping);
     const previewLines = items.map((item) => ({productId: item.productId, productOptionId: item.productOptionId, quantity: item.quantity}));
     const submit = async (event: FormEvent) => {
         event.preventDefault();
         setSubmitting(true);
         setError(null);
         try {
-            const order = await shopApi.checkoutCart({cartItemIds: items.map((item) => item.id), ...receiver, ...discount});
+            const order = await shopApi.checkoutCart({cartItemIds: items.map((item) => item.id), ...discount,
+                ...(store ? {receiverName: receiver.receiverName, phoneNumber: receiver.phoneNumber, ...storeChoice} : receiver)});
             navigate(`/checkout/ORDER/${order.id}`);
         } catch (e) {
             setError(e);
@@ -157,24 +163,30 @@ export function CartOrderPage() {
                             </li>
                         ))}
                     </ul>
+                    {mixed && <p className="notice-box">매장 주문 전용 상품과 배송 상품은 함께 주문할 수 없습니다. 장바구니에서 나눠 주문해 주세요.</p>}
+                    {store && <StoreOrderFields value={storeChoice} onChange={setStoreChoice} onAvailability={setStoreOpen}/>}
                     <fieldset>
-                        <legend>배송 정보</legend>
-                        <Field label="수령인" name="receiverName" required value={receiver.receiverName}
+                        <legend>{store ? '주문자 정보' : '배송 정보'}</legend>
+                        <Field label={store ? '주문자' : '수령인'} name="receiverName" required value={receiver.receiverName}
                                onChange={(e) => setReceiver({...receiver, receiverName: e.target.value})}/>
                         <Field label="연락처" name="phoneNumber" type="tel" required value={receiver.phoneNumber}
                                onChange={(e) => setReceiver({...receiver, phoneNumber: e.target.value})}/>
+                        {!store && <>
                         <Field label="우편번호" name="postalCode" value={receiver.postalCode}
                                onChange={(e) => setReceiver({...receiver, postalCode: e.target.value})}/>
                         <Field label="주소" name="address" required={needsAddress} value={receiver.address}
                                onChange={(e) => setReceiver({...receiver, address: e.target.value})}/>
                         <Field label="상세 주소" name="detailAddress" value={receiver.detailAddress}
                                onChange={(e) => setReceiver({...receiver, detailAddress: e.target.value})}/>
+                        </>}
                     </fieldset>
-                    <DiscountSelector lines={previewLines} postalCode={receiver.postalCode} value={discount} onChange={setDiscount}/>
+                    <DiscountSelector lines={previewLines} postalCode={store ? null : receiver.postalCode} value={discount} onChange={setDiscount}/>
                     <ErrorBanner error={error}/>
                     <div className="toolbar form-actions">
                         <button type="button" onClick={() => navigate('/cart')}>장바구니로</button>
-                        <button type="submit" className="primary" disabled={submitting}>{submitting ? '주문 중…' : '주문하고 결제하기'}</button>
+                        <button type="submit" className="primary" disabled={submitting || mixed || (store && !storeOpen)}>
+                            {submitting ? '주문 중…' : '주문하고 결제하기'}
+                        </button>
                     </div>
                 </form>
             )}
