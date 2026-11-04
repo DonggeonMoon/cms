@@ -766,6 +766,28 @@ export interface ApplicationForm {
     createdAt: string;
 }
 
+export interface OptionCount {
+    option: string;
+    count: number;
+    ratio: number;
+}
+
+export interface FieldSummary {
+    key: string;
+    label: string;
+    type: FormFieldType;
+    answered: number;
+    options: OptionCount[];
+    average: number | null;
+    minimum: number | null;
+    maximum: number | null;
+}
+
+export interface SubmissionSummary {
+    total: number;
+    fields: FieldSummary[];
+}
+
 export interface DrawResult {
     candidates: number;
     winners: number;

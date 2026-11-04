@@ -2,6 +2,8 @@ package com.dgmoonlabs.cms.domain.application.controller;
 
 import com.dgmoonlabs.cms.domain.application.constant.SubmissionStatus;
 import com.dgmoonlabs.cms.domain.application.dto.ApplicationDtos.*;
+import com.dgmoonlabs.cms.domain.admin.logging.AuditedRead;
+import com.dgmoonlabs.cms.domain.application.service.ApplicationReportService;
 import com.dgmoonlabs.cms.domain.application.service.ApplicationService;
 import com.dgmoonlabs.cms.global.security.LoginUser;
 import jakarta.validation.Valid;
@@ -9,16 +11,21 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequiredArgsConstructor
 public class ApplicationController {
     private final ApplicationService applicationService;
+    private final ApplicationReportService reportService;
 
     @GetMapping("/api/applications")
     public ResponseEntity<PagedModel<FormResponse>> forms(@RequestParam(required = false) final String keyword,
@@ -87,6 +94,23 @@ public class ApplicationController {
                                                                       @RequestParam(required = false) final SubmissionStatus status,
                                                                       @PageableDefault(size = 20) final Pageable pageable) {
         return ResponseEntity.ok(new PagedModel<>(applicationService.getSubmissions(id, status, pageable)));
+    }
+
+    @GetMapping("/api/admin/applications/{id}/summary")
+    public ResponseEntity<SummaryResponse> summary(@PathVariable final Long id,
+                                                   @RequestParam(required = false) final SubmissionStatus status) {
+        return ResponseEntity.ok(reportService.summarize(id, status));
+    }
+
+    @AuditedRead
+    @GetMapping("/api/admin/applications/{id}/submissions.csv")
+    public ResponseEntity<byte[]> exportCsv(@PathVariable final Long id, @RequestParam(required = false) final SubmissionStatus status) {
+        ContentDisposition disposition = ContentDisposition.attachment()
+                .filename("application-%d-submissions.csv".formatted(id), StandardCharsets.UTF_8).build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .body(reportService.exportCsv(id, status).getBytes(StandardCharsets.UTF_8));
     }
 
     @PutMapping("/api/admin/applications/submissions/{id}")

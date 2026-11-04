@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import type {Query} from '../../api/client';
-import type {ApplicationForm, Submission, SubmissionStatus} from '../../api/domain';
+import type {ApplicationForm, FieldSummary, Submission, SubmissionStatus, SubmissionSummary} from '../../api/domain';
 import {adminApi} from '../../api/endpoints';
 import type {Page} from '../../api/types';
 import {AdminCrudPage, YesNo} from '../../components/AdminCrudPage';
@@ -63,8 +63,10 @@ export function ApplicationAdminPage() {
 function Submissions({form}: { form: ApplicationForm }) {
     const [drawnAt, setDrawnAt] = useState(form.drawnAt);
     const [drawMessage, setDrawMessage] = useState<string | null>(null);
+    const [showSummary, setShowSummary] = useState(false);
     const [status, setStatus] = useState<SubmissionStatus | ''>('');
     const [page, setPage] = useState(0);
+    const csvUrl = `/api/admin/applications/${form.id}/submissions.csv${status ? `?status=${status}` : ''}`;
     const [data, setData] = useState<Page<Submission> | null>(null);
     const [error, setError] = useState<unknown>(null);
     const reload = useCallback(() => {
@@ -109,12 +111,17 @@ function Submissions({form}: { form: ApplicationForm }) {
                     <option value="">전체 상태</option>
                     {toOptions(SUBMISSION_STATUS).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
+                <button type="button" aria-pressed={showSummary} onClick={() => setShowSummary(!showSummary)}>
+                    {showSummary ? '목록 보기' : '응답 집계'}
+                </button>
+                <a className="button" href={csvUrl} download>CSV 내려받기</a>
                 {form.selectionMethod === 'LOTTERY' && (drawnAt
                     ? <span className="muted small">{formatDateTime(drawnAt)} 추첨 완료</span>
                     : <button type="button" className="primary" onClick={draw}>추첨하기</button>)}
             </div>
             {drawMessage && <p className="notice-box">{drawMessage}</p>}
             <ErrorBanner error={error}/>
+            {showSummary ? <SummaryView formId={form.id} status={status}/> : <>
             <div className="table-wrap">
                 <table>
                     <thead>
@@ -139,7 +146,52 @@ function Submissions({form}: { form: ApplicationForm }) {
                 </table>
             </div>
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
+            </>}
         </div>
+    );
+}
+
+function SummaryView({formId, status}: { formId: number; status: SubmissionStatus | '' }) {
+    const [summary, setSummary] = useState<SubmissionSummary | null>(null);
+    const [error, setError] = useState<unknown>(null);
+    useEffect(() => {
+        adminApi.applications.summary(formId, {status}).then(setSummary).catch(setError);
+    }, [formId, status]);
+    if (!summary) {
+        return error ? <ErrorBanner error={error}/> : <p className="muted">불러오는 중…</p>;
+    }
+    return (
+        <div className="summary">
+            <p className="muted">응답 {summary.total.toLocaleString('ko-KR')}건{status ? '' : ' (취소 제외)'}</p>
+            {summary.fields.map((field) => <FieldSummaryView key={field.key} field={field} total={summary.total}/>)}
+        </div>
+    );
+}
+
+function FieldSummaryView({field, total}: { field: FieldSummary; total: number }) {
+    const number = (value: number | null) => (value == null ? '-' : value.toLocaleString('ko-KR'));
+    return (
+        <section className="summary-field">
+            <h3>{field.label} <span className="muted small">응답 {field.answered} / {total}</span></h3>
+            {field.options.length > 0 && (
+                <ul className="bar-chart">
+                    {field.options.map((option) => (
+                        <li key={option.option}>
+                            <span className="bar-label">{option.option}</span>
+                            <span className="bar-track" role="meter" aria-label={option.option} aria-valuenow={option.ratio}
+                                  aria-valuemin={0} aria-valuemax={100}>
+                                <span className="bar-fill" style={{width: `${Math.min(option.ratio, 100)}%`}}/>
+                            </span>
+                            <span className="bar-value">{option.count}건 · {option.ratio}%</span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            {field.type === 'NUMBER' && (
+                <p>평균 <strong>{number(field.average)}</strong> · 최소 {number(field.minimum)} · 최대 {number(field.maximum)}</p>
+            )}
+            {field.type === 'CHECKBOX' && field.options.length > 1 && <p className="muted small">여러 개를 고를 수 있어 비율의 합이 100%를 넘을 수 있습니다.</p>}
+        </section>
     );
 }
 

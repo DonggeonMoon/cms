@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.application.dto;
 
+import com.dgmoonlabs.cms.domain.application.constant.FormFieldType;
 import com.dgmoonlabs.cms.domain.application.constant.SelectionMethod;
 import com.dgmoonlabs.cms.domain.application.constant.SubmissionStatus;
 import com.dgmoonlabs.cms.domain.application.entity.ApplicationForm;
@@ -11,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +49,16 @@ public final class ApplicationDtos {
                     form.isEnabled(), form.getSelectionMethod(), form.getWinnerCount(), form.getDrawnAt(), isOpen, applied,
                     form.getCreatedAt());
         }
+    }
+
+    public record OptionCount(String option, long count, double ratio) {
+    }
+
+    public record FieldSummary(String key, String label, FormFieldType type, long answered, List<OptionCount> options,
+                               BigDecimal average, BigDecimal minimum, BigDecimal maximum) {
+    }
+
+    public record SummaryResponse(long total, List<FieldSummary> fields) {
     }
 
     public record DrawResponse(int candidates, int winners, LocalDateTime drawnAt) {

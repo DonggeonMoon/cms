@@ -17,6 +17,9 @@ public interface ApplicationSubmissionRepository extends JpaRepository<Applicati
 
     List<ApplicationSubmission> findAllByFormIdAndStatusIn(Long formId, Collection<SubmissionStatus> statuses);
 
+    @Query("select s from ApplicationSubmission s where s.formId = :formId and ((:status is null and s.status <> :excluded) or s.status = :status) order by s.id")
+    List<ApplicationSubmission> findAllForExport(Long formId, SubmissionStatus status, SubmissionStatus excluded);
+
     boolean existsByFormIdAndMemberIdAndStatusNot(Long formId, Long memberId, SubmissionStatus status);
 
     Optional<ApplicationSubmission> findByIdAndMemberId(Long id, Long memberId);

@@ -126,6 +126,7 @@ export const adminApi = {
         review: (submissionId: number, body: Body) =>
             request<D.Submission>(`/api/admin/applications/submissions/${submissionId}`, {method: 'PUT', body}),
         draw: (id: number) => request<D.DrawResult>(`/api/admin/applications/${id}/draw`, {method: 'POST'}),
+        summary: (id: number, query: Query) => request<D.SubmissionSummary>(`/api/admin/applications/${id}/summary`, {query}),
     },
     subscriptions: {
         search: (query: Query) => request<Page<D.Subscription>>('/api/admin/subscriptions', {query}),

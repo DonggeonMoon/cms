@@ -20,7 +20,8 @@ public class AdminAuditInterceptor implements HandlerInterceptor {
     @Override
     public void afterCompletion(final HttpServletRequest request, final HttpServletResponse response,
                                 final Object handler, final Exception ex) {
-        if (HttpMethod.GET.matches(request.getMethod()) || HttpMethod.HEAD.matches(request.getMethod())) {
+        boolean read = HttpMethod.GET.matches(request.getMethod()) || HttpMethod.HEAD.matches(request.getMethod());
+        if (read && !(handler instanceof HandlerMethod method && method.hasMethodAnnotation(AuditedRead.class))) {
             return;
         }
         String handlerName = handler instanceof HandlerMethod method
