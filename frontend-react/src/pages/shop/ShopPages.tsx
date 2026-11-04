@@ -2,6 +2,7 @@ import {type FormEvent, useCallback, useEffect, useMemo, useState} from 'react';
 import {Link, useNavigate, useParams, useSearchParams} from 'react-router';
 import type {Order, PaymentMethod, ProductDetail, ProductSummary, Program, Reservation, Review, ReviewTargetType} from '../../api/domain';
 import {shopApi} from '../../api/endpoints';
+import {useStatusLabels} from '../../api/statuses';
 import type {Page} from '../../api/types';
 import {useAuth} from '../../auth/AuthContext';
 import {won} from '../../components/AdminCrudPage';
@@ -433,6 +434,8 @@ export function CheckoutPage() {
 }
 
 export function MyOrdersPage() {
+    const {label: orderStatus} = useStatusLabels('ORDER', ORDER_STATUS);
+    const navigate = useNavigate();
     const [page, setPage] = useState(0);
     const [data, setData] = useState<Page<Order> | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -480,6 +483,7 @@ export function MyOrdersPage() {
 }
 
 export function MyReservationsPage() {
+    const {label: reservationStatus} = useStatusLabels('RESERVATION', RESERVATION_STATUS);
     const [page, setPage] = useState(0);
     const [data, setData] = useState<Page<Reservation> | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -502,7 +506,7 @@ export function MyReservationsPage() {
                             <td><Link to={`/programs/${reservation.programId}`}>{reservation.programName}</Link></td>
                             <td>{reservation.quantity}명</td>
                             <td>{won(reservation.totalPrice)}</td>
-                            <td>{RESERVATION_STATUS[reservation.status]}</td>
+                            <td>{reservationStatus(reservation.status, reservation.customStatus)}</td>
                             <td className="button-cell">
                                 {reservation.status === 'PENDING_PAYMENT' && (
                                     <Link className="button primary" to={`/checkout/RESERVATION/${reservation.id}`}>결제</Link>

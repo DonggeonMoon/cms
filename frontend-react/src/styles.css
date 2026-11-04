@@ -2664,6 +2664,29 @@ input[type='checkbox'], input[type='radio'] {
     min-width: 260px;
 }
 
+.status-manager {
+    margin-top: 8px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+}
+
+.status-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.status-list ul {
+    list-style: none;
+    padding-left: 20px;
+    margin: 4px 0 8px;
+}
+
+.status-list li {
+    margin: 4px 0;
+}
+
 .bundle-editor textarea {
     width: 100%;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

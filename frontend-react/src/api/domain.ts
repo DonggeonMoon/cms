@@ -377,6 +377,7 @@ export interface Order {
     discountId: number | null;
     totalPrice: number;
     status: OrderStatus;
+    customStatus: string | null;
     receiverName: string;
     phoneNumber: string;
     postalCode: string | null;
@@ -415,6 +416,7 @@ export interface Reservation {
     quantity: number;
     totalPrice: number;
     status: ReservationStatus;
+    customStatus: string | null;
     applicantName: string;
     phoneNumber: string;
     createdAt: string;
@@ -616,3 +618,13 @@ export interface Submission {
     createdAt: string;
 }
 
+export type StatusDomain = 'ORDER' | 'RESERVATION';
+
+export interface StatusDefinition {
+    id: number;
+    code: string;
+    label: string;
+    baseStatus: string;
+    system: boolean;
+    sequence: number;
+}

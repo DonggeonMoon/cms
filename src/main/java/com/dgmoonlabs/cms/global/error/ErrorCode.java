@@ -31,6 +31,7 @@ public enum ErrorCode {
     APPLICATION_FULL(HttpStatus.CONFLICT, "접수 인원이 다 찼습니다."),
     ALREADY_APPLIED(HttpStatus.CONFLICT, "이미 신청했습니다."),
     INVALID_FORM_FIELDS(HttpStatus.BAD_REQUEST, "입력 항목의 키가 겹치거나, 선택형 항목에 선택지가 없습니다."),
+    SYSTEM_STATUS_UNDELETABLE(HttpStatus.BAD_REQUEST, "기본 상태는 삭제할 수 없습니다. 이름만 바꿀 수 있습니다."),
     DEFAULT_LANGUAGE_NOT_SELECTED(HttpStatus.BAD_REQUEST, "기본 언어는 사용하는 언어 중에서 골라야 합니다."),
     INVALID_TRANSLATION_BUNDLE(HttpStatus.BAD_REQUEST, "번역 내용의 형식이 올바르지 않습니다. 키는 영문·숫자·_ . - 만 쓸 수 있습니다."),
     MEDIA_FILE_REQUIRED(HttpStatus.BAD_REQUEST, "동영상이나 음악 파일을 올려야 합니다."),

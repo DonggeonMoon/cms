@@ -3,6 +3,7 @@ import {Link} from 'react-router';
 import type {Query} from '../../api/client';
 import type {Discount, Order, OrderStatus, Payment, ProductSummary, Program, Reservation, Review, ReviewTargetType} from '../../api/domain';
 import {adminApi, shopApi} from '../../api/endpoints';
+import {statusApi, useStatusLabels} from '../../api/statuses';
 import {AdminCrudPage, won, YesNo} from '../../components/AdminCrudPage';
 import {formatDateTime} from '../../components/format';
 import {RegexBindingSelect} from '../../components/RegexBindingSelect';
@@ -131,6 +132,7 @@ function createOrder({product, paid, ...rest}: FormValues) {
 }
 
 export function OrderAdminPage() {
+    const {statuses, label: statusLabel, reload: reloadStatuses} = useStatusLabels('ORDER', ORDER_STATUS);
     const [status, setStatus] = useState('');
     const [productChoices, setProductChoices] = useState<{ value: string; label: string }[]>([]);
     useEffect(() => {
@@ -142,6 +144,7 @@ export function OrderAdminPage() {
             description={<>
                 <p>관리자가 전화·방문 주문을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다.</p>
                 <RegexBindingSelect target="ORDER_NUMBER" label="주문번호 정규식"/>
+                <StatusManager domain="ORDER" statuses={statuses} onChange={reloadStatuses}/>
             </>}
             load={loadOrders}
             fields={orderFields(productChoices)}
@@ -159,7 +162,13 @@ export function OrderAdminPage() {
                 {label: '상품', render: (o) => `${o.productName} × ${o.quantity}`},
                 {label: '금액', render: (o) => won(o.totalPrice)},
                 {label: '수령인', render: (o) => `${o.receiverName} (${o.phoneNumber})`},
-                {label: '상태', render: (o) => ORDER_STATUS[o.status]},
+                {label: '상태', render: (o, reload) => (
+                    <>
+                        {statusLabel(o.status, o.customStatus)}
+                        <CustomStatusSelect statuses={statuses} status={o.status} customStatus={o.customStatus}
+                                            onApply={(code) => void statusApi.applyToOrder(o.id, code).then(reload)}/>
+                    </>
+                )},
                 {label: '주문일', render: (o) => formatDateTime(o.createdAt)},
                 {label: '상태 처리', className: 'button-cell', render: (o, reload) => (
                     <>
@@ -172,7 +181,7 @@ export function OrderAdminPage() {
                         )}
                         {NEXT_ORDER_STATUS[o.status] && (
                             <button type="button" onClick={() => adminApi.orders.changeStatus(o.id, NEXT_ORDER_STATUS[o.status]!).then(reload)}>
-                                {ORDER_STATUS[NEXT_ORDER_STATUS[o.status]!]} 처리
+                                {statusLabel(NEXT_ORDER_STATUS[o.status]!)} 처리
                             </button>
                         )}
                     </>
@@ -244,6 +253,7 @@ function createReservation({programId, paid, ...rest}: FormValues) {
 }
 
 export function ReservationAdminPage() {
+    const {statuses, label: statusLabel, reload: reloadStatuses} = useStatusLabels('RESERVATION', RESERVATION_STATUS);
     const [status, setStatus] = useState('');
     const [programChoices, setProgramChoices] = useState<{ value: string; label: string }[]>([]);
     useEffect(() => {
@@ -260,6 +270,7 @@ export function ReservationAdminPage() {
             description={<>
                 <p>관리자가 전화·현장 예약을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다. 예약번호나 프로그램명으로 검색할 수 있습니다.</p>
                 <RegexBindingSelect target="RESERVATION_NUMBER" label="예약번호 정규식"/>
+                <StatusManager domain="RESERVATION" statuses={statuses} onChange={reloadStatuses}/>
             </>}
             load={loadReservations}
             fields={reservationFields(programChoices)}
@@ -278,7 +289,13 @@ export function ReservationAdminPage() {
                 {label: '인원', render: (r) => r.quantity},
                 {label: '금액', render: (r) => won(r.totalPrice)},
                 {label: '신청자', render: (r) => `${r.applicantName} (${r.phoneNumber})`},
-                {label: '상태', render: (r) => RESERVATION_STATUS[r.status]},
+                {label: '상태', render: (r, reload) => (
+                    <>
+                        {statusLabel(r.status, r.customStatus)}
+                        <CustomStatusSelect statuses={statuses} status={r.status} customStatus={r.customStatus}
+                                            onApply={(code) => void statusApi.applyToReservation(r.id, code).then(reload)}/>
+                    </>
+                )},
                 {label: '상태 처리', className: 'button-cell', render: (r, reload) => r.status === 'PENDING_PAYMENT' && (
                     <button type="button" onClick={() => {
                         if (window.confirm('결제를 받은 것으로 보고 예약을 확정할까요? 결제 내역에는 기록되지 않습니다.')) {

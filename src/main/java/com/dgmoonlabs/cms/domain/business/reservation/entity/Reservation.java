@@ -61,6 +61,10 @@ public class Reservation extends BaseEntity {
     @Comment("예약 상태")
     private ReservationStatus status;
 
+    @Column(length = 40)
+    @Comment("세부 상태 코드 (기본 상태 아래에 관리자가 추가한 상태)")
+    private String customStatus;
+
     @Comment("신청자 이름")
     @Convert(converter = EncryptedStringConverter.class)
     @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
@@ -76,6 +80,7 @@ public class Reservation extends BaseEntity {
     private String fields;
 
     public void confirm() {
+        this.customStatus = null;
         if (status != ReservationStatus.PENDING_PAYMENT) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
@@ -83,9 +88,14 @@ public class Reservation extends BaseEntity {
     }
 
     public void cancel() {
+        this.customStatus = null;
         if (!status.isCancelable()) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
         this.status = ReservationStatus.CANCELED;
+    }
+
+    public void applyCustomStatus(final String code) {
+        this.customStatus = code;
     }
 }

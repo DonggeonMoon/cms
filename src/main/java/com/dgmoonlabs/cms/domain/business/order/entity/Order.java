@@ -65,6 +65,10 @@ public class Order extends BaseEntity {
     @Comment("주문 상태")
     private OrderStatus status;
 
+    @Column(length = 40)
+    @Comment("세부 상태 코드 (기본 상태 아래에 관리자가 추가한 상태)")
+    private String customStatus;
+
     @Column(nullable = false)
     @ColumnDefault("false")
     @Comment("배송 가능 여부")
@@ -100,11 +104,13 @@ public class Order extends BaseEntity {
     private String fields;
 
     public void markPaid() {
+        this.customStatus = null;
         requireStatus(OrderStatus.PENDING_PAYMENT);
         this.status = OrderStatus.PAID;
     }
 
     public void moveTo(final OrderStatus next) {
+        this.customStatus = null;
         if (!status.canMoveTo(next)) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
@@ -112,6 +118,7 @@ public class Order extends BaseEntity {
     }
 
     public void cancel() {
+        this.customStatus = null;
         if (!status.isCancelable()) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
@@ -122,5 +129,8 @@ public class Order extends BaseEntity {
         if (status != expected) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
+    }
+    public void applyCustomStatus(final String code) {
+        this.customStatus = code;
     }
 }

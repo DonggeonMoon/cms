@@ -6,6 +6,7 @@ import com.dgmoonlabs.cms.domain.business.reservation.entity.Reservation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
@@ -28,4 +29,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     boolean existsByUserTypeAndUserIdAndProgramIdAndStatus(UserType userType, Long userId, Long programId, ReservationStatus status);
 
     long countByStatus(ReservationStatus status);
+
+    @Modifying
+    @Query("update Reservation x set x.customStatus = null where x.customStatus = :code")
+    void clearCustomStatus(String code);
 }

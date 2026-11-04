@@ -6,6 +6,7 @@ import com.dgmoonlabs.cms.domain.business.order.entity.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.math.BigDecimal;
@@ -34,4 +35,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     BigDecimal sumTotalPriceSince(Collection<OrderStatus> statuses, LocalDateTime since);
 
     long countByStatus(OrderStatus status);
+
+    @Modifying
+    @Query("update Order x set x.customStatus = null where x.customStatus = :code")
+    void clearCustomStatus(String code);
 }
