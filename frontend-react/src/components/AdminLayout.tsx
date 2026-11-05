@@ -64,6 +64,7 @@ const MENU_GROUPS: { title: string; area?: AdminArea; items: MenuItem[] }[] = [
             {to: '/admin/programs', label: '예약', features: ['PROGRAM']},
             {to: '/admin/reservations', label: '예약 내역', sub: true, features: ['PROGRAM']},
             {to: '/admin/applications', label: '신청·지원', features: ['APPLICATION']},
+            {to: '/admin/votes', label: '투표', sub: true, features: ['APPLICATION']},
             {to: '/admin/payments', label: '결제', features: ['PRODUCT', 'PROGRAM']},
             {to: '/admin/reviews', label: '리뷰', features: ['PRODUCT', 'PROGRAM']},
         ],

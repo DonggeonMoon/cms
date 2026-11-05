@@ -1,5 +1,8 @@
 package com.dgmoonlabs.cms.domain.business;
 
+import com.dgmoonlabs.cms.domain.business.vote.dto.VoteDtos.VoteResponse;
+import com.dgmoonlabs.cms.domain.business.vote.dto.VoteDtos.VoteSaveRequest;
+import com.dgmoonlabs.cms.domain.business.vote.service.VoteService;
 import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountResponse;
 import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountSaveRequest;
 import com.dgmoonlabs.cms.domain.business.discount.service.DiscountService;
@@ -45,6 +48,7 @@ import java.util.Map;
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class BusinessAdminController {
+    private final VoteService voteService;
     private final ProductService productService;
     private final DiscountService discountService;
     private final OrderService orderService;
@@ -147,6 +151,28 @@ public class BusinessAdminController {
     @PutMapping("/orders/{id}/status")
     public ResponseEntity<Void> changeOrderStatus(@PathVariable final Long id, @RequestBody @Valid final OrderStatusRequest request) {
         orderService.changeStatus(id, request.status());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/votes")
+    public ResponseEntity<VoteResponse> createVote(@RequestBody @Valid final VoteSaveRequest request) {
+        VoteResponse vote = voteService.create(request);
+        return ResponseEntity.created(URI.create("/api/admin/votes/" + vote.id())).body(vote);
+    }
+
+    @GetMapping("/votes")
+    public ResponseEntity<PagedModel<VoteResponse>> votes(@PageableDefault(size = 20) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(voteService.search(pageable)));
+    }
+
+    @PostMapping("/votes/{id}/close")
+    public ResponseEntity<VoteResponse> closeVote(@PathVariable final Long id) {
+        return ResponseEntity.ok(voteService.close(id));
+    }
+
+    @DeleteMapping("/votes/{id}")
+    public ResponseEntity<Void> removeVote(@PathVariable final Long id) {
+        voteService.remove(id);
         return ResponseEntity.noContent().build();
     }
 

@@ -4,6 +4,8 @@ import {RequireRole} from './auth/RequireRole';
 import {AdminLayout} from './components/AdminLayout';
 import {RequireFeature} from './components/SiteContext';
 import {SiteLayout} from './components/SiteLayout';
+import {MyVotesPage} from './pages/shop/VotePages';
+import {VoteAdminPage} from './pages/admin/VoteAdminPage';
 import {MyNotificationsPage} from './pages/shop/NotificationPages';
 import {CodePage} from './pages/admin/CodePage';
 import {ApiKeyPage} from './pages/admin/ApiKeyPage';
@@ -195,7 +197,7 @@ export const routes = [
                             },
                             {
                                 element: <RequireFeature feature="APPLICATION"/>,
-                                children: [{path: '/mypage/applications', element: <MyApplicationsPage/>}],
+                                children: [{path: '/mypage/applications', element: <MyApplicationsPage/>}, {path: '/mypage/votes', element: <MyVotesPage/>}],
                             },
                             {
                                 element: <RequireFeature feature="MEDIA"/>,
@@ -275,7 +277,7 @@ export const routes = [
                             },
                             {
                                 element: <RequireFeature feature="APPLICATION"/>,
-                                children: [{path: 'applications', element: <ApplicationAdminPage/>}],
+                                children: [{path: 'applications', element: <ApplicationAdminPage/>}, {path: 'votes', element: <VoteAdminPage/>}],
                             },
                             {
                                 element: <RequireFeature feature={['PRODUCT', 'PROGRAM']}/>,

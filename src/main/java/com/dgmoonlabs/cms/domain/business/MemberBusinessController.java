@@ -1,5 +1,8 @@
 package com.dgmoonlabs.cms.domain.business;
 
+import com.dgmoonlabs.cms.domain.business.vote.dto.VoteDtos.BallotRequest;
+import com.dgmoonlabs.cms.domain.business.vote.dto.VoteDtos.MyVoteResponse;
+import com.dgmoonlabs.cms.domain.business.vote.service.VoteService;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderCreateRequest;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderResponse;
 import com.dgmoonlabs.cms.domain.business.order.service.OrderService;
@@ -34,6 +37,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 public class MemberBusinessController {
+    private final VoteService voteService;
     private final OrderService orderService;
     private final ReservationService reservationService;
     private final PaymentService paymentService;
@@ -154,5 +158,17 @@ public class MemberBusinessController {
     public ResponseEntity<Void> deleteReview(@PathVariable final Long id) {
         reviewService.deleteReview(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/api/votes")
+    public ResponseEntity<PagedModel<MyVoteResponse>> votes(@AuthenticationPrincipal final LoginUser user,
+                                                             @PageableDefault(size = 20) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(voteService.searchForMember(user.id(), pageable)));
+    }
+
+    @PostMapping("/api/votes/{id}/ballots")
+    public ResponseEntity<MyVoteResponse> castBallot(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id,
+                                                      @RequestBody @Valid final BallotRequest request) {
+        return ResponseEntity.ok(voteService.castBallot(user.id(), id, request));
     }
 }
