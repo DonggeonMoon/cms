@@ -35,3 +35,6 @@ cms:
     upload-dir: ${CMS_UPLOAD_DIR:./uploads}
   crypto:
     master-key: ${CMS_CRYPTO_MASTER_KEY:}
+  payment:
+    # mock(테스트용 가상 승인) 또는 real. real로 바꾸려면 PaymentGateway 구현체를 빈으로 추가해야 한다.
+    gateway-mode: ${CMS_PAYMENT_GATEWAY_MODE:mock}

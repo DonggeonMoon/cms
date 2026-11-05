@@ -3,7 +3,7 @@ package com.dgmoonlabs.cms.domain.business.payment.service;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.domain.business.order.entity.Order;
 import com.dgmoonlabs.cms.domain.business.order.repository.OrderRepository;
-import com.dgmoonlabs.cms.domain.business.payment.MockPaymentGateway;
+import com.dgmoonlabs.cms.domain.business.payment.PaymentGateway;
 import com.dgmoonlabs.cms.domain.business.payment.constant.PaymentStatus;
 import com.dgmoonlabs.cms.domain.business.payment.constant.PaymentTargetType;
 import com.dgmoonlabs.cms.domain.business.payment.dto.PaymentDtos.PaymentRequest;
@@ -36,7 +36,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final ReservationRepository reservationRepository;
-    private final MockPaymentGateway paymentGateway;
+    private final PaymentGateway paymentGateway;
     private final RegexService regexService;
     private final ApplicationEventPublisher events;
 
