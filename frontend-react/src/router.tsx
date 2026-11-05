@@ -6,6 +6,7 @@ import {RequireFeature} from './components/SiteContext';
 import {SiteLayout} from './components/SiteLayout';
 import {CodePage} from './pages/admin/CodePage';
 import {ApiKeyPage} from './pages/admin/ApiKeyPage';
+import {AllowedIpPage} from './pages/admin/AllowedIpPage';
 import {CryptoKeyPage} from './pages/admin/CryptoKeyPage';
 import {
     ArchiveAdminPage,
@@ -303,6 +304,7 @@ export const routes = [
                             {path: 'password-hash', element: <PasswordHashPage/>},
                             {path: 'crypto-key', element: <CryptoKeyPage/>},
                             {path: 'api-keys', element: <ApiKeyPage/>},
+                            {path: 'allowed-ips', element: <AllowedIpPage/>},
                             {path: 'admins', element: <AdminAccountPage/>},
                         ],
                     },

@@ -1,6 +1,7 @@
 package com.dgmoonlabs.cms.global.config;
 
 import com.dgmoonlabs.cms.domain.admin.account.service.AdminAreaInterceptor;
+import com.dgmoonlabs.cms.domain.admin.ipaccess.service.AdminIpInterceptor;
 import com.dgmoonlabs.cms.global.web.SeoIndexRenderer;
 import com.dgmoonlabs.cms.domain.admin.logging.AdminAuditInterceptor;
 import com.dgmoonlabs.cms.domain.admin.site.SiteFeatureInterceptor;
@@ -27,11 +28,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final SiteFeatureInterceptor siteFeatureInterceptor;
     private final ReauthenticationInterceptor reauthenticationInterceptor;
     private final AdminAreaInterceptor adminAreaInterceptor;
+    private final AdminIpInterceptor adminIpInterceptor;
     private final SeoIndexRenderer seoIndexRenderer;
 
     @Override
     public void addInterceptors(final InterceptorRegistry registry) {
         registry.addInterceptor(localeChangeInterceptor);
+        registry.addInterceptor(adminIpInterceptor).addPathPatterns("/api/admin/**");
         registry.addInterceptor(adminAuditInterceptor).addPathPatterns("/api/admin/**");
         registry.addInterceptor(siteFeatureInterceptor).addPathPatterns("/api/**");
         registry.addInterceptor(adminAreaInterceptor).addPathPatterns("/api/admin/**");

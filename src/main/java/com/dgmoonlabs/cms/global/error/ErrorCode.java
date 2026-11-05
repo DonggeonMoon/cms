@@ -78,6 +78,10 @@ public enum ErrorCode {
     SELF_REVIEW_NOT_ALLOWED(HttpStatus.FORBIDDEN, "자기가 검토를 요청한 글은 다른 관리자가 승인·반려해야 합니다."),
     INVALID_PUBLISH_AT(HttpStatus.BAD_REQUEST, "예약 발행 일시는 지금보다 뒤여야 합니다."),
     REAUTHENTICATION_FAILED(HttpStatus.BAD_REQUEST, "비밀번호가 올바르지 않습니다."),
+    ADMIN_IP_NOT_ALLOWED(HttpStatus.FORBIDDEN, "허용되지 않은 IP에서는 관리자 화면에 접속할 수 없습니다."),
+    ADMIN_IP_LOCKOUT(HttpStatus.CONFLICT, "지금 접속한 IP가 허용 목록에 없어 이대로 저장하면 접속이 막힙니다. 현재 IP를 먼저 추가해 주세요."),
+    INVALID_IP_ADDRESS(HttpStatus.BAD_REQUEST, "IP 주소 형식이 올바르지 않습니다. 203.0.113.7 이나 203.0.113.0/24 처럼 입력해 주세요."),
+    DUPLICATE_ALLOWED_IP(HttpStatus.CONFLICT, "이미 등록된 IP입니다."),
 
     CODE_HAS_CHILDREN(HttpStatus.CONFLICT, "하위 코드가 있어 삭제할 수 없습니다."),
     MENU_HAS_CHILDREN(HttpStatus.CONFLICT, "하위 메뉴가 있어 삭제할 수 없습니다."),

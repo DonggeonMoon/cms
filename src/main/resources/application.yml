@@ -29,6 +29,8 @@ cms:
     max-login-try-count: 5
     initial-admin-username: admin
     initial-admin-password: ${CMS_ADMIN_PASSWORD:admin1234!}
+    # 허용 IP 설정을 잘못해 관리자 화면에 못 들어갈 때만 true 로 켜고 다시 시작한다.
+    admin-ip-restriction-disabled: ${CMS_ADMIN_IP_RESTRICTION_DISABLED:false}
   file:
     upload-dir: ${CMS_UPLOAD_DIR:./uploads}
   crypto:

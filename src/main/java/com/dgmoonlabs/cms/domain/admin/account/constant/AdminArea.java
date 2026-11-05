@@ -17,7 +17,7 @@ public enum AdminArea {
     PUBLIC("공공", "reports", "satisfactions"),
     MEMBER("회원", "members", "grades", "policies"),
     COMMON("공통 설정", "chatbot", "regexes", "regex-bindings", "codes", "i18n", "files", "audit-logs"),
-    SECURITY("보안", "api-keys", "password-hash", "crypto-key", "social-logins");
+    SECURITY("보안", "api-keys", "password-hash", "crypto-key", "social-logins", "allowed-ips");
 
     /** 관리자 관리는 등급으로 나눠 줄 수 없고 최고 관리자만 쓴다. */
     public static final Set<String> SUPER_ONLY = Set.of("admins", "admin-grades");

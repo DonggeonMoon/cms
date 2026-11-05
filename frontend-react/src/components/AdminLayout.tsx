@@ -101,6 +101,7 @@ const MENU_GROUPS: { title: string; area?: AdminArea; items: MenuItem[] }[] = [
         area: 'SECURITY',
         items: [
             {to: '/admin/admins', label: '관리자 관리', superOnly: true},
+            {to: '/admin/allowed-ips', label: '허용 IP'},
             {to: '/admin/api-keys', label: 'API 키 관리'},
             {to: '/admin/password-hash', label: '해시 알고리즘 관리'},
             {to: '/admin/crypto-key', label: '암호화 키 관리'},
