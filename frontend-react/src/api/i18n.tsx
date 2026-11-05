@@ -37,6 +37,7 @@ export const DEFAULT_MESSAGES: Record<string, string> = {
     'mypage.orders': '주문 내역',
     'mypage.subscriptions': '구독',
     'mypage.reservations': '예약 내역',
+    'mypage.wishlist': '찜한 상품',
     'mypage.applications': '신청 내역',
     'mypage.reports': '신고',
     'mypage.media': '수강 내역',

@@ -24,6 +24,7 @@ import {OptionPicker} from './OptionPicker';
 import {CategoryFilters} from './CategoryFilters';
 import {useCategories} from '../../api/categories';
 import {OrderAmount, OrderItemsTable} from './OrderItems';
+import {WishButton} from './WishButton';
 
 export function ProductCard({product}: { product: ProductSummary }) {
     return (
@@ -182,6 +183,7 @@ export function ProductDetailPage() {
                 </div>
                 <div>
                     <h1>{product.name} <GradeBadge gradeId={product.accessGradeId}/></h1>
+                    <WishButton productId={product.id}/>
                     {product.description && <p className="muted">{product.description}</p>}
                     <p className="price">{priceLabel(product)}</p>
                     {product.donation && <DonationProgressBar product={product}/>}

@@ -3114,6 +3114,20 @@ fieldset.attribute-filter {
     border-radius: 4px;
 }
 
+.wish-button {
+    margin-bottom: 8px;
+}
+
+.wish-button.active {
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+.wish-item {
+    display: grid;
+    gap: 6px;
+}
+
 .kitchen-board {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

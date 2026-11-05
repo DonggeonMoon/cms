@@ -468,6 +468,12 @@ export interface Subscription {
     canceledAt: string | null;
 }
 
+export interface WishlistEntry {
+    productId: number;
+    wishedAt: string;
+    product: ProductSummary;
+}
+
 export type OrderStatus = 'QUOTE_REQUESTED' | 'QUOTED' | 'PENDING_PAYMENT' | 'PAID' | 'SHIPPING' | 'DELIVERED' | 'PREPARING' | 'READY'
     | 'COMPLETED' | 'CANCELED';
 

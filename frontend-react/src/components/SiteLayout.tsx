@@ -68,6 +68,7 @@ function SiteFrame() {
                 <nav className="sub-nav" aria-label="마이페이지">
                     <NavLink to="/mypage" end>{t('mypage.profile', '회원정보')}</NavLink>
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/orders">{t('mypage.orders', '주문 내역')}</NavLink>}
+                    {isEnabled('PRODUCT') && <NavLink to="/mypage/wishlist">{t('mypage.wishlist', '찜한 상품')}</NavLink>}
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/subscriptions">{t('mypage.subscriptions', '구독')}</NavLink>}
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/points">{t('mypage.points', '포인트')}</NavLink>}
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/coupons">{t('mypage.coupons', '쿠폰함')}</NavLink>}

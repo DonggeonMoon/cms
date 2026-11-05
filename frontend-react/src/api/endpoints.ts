@@ -277,6 +277,10 @@ export const shopApi = {
     checkoutCart: (body: Body) => request<D.Order>('/api/cart/checkout', {method: 'POST', body}),
     mySubscriptions: (page: number) => request<Page<D.Subscription>>('/api/subscriptions/me', {query: {page}}),
     cancelSubscription: (id: number) => request<D.Subscription>(`/api/subscriptions/${id}/cancel`, {method: 'POST'}),
+    wishlist: (page: number) => request<Page<D.WishlistEntry>>('/api/wishlist', {query: {page}}),
+    wishlistIds: () => request<number[]>('/api/wishlist/product-ids'),
+    wish: (productId: number) => request<void>(`/api/wishlist/${productId}`, {method: 'PUT'}),
+    unwish: (productId: number) => request<void>(`/api/wishlist/${productId}`, {method: 'DELETE'}),
     programs: (keyword: string, page: number) =>
         request<Page<D.Program>>('/api/programs', {query: {keyword, page}}),
     program: (id: number) => request<D.Program>(`/api/programs/${id}`),

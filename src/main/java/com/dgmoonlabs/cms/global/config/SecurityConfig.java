@@ -30,7 +30,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/files").authenticated()
                 .requestMatchers("/api/orders/**", "/api/orders", "/api/reservations/**", "/api/reservations",
-                        "/api/payments/**", "/api/payments", "/api/subscriptions/**", "/api/cart/**", "/api/cart").hasRole("MEMBER")
+                        "/api/payments/**", "/api/payments", "/api/subscriptions/**", "/api/cart/**", "/api/cart",
+                        "/api/wishlist/**", "/api/wishlist").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/coupons/*/download").hasRole("MEMBER")
                 .requestMatchers("/api/digital/**").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/products/*/reviews", "/api/programs/*/reviews").hasRole("MEMBER")

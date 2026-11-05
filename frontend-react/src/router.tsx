@@ -7,6 +7,7 @@ import {SiteLayout} from './components/SiteLayout';
 import {CodePage} from './pages/admin/CodePage';
 import {ApiKeyPage} from './pages/admin/ApiKeyPage';
 import {AllowedIpPage} from './pages/admin/AllowedIpPage';
+import {MyWishlistPage} from './pages/shop/WishlistPages';
 import {CryptoKeyPage} from './pages/admin/CryptoKeyPage';
 import {
     ArchiveAdminPage,
@@ -170,6 +171,7 @@ export const routes = [
                                 children: [
                                     {path: '/mypage/orders', element: <MyOrdersPage/>},
                                     {path: '/mypage/subscriptions', element: <MySubscriptionsPage/>},
+                                    {path: '/mypage/wishlist', element: <MyWishlistPage/>},
                                     {path: '/orders/new', element: <OrderFormPage/>},
                                     {path: '/cart', element: <CartPage/>},
                                     {path: '/mypage/points', element: <MyPointsPage/>},
