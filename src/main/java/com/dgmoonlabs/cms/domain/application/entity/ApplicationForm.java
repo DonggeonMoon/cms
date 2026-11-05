@@ -68,9 +68,18 @@ public class ApplicationForm extends BaseEntity {
     @Comment("추첨한 일시")
     private LocalDateTime drawnAt;
 
+    @Comment("선정 후 결제할 상품 ID (입학금·입회비 등, 없으면 결제 없이 결과만 안내)")
+    private Long admissionFeeProductId;
+
+    @Column(columnDefinition = "text")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Comment("심사위원 회원 ID 목록 (공모전)")
+    private String judgeMemberIds;
+
     public void update(final String title, final String contentHtml, final String fields, final LocalDateTime startDateTime,
                        final LocalDateTime endDateTime, final Integer maximumSubmissions, final boolean allowMultiple,
-                       final boolean isEnabled, final SelectionMethod selectionMethod, final Integer winnerCount) {
+                       final boolean isEnabled, final SelectionMethod selectionMethod, final Integer winnerCount,
+                       final Long admissionFeeProductId, final String judgeMemberIds) {
         this.title = title;
         this.contentHtml = contentHtml;
         this.fields = fields;
@@ -79,9 +88,11 @@ public class ApplicationForm extends BaseEntity {
         this.maximumSubmissions = maximumSubmissions;
         this.allowMultiple = allowMultiple;
         this.isEnabled = isEnabled;
+        this.admissionFeeProductId = admissionFeeProductId;
         if (drawnAt == null) {
             this.selectionMethod = selectionMethod;
             this.winnerCount = winnerCount;
+            this.judgeMemberIds = judgeMemberIds;
         }
     }
 
@@ -91,6 +102,16 @@ public class ApplicationForm extends BaseEntity {
         }
         if (drawnAt != null) {
             throw new BusinessException(ErrorCode.ALREADY_DRAWN);
+        }
+        this.drawnAt = now;
+    }
+
+    public void markContestFinalized(final LocalDateTime now) {
+        if (selectionMethod != SelectionMethod.CONTEST) {
+            throw new BusinessException(ErrorCode.NOT_CONTEST);
+        }
+        if (drawnAt != null) {
+            throw new BusinessException(ErrorCode.ALREADY_FINALIZED);
         }
         this.drawnAt = now;
     }

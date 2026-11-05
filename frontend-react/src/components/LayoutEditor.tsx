@@ -47,7 +47,7 @@ export function LayoutEditor({value, onChange}: { value: SpaceLayout | null; onC
         }
         const key = cell?.key ?? `r${row}c${col}`;
         const label = cell && cell.kind === brush ? cell.label : defaultLabel(brush, row, col);
-        onChange({...layout, cells: [...others, {key, row, col, kind: brush, label, price: cell?.price ?? null}]});
+        onChange({...layout, cells: [...others, {key, row, col, kind: brush, label, price: cell?.price ?? null, capacity: cell?.capacity ?? null}]});
         setPicked(key);
     };
 
@@ -77,12 +77,16 @@ export function LayoutEditor({value, onChange}: { value: SpaceLayout | null; onC
                     <strong>{CELL_KIND[pickedCell.kind]}</strong>
                     <label>이름 <input value={pickedCell.label} maxLength={20} onChange={(e) => updatePicked({label: e.target.value})}/></label>
                     {(pickedCell.kind === 'SEAT' || pickedCell.kind === 'ROOM' || pickedCell.kind === 'SPACE') && (
-                        <label>가격(원) <input type="number" min={0} placeholder="기본 가격" value={pickedCell.price ?? ''}
-                                             onChange={(e) => updatePicked({price: e.target.value === '' ? null : Number(e.target.value)})}/></label>
+                        <>
+                            <label>가격(원) <input type="number" min={0} placeholder="기본 가격" value={pickedCell.price ?? ''}
+                                                 onChange={(e) => updatePicked({price: e.target.value === '' ? null : Number(e.target.value)})}/></label>
+                            <label>인원(명) <input type="number" min={1} placeholder="제한 없음" value={pickedCell.capacity ?? ''}
+                                                 onChange={(e) => updatePicked({capacity: e.target.value === '' ? null : Number(e.target.value)})}/></label>
+                        </>
                     )}
                 </div>
             )}
-            <p className="muted small">종류를 고르고 칸을 누르면 칠해집니다. "선택"으로 칸을 누르면 이름과 가격(비우면 기본 가격)을 고칠 수 있습니다.</p>
+            <p className="muted small">종류를 고르고 칸을 누르면 칠해집니다. "선택"으로 칸을 누르면 이름·가격(비우면 기본 가격)·인원(식당 테이블 등에서 쓰며, 비우면 제한 없음)을 고칠 수 있습니다.</p>
         </div>
     );
 }

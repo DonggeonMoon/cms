@@ -33,6 +33,8 @@ const BOARD_FIELDS: FieldSpec[] = [
     {name: 'supportsComment', label: '댓글 기능', type: 'checkbox', group: '기능'},
     {name: 'supportsLike', label: '추천 기능', type: 'checkbox', group: '기능'},
     {name: 'supportsAttachment', label: '첨부파일 기능', type: 'checkbox', group: '기능'},
+    {name: 'supportsPaidContent', label: '유료 글(페이월) 기능', type: 'checkbox', group: '기능',
+        help: '글마다 결제해야 볼 수 있는 유료 글로 지정할 수 있습니다.'},
 ];
 
 const boardGradeFields = (grades: Grade[]) => [

@@ -3,19 +3,25 @@ package com.dgmoonlabs.cms.domain.business.order.service;
 import com.dgmoonlabs.cms.domain.business.BusinessNumbers;
 import com.dgmoonlabs.cms.domain.business.discount.service.DiscountService;
 import com.dgmoonlabs.cms.domain.business.order.constant.FulfillmentType;
+import com.dgmoonlabs.cms.domain.business.order.constant.OrderReturnStatus;
+import com.dgmoonlabs.cms.domain.business.order.constant.OrderReturnType;
 import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
 import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderCreateRequest;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderResponse;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.QuoteRequest;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.ShipmentRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderReturnDtos.OrderReturnCreateRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderReturnDtos.OrderReturnResponse;
 import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.DonationProgress;
 import com.dgmoonlabs.cms.domain.business.order.entity.Order;
 import com.dgmoonlabs.cms.domain.business.order.entity.OrderItem;
+import com.dgmoonlabs.cms.domain.business.order.entity.OrderReturn;
 import com.dgmoonlabs.cms.domain.business.order.entity.product.Product;
 import com.dgmoonlabs.cms.domain.business.order.entity.product.ProductOption;
 import com.dgmoonlabs.cms.domain.business.order.repository.OrderItemRepository;
 import com.dgmoonlabs.cms.domain.business.order.repository.OrderRepository;
+import com.dgmoonlabs.cms.domain.business.order.repository.OrderReturnRepository;
 import com.dgmoonlabs.cms.domain.business.order.repository.ProductOptionRepository;
 import com.dgmoonlabs.cms.domain.business.order.repository.ProductRepository;
 import com.dgmoonlabs.cms.domain.business.store.service.StoreService;
@@ -42,6 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,6 +61,7 @@ import java.util.stream.Collectors;
 public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository itemRepository;
+    private final OrderReturnRepository returnRepository;
     private final ProductRepository productRepository;
     private final ProductOptionRepository optionRepository;
     private final DiscountService discountService;
@@ -69,11 +77,12 @@ public class OrderService {
     public record Line(Long productId, Long productOptionId, int quantity, Long discountId) {
     }
 
-    public record Fulfillment(FulfillmentType type, String tableName, String requestMessage) {
-        public static final Fulfillment DELIVERY = new Fulfillment(FulfillmentType.DELIVERY, null, null);
+    public record Fulfillment(FulfillmentType type, String tableName, String requestMessage, LocalDateTime deliverySlotAt) {
+        public static final Fulfillment DELIVERY = new Fulfillment(FulfillmentType.DELIVERY, null, null, null);
 
-        public static Fulfillment of(final FulfillmentType type, final String tableName, final String requestMessage) {
-            return new Fulfillment(type == null ? FulfillmentType.DELIVERY : type, tableName, requestMessage);
+        public static Fulfillment of(final FulfillmentType type, final String tableName, final String requestMessage,
+                                     final LocalDateTime deliverySlotAt) {
+            return new Fulfillment(type == null ? FulfillmentType.DELIVERY : type, tableName, requestMessage, deliverySlotAt);
         }
     }
 
@@ -109,6 +118,12 @@ public class OrderService {
         return create(UserType.ADMIN, adminId, request, paid);
     }
 
+    /** 관리자가 회원 명의로 주문을 만든다(AS 견적 등). 회원 마이페이지에 그대로 보이고 회원이 결제한다. */
+    @Transactional
+    public OrderResponse createForMember(final Long memberId, final OrderCreateRequest request) {
+        return create(UserType.MEMBER, memberId, request, false);
+    }
+
     private OrderResponse create(final UserType userType, final Long userId, final OrderCreateRequest request,
                                  final boolean paid) {
         Product product = productRepository.findForUpdate(request.productId())
@@ -116,11 +131,12 @@ public class OrderService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_AVAILABLE));
         gradeService.require(product.getAccessGradeId());
         return switch (product.getSaleType()) {
+            case INQUIRY -> throw new BusinessException(ErrorCode.INQUIRY_ONLY_PRODUCT);
             case DONATION -> donate(userType, userId, product, request, paid);
             case PURCHASE -> place(userType, userId,
                     List.of(new Line(product.getId(), request.productOptionId(), request.quantity(), request.discountId())),
                     Receiver.of(request), new Discounts(request.couponIssueId(), request.usePoints() == null ? 0 : request.usePoints()),
-                    Fulfillment.of(request.fulfillmentType(), request.tableName(), request.requestMessage()), paid);
+                    Fulfillment.of(request.fulfillmentType(), request.tableName(), request.requestMessage(), request.deliverySlotAt()), paid);
             default -> createSingle(userType, userId, product, request, paid);
         };
     }
@@ -130,13 +146,21 @@ public class OrderService {
     public OrderResponse place(final UserType userType, final Long userId, final List<Line> lines, final Receiver receiver,
                                final Discounts discounts, final Fulfillment fulfillment, final boolean paid) {
         boolean store = fulfillment.type().isStore();
+        boolean localDelivery = fulfillment.type() == FulfillmentType.LOCAL_DELIVERY;
         String tableName = store ? storeService.requireOrderable(fulfillment.type(), fulfillment.tableName()) : null;
+        if (localDelivery) {
+            if (!receiver.hasAddress()) {
+                throw new BusinessException(ErrorCode.ADDRESS_REQUIRED);
+            }
+            storeService.requireDeliveryZone(receiver.postalCode());
+            storeService.requireDeliverySlot(fulfillment.deliverySlotAt());
+        }
         if (productRepository.findAllById(lines.stream().map(Line::productId).toList()).stream()
                 .anyMatch(product -> product.isStoreOrder() != store)) {
             throw new BusinessException(store ? ErrorCode.NOT_STORE_PRODUCT : ErrorCode.STORE_ORDER_ONLY);
         }
         Long memberId = userType == UserType.MEMBER ? userId : null;
-        Priced priced = price(memberId, lines, receiver, memberId == null ? Discounts.NONE : discounts, true);
+        Priced priced = price(memberId, lines, receiver, memberId == null ? Discounts.NONE : discounts, true, fulfillment.type());
         List<OrderItem> items = priced.items();
         if (!store && items.stream().anyMatch(OrderItem::isRequiresShipping) && !receiver.hasAddress() && memberId != null) {
             throw new BusinessException(ErrorCode.ADDRESS_REQUIRED);
@@ -168,8 +192,9 @@ public class OrderService {
                 .detailAddress(receiver.detailAddress())
                 .fulfillmentType(fulfillment.type())
                 .tableName(tableName)
-                .pickupNumber(store ? orderRepository.maxPickupNumberSince(FulfillmentType.DELIVERY,
+                .pickupNumber(store && !localDelivery ? orderRepository.maxPickupNumberSince(FulfillmentType.DELIVERY,
                         LocalDate.now().atStartOfDay()) + 1 : null)
+                .deliverySlotAt(localDelivery ? fulfillment.deliverySlotAt() : null)
                 .requestMessage(blankToNull(fulfillment.requestMessage()))
                 .build());
         items.forEach(item -> item.assignOrder(order.getId()));
@@ -190,7 +215,8 @@ public class OrderService {
                 .map(line -> new Line(line.productId(), line.productOptionId(), line.quantity(), line.discountId())).toList();
         Receiver receiver = new Receiver(null, null, request.postalCode(), "-", null);
         Priced priced = price(memberId, lines, receiver,
-                new Discounts(request.couponIssueId(), request.usePoints() == null ? 0 : request.usePoints()), false);
+                new Discounts(request.couponIssueId(), request.usePoints() == null ? 0 : request.usePoints()), false,
+                FulfillmentType.DELIVERY);
         List<OrderItem> items = priced.items();
         long toEarn = items.stream().mapToLong(item -> pointService.earnFor(item.paidAmount())).sum();
         return new OrderPreviewResponse(priced.itemsAmount(), priced.shippingFee(), priced.couponDiscount(), priced.pointsUsed(),
@@ -204,7 +230,7 @@ public class OrderService {
      * 쿠폰은 대상 줄에, 포인트는 쿠폰을 뺀 금액 비율로 줄마다 나눠 두어 부분 취소 때 그 줄 몫만 정산한다.
      */
     private Priced price(final Long memberId, final List<Line> lines, final Receiver receiver, final Discounts discounts,
-                         final boolean commit) {
+                         final boolean commit, final FulfillmentType fulfillmentType) {
         if (lines.isEmpty()) {
             throw new BusinessException(ErrorCode.CART_EMPTY);
         }
@@ -239,8 +265,9 @@ public class OrderService {
                     .build());
         }
         BigDecimal itemsAmount = sum(items);
-        // 관리자가 주소 없이 받은 주문(방문 수령 등)은 배송비를 받지 않는다.
-        BigDecimal shippingFee = receiver.hasAddress() ? shippingFeeOf(items, receiver.postalCode()) : BigDecimal.ZERO;
+        // 관리자가 주소 없이 받은 주문(방문 수령 등)은 배송비를 받지 않는다. 배달은 택배비 대신 매장 설정의 배달 요금을 받는다.
+        BigDecimal shippingFee = fulfillmentType == FulfillmentType.LOCAL_DELIVERY ? storeService.deliveryFeeFor(itemsAmount)
+                : receiver.hasAddress() ? shippingFeeOf(items, receiver.postalCode()) : BigDecimal.ZERO;
 
         CouponService.Evaluation coupon = memberId == null || discounts.couponIssueId() == null
                 ? new CouponService.Evaluation(BigDecimal.ZERO, Collections.nCopies(items.size(), BigDecimal.ZERO))
@@ -297,6 +324,7 @@ public class OrderService {
                 .postalCode(request.postalCode())
                 .address(request.address())
                 .detailAddress(request.detailAddress())
+                .shipDate(product.getSaleType() == ProductSaleType.PREORDER ? product.getPreorderShipDate() : null)
                 .build());
         if (order.getStatus() == OrderStatus.PAID) {
             events.publishEvent(new OrderPaidEvent(order.getId()));
@@ -354,6 +382,24 @@ public class OrderService {
                 .build());
     }
 
+    /** 약정 기간 중 해지한 구독의 위약금을 결제 완료 주문으로 남긴다(재고는 건드리지 않음). */
+    @Transactional
+    public Order createSubscriptionPenalty(final Long memberId, final Long subscriptionId, final Long productId,
+                                           final String productName, final BigDecimal amount) {
+        return orderRepository.save(Order.builder()
+                .orderNumber(nextOrderNumber())
+                .userType(UserType.MEMBER)
+                .userId(memberId)
+                .productId(productId)
+                .saleType(ProductSaleType.SUBSCRIPTION)
+                .subscriptionId(subscriptionId)
+                .productName(productName + " 약정 해지 위약금")
+                .quantity(1)
+                .totalPrice(amount)
+                .status(OrderStatus.PAID)
+                .build());
+    }
+
     @Transactional
     public OrderResponse quote(final Long orderId, final QuoteRequest request) {
         Order order = findOrder(orderId);
@@ -389,6 +435,129 @@ public class OrderService {
         cancel(findMine(memberId, orderId));
     }
 
+    /** 배송·전달이 끝난 구매 주문만 반품·교환을 신청할 수 있고, 처리 대기 중인 신청이 있으면 또 신청할 수 없다. */
+    @Transactional
+    public OrderReturnResponse requestReturn(final Long memberId, final Long orderId, final OrderReturnCreateRequest request) {
+        Order order = findMine(memberId, orderId);
+        if (order.getSaleType() != ProductSaleType.PURCHASE || !order.getStatus().isReturnable()) {
+            throw new BusinessException(ErrorCode.RETURN_NOT_ALLOWED);
+        }
+        if (returnRepository.existsByOrderIdAndStatus(orderId, OrderReturnStatus.REQUESTED)) {
+            throw new BusinessException(ErrorCode.RETURN_ALREADY_REQUESTED);
+        }
+        if (request.type() == OrderReturnType.EXCHANGE) {
+            if (request.exchangeOptionId() == null) {
+                throw new BusinessException(ErrorCode.EXCHANGE_OPTION_REQUIRED);
+            }
+            if (itemRepository.findAllByOrderIdOrderByIdAsc(orderId).size() > 1) {
+                throw new BusinessException(ErrorCode.EXCHANGE_SINGLE_ITEM_ONLY);
+            }
+        }
+        OrderReturn saved = returnRepository.save(OrderReturn.builder()
+                .orderId(orderId)
+                .memberId(memberId)
+                .type(request.type())
+                .reason(request.reason().trim())
+                .exchangeOptionId(request.exchangeOptionId())
+                .build());
+        return OrderReturnResponse.of(saved, order.getOrderNumber());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderReturnResponse> getMyReturns(final Long memberId, final Pageable pageable) {
+        return returnRepository.findAllByMemberIdOrderByIdDesc(memberId, pageable)
+                .map(entity -> OrderReturnResponse.of(entity, orderNumberOf(entity.getOrderId())));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderReturnResponse> searchReturns(final OrderReturnStatus status, final Pageable pageable) {
+        Page<OrderReturn> page = status == null ? returnRepository.findAllByOrderByIdDesc(pageable)
+                : returnRepository.findAllByStatusOrderByIdDesc(status, pageable);
+        return page.map(entity -> OrderReturnResponse.of(entity, orderNumberOf(entity.getOrderId())));
+    }
+
+    /** 반품을 승인하면 주문을 취소 처리하고(환불·재고 복구), 교환이면 바로 결제된 새 주문을 만든다. */
+    @Transactional
+    public OrderReturnResponse approveReturn(final Long id) {
+        OrderReturn request = findReturnRequest(id);
+        Order order = findOrder(request.getOrderId());
+        cancelForReturn(order);
+        if (request.getType() == OrderReturnType.EXCHANGE) {
+            createExchangeOrder(order, request.getExchangeOptionId());
+        }
+        request.approve(null);
+        return OrderReturnResponse.of(request, order.getOrderNumber());
+    }
+
+    @Transactional
+    public OrderReturnResponse rejectReturn(final Long id, final String adminMemo) {
+        OrderReturn request = findReturnRequest(id);
+        request.reject(adminMemo);
+        return OrderReturnResponse.of(request, orderNumberOf(request.getOrderId()));
+    }
+
+    private OrderReturn findReturnRequest(final Long id) {
+        return returnRepository.findById(id).orElseThrow(BusinessException::notFound);
+    }
+
+    private String orderNumberOf(final Long orderId) {
+        return orderRepository.findById(orderId).map(Order::getOrderNumber).orElse(null);
+    }
+
+    /** 일반 취소와 같은 환불·재고 복구를 하지만, 배송·전달 완료 상태에서도 할 수 있다. */
+    private void cancelForReturn(final Order order) {
+        List<OrderItem> items = itemRepository.findAllByOrderIdOrderByIdAsc(order.getId());
+        BigDecimal remaining = order.paidRemaining();
+        order.returnCancel();
+        Long memberId = memberOf(order);
+        List<OrderItem> active = items.stream().filter(OrderItem::isActive).toList();
+        BigDecimal shipping = order.getShippingFee() == null ? BigDecimal.ZERO : order.getShippingFee();
+        for (int i = 0; i < active.size(); i++) {
+            OrderItem item = active.get(i);
+            returnStock(item);
+            boolean last = i == active.size() - 1;
+            item.cancel(last ? item.paidAmount().add(shipping) : item.paidAmount());
+        }
+        if (active.isEmpty()) {
+            returnStock(order.getProductId(), order.getProductOptionId(), order.getQuantity());
+        }
+        pointService.restore(memberId, active.stream().mapToLong(OrderItem::getPointsUsed).sum(), order.getId());
+        order.recordRefund(remaining, order.getShippingFee());
+        pointService.revokeEarned(memberId, active.stream().mapToLong(OrderItem::getPointsEarned).sum(), order.getId());
+        couponService.restore(order.getCouponIssueId());
+        paymentService.refundIfPaid(PaymentTargetType.ORDER, order.getId());
+        publishRefund(order, items.isEmpty() ? List.of(order.getProductId())
+                : items.stream().map(OrderItem::getProductId).distinct().toList());
+    }
+
+    /** 교환 상품은 결제 과정 없이 바로 결제 완료 상태의 새 주문으로 만든다(가격 차액은 받지 않는다). */
+    private void createExchangeOrder(final Order original, final Long exchangeOptionId) {
+        Product product = productRepository.findForUpdate(original.getProductId()).orElseThrow(BusinessException::notFound);
+        ProductOption option = lockOption(product, exchangeOptionId);
+        BigDecimal unitPrice = product.getPrice().add(option == null ? BigDecimal.ZERO : option.getAdditionalPrice());
+        String productName = option == null ? product.getName() : product.getName() + " (" + option.getName() + ")";
+        takeStock(product, option, original.getQuantity());
+        Order order = orderRepository.save(Order.builder()
+                .orderNumber(nextOrderNumber())
+                .userType(original.getUserType())
+                .userId(original.getUserId())
+                .productId(product.getId())
+                .saleType(ProductSaleType.PURCHASE)
+                .productOptionId(option == null ? null : option.getId())
+                .productName(productName)
+                .quantity(original.getQuantity())
+                .totalPrice(unitPrice.multiply(BigDecimal.valueOf(original.getQuantity())))
+                .status(OrderStatus.PAID)
+                .canDeliver(original.isCanDeliver())
+                .receiverName(original.getReceiverName())
+                .phoneNumber(original.getPhoneNumber())
+                .postalCode(original.getPostalCode())
+                .address(original.getAddress())
+                .detailAddress(original.getDetailAddress())
+                .build());
+        events.publishEvent(new OrderPaidEvent(order.getId()));
+    }
+
     @Transactional
     public OrderResponse cancelMyItem(final Long memberId, final Long orderId, final Long itemId) {
         return cancelItem(findMine(memberId, orderId), itemId);
@@ -417,7 +586,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public List<OrderResponse> storeQueue() {
         return orderRepository.findAllByFulfillmentTypeInAndStatusInOrderByIdAsc(
-                        EnumSet.of(FulfillmentType.PICKUP, FulfillmentType.DINE_IN),
+                        EnumSet.of(FulfillmentType.PICKUP, FulfillmentType.DINE_IN, FulfillmentType.LOCAL_DELIVERY),
                         EnumSet.of(OrderStatus.PAID, OrderStatus.PREPARING, OrderStatus.READY))
                 .stream().map(this::toResponse).toList();
     }

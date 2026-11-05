@@ -3,11 +3,13 @@ import {Link, useParams} from 'react-router';
 import {memberAdminApi} from '../../api/members';
 import type {MemberResponse} from '../../api/types';
 import {ErrorBanner} from '../../components/ErrorBanner';
-import {formatDateTime} from '../../components/format';
+import {formatDate, formatDateTime} from '../../components/format';
 import {POINT_TYPE, pointApi, type PointLedger, type PointSummary} from '../../api/rewards';
 import type {Page} from '../../api/types';
 import {Pagination} from '../../components/Pagination';
 import {GRADE_CHANGE_REASON, gradeApi, type GradeHistory, type MyGrade, useGrades} from '../../api/grades';
+import type {CustomerRecord} from '../../api/domain';
+import {adminApi} from '../../api/endpoints';
 
 export function MemberDetailPage() {
     const {id} = useParams();
@@ -59,6 +61,7 @@ export function MemberDetailPage() {
             </dl>
             <MemberGradePanel memberId={member.id}/>
             <MemberPointPanel memberId={member.id}/>
+            <MemberRecordPanel memberId={member.id}/>
             <Link to="/admin/members">목록으로</Link>
         </section>
     );
@@ -179,6 +182,34 @@ function MemberPointPanel({memberId}: { memberId: number }) {
             <ErrorBanner error={error}/>
             <PointHistoryTable history={history}/>
             {history && <Pagination page={page} totalPages={history.page.totalPages} onChange={setPage}/>}
+        </section>
+    );
+}
+
+function MemberRecordPanel({memberId}: { memberId: number }) {
+    const [records, setRecords] = useState<Page<CustomerRecord> | null>(null);
+    const [error, setError] = useState<unknown>(null);
+
+    useEffect(() => {
+        adminApi.customerRecords.search({memberId, size: 5}).then(setRecords).catch(setError);
+    }, [memberId]);
+
+    return (
+        <section>
+            <h2>고객 기록</h2>
+            <ErrorBanner error={error}/>
+            {records && records.content.length > 0 ? (
+                <ul className="plain-list">
+                    {records.content.map((record) => (
+                        <li key={record.id}>
+                            {formatDate(record.recordedOn)} · {record.title}
+                            {record.category && <span className="badge">{record.category}</span>}
+                            {record.sharedWithMember && <span className="muted"> · 회원 공개</span>}
+                        </li>
+                    ))}
+                </ul>
+            ) : <p className="muted">기록이 없습니다.</p>}
+            <Link to={`/admin/customer-records?memberId=${memberId}`}>고객 기록 관리 →</Link>
         </section>
     );
 }

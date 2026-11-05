@@ -11,6 +11,8 @@ import com.dgmoonlabs.cms.domain.business.payment.dto.PaymentDtos.PaymentRespons
 import com.dgmoonlabs.cms.domain.business.payment.entity.Payment;
 import com.dgmoonlabs.cms.domain.business.payment.repository.PaymentRepository;
 import com.dgmoonlabs.cms.domain.business.reservation.entity.Reservation;
+import com.dgmoonlabs.cms.domain.business.reservation.entity.ReservationExtension;
+import com.dgmoonlabs.cms.domain.business.reservation.repository.ReservationExtensionRepository;
 import com.dgmoonlabs.cms.domain.business.reservation.repository.ReservationRepository;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
@@ -19,6 +21,8 @@ import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
 import com.dgmoonlabs.cms.domain.common.regex.service.RegexService;
 import com.dgmoonlabs.cms.domain.business.order.service.OrderPaidEvent;
 import com.dgmoonlabs.cms.domain.business.payment.constant.PaymentMethod;
+import com.dgmoonlabs.cms.domain.business.wallet.constant.LedgerType;
+import com.dgmoonlabs.cms.domain.business.wallet.service.PrepaidService;
 import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,9 +40,11 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final ReservationRepository reservationRepository;
+    private final ReservationExtensionRepository extensionRepository;
     private final PaymentGateway paymentGateway;
     private final RegexService regexService;
     private final ApplicationEventPublisher events;
+    private final PrepaidService prepaidService;
 
     @Transactional
     public PaymentResponse pay(final Long memberId, final PaymentRequest request) {
@@ -49,6 +55,15 @@ public class PaymentService {
                     .orElseThrow(BusinessException::notFound);
             expected = order.getTotalPrice();
             onApproved = order::markPaid;
+        } else if (request.targetType() == PaymentTargetType.RESERVATION_EXTENSION) {
+            ReservationExtension extension = extensionRepository.findById(request.targetId()).orElseThrow(BusinessException::notFound);
+            Reservation reservation = reservationRepository.findByIdAndUserTypeAndUserId(extension.getReservationId(), UserType.MEMBER, memberId)
+                    .orElseThrow(BusinessException::notFound);
+            expected = extension.getFee();
+            onApproved = () -> {
+                extension.markPaid();
+                reservation.extensionPaid(extension.getId());
+            };
         } else {
             Reservation reservation = reservationRepository.findByIdAndUserTypeAndUserId(request.targetId(), UserType.MEMBER, memberId)
                     .orElseThrow(BusinessException::notFound);
@@ -67,6 +82,9 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
+        if (request.method() == PaymentMethod.PREPAID) {
+            prepaidService.use(memberId, expected, LedgerType.PAYMENT, request.targetId(), "결제");
+        }
         onApproved.run();
         Payment payment = paymentRepository.save(Payment.builder()
                 .paymentNumber(nextNumber(LocalDateTime.now()))
@@ -105,7 +123,12 @@ public class PaymentService {
     public void refundIfPaid(final PaymentTargetType targetType, final Long targetId) {
         paymentRepository.findByTargetTypeAndTargetIdAndStatus(targetType, targetId, PaymentStatus.APPROVED)
                 .ifPresent(payment -> {
-                    paymentGateway.refund(payment.getTransactionId(), payment.refundable());
+                    BigDecimal refund = payment.refundable();
+                    if (payment.getMethod() == PaymentMethod.PREPAID) {
+                        prepaidService.credit(payment.getMemberId(), refund, LedgerType.REFUND, payment.getTargetId(), "결제 환불");
+                    } else {
+                        paymentGateway.refund(payment.getTransactionId(), refund);
+                    }
                     payment.cancel();
                 });
     }
@@ -118,7 +141,11 @@ public class PaymentService {
         paymentRepository.findByTargetTypeAndTargetIdAndStatus(targetType, targetId, PaymentStatus.APPROVED)
                 .ifPresent(payment -> {
                     BigDecimal refund = amount.min(payment.refundable());
-                    paymentGateway.refund(payment.getTransactionId(), refund);
+                    if (payment.getMethod() == PaymentMethod.PREPAID) {
+                        prepaidService.credit(payment.getMemberId(), refund, LedgerType.REFUND, payment.getTargetId(), "결제 환불");
+                    } else {
+                        paymentGateway.refund(payment.getTransactionId(), refund);
+                    }
                     payment.refund(refund);
                 });
     }

@@ -12,7 +12,8 @@ public record SubscriptionResponse(Long id, Long memberId, Long productId, Strin
                                    BigDecimal price, BillingCycle billingCycle, SubscriptionStatus status,
                                    LocalDate nextBillingDate, LocalDateTime startedAt, LocalDateTime canceledAt,
                                    LocalDate pausedOn, LocalDate resumeOn, Long pendingProductId, String pendingProductName,
-                                   BigDecimal pendingPrice, BillingCycle pendingBillingCycle) {
+                                   BigDecimal pendingPrice, BillingCycle pendingBillingCycle, LocalDate commitmentEndDate,
+                                   Integer earlyTerminationFeeRate, BigDecimal earlyTerminationFee) {
     public static SubscriptionResponse from(final Subscription subscription) {
         return new SubscriptionResponse(subscription.getId(), subscription.getMemberId(), subscription.getProductId(),
                 subscription.getProductName(), subscription.getFirstOrderId(), subscription.getPrice(),
@@ -20,6 +21,7 @@ public record SubscriptionResponse(Long id, Long memberId, Long productId, Strin
                 subscription.isActive() ? subscription.getNextBillingDate() : null, subscription.getCreatedAt(),
                 subscription.getCanceledAt(), subscription.getPausedOn(), subscription.getResumeOn(),
                 subscription.getPendingProductId(), subscription.getPendingProductName(), subscription.getPendingPrice(),
-                subscription.getPendingBillingCycle());
+                subscription.getPendingBillingCycle(), subscription.getCommitmentEndDate(), subscription.getEarlyTerminationFeeRate(),
+                subscription.isActive() ? subscription.earlyTerminationFee(LocalDate.now()) : BigDecimal.ZERO);
     }
 }

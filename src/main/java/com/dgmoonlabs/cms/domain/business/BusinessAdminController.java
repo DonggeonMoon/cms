@@ -1,8 +1,5 @@
 package com.dgmoonlabs.cms.domain.business;
 
-import com.dgmoonlabs.cms.domain.business.vote.dto.VoteDtos.VoteResponse;
-import com.dgmoonlabs.cms.domain.business.vote.dto.VoteDtos.VoteSaveRequest;
-import com.dgmoonlabs.cms.domain.business.vote.service.VoteService;
 import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountResponse;
 import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountSaveRequest;
 import com.dgmoonlabs.cms.domain.business.discount.service.DiscountService;
@@ -10,13 +7,31 @@ import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderCreateRequest;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderResponse;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderStatusRequest;
+import com.dgmoonlabs.cms.domain.business.order.constant.OrderReturnStatus;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderReturnDtos.OrderReturnDecisionRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderReturnDtos.OrderReturnResponse;
+import com.dgmoonlabs.cms.domain.business.license.dto.LicenseKeyDtos.BulkAddRequest;
+import com.dgmoonlabs.cms.domain.business.license.dto.LicenseKeyDtos.BulkAddResult;
+import com.dgmoonlabs.cms.domain.business.license.dto.LicenseKeyDtos.LicenseKeyResponse;
+import com.dgmoonlabs.cms.domain.business.license.service.LicenseKeyService;
+import com.dgmoonlabs.cms.domain.business.vote.dto.VoteDtos.VoteResponse;
+import com.dgmoonlabs.cms.domain.business.vote.dto.VoteDtos.VoteSaveRequest;
+import com.dgmoonlabs.cms.domain.business.vote.service.VoteService;
 import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.ProductSaveRequest;
+import com.dgmoonlabs.cms.domain.business.order.service.FundingService;
 import com.dgmoonlabs.cms.domain.business.order.service.OrderService;
 import com.dgmoonlabs.cms.domain.business.order.service.ProductService;
 import com.dgmoonlabs.cms.domain.business.payment.dto.PaymentDtos.PaymentResponse;
 import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ExtendRequest;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ExtensionResponse;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.CheckInRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ProgramSaveRequest;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.QueueStatusRequest;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.SessionResponse;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.SessionSaveRequest;
+import java.util.List;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationCreateRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationResponse;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReturnRequest;
@@ -42,17 +57,20 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class BusinessAdminController {
-    private final VoteService voteService;
     private final ProductService productService;
     private final DiscountService discountService;
     private final OrderService orderService;
+    private final LicenseKeyService licenseKeyService;
+    private final VoteService voteService;
     private final SubscriptionService subscriptionService;
+    private final FundingService fundingService;
     private final ReservationService reservationService;
     private final PaymentService paymentService;
     private final ReviewService reviewService;
@@ -148,9 +166,53 @@ public class BusinessAdminController {
         return ResponseEntity.ok(Map.of("renewed", subscriptionService.renewDue(LocalDate.now())));
     }
 
+    @PostMapping("/products/funding/resolve")
+    public ResponseEntity<Map<String, Integer>> resolveFunding() {
+        return ResponseEntity.ok(Map.of("failed", fundingService.resolveDue(LocalDateTime.now())));
+    }
+
     @PutMapping("/orders/{id}/status")
     public ResponseEntity<Void> changeOrderStatus(@PathVariable final Long id, @RequestBody @Valid final OrderStatusRequest request) {
         orderService.changeStatus(id, request.status());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/orders/return-requests")
+    public ResponseEntity<PagedModel<OrderReturnResponse>> returnRequests(@RequestParam(required = false) final OrderReturnStatus status,
+                                                                          @PageableDefault(size = 20) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(orderService.searchReturns(status, pageable)));
+    }
+
+    @PostMapping("/orders/return-requests/{id}/approve")
+    public ResponseEntity<OrderReturnResponse> approveReturnRequest(@PathVariable final Long id) {
+        return ResponseEntity.ok(orderService.approveReturn(id));
+    }
+
+    @PostMapping("/orders/return-requests/{id}/reject")
+    public ResponseEntity<OrderReturnResponse> rejectReturnRequest(@PathVariable final Long id,
+                                                                    @RequestBody(required = false) final OrderReturnDecisionRequest request) {
+        return ResponseEntity.ok(orderService.rejectReturn(id, request == null ? null : request.adminMemo()));
+    }
+
+    @PostMapping("/license-keys/bulk")
+    public ResponseEntity<BulkAddResult> addLicenseKeys(@RequestBody @Valid final BulkAddRequest request) {
+        return ResponseEntity.ok(licenseKeyService.addBulk(request));
+    }
+
+    @GetMapping("/license-keys")
+    public ResponseEntity<PagedModel<LicenseKeyResponse>> licenseKeys(@RequestParam final Long productId,
+                                                                      @PageableDefault(size = 50) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(licenseKeyService.search(productId, pageable)));
+    }
+
+    @GetMapping("/license-keys/available-count")
+    public ResponseEntity<Long> availableLicenseKeyCount(@RequestParam final Long productId) {
+        return ResponseEntity.ok(licenseKeyService.availableCount(productId));
+    }
+
+    @DeleteMapping("/license-keys/{id}")
+    public ResponseEntity<Void> removeLicenseKey(@PathVariable final Long id) {
+        licenseKeyService.remove(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -191,6 +253,38 @@ public class BusinessAdminController {
     public ResponseEntity<Void> deleteProgram(@PathVariable final Long id) {
         reservationService.deleteProgram(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/programs/{id}/sessions")
+    public ResponseEntity<SessionResponse> createSession(@PathVariable final Long id, @RequestBody @Valid final SessionSaveRequest request) {
+        return ResponseEntity.ok(reservationService.createSession(id, request));
+    }
+
+    @PutMapping("/programs/{id}/sessions/{sessionId}")
+    public ResponseEntity<SessionResponse> updateSession(@PathVariable final Long id, @PathVariable final Long sessionId,
+                                                         @RequestBody @Valid final SessionSaveRequest request) {
+        return ResponseEntity.ok(reservationService.updateSession(id, sessionId, request));
+    }
+
+    @DeleteMapping("/programs/{id}/sessions/{sessionId}")
+    public ResponseEntity<Void> deleteSession(@PathVariable final Long id, @PathVariable final Long sessionId) {
+        reservationService.deleteSession(id, sessionId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reservations/{id}/extend")
+    public ResponseEntity<ReservationResponse> extendReservation(@PathVariable final Long id, @RequestBody @Valid final ExtendRequest request) {
+        return ResponseEntity.ok(reservationService.extend(id, request));
+    }
+
+    @PostMapping("/reservations/{id}/extension/cancel")
+    public ResponseEntity<ReservationResponse> cancelExtension(@PathVariable final Long id) {
+        return ResponseEntity.ok(reservationService.cancelExtension(id));
+    }
+
+    @GetMapping("/reservations/{id}/extensions")
+    public ResponseEntity<List<ExtensionResponse>> extensions(@PathVariable final Long id) {
+        return ResponseEntity.ok(reservationService.getExtensions(id));
     }
 
     @GetMapping("/reservations")
@@ -235,6 +329,23 @@ public class BusinessAdminController {
     public ResponseEntity<Void> cancelReservation(@PathVariable final Long id) {
         reservationService.cancelReservation(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reservations/check-in")
+    public ResponseEntity<ReservationResponse> checkIn(@RequestBody @Valid final CheckInRequest request) {
+        return ResponseEntity.ok(reservationService.checkIn(request.code()));
+    }
+
+    @GetMapping("/reservations/queue")
+    public ResponseEntity<List<ReservationResponse>> queue(@RequestParam final Long programId,
+                                                            @RequestParam(required = false) final LocalDate date) {
+        return ResponseEntity.ok(reservationService.getQueue(programId, date));
+    }
+
+    @PostMapping("/reservations/{id}/queue-status")
+    public ResponseEntity<ReservationResponse> changeQueueStatus(@PathVariable final Long id,
+                                                                  @RequestBody @Valid final QueueStatusRequest request) {
+        return ResponseEntity.ok(reservationService.changeQueueStatus(id, request.status()));
     }
 
     @GetMapping("/payments")

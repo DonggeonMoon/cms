@@ -5,6 +5,7 @@ import type {ArticleDetail, ArticleSummary, Board, Comment} from '../../api/doma
 import {boardApi} from '../../api/endpoints';
 import type {FileInfo, Page} from '../../api/types';
 import {useAuth} from '../../auth/AuthContext';
+import {won} from '../../components/AdminCrudPage';
 import {CommentEditor} from '../../components/CommentEditor';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatBytes, formatDate, formatDateTime, rowNumber} from '../../components/format';
@@ -102,6 +103,7 @@ function ArticleRow({boardId, article, notice, no}: { boardId: number; article: 
             <td className="col-title">
                 <Link to={`/boards/${boardId}/articles/${article.id}`}>{article.title}</Link>
                 {article.isSecret && <span className="muted small"> 🔒</span>}
+                {article.paid && <span className="badge">유료</span>}
                 {article.isHidden && <span className="badge">숨김</span>}
                 {article.commentCount > 0 && <span className="muted small"> [{article.commentCount}]</span>}
             </td>
@@ -194,8 +196,19 @@ export function BoardArticlePage() {
                 <p className="muted small align-right">
                     {article.authorName} · {formatDateTime(article.createdAt)} · 조회 {article.hit}
                 </p>
-                <HtmlView html={article.contentHtml}/>
-                <AttachmentList files={article.files}/>
+                {article.paid && !article.purchased ? (
+                    <div className="notice-box">
+                        <p><strong>{won(article.price ?? 0)}</strong> · 결제하면 바로 전체 내용을 볼 수 있습니다.</p>
+                        {user?.userType === 'MEMBER'
+                            ? <Link className="button primary" to={`/orders/new?productId=${article.productId}&quantity=1`}>구매하기</Link>
+                            : <p className="muted small">회원으로 로그인한 뒤 구매해 주세요.</p>}
+                    </div>
+                ) : (
+                    <>
+                        <HtmlView html={article.contentHtml ?? ''}/>
+                        <AttachmentList files={article.files}/>
+                    </>
+                )}
                 <ErrorBanner error={error}/>
                 <div className="toolbar form-actions">
                     {board?.supportsLike && <button type="button" onClick={like}>👍 추천 {article.likes}</button>}
@@ -381,6 +394,10 @@ export function BoardWritePage() {
             {name: 'noticeEndDateTime', label: '공지 종료', type: 'datetime'},
         ] as FieldSpec[] : []),
         ...(isAdmin ? [{name: 'isHidden', label: '숨김(관리자만 보기)', type: 'checkbox'} as FieldSpec] : []),
+        ...(isAdmin && board.supportsPaidContent ? [
+            {name: 'paid', label: '유료 글(페이월)', type: 'checkbox', help: '결제한 회원만 본문을 볼 수 있습니다.'},
+            {name: 'price', label: '가격(원)', type: 'number', visibleWhen: (v) => Boolean(v.paid)},
+        ] as FieldSpec[] : []),
     ];
 
     return (

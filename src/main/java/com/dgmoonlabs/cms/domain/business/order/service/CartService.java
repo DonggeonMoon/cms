@@ -97,7 +97,8 @@ public class CartService {
                 new OrderService.Receiver(request.receiverName(), request.phoneNumber(), request.postalCode(),
                         request.address(), request.detailAddress()),
                 new OrderService.Discounts(request.couponIssueId(), request.usePoints() == null ? 0 : request.usePoints()),
-                OrderService.Fulfillment.of(request.fulfillmentType(), request.tableName(), request.requestMessage()), false);
+                OrderService.Fulfillment.of(request.fulfillmentType(), request.tableName(), request.requestMessage(),
+                        request.deliverySlotAt()), false);
         cartRepository.deleteAll(items);
         return order;
     }

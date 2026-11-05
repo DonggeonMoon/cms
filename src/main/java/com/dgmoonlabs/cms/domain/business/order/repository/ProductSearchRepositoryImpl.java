@@ -44,6 +44,7 @@ public class ProductSearchRepositoryImpl implements ProductSearchRepository {
         if (condition.onlyOnSale()) {
             predicates.add(cb.isTrue(product.get("isEnabled")));
             predicates.add(cb.isNull(product.get("mediaId")));
+            predicates.add(cb.isNull(product.get("articleId")));
         }
         if (condition.keyword() != null && !condition.keyword().isBlank()) {
             predicates.add(cb.like(cb.lower(product.get("name")), "%" + condition.keyword().toLowerCase() + "%"));

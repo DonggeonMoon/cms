@@ -2934,6 +2934,41 @@ tr.muted td:nth-last-child(2) {
     padding-left: 1.2em;
 }
 
+.progress-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 480px;
+}
+
+.progress-history {
+    list-style: none;
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.message-thread {
+    list-style: none;
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.message-thread li {
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.message-thread li.from-admin {
+    background: var(--surface-alt, var(--surface));
+}
+
 @media (max-width: 640px) {
     .cart-list li {
         grid-template-columns: auto 48px 1fr;
@@ -3144,6 +3179,22 @@ fieldset.attribute-filter {
 .wish-item {
     display: grid;
     gap: 6px;
+}
+
+.session-list {
+    display: grid;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.session-list label {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.session-list label.closed {
+    color: var(--muted);
 }
 
 .kitchen-board {

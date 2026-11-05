@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,11 +28,26 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     boolean existsByReservationNumber(String reservationNumber);
 
+    boolean existsByCheckInCode(String checkInCode);
+
+    Optional<Reservation> findByCheckInCode(String checkInCode);
+
     List<Reservation> findAllByProgramIdAndStatusNot(Long programId, ReservationStatus status);
 
+    List<Reservation> findAllBySessionIdAndStatusNot(Long sessionId, ReservationStatus status);
+
+    boolean existsBySessionIdAndStatusNot(Long sessionId, ReservationStatus status);
     boolean existsByUserTypeAndUserIdAndProgramIdAndStatus(UserType userType, Long userId, Long programId, ReservationStatus status);
 
     long countByStatus(ReservationStatus status);
+
+    @Query("select r from Reservation r where r.programId = :programId and r.queueNumber is not null "
+            + "and r.checkedInAt >= :since and r.checkedInAt < :until order by r.queueNumber asc")
+    List<Reservation> findQueue(Long programId, LocalDateTime since, LocalDateTime until);
+
+    @Query("select coalesce(max(r.queueNumber), 0) from Reservation r where r.programId = :programId "
+            + "and r.checkedInAt >= :since and r.checkedInAt < :until")
+    int maxQueueNumber(Long programId, LocalDateTime since, LocalDateTime until);
 
     @Modifying
     @Query("update Reservation x set x.customStatus = null where x.customStatus = :code")

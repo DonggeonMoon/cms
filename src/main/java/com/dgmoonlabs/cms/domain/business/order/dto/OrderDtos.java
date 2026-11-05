@@ -14,6 +14,7 @@ import jakarta.validation.constraints.*;
 import lombok.Builder;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -37,7 +38,8 @@ public final class OrderDtos {
             Long couponIssueId,
             @PositiveOrZero Long usePoints,
             FulfillmentType fulfillmentType,
-            @Size(max = 30) String tableName
+            @Size(max = 30) String tableName,
+            LocalDateTime deliverySlotAt
     ) {
     }
 
@@ -71,7 +73,8 @@ public final class OrderDtos {
             @PositiveOrZero Long usePoints,
             FulfillmentType fulfillmentType,
             @Size(max = 30) String tableName,
-            @Size(max = 2000) String requestMessage
+            @Size(max = 2000) String requestMessage,
+            LocalDateTime deliverySlotAt
     ) {
     }
 
@@ -98,7 +101,8 @@ public final class OrderDtos {
                                 List<OrderItemResponse> items, BigDecimal itemsAmount, BigDecimal shippingFee,
                                 BigDecimal refundedAmount, String courier, String trackingNumber, LocalDateTime shippedAt,
                                 Long couponIssueId, BigDecimal couponDiscount, long pointsUsed, long pointsEarned,
-                                FulfillmentType fulfillmentType, String tableName, Integer pickupNumber) {
+                                FulfillmentType fulfillmentType, String tableName, Integer pickupNumber,
+                                LocalDateTime deliverySlotAt, LocalDate shipDate) {
         public static OrderResponse of(final Order order, final List<OrderItem> items) {
             return new OrderResponse(order.getId(), order.getOrderNumber(), order.getUserId(), order.getProductId(),
                     order.getProductName(), order.getSaleType(), order.getSubscriptionId(), order.getProductOptionId(),
@@ -108,7 +112,8 @@ public final class OrderDtos {
                     order.getCreatedAt(), items.stream().map(OrderItemResponse::from).toList(), order.getItemsAmount(),
                     order.getShippingFee(), order.getRefundedAmount(), order.getCourier(), order.getTrackingNumber(),
                     order.getShippedAt(), order.getCouponIssueId(), order.getCouponDiscount(), order.getPointsUsed(),
-                    order.getPointsEarned(), order.getFulfillmentType(), order.getTableName(), order.getPickupNumber());
+                    order.getPointsEarned(), order.getFulfillmentType(), order.getTableName(), order.getPickupNumber(),
+                    order.getDeliverySlotAt(), order.getShipDate());
         }
     }
 }

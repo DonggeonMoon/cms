@@ -60,6 +60,9 @@ public class SubscriptionService {
                 .price(order.getTotalPrice())
                 .billingCycle(product.getBillingCycle())
                 .nextBillingDate(product.getBillingCycle().next(LocalDate.now()))
+                .commitmentMonths(product.getCommitmentMonths())
+                .commitmentEndDate(product.getCommitmentMonths() == null ? null : LocalDate.now().plusMonths(product.getCommitmentMonths()))
+                .earlyTerminationFeeRate(product.getEarlyTerminationFeeRate())
                 .build());
         order.linkSubscription(subscription.getId());
     }
@@ -111,6 +114,7 @@ public class SubscriptionService {
     @Transactional
     public SubscriptionResponse cancelMine(final Long memberId, final Long id) {
         Subscription subscription = findMine(memberId, id);
+        chargeEarlyTerminationFeeIfAny(subscription);
         subscription.cancel();
         return SubscriptionResponse.from(subscription);
     }
@@ -118,8 +122,19 @@ public class SubscriptionService {
     @Transactional
     public SubscriptionResponse cancel(final Long id) {
         Subscription subscription = find(id);
+        chargeEarlyTerminationFeeIfAny(subscription);
         subscription.cancel();
         return SubscriptionResponse.from(subscription);
+    }
+
+    /** 약정 기간이 남았으면 위약금을 결제 완료 주문으로 바로 청구한다. */
+    private void chargeEarlyTerminationFeeIfAny(final Subscription subscription) {
+        BigDecimal fee = subscription.earlyTerminationFee(LocalDate.now());
+        if (fee.signum() > 0) {
+            Order penaltyOrder = orderService.createSubscriptionPenalty(subscription.getMemberId(), subscription.getId(),
+                    subscription.getProductId(), subscription.getProductName(), fee);
+            paymentService.recordAutomaticPayment(subscription.getMemberId(), penaltyOrder);
+        }
     }
 
     @Transactional

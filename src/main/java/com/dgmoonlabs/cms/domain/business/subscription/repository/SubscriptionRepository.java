@@ -22,4 +22,6 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     List<Subscription> findAllByStatusAndNextBillingDateLessThanEqual(SubscriptionStatus status, LocalDate date);
 
     List<Subscription> findAllByStatusAndResumeOnLessThanEqual(SubscriptionStatus status, LocalDate date);
+
+    List<Subscription> findAllByProductIdAndStatusOrderByIdAsc(Long productId, SubscriptionStatus status);
 }

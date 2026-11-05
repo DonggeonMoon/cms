@@ -11,14 +11,17 @@ const DAYS = Object.keys(DAY_OF_WEEK) as DayOfWeek[];
 
 export function StoreSettingPage() {
     const [form, setForm] = useState<{ pickupEnabled: boolean; dineInEnabled: boolean; tablesText: string; openTime: string; closeTime: string;
-        closedDays: DayOfWeek[]; paused: boolean; notice: string } | null>(null);
+        closedDays: DayOfWeek[]; paused: boolean; notice: string; localDeliveryEnabled: boolean; deliveryZonesText: string;
+        deliveryFee: number | string; deliveryMinimumAmount: number | string; deliverySlotMinutes: number | string } | null>(null);
     const [saved, setSaved] = useState<StoreSetting | null>(null);
     const [error, setError] = useState<unknown>(null);
     useEffect(() => {
         storeApi.setting().then((setting) => {
             setSaved(setting);
             setForm({...setting, tablesText: setting.tables.join(', '), openTime: setting.openTime?.slice(0, 5) ?? '',
-                closeTime: setting.closeTime?.slice(0, 5) ?? '', notice: setting.notice ?? ''});
+                closeTime: setting.closeTime?.slice(0, 5) ?? '', notice: setting.notice ?? '',
+                deliveryZonesText: setting.deliveryZones.join(', '), deliveryFee: setting.deliveryFee ?? '',
+                deliveryMinimumAmount: setting.deliveryMinimumAmount ?? '', deliverySlotMinutes: setting.deliverySlotMinutes ?? ''});
         }).catch(setError);
     }, []);
     if (!form) {
@@ -28,9 +31,13 @@ export function StoreSettingPage() {
         event.preventDefault();
         setError(null);
         try {
-            const {tablesText, ...rest} = form;
+            const {tablesText, deliveryZonesText, ...rest} = form;
             setSaved(await storeApi.save({...rest, tables: tablesText.split(',').map((t) => t.trim()).filter(Boolean),
-                openTime: form.openTime || null, closeTime: form.closeTime || null}));
+                deliveryZones: deliveryZonesText.split(',').map((t) => t.trim()).filter(Boolean),
+                openTime: form.openTime || null, closeTime: form.closeTime || null,
+                deliveryFee: form.deliveryFee === '' ? null : Number(form.deliveryFee),
+                deliveryMinimumAmount: form.deliveryMinimumAmount === '' ? null : Number(form.deliveryMinimumAmount),
+                deliverySlotMinutes: form.deliverySlotMinutes === '' ? null : Number(form.deliverySlotMinutes)}));
         } catch (e) {
             setError(e);
         }
@@ -38,7 +45,7 @@ export function StoreSettingPage() {
     return (
         <section className="card">
             <h1>매장 주문</h1>
-            <p className="muted">"매장 주문 전용"으로 표시한 상품을 포장이나 매장 식사로 주문받습니다. 들어온 주문은 주문 접수 화면에서 처리합니다.</p>
+            <p className="muted">"매장 주문 전용"으로 표시한 상품을 포장·매장 식사·배달로 주문받습니다. 들어온 주문은 주문 접수 화면에서 처리합니다.</p>
             {saved && <p className={saved.openNow ? 'notice-box ok' : 'notice-box'}>{saved.openNow ? '지금 주문을 받고 있습니다.' : '지금은 주문을 받지 않습니다.'}</p>}
             <form onSubmit={submit}>
                 <Checkbox label="포장 주문 받기" checked={form.pickupEnabled} onChange={(e) => setForm({...form, pickupEnabled: e.target.checked})}/>
@@ -62,6 +69,23 @@ export function StoreSettingPage() {
                         </label>
                     ))}
                 </fieldset>
+                <Checkbox label="배달 주문 받기" checked={form.localDeliveryEnabled}
+                          onChange={(e) => setForm({...form, localDeliveryEnabled: e.target.checked})}/>
+                {form.localDeliveryEnabled && (
+                    <>
+                        <Field label="배달 가능 지역(우편번호 앞자리)" name="deliveryZones" placeholder="062, 063" value={form.deliveryZonesText}
+                               onChange={(e) => setForm({...form, deliveryZonesText: e.target.value})}/>
+                        <div className="row">
+                            <Field label="배달 요금(원)" name="deliveryFee" type="number" value={form.deliveryFee}
+                                   onChange={(e) => setForm({...form, deliveryFee: e.target.value})}/>
+                            <Field label="최소 주문 금액(원)" name="deliveryMinimumAmount" type="number" value={form.deliveryMinimumAmount}
+                                   onChange={(e) => setForm({...form, deliveryMinimumAmount: e.target.value})}/>
+                            <Field label="배달 시간대 단위(분)" name="deliverySlotMinutes" type="number" value={form.deliverySlotMinutes}
+                                   onChange={(e) => setForm({...form, deliverySlotMinutes: e.target.value})}/>
+                        </div>
+                        <p className="muted small">시간대 단위를 비워두면 시간대를 받지 않고 바로 배달로 받습니다.</p>
+                    </>
+                )}
                 <Checkbox label="주문 잠시 멈춤 (재료 소진·주방 혼잡)" checked={form.paused} onChange={(e) => setForm({...form, paused: e.target.checked})}/>
                 <Field label="주문 화면 안내 문구" name="notice" value={form.notice} onChange={(e) => setForm({...form, notice: e.target.value})}/>
                 <ErrorBanner error={error}/>
@@ -110,10 +134,14 @@ export function StoreOrderQueuePage() {
                     return (
                         <article key={order.id} className={`kitchen-ticket status-${order.status.toLowerCase()}`}>
                             <header>
-                                <strong className="ticket-number">{order.pickupNumber}번</strong>
+                                {order.pickupNumber != null && <strong className="ticket-number">{order.pickupNumber}번</strong>}
                                 <span className="badge">{order.fulfillmentType === 'DINE_IN' ? `${order.tableName} 테이블` : FULFILLMENT[order.fulfillmentType]}</span>
                                 <span className="muted small">{formatTime(order.createdAt)}</span>
                             </header>
+                            {order.fulfillmentType === 'LOCAL_DELIVERY' && (
+                                <p className="small">{order.address} {order.detailAddress}
+                                    {order.deliverySlotAt && ` · ${formatTime(order.deliverySlotAt)} 배달`}</p>
+                            )}
                             <ul className="plain-list">
                                 {order.items.filter((item) => item.status !== 'CANCELED').map((item) => (
                                     <li key={item.id}>{item.productName}{item.optionName && ` (${item.optionName})`} × {item.quantity}</li>

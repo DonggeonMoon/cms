@@ -218,6 +218,7 @@ export interface Board {
     supportsComment: boolean;
     supportsLike: boolean;
     supportsAttachment: boolean;
+    supportsPaidContent: boolean;
     maximumFileCount: number;
     pageSize: number;
     permissions: { canList: boolean; canRead: boolean; canWrite: boolean; isAdmin: boolean };
@@ -230,6 +231,7 @@ export interface ArticleSummary {
     isNotice: boolean;
     isSecret: boolean;
     isHidden: boolean;
+    paid: boolean;
     hit: number;
     likes: number;
     commentCount: number;
@@ -241,7 +243,7 @@ export interface ArticleDetail {
     id: number;
     boardId: number;
     title: string;
-    contentHtml: string;
+    contentHtml: string | null;
     authorName: string;
     authorType: 'ADMIN' | 'MEMBER' | 'GUEST';
     isNotice: boolean;
@@ -249,6 +251,10 @@ export interface ArticleDetail {
     noticeEndDateTime: string | null;
     isSecret: boolean;
     isHidden: boolean;
+    paid: boolean;
+    price: number | null;
+    productId: number | null;
+    purchased: boolean;
     hit: number;
     likes: number;
     files: FileInfo[];
@@ -377,8 +383,31 @@ export interface Discount {
     isUsing: boolean;
 }
 
-export type ProductSaleType = 'PURCHASE' | 'SUBSCRIPTION' | 'DONATION' | 'QUOTE';
+export type ProductSaleType = 'PURCHASE' | 'SUBSCRIPTION' | 'DONATION' | 'QUOTE' | 'PASS' | 'GIFT_CARD' | 'PREORDER' | 'FUNDING' | 'INQUIRY';
 export type BillingCycle = 'MONTHLY' | 'YEARLY';
+export type PassUnit = 'PERIOD' | 'COUNT';
+
+export type LedgerType = 'CHARGE' | 'GIFT_ISSUED' | 'GIFT_REDEEMED' | 'PAYMENT' | 'REFUND' | 'ADMIN';
+
+export interface WalletLedgerEntry {
+    id: number;
+    type: LedgerType;
+    amount: number;
+    balanceAfter: number;
+    memo: string | null;
+    createdAt: string;
+}
+
+export type GiftCardStatus = 'UNUSED' | 'REDEEMED';
+
+export interface GiftCard {
+    id: number;
+    code: string;
+    amount: number;
+    status: GiftCardStatus;
+    redeemedAt: string | null;
+    createdAt: string;
+}
 
 export interface ProductSummary {
     id: number;
@@ -390,6 +419,8 @@ export interface ProductSummary {
     price: number;
     saleType: ProductSaleType;
     billingCycle: BillingCycle | null;
+    commitmentMonths: number | null;
+    earlyTerminationFeeRate: number | null;
     availableQuantity: number | null;
     isEnabled: boolean;
     imageUrl: string | null;
@@ -430,6 +461,126 @@ export interface ProductDetail extends ProductSummary {
     donationPresets: number[];
     goalAmount: number | null;
     donation: { raisedAmount: number; supporterCount: number } | null;
+    funding: { goalAmount: number | null; deadline: string | null; raisedAmount: number; supporterCount: number;
+        resolved: boolean; succeeded: boolean } | null;
+    pass: { unit: PassUnit; days: number | null; count: number | null; programId: number | null } | null;
+    inquiry: { programId: number | null } | null;
+    preorder: { saleStartAt: string | null; saleEndAt: string | null; shipDate: string | null } | null;
+}
+
+export interface MemberPass {
+    id: number;
+    memberId: number;
+    productId: number;
+    productName: string;
+    unit: PassUnit;
+    programId: number;
+    totalCount: number | null;
+    remainingCount: number | null;
+    expiresAt: string | null;
+    status: 'ACTIVE' | 'USED_UP' | 'CANCELED';
+    createdAt: string;
+}
+
+export interface LicenseKey {
+    id: number;
+    productId: number;
+    code: string;
+    orderId: number | null;
+    memberId: number | null;
+    assignedAt: string | null;
+    createdAt: string;
+}
+
+export interface MyLicenseKey {
+    id: number;
+    productId: number;
+    productName: string;
+    code: string;
+    orderId: number | null;
+    assignedAt: string | null;
+}
+
+export interface Vote {
+    id: number;
+    title: string;
+    description: string | null;
+    options: string[];
+    accessGradeId: number | null;
+    open: boolean;
+    closedAt: string | null;
+    totalBallots: number;
+    resultCounts: Record<string, number>;
+    createdAt: string;
+}
+
+export interface MyVote {
+    id: number;
+    title: string;
+    description: string | null;
+    options: string[];
+    open: boolean;
+    eligible: boolean;
+    myOptionIndex: number | null;
+    totalBallots: number | null;
+    resultCounts: Record<string, number> | null;
+    createdAt: string;
+}
+
+export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'SMS';
+
+export interface AppNotification {
+    id: number;
+    channel: NotificationChannel;
+    title: string;
+    content: string;
+    link: string | null;
+    read: boolean;
+    createdAt: string;
+}
+
+export type ProgressTargetType = 'ORDER' | 'REPAIR' | 'APPLICATION';
+
+export interface RepairRequest {
+    id: number;
+    memberId: number;
+    productId: number | null;
+    title: string;
+    description: string;
+    photoUrls: string[];
+    quoteOrderId: number | null;
+    createdAt: string;
+}
+
+export interface ProgressStageTemplate {
+    id: number;
+    code: string;
+    label: string;
+    sequence: number;
+}
+
+export interface ProgressStageEvent {
+    id: number;
+    stageCode: string;
+    stageLabel: string;
+    memo: string | null;
+    actorName: string | null;
+    createdAt: string;
+}
+
+export interface Progress {
+    templates: ProgressStageTemplate[];
+    history: ProgressStageEvent[];
+    currentStageCode: string | null;
+}
+
+export interface CustomerMessage {
+    id: number;
+    senderType: 'MEMBER' | 'ADMIN';
+    senderName: string;
+    content: string;
+    fileUrls: string[];
+    createdAt: string;
 }
 
 export interface DigitalFile {
@@ -472,12 +623,47 @@ export interface Subscription {
     pendingProductName: string | null;
     pendingPrice: number | null;
     pendingBillingCycle: BillingCycle | null;
+    commitmentEndDate: string | null;
+    earlyTerminationFeeRate: number | null;
+    earlyTerminationFee: number;
 }
 
 export interface WishlistEntry {
     productId: number;
     wishedAt: string;
     product: ProductSummary;
+}
+
+export interface CustomerRecord {
+    id: number;
+    memberId: number;
+    reservationId: number | null;
+    recordedOn: string;
+    category: string | null;
+    title: string;
+    content: string | null;
+    photoFileIds: number[];
+    photoUrls: string[];
+    sharedWithMember: boolean;
+    authorName: string | null;
+    createdAt: string;
+    modifiedAt: string;
+}
+
+export type MyCustomerRecord = Pick<CustomerRecord, 'id' | 'reservationId' | 'recordedOn' | 'category' | 'title' | 'content' | 'photoUrls'>;
+
+export interface AttendanceRosterEntry {
+    subscriptionId: number;
+    memberId: number;
+    memberName: string | null;
+    present: boolean | null;
+    note: string | null;
+}
+
+export interface MyAttendance {
+    attendedOn: string;
+    present: boolean;
+    note: string | null;
 }
 
 export type OrderStatus = 'QUOTE_REQUESTED' | 'QUOTED' | 'PENDING_PAYMENT' | 'PAID' | 'SHIPPING' | 'DELIVERED' | 'PREPARING' | 'READY'
@@ -500,6 +686,8 @@ export interface Order {
     fulfillmentType: FulfillmentType;
     tableName: string | null;
     pickupNumber: number | null;
+    deliverySlotAt: string | null;
+    shipDate: string | null;
     requestMessage: string | null;
     quoteMessage: string | null;
     quotedAt: string | null;
@@ -520,6 +708,23 @@ export interface Order {
     couponDiscount: number | null;
     pointsUsed: number;
     pointsEarned: number;
+}
+
+export type OrderReturnType = 'RETURN' | 'EXCHANGE';
+export type OrderReturnStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED';
+
+export interface OrderReturn {
+    id: number;
+    orderId: number;
+    orderNumber: string | null;
+    memberId: number;
+    type: OrderReturnType;
+    reason: string;
+    exchangeOptionId: number | null;
+    status: OrderReturnStatus;
+    adminMemo: string | null;
+    processedAt: string | null;
+    createdAt: string;
 }
 
 export interface OrderItem {
@@ -578,7 +783,12 @@ export interface ShippingPolicy {
     defaultCourier: string | null;
 }
 
-export type ReservationType = 'PROGRAM' | 'CONSULTATION' | 'RENTAL' | 'LODGING' | 'EVENT' | 'ITEM_RENTAL' | 'VISIT';
+export type ReservationType = 'PROGRAM' | 'CONSULTATION' | 'RENTAL' | 'LODGING' | 'EVENT' | 'ITEM_RENTAL' | 'VISIT' | 'TABLE' | 'TOUR';
+
+export interface PriceTier {
+    name: string;
+    price: number;
+}
 export type CellKind = 'SEAT' | 'ROOM' | 'SPACE' | 'AISLE' | 'STAGE' | 'EMPTY';
 
 export interface LayoutCell {
@@ -588,6 +798,7 @@ export interface LayoutCell {
     kind: CellKind;
     label: string;
     price: number | null;
+    capacity: number | null;
 }
 
 export interface SpaceLayout {
@@ -633,9 +844,36 @@ export interface Program {
     averageRating: number | null;
     depositAmount: number | null;
     maxRentalDays: number | null;
+    lateFeePerDay: number | null;
+    sessions: ProgramSession[];
+    supportsQueue: boolean;
+    priceTiers: PriceTier[] | null;
+}
+
+export interface ProgramSession {
+    id: number;
+    name: string | null;
+    startAt: string;
+    endAt: string | null;
+    capacity: number | null;
+    reservedCount: number;
+    remaining: number | null;
+    isOpen: boolean;
+}
+
+export interface ReservationExtension {
+    id: number;
+    reservationId: number;
+    previousEndAt: string;
+    newEndAt: string;
+    days: number;
+    fee: number;
+    status: 'PENDING_PAYMENT' | 'PAID' | 'CANCELED' | 'DEDUCTED';
+    createdAt: string;
 }
 
 export type ReservationStatus = 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELED';
+export type QueueStatus = 'WAITING' | 'CALLED' | 'DONE' | 'SKIPPED';
 
 export interface Reservation {
     id: number;
@@ -670,10 +908,26 @@ export interface Reservation {
     workReport: string | null;
     workPhotoUrls: string[];
     createdAt: string;
+    userType: 'MEMBER' | 'ADMIN';
+    sessionId: number | null;
+    lateFeePerDay: number | null;
+    expectedLateFee: number | null;
+    lateFee: number | null;
+    unpaidExtensionFee: number | null;
+    outstandingAmount: number | null;
+    pendingExtensionId: number | null;
+    pendingExtensionFee: number | null;
+    passId: number | null;
+    checkInCode: string | null;
+    checkedInAt: string | null;
+    queueNumber: number | null;
+    queueStatus: QueueStatus | null;
+    partySize: number | null;
+    partyBreakdown: Record<string, number> | null;
 }
 
-export type PaymentTargetType = 'ORDER' | 'RESERVATION';
-export type PaymentMethod = 'CARD' | 'BANK_TRANSFER' | 'VIRTUAL_ACCOUNT' | 'MOBILE';
+export type PaymentTargetType = 'ORDER' | 'RESERVATION' | 'RESERVATION_EXTENSION';
+export type PaymentMethod = 'CARD' | 'BANK_TRANSFER' | 'VIRTUAL_ACCOUNT' | 'MOBILE' | 'PREPAID';
 
 export interface Payment {
     id: number;
@@ -828,7 +1082,7 @@ export interface ReencryptResult {
 }
 
 export type FormFieldType = 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'DATE' | 'EMAIL' | 'PHONE' | 'SELECT' | 'RADIO' | 'CHECKBOX' | 'FILE';
-export type SelectionMethod = 'REVIEW' | 'LOTTERY';
+export type SelectionMethod = 'REVIEW' | 'LOTTERY' | 'CONTEST';
 export type SubmissionStatus = 'RECEIVED' | 'REVIEWING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
 
 export interface FormField {
@@ -856,6 +1110,9 @@ export interface ApplicationForm {
     drawnAt: string | null;
     isOpen: boolean;
     applied: boolean;
+    admissionFeeProductId: number | null;
+    judgeUsernames: string[];
+    isJudge: boolean;
     createdAt: string;
 }
 
@@ -897,6 +1154,26 @@ export interface Submission {
     status: SubmissionStatus;
     resultMessage: string | null;
     adminMemo: string | null;
+    admissionOrderId: number | null;
+    averageScore: number | null;
+    scoreCount: number | null;
+    createdAt: string;
+}
+
+export interface ScoreDetail {
+    judgeMemberId: number;
+    judgeUsername: string;
+    score: number;
+    comment: string | null;
+    updatedAt: string;
+}
+
+export interface JudgeSubmission {
+    id: number;
+    formId: number;
+    answers: Record<string, unknown>;
+    myScore: number | null;
+    myComment: string | null;
     createdAt: string;
 }
 
@@ -909,16 +1186,4 @@ export interface StatusDefinition {
     baseStatus: string;
     system: boolean;
     sequence: number;
-}
-
-export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'SMS';
-
-export interface AppNotification {
-    id: number;
-    channel: NotificationChannel;
-    title: string;
-    content: string;
-    link: string | null;
-    read: boolean;
-    createdAt: string;
 }

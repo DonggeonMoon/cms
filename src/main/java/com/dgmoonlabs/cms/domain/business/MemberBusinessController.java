@@ -1,14 +1,19 @@
 package com.dgmoonlabs.cms.domain.business;
 
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderCreateRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderResponse;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderReturnDtos.OrderReturnCreateRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderReturnDtos.OrderReturnResponse;
+import com.dgmoonlabs.cms.domain.business.order.service.OrderService;
+import com.dgmoonlabs.cms.domain.business.license.dto.LicenseKeyDtos.MyLicenseKeyResponse;
+import com.dgmoonlabs.cms.domain.business.license.service.LicenseKeyService;
 import com.dgmoonlabs.cms.domain.business.vote.dto.VoteDtos.BallotRequest;
 import com.dgmoonlabs.cms.domain.business.vote.dto.VoteDtos.MyVoteResponse;
 import com.dgmoonlabs.cms.domain.business.vote.service.VoteService;
-import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderCreateRequest;
-import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderResponse;
-import com.dgmoonlabs.cms.domain.business.order.service.OrderService;
 import com.dgmoonlabs.cms.domain.business.payment.dto.PaymentDtos.PaymentRequest;
 import com.dgmoonlabs.cms.domain.business.payment.dto.PaymentDtos.PaymentResponse;
 import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ExtendRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationCreateRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationResponse;
 import com.dgmoonlabs.cms.domain.business.reservation.service.ReservationService;
@@ -37,12 +42,13 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 public class MemberBusinessController {
-    private final VoteService voteService;
     private final OrderService orderService;
     private final ReservationService reservationService;
     private final PaymentService paymentService;
     private final ReviewService reviewService;
     private final SubscriptionService subscriptionService;
+    private final LicenseKeyService licenseKeyService;
+    private final VoteService voteService;
 
     @PostMapping("/api/orders")
     public ResponseEntity<OrderResponse> order(@AuthenticationPrincipal final LoginUser user,
@@ -113,6 +119,24 @@ public class MemberBusinessController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/api/orders/{id}/return-requests")
+    public ResponseEntity<OrderReturnResponse> requestReturn(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id,
+                                                              @RequestBody @Valid final OrderReturnCreateRequest request) {
+        return ResponseEntity.ok(orderService.requestReturn(user.id(), id, request));
+    }
+
+    @GetMapping("/api/orders/return-requests/me")
+    public ResponseEntity<PagedModel<OrderReturnResponse>> myReturnRequests(@AuthenticationPrincipal final LoginUser user,
+                                                                            @PageableDefault final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(orderService.getMyReturns(user.id(), pageable)));
+    }
+
+    @GetMapping("/api/license-keys/me")
+    public ResponseEntity<PagedModel<MyLicenseKeyResponse>> myLicenseKeys(@AuthenticationPrincipal final LoginUser user,
+                                                                          @PageableDefault final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(licenseKeyService.getMine(user.id(), pageable)));
+    }
+
     @PostMapping("/api/reservations")
     public ResponseEntity<ReservationResponse> reserve(@AuthenticationPrincipal final LoginUser user,
                                                        @RequestBody @Valid final ReservationCreateRequest request) {
@@ -130,6 +154,17 @@ public class MemberBusinessController {
     public ResponseEntity<Void> cancelReservation(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id) {
         reservationService.cancelMyReservation(user.id(), id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/api/reservations/{id}/extend")
+    public ResponseEntity<ReservationResponse> extendReservation(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id,
+                                                                 @RequestBody @Valid final ExtendRequest request) {
+        return ResponseEntity.ok(reservationService.extendMine(user.id(), id, request));
+    }
+
+    @PostMapping("/api/reservations/{id}/extension/cancel")
+    public ResponseEntity<ReservationResponse> cancelExtension(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id) {
+        return ResponseEntity.ok(reservationService.cancelMyExtension(user.id(), id));
     }
 
     @PostMapping("/api/payments")

@@ -1,10 +1,11 @@
 import {type FormEvent, useEffect, useState} from 'react';
 import {useNavigate} from 'react-router';
-import type {Availability, Program} from '../../api/domain';
+import {useAuth} from '../../auth/AuthContext';
+import type {Availability, MemberPass, Program} from '../../api/domain';
 import {shopApi} from '../../api/endpoints';
 import {won} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
-import {formatTime} from '../../components/format';
+import {formatDateTime, formatTime} from '../../components/format';
 import {SpaceGrid} from '../../components/SpaceGrid';
 
 export interface ReservationSelection {
@@ -12,6 +13,7 @@ export interface ReservationSelection {
     endAt: string | null;
     cells: string[];
     quantity?: number;
+    partyCounts?: Record<string, number>;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -20,6 +22,10 @@ const minutesBetween = (from: string, to: string) => (new Date(to).getTime() - n
 
 export function estimateReservation(program: Program, selection: ReservationSelection): number {
     const price = Number(program.price);
+    if (program.reservationType === 'TOUR') {
+        const counts = selection.partyCounts ?? {};
+        return (program.priceTiers ?? []).reduce((sum, tier) => sum + Number(tier.price) * (counts[tier.name] ?? 0), 0);
+    }
     if (program.reservationType === 'CONSULTATION' || program.reservationType === 'VISIT') {
         return price;
     }
@@ -34,7 +40,7 @@ export function estimateReservation(program: Program, selection: ReservationSele
     if (!selection.startAt || !selection.endAt) {
         return perUnit;
     }
-    if (program.reservationType === 'RENTAL') {
+    if (program.reservationType === 'RENTAL' || program.reservationType === 'TABLE') {
         return perUnit * (minutesBetween(selection.startAt, selection.endAt) / (program.slotMinutes ?? 60));
     }
     if (program.reservationType === 'LODGING') {
@@ -45,6 +51,7 @@ export function estimateReservation(program: Program, selection: ReservationSele
 
 export function ReservationPicker({program}: { program: Program }) {
     const navigate = useNavigate();
+    const {user} = useAuth();
     const firstDay = [today(), dateOf(program.startDateTime)].sort().at(-1)!;
     const [date, setDate] = useState(firstDay);
     const [checkOut, setCheckOut] = useState('');
@@ -52,15 +59,46 @@ export function ReservationPicker({program}: { program: Program }) {
     const [endAt, setEndAt] = useState<string | null>(null);
     const [cells, setCells] = useState<string[]>([]);
     const [quantity, setQuantity] = useState(1);
+    const [partySize, setPartySize] = useState(2);
+    const [partyCounts, setPartyCounts] = useState<Record<string, number>>({});
+    const [sessionId, setSessionId] = useState('');
+    const [passes, setPasses] = useState<MemberPass[]>([]);
+    const [passId, setPassId] = useState('');
     const [availability, setAvailability] = useState<Availability | null>(null);
     const [error, setError] = useState<unknown>(null);
     const type = program.reservationType;
+    const eventSessions = (program.sessions ?? []).filter((s) => s.isOpen);
+    const hasEventSessions = type === 'EVENT' && eventSessions.length > 0;
+    const tourSessions = (program.sessions ?? []).filter((s) => s.isOpen);
+    const hasTourSessions = type === 'TOUR' && tourSessions.length > 0;
+    const totalParty = Object.values(partyCounts).reduce((sum, n) => sum + (n || 0), 0);
 
     useEffect(() => {
+        if (type === 'TOUR') {
+            setPartyCounts(Object.fromEntries((program.priceTiers ?? []).map((t) => [t.name, 0])));
+        }
+    }, [program.id, type, program.priceTiers]);
+
+    useEffect(() => {
+        if (user?.userType === 'MEMBER') {
+            shopApi.usablePasses(program.id).then(setPasses).catch(() => setPasses([]));
+        }
+    }, [program.id, user?.userType]);
+
+    useEffect(() => {
+        if (type === 'TOUR') {
+            setAvailability(null);
+            return;
+        }
+        if (hasEventSessions && !sessionId) {
+            setAvailability(null);
+            return;
+        }
         const query = type === 'CONSULTATION' || type === 'VISIT' ? {date}
-            : type === 'RENTAL' ? {date, ...(startAt && endAt ? {from: startAt, to: endAt} : {})}
+            : type === 'RENTAL' || type === 'TABLE' ? {date, ...(startAt && endAt ? {from: startAt, to: endAt} : {})}
                 : type === 'LODGING' || type === 'ITEM_RENTAL' ? (date && checkOut ? {from: `${date}T00:00:00`, to: `${checkOut}T00:00:00`} : null)
-                    : {};
+                    : hasEventSessions ? {sessionId: Number(sessionId)}
+                        : {};
         if (query === null) {
             setAvailability(null);
             return;
@@ -69,19 +107,22 @@ export function ReservationPicker({program}: { program: Program }) {
             setAvailability(loaded);
             setCells((current) => current.filter((key) => !loaded.takenCells.includes(key)));
         }).catch(setError);
-    }, [program.id, type, date, checkOut, startAt, endAt]);
+    }, [program.id, type, date, checkOut, startAt, endAt, hasEventSessions, sessionId]);
 
     const byDates = type === 'LODGING' || type === 'ITEM_RENTAL';
     const selection: ReservationSelection = byDates
         ? {startAt: date && checkOut ? `${date}T00:00:00` : null, endAt: checkOut ? `${checkOut}T00:00:00` : null, cells, quantity}
-        : {startAt, endAt, cells};
-    const needsCells = type !== 'CONSULTATION' && type !== 'ITEM_RENTAL' && type !== 'VISIT';
+        : type === 'TOUR' ? {startAt: null, endAt: null, cells: [], partyCounts}
+            : {startAt, endAt, cells};
+    const needsCells = type !== 'CONSULTATION' && type !== 'ITEM_RENTAL' && type !== 'VISIT' && type !== 'TOUR';
     const remaining = availability?.remainingItems ?? null;
     const rentalDays = selection.startAt && selection.endAt ? Math.round(minutesBetween(selection.startAt, selection.endAt) / 1440) : 0;
     const rentalReady = type !== 'ITEM_RENTAL' || (rentalDays > 0 && (program.maxRentalDays == null || rentalDays <= program.maxRentalDays)
         && remaining != null && quantity <= remaining);
-    const ready = (type === 'EVENT' || selection.startAt) && (!needsCells || cells.length > 0)
-        && (type !== 'RENTAL' || (startAt && endAt && minutesBetween(startAt, endAt) > 0)) && rentalReady;
+    const ready = (type === 'EVENT' || type === 'TOUR' || selection.startAt) && (!needsCells || cells.length > 0)
+        && (type !== 'RENTAL' && type !== 'TABLE' || (startAt && endAt && minutesBetween(startAt, endAt) > 0)) && rentalReady
+        && (type !== 'TABLE' || partySize > 0) && (!hasEventSessions || sessionId !== '')
+        && (type !== 'TOUR' || (totalParty > 0 && (!hasTourSessions || sessionId !== '')));
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -90,6 +131,13 @@ export function ReservationPicker({program}: { program: Program }) {
         if (selection.endAt) query.set('endAt', selection.endAt);
         if (cells.length) query.set('cells', cells.join(','));
         if (type === 'ITEM_RENTAL') query.set('quantity', String(quantity));
+        if (type === 'TABLE') query.set('partySize', String(partySize));
+        if (type === 'TOUR') {
+            query.set('quantity', String(totalParty));
+            query.set('partyCounts', JSON.stringify(partyCounts));
+        }
+        if ((hasEventSessions || hasTourSessions) && sessionId) query.set('sessionId', sessionId);
+        if (passId) query.set('passId', passId);
         navigate(`/reservations/new?${query}`);
     };
 
@@ -98,7 +146,48 @@ export function ReservationPicker({program}: { program: Program }) {
 
     return (
         <form className="reservation-picker" onSubmit={submit}>
-            {(type === 'CONSULTATION' || type === 'VISIT' || type === 'RENTAL' || byDates) && (
+            {hasEventSessions && (
+                <div className="field">
+                    <label htmlFor="sessionId">회차 선택</label>
+                    <select id="sessionId" required value={sessionId} onChange={(e) => {
+                        setSessionId(e.target.value);
+                        setCells([]);
+                    }}>
+                        <option value="">선택</option>
+                        {eventSessions.map((s) => (
+                            <option key={s.id} value={s.id} disabled={s.remaining === 0}>
+                                {s.name ? `${s.name} · ` : ''}{formatDateTime(s.startAt)}
+                                {s.remaining != null && ` (잔여 ${s.remaining}석)`}{s.remaining === 0 && ' 마감'}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+            {hasTourSessions && (
+                <div className="field">
+                    <label htmlFor="sessionId">출발일 선택</label>
+                    <select id="sessionId" required value={sessionId} onChange={(e) => setSessionId(e.target.value)}>
+                        <option value="">선택</option>
+                        {tourSessions.map((s) => (
+                            <option key={s.id} value={s.id} disabled={s.remaining === 0}>
+                                {s.name ? `${s.name} · ` : ''}{formatDateTime(s.startAt)}
+                                {s.remaining != null && ` (잔여 ${s.remaining}명)`}{s.remaining === 0 && ' 마감'}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+            {type === 'TOUR' && (
+                <div className="row align-center">
+                    {(program.priceTiers ?? []).map((tier) => (
+                        <label key={tier.name}>{tier.name} ({won(tier.price)}){' '}
+                            <input type="number" min={0} value={partyCounts[tier.name] ?? 0}
+                                   onChange={(e) => setPartyCounts({...partyCounts, [tier.name]: Math.max(0, Number(e.target.value))})}/>
+                        </label>
+                    ))}
+                </div>
+            )}
+            {(type === 'CONSULTATION' || type === 'VISIT' || type === 'RENTAL' || type === 'TABLE' || byDates) && (
                 <div className="row align-center">
                     <label>{type === 'LODGING' ? '체크인' : type === 'ITEM_RENTAL' ? '대여일' : '날짜'}{' '}
                         <input type="date" value={date} min={firstDay} max={dateOf(program.endDateTime) || undefined}
@@ -136,7 +225,7 @@ export function ReservationPicker({program}: { program: Program }) {
                     {slots.length === 0 && <p className="muted">이 날은 예약할 수 있는 시간이 없습니다.</p>}
                 </div>
             )}
-            {type === 'RENTAL' && (
+            {(type === 'RENTAL' || type === 'TABLE') && (
                 <div className="row align-center">
                     <label>시작{' '}
                         <select value={startAt ?? ''} onChange={(e) => setStartAt(e.target.value || null)}>
@@ -152,9 +241,16 @@ export function ReservationPicker({program}: { program: Program }) {
                             ))}
                         </select>
                     </label>
+                    {type === 'TABLE' && (
+                        <label>인원{' '}
+                            <input type="number" min={1} value={partySize}
+                                   onChange={(e) => setPartySize(Math.max(1, Number(e.target.value)))}/>
+                        </label>
+                    )}
                 </div>
             )}
-            {needsCells && program.layout && (type === 'EVENT' || (type === 'RENTAL' ? startAt && endAt : type === 'LODGING' ? checkOut : true)) && (
+            {needsCells && program.layout && (!hasEventSessions || sessionId)
+                && (type === 'EVENT' || (type === 'RENTAL' || type === 'TABLE' ? startAt && endAt : type === 'LODGING' ? checkOut : true)) && (
                 <>
                     <SpaceGrid layout={program.layout} taken={availability?.takenCells ?? []} selected={cells}
                                onCellClick={(cell) => cell && toggleCell(cell.key)}/>
@@ -170,7 +266,21 @@ export function ReservationPicker({program}: { program: Program }) {
                     {Number(program.depositAmount ?? 0) > 0 && `보증금 1개당 ${won(program.depositAmount!)}이 포함되며, 반납하면 돌려받습니다.`}
                 </p>
             )}
-            <p className="price align-right">예상 금액 {Number(program.price) === 0 && type !== 'RENTAL' && type !== 'LODGING' && type !== 'EVENT'
+            {passes.length > 0 && (
+                <div className="field">
+                    <label htmlFor="passId">이용권으로 신청</label>
+                    <select id="passId" value={passId} onChange={(e) => setPassId(e.target.value)}>
+                        <option value="">결제로 신청</option>
+                        {passes.map((pass) => (
+                            <option key={pass.id} value={pass.id}>
+                                {pass.productName}{pass.unit === 'COUNT' ? ` (잔여 ${pass.remainingCount}회)` : ''}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+            <p className="price align-right">예상 금액 {passId ? '이용권 사용 (0원)'
+                : Number(program.price) === 0 && type !== 'RENTAL' && type !== 'LODGING' && type !== 'EVENT' && type !== 'TABLE' && type !== 'TOUR'
                 ? '무료' : won(estimateReservation(program, selection))}</p>
             <ErrorBanner error={error}/>
             <div className="toolbar form-actions">

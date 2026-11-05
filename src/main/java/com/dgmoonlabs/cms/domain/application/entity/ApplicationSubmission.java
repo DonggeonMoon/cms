@@ -51,6 +51,13 @@ public class ApplicationSubmission extends BaseEntity {
     @Comment("관리자 메모")
     private String adminMemo;
 
+    @Comment("선정 후 결제 주문 ID (입학금·입회비, 결제는 그 주문에서 받음)")
+    private Long admissionOrderId;
+
+    public void linkAdmissionOrder(final Long orderId) {
+        this.admissionOrderId = orderId;
+    }
+
     public void review(final SubmissionStatus status, final String resultMessage, final String adminMemo) {
         if (status == SubmissionStatus.WITHDRAWN || this.status == SubmissionStatus.WITHDRAWN) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);

@@ -1,6 +1,7 @@
 package com.dgmoonlabs.cms.domain.business.order.entity.product;
 
 import com.dgmoonlabs.cms.domain.business.order.constant.BillingCycle;
+import com.dgmoonlabs.cms.domain.business.order.constant.PassUnit;
 import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import com.dgmoonlabs.cms.global.error.BusinessException;
@@ -13,6 +14,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -33,6 +36,9 @@ public class Product extends BaseEntity {
 
     @Comment("판매하는 스트리밍 ID (스트리밍 설정에서 자동 관리, 상품 목록에는 나오지 않음)")
     private Long mediaId;
+
+    @Comment("판매하는 유료 게시글 ID (게시글 설정에서 자동 관리, 상품 목록에는 나오지 않음)")
+    private Long articleId;
 
     @Comment("카테고리 ID")
     private Long categoryId;
@@ -56,13 +62,48 @@ public class Product extends BaseEntity {
     @Comment("구독 결제 주기")
     private BillingCycle billingCycle;
 
+    @Comment("약정 기간(개월). 없으면 약정 없이 언제든 해지")
+    private Integer commitmentMonths;
+
+    @Comment("약정 중 해지 위약금 비율(%, 남은 회차 금액 기준)")
+    private Integer earlyTerminationFeeRate;
+
     @Column(length = 200)
     @Comment("후원 추천 금액 (쉼표로 구분)")
     private String donationPresets;
 
     @Column(precision = 15, scale = 2)
-    @Comment("후원 목표 금액")
+    @Comment("후원·펀딩 목표 금액")
     private BigDecimal goalAmount;
+
+    @Comment("펀딩 마감 일시")
+    private LocalDateTime fundingDeadline;
+
+    @Column(columnDefinition = "varchar(20)")
+    @Enumerated(EnumType.STRING)
+    @Comment("이용권 단위 (기간권·횟수권)")
+    private PassUnit passUnit;
+
+    @Comment("기간권 사용 기간(일)")
+    private Integer passDays;
+
+    @Comment("횟수권 횟수 (주문 수량만큼 곱해 발급)")
+    private Integer passCount;
+
+    @Comment("이 이용권으로 예약할 수 있는 예약 상품 ID")
+    private Long passProgramId;
+
+    @Comment("문의만 상품에서 상담 예약으로 연결할 예약 상품 ID")
+    private Long inquiryProgramId;
+
+    @Comment("선주문 판매 시작 일시 (없으면 지금부터)")
+    private LocalDateTime preorderSaleStartAt;
+
+    @Comment("선주문 판매 종료 일시 (없으면 계속 받음)")
+    private LocalDateTime preorderSaleEndAt;
+
+    @Comment("선주문 출고 예정일")
+    private LocalDate preorderShipDate;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Comment("옵션 그룹 (이름과 값 목록). 비어 있으면 단일 옵션 목록")
@@ -138,7 +179,36 @@ public class Product extends BaseEntity {
         this.saleType = saleType;
         this.billingCycle = saleType == ProductSaleType.SUBSCRIPTION ? billingCycle : null;
         this.donationPresets = saleType == ProductSaleType.DONATION ? donationPresets : null;
-        this.goalAmount = saleType == ProductSaleType.DONATION ? goalAmount : null;
+        this.goalAmount = saleType == ProductSaleType.DONATION || saleType == ProductSaleType.FUNDING ? goalAmount : null;
+    }
+
+    public void changeFunding(final LocalDateTime deadline) {
+        this.fundingDeadline = saleType == ProductSaleType.FUNDING ? deadline : null;
+    }
+
+    public void changePass(final PassUnit passUnit, final Integer passDays, final Integer passCount, final Long passProgramId) {
+        boolean isPass = saleType == ProductSaleType.PASS;
+        this.passUnit = isPass ? passUnit : null;
+        this.passDays = isPass && passUnit == PassUnit.PERIOD ? passDays : null;
+        this.passCount = isPass && passUnit == PassUnit.COUNT ? passCount : null;
+        this.passProgramId = isPass ? passProgramId : null;
+    }
+
+    public void changeInquiry(final Long inquiryProgramId) {
+        this.inquiryProgramId = saleType == ProductSaleType.INQUIRY ? inquiryProgramId : null;
+    }
+
+    public void changeCommitment(final Integer commitmentMonths, final Integer earlyTerminationFeeRate) {
+        boolean committed = saleType == ProductSaleType.SUBSCRIPTION && commitmentMonths != null;
+        this.commitmentMonths = committed ? commitmentMonths : null;
+        this.earlyTerminationFeeRate = committed ? earlyTerminationFeeRate : null;
+    }
+
+    public void changePreorder(final LocalDateTime saleStartAt, final LocalDateTime saleEndAt, final LocalDate shipDate) {
+        boolean isPreorder = saleType == ProductSaleType.PREORDER;
+        this.preorderSaleStartAt = isPreorder ? saleStartAt : null;
+        this.preorderSaleEndAt = isPreorder ? saleEndAt : null;
+        this.preorderShipDate = isPreorder ? shipDate : null;
     }
 
     public record OptionGroup(String name, List<String> values) {
@@ -198,6 +268,17 @@ public class Product extends BaseEntity {
     }
 
     public boolean isOnSale() {
-        return isEnabled && getDeletedAt() == null;
+        if (!isEnabled || getDeletedAt() != null) {
+            return false;
+        }
+        if (saleType == ProductSaleType.PREORDER) {
+            LocalDateTime now = LocalDateTime.now();
+            return (preorderSaleStartAt == null || !now.isBefore(preorderSaleStartAt))
+                    && (preorderSaleEndAt == null || !now.isAfter(preorderSaleEndAt));
+        }
+        if (saleType == ProductSaleType.FUNDING) {
+            return fundingDeadline == null || LocalDateTime.now().isBefore(fundingDeadline);
+        }
+        return true;
     }
 }

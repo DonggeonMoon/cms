@@ -4,14 +4,19 @@ import {useState} from 'react';
 import {createMemoryRouter, RouterProvider} from 'react-router';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {Program, SpaceLayout} from '../../api/domain';
+import {AuthProvider} from '../../auth/AuthContext';
 import {LayoutEditor} from '../../components/LayoutEditor';
 import {ReservationPicker} from './ReservationPicker';
 
+function respond401() {
+    return new Response(null, {status: 401});
+}
+
 const LAYOUT: SpaceLayout = {
     rows: 1, cols: 3, cells: [
-        {key: 'r0c0', row: 0, col: 0, kind: 'SEAT', label: 'A1', price: null},
-        {key: 'r0c1', row: 0, col: 1, kind: 'SEAT', label: 'A2', price: 20000},
-        {key: 'r0c2', row: 0, col: 2, kind: 'SEAT', label: 'A3', price: null},
+        {key: 'r0c0', row: 0, col: 0, kind: 'SEAT', label: 'A1', price: null, capacity: null},
+        {key: 'r0c1', row: 0, col: 1, kind: 'SEAT', label: 'A2', price: 20000, capacity: null},
+        {key: 'r0c2', row: 0, col: 2, kind: 'SEAT', label: 'A3', price: null, capacity: null},
     ],
 };
 
@@ -24,12 +29,13 @@ describe('reservation picker', () => {
     afterEach(() => vi.unstubAllGlobals());
 
     it('keeps taken seats disabled and prices the chosen seats', async () => {
-        vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({takenCells: ['r0c0'], slots: []}), {status: 200})));
+        vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+            url === '/api/auth/me' ? respond401() : new Response(JSON.stringify({takenCells: ['r0c0'], slots: []}), {status: 200})));
         const router = createMemoryRouter([
             {path: '/', element: <ReservationPicker program={EVENT}/>},
             {path: '/reservations/new', element: <p>예약 정보 입력</p>},
         ]);
-        render(<RouterProvider router={router}/>);
+        render(<AuthProvider><RouterProvider router={router}/></AuthProvider>);
 
         expect(await screen.findByRole('gridcell', {name: /A1.*예약됨/})).toBeDisabled();
         expect(screen.getByRole('button', {name: '예약하기'})).toBeDisabled();
@@ -39,6 +45,34 @@ describe('reservation picker', () => {
 
         await userEvent.click(screen.getByRole('button', {name: '예약하기'}));
         expect(router.state.location.search).toBe('?programId=9&cells=r0c1%2Cr0c2');
+    });
+
+    it('prices a tour by its party-type counts and requires a departure to be chosen', async () => {
+        vi.stubGlobal('fetch', vi.fn(async (url: string) => (url === '/api/auth/me' ? respond401() : new Response('{}', {status: 200}))));
+        const tour = {
+            id: 11, name: '제주도 3박4일', price: 0, reservationType: 'TOUR', layout: null, startDateTime: null, endDateTime: null,
+            slotMinutes: null, openTime: null, closeTime: null,
+            priceTiers: [{name: '성인', price: 100000}, {name: '아동', price: 50000}],
+            sessions: [{id: 21, name: '1차 출발', startAt: '2026-12-10T08:00:00', endAt: null, capacity: 10, reservedCount: 0, remaining: 10, isOpen: true}],
+        } as unknown as Program;
+        const router = createMemoryRouter([
+            {path: '/', element: <ReservationPicker program={tour}/>},
+            {path: '/reservations/new', element: <p>예약 정보 입력</p>},
+        ]);
+        render(<AuthProvider><RouterProvider router={router}/></AuthProvider>);
+
+        expect(screen.getByRole('button', {name: '예약하기'})).toBeDisabled();
+        const adult = await screen.findByLabelText(/성인/);
+        fireEvent.change(adult, {target: {value: '2'}});
+        const child = screen.getByLabelText(/아동/);
+        fireEvent.change(child, {target: {value: '1'}});
+        expect(screen.getByText(/예상 금액 250,000원/)).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '예약하기'})).toBeDisabled();
+
+        await userEvent.selectOptions(screen.getByLabelText('출발일 선택'), '21');
+        expect(screen.getByRole('button', {name: '예약하기'})).not.toBeDisabled();
+        await userEvent.click(screen.getByRole('button', {name: '예약하기'}));
+        expect(router.state.location.search).toBe('?programId=11&quantity=3&partyCounts=%7B%22%EC%84%B1%EC%9D%B8%22%3A2%2C%22%EC%95%84%EB%8F%99%22%3A1%7D&sessionId=21');
     });
 });
 
@@ -58,6 +92,7 @@ describe('layout editor', () => {
     it('prices item rentals by days and quantity with the deposit and stops at the remaining stock', async () => {
         const queries: string[] = [];
         vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+            if (url === '/api/auth/me') return respond401();
             queries.push(decodeURIComponent(url));
             return new Response(JSON.stringify({takenCells: [], slots: [], remainingItems: 2}), {status: 200});
         }));
@@ -69,7 +104,7 @@ describe('layout editor', () => {
             {path: '/', element: <ReservationPicker program={tent}/>},
             {path: '/reservations/new', element: <p>예약 정보 입력</p>},
         ]);
-        render(<RouterProvider router={router}/>);
+        render(<AuthProvider><RouterProvider router={router}/></AuthProvider>);
 
         const returnDay = await screen.findByLabelText(/반납일/);
         await userEvent.type(returnDay, '2030-01-04');

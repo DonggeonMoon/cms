@@ -8,6 +8,7 @@ import org.hibernate.annotations.Comment;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -37,6 +38,26 @@ public class StoreSetting extends BaseEntity {
     @Comment("테이블 이름 목록")
     private List<String> tables;
 
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    @Comment("배달 주문 받기")
+    private boolean localDeliveryEnabled;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Comment("배달 가능 지역 (우편번호 앞자리 목록)")
+    private List<String> deliveryZones;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("배달 요금")
+    private BigDecimal deliveryFee;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("배달 최소 주문 금액")
+    private BigDecimal deliveryMinimumAmount;
+
+    @Comment("배달 시간대 단위(분). 비우면 시간대를 받지 않고 바로 배달")
+    private Integer deliverySlotMinutes;
+
     @Comment("주문 받기 시작 시각")
     private LocalTime openTime;
 
@@ -57,7 +78,9 @@ public class StoreSetting extends BaseEntity {
     private String notice;
 
     public void update(final boolean pickupEnabled, final boolean dineInEnabled, final List<String> tables, final LocalTime openTime,
-                       final LocalTime closeTime, final List<DayOfWeek> closedDays, final boolean paused, final String notice) {
+                       final LocalTime closeTime, final List<DayOfWeek> closedDays, final boolean paused, final String notice,
+                       final boolean localDeliveryEnabled, final List<String> deliveryZones, final BigDecimal deliveryFee,
+                       final BigDecimal deliveryMinimumAmount, final Integer deliverySlotMinutes) {
         this.pickupEnabled = pickupEnabled;
         this.dineInEnabled = dineInEnabled;
         this.tables = tables;
@@ -66,10 +89,15 @@ public class StoreSetting extends BaseEntity {
         this.closedDays = closedDays;
         this.paused = paused;
         this.notice = notice;
+        this.localDeliveryEnabled = localDeliveryEnabled;
+        this.deliveryZones = deliveryZones;
+        this.deliveryFee = deliveryFee;
+        this.deliveryMinimumAmount = deliveryMinimumAmount;
+        this.deliverySlotMinutes = deliverySlotMinutes;
     }
 
     public boolean isOpenAt(final LocalDateTime now) {
-        if (paused || (!pickupEnabled && !dineInEnabled)) {
+        if (paused || (!pickupEnabled && !dineInEnabled && !localDeliveryEnabled)) {
             return false;
         }
         LocalTime time = now.toLocalTime();
@@ -87,6 +115,14 @@ public class StoreSetting extends BaseEntity {
 
     public List<String> tablesOrEmpty() {
         return tables == null ? List.of() : tables;
+    }
+
+    public List<String> deliveryZonesOrEmpty() {
+        return deliveryZones == null ? List.of() : deliveryZones;
+    }
+
+    public BigDecimal deliveryFeeOrZero() {
+        return deliveryFee == null ? BigDecimal.ZERO : deliveryFee;
     }
 
     private boolean isClosedDay(final DayOfWeek day) {

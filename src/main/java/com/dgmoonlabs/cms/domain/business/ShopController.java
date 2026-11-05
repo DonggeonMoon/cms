@@ -64,8 +64,9 @@ public class ShopController {
             @PathVariable final Long id,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate date,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime to) {
-        return ResponseEntity.ok(reservationService.availability(id, date, from, to));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime to,
+            @RequestParam(required = false) final Long sessionId) {
+        return ResponseEntity.ok(reservationService.availability(id, date, from, to, sessionId));
     }
 
     @GetMapping("/api/programs/{id}/reviews")

@@ -7,6 +7,8 @@ import com.dgmoonlabs.cms.domain.application.entity.ApplicationForm;
 import com.dgmoonlabs.cms.domain.application.entity.ApplicationSubmission;
 import com.dgmoonlabs.cms.domain.application.entity.FormField;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -31,7 +33,9 @@ public final class ApplicationDtos {
             boolean allowMultiple,
             boolean isEnabled,
             SelectionMethod selectionMethod,
-            @Positive Integer winnerCount
+            @Positive Integer winnerCount,
+            Long admissionFeeProductId,
+            @Size(max = 50) List<@NotBlank @Size(max = 50) String> judgeUsernames
     ) {
         public SelectionMethod selectionMethodOrDefault() {
             return selectionMethod == null ? SelectionMethod.REVIEW : selectionMethod;
@@ -41,13 +45,15 @@ public final class ApplicationDtos {
     public record FormResponse(Long id, String title, String contentHtml, List<FormField> fields, LocalDateTime startDateTime,
                                LocalDateTime endDateTime, Integer maximumSubmissions, long submissionCount,
                                boolean allowMultiple, boolean isEnabled, SelectionMethod selectionMethod, Integer winnerCount,
-                               LocalDateTime drawnAt, boolean isOpen, boolean applied, LocalDateTime createdAt) {
+                               LocalDateTime drawnAt, boolean isOpen, boolean applied, Long admissionFeeProductId,
+                               List<String> judgeUsernames, boolean isJudge, LocalDateTime createdAt) {
         public static FormResponse of(final ApplicationForm form, final List<FormField> fields, final long submissionCount,
-                                      final boolean isOpen, final boolean applied) {
+                                      final boolean isOpen, final boolean applied, final List<String> judgeUsernames,
+                                      final boolean isJudge) {
             return new FormResponse(form.getId(), form.getTitle(), form.getContentHtml(), fields, form.getStartDateTime(),
                     form.getEndDateTime(), form.getMaximumSubmissions(), submissionCount, form.isAllowMultiple(),
                     form.isEnabled(), form.getSelectionMethod(), form.getWinnerCount(), form.getDrawnAt(), isOpen, applied,
-                    form.getCreatedAt());
+                    form.getAdmissionFeeProductId(), judgeUsernames, isJudge, form.getCreatedAt());
         }
     }
 
@@ -73,12 +79,33 @@ public final class ApplicationDtos {
 
     public record SubmissionResponse(Long id, Long formId, String formTitle, Long memberId, String username,
                                      Map<String, Object> answers, SubmissionStatus status, String resultMessage,
-                                     String adminMemo, LocalDateTime createdAt) {
+                                     String adminMemo, Long admissionOrderId, BigDecimal averageScore, Integer scoreCount,
+                                     LocalDateTime createdAt) {
         public static SubmissionResponse of(final ApplicationSubmission submission, final Map<String, Object> answers,
                                             final String username, final boolean forAdmin) {
+            return of(submission, answers, username, forAdmin, null, null);
+        }
+
+        public static SubmissionResponse of(final ApplicationSubmission submission, final Map<String, Object> answers,
+                                            final String username, final boolean forAdmin, final BigDecimal averageScore,
+                                            final Integer scoreCount) {
             return new SubmissionResponse(submission.getId(), submission.getFormId(), submission.getFormTitle(),
                     submission.getMemberId(), username, answers, submission.getStatus(), submission.getResultMessage(),
-                    forAdmin ? submission.getAdminMemo() : null, submission.getCreatedAt());
+                    forAdmin ? submission.getAdminMemo() : null, submission.getAdmissionOrderId(), averageScore, scoreCount,
+                    submission.getCreatedAt());
         }
+    }
+
+    public record ScoreRequest(@NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal score, @Size(max = 1000) String comment) {
+    }
+
+    public record ScoreResponse(Long submissionId, BigDecimal score, String comment, LocalDateTime updatedAt) {
+    }
+
+    public record ScoreDetail(Long judgeMemberId, String judgeUsername, BigDecimal score, String comment, LocalDateTime updatedAt) {
+    }
+
+    public record JudgeSubmissionResponse(Long id, Long formId, Map<String, Object> answers, BigDecimal myScore,
+                                          String myComment, LocalDateTime createdAt) {
     }
 }

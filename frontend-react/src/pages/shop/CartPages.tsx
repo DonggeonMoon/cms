@@ -134,7 +134,8 @@ export function CartOrderPage() {
     }
     const store = items.length > 0 && items.every((item) => item.storeOrder);
     const mixed = items.some((item) => item.storeOrder) && !store;
-    const needsAddress = !store && items.some((item) => item.requiresShipping);
+    const delivering = store && storeChoice.fulfillmentType === 'LOCAL_DELIVERY';
+    const needsAddress = (!store && items.some((item) => item.requiresShipping)) || delivering;
     const previewLines = items.map((item) => ({productId: item.productId, productOptionId: item.productOptionId, quantity: item.quantity}));
     const submit = async (event: FormEvent) => {
         event.preventDefault();
@@ -142,7 +143,11 @@ export function CartOrderPage() {
         setError(null);
         try {
             const order = await shopApi.checkoutCart({cartItemIds: items.map((item) => item.id), ...discount,
-                ...(store ? {receiverName: receiver.receiverName, phoneNumber: receiver.phoneNumber, ...storeChoice} : receiver)});
+                ...(store ? {
+                    receiverName: receiver.receiverName, phoneNumber: receiver.phoneNumber, ...storeChoice,
+                    deliverySlotAt: storeChoice.deliverySlotAt ? `${storeChoice.deliverySlotAt}:00` : null,
+                    ...(delivering ? {postalCode: receiver.postalCode, address: receiver.address, detailAddress: receiver.detailAddress} : {}),
+                } : receiver)});
             navigate(`/checkout/ORDER/${order.id}`);
         } catch (e) {
             setError(e);
@@ -171,7 +176,7 @@ export function CartOrderPage() {
                                onChange={(e) => setReceiver({...receiver, receiverName: e.target.value})}/>
                         <Field label="연락처" name="phoneNumber" type="tel" required value={receiver.phoneNumber}
                                onChange={(e) => setReceiver({...receiver, phoneNumber: e.target.value})}/>
-                        {!store && <>
+                        {(!store || delivering) && <>
                         <Field label="우편번호" name="postalCode" value={receiver.postalCode}
                                onChange={(e) => setReceiver({...receiver, postalCode: e.target.value})}/>
                         <Field label="주소" name="address" required={needsAddress} value={receiver.address}
@@ -180,7 +185,7 @@ export function CartOrderPage() {
                                onChange={(e) => setReceiver({...receiver, detailAddress: e.target.value})}/>
                         </>}
                     </fieldset>
-                    <DiscountSelector lines={previewLines} postalCode={store ? null : receiver.postalCode} value={discount} onChange={setDiscount}/>
+                    <DiscountSelector lines={previewLines} postalCode={!store || delivering ? receiver.postalCode : null} value={discount} onChange={setDiscount}/>
                     <ErrorBanner error={error}/>
                     <div className="toolbar form-actions">
                         <button type="button" onClick={() => navigate('/cart')}>장바구니로</button>

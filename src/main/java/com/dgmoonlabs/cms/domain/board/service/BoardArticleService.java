@@ -8,6 +8,7 @@ import com.dgmoonlabs.cms.domain.board.entity.aritcle.BoardArticle;
 import com.dgmoonlabs.cms.domain.board.entity.aritcle.BoardArticleFile;
 import com.dgmoonlabs.cms.domain.board.entity.aritcle.BoardArticleLike;
 import com.dgmoonlabs.cms.domain.board.entity.aritcle.BoardConfig;
+import com.dgmoonlabs.cms.domain.board.repository.BoardArticleAccessRepository;
 import com.dgmoonlabs.cms.domain.board.repository.BoardArticleFileRepository;
 import com.dgmoonlabs.cms.domain.board.repository.BoardArticleLikeRepository;
 import com.dgmoonlabs.cms.domain.board.repository.BoardArticleRepository;
@@ -46,6 +47,8 @@ public class BoardArticleService {
     private final PasswordEncoder passwordEncoder;
     private final HtmlSanitizer htmlSanitizer;
     private final GradeService gradeService;
+    private final BoardArticleAccessRepository articleAccessRepository;
+    private final BoardArticleSalesService salesService;
 
     @Transactional(readOnly = true)
     public ArticleListResponse getArticles(final Long boardId, final String keyword, final int page) {
@@ -94,7 +97,17 @@ public class BoardArticleService {
         }
         article.increaseHit();
         boolean canModify = isOwnerOrAdmin(article) || guestPasswordMatches(article, password);
-        return ArticleDetailResponse.of(article, filesOf(articleId), canModify || article.isWrittenByGuest());
+        boolean purchased = isOwnerOrAdmin(article) || hasPurchased(article);
+        return ArticleDetailResponse.of(article, filesOf(articleId), canModify || article.isWrittenByGuest(), purchased);
+    }
+
+    private boolean hasPurchased(final BoardArticle article) {
+        if (!article.isPaid()) {
+            return true;
+        }
+        return CurrentUser.get().filter(user -> user.userType() == UserType.MEMBER)
+                .map(user -> articleAccessRepository.existsByMemberIdAndArticleIdAndRevokedAtIsNull(user.id(), article.getId()))
+                .orElse(false);
     }
 
     @Transactional
@@ -138,6 +151,10 @@ public class BoardArticleService {
                     request.isHidden());
         }
         Long articleId = articleRepository.save(article).getId();
+        if (permissions.isAdmin()) {
+            article.changeSale(request.paid(), request.price());
+            salesService.syncProduct(article);
+        }
         saveFiles(articleId, request.fileIdsOrEmpty());
         return articleId;
     }
@@ -155,6 +172,8 @@ public class BoardArticleService {
         if (isAdmin) {
             article.updateAdminFlags(request.isNotice(), request.noticeStartDateTime(), request.noticeEndDateTime(),
                     request.isHidden());
+            article.changeSale(request.paid(), request.price());
+            salesService.syncProduct(article);
         }
         articleFileRepository.deleteAllByArticleId(articleId);
         saveFiles(articleId, request.fileIdsOrEmpty());
@@ -165,6 +184,9 @@ public class BoardArticleService {
         BoardArticle article = findArticle(boardId, articleId);
         requireModifiable(article, password);
         article.delete();
+        if (article.isPaid()) {
+            salesService.syncProduct(article);
+        }
     }
 
     @Transactional
@@ -215,8 +237,12 @@ public class BoardArticleService {
         if (request.isSecret() && !config.isSupportsSecret()
                 || request.isNotice() && (!config.isSupportsNotice() || !isAdmin)
                 || !request.fileIdsOrEmpty().isEmpty() && !config.isSupportsAttachment()
-                || request.fileIdsOrEmpty().size() > config.getMaximumFileCount()) {
+                || request.fileIdsOrEmpty().size() > config.getMaximumFileCount()
+                || request.paid() && (!config.isSupportsPaidContent() || !isAdmin)) {
             throw new BusinessException(ErrorCode.FEATURE_NOT_SUPPORTED);
+        }
+        if (request.paid() && (request.price() == null || request.price().signum() <= 0)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         if (request.noticeStartDateTime() != null && request.noticeEndDateTime() != null
                 && !request.noticeEndDateTime().isAfter(request.noticeStartDateTime())) {

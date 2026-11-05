@@ -14,6 +14,7 @@ import com.dgmoonlabs.cms.domain.common.file.service.FileService;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.html.HtmlSanitizer;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
+import com.dgmoonlabs.cms.domain.business.order.constant.PassUnit;
 import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
 import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.DonationProgress;
 import com.dgmoonlabs.cms.domain.business.order.repository.OrderRepository;
@@ -25,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +69,7 @@ public class ProductService {
                 product.getSaleType() == ProductSaleType.DONATION
                         ? new DonationProgress(orderRepository.sumPaidDonations(id), orderRepository.countPaidDonations(id))
                         : null,
+                fundingInfoOf(product),
                 CurrentUser.isAdmin() && product.hasDigitalFiles() ? fileService.getFiles(product.getDigitalFileIds()) : null,
                 attributeService.values(id),
                 attributeService.specs(product)
@@ -119,12 +122,50 @@ public class ProductService {
         return productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(BusinessException::notFound);
     }
 
+    private FundingInfo fundingInfoOf(final Product product) {
+        if (product.getSaleType() != ProductSaleType.FUNDING) {
+            return null;
+        }
+        boolean resolved = product.getFundingDeadline() != null && !LocalDateTime.now().isBefore(product.getFundingDeadline());
+        var raised = orderRepository.sumPaidFunding(product.getId());
+        boolean succeeded = product.getGoalAmount() != null && raised.compareTo(product.getGoalAmount()) >= 0;
+        return new FundingInfo(product.getGoalAmount(), product.getFundingDeadline(), raised,
+                orderRepository.countPaidFunding(product.getId()), resolved, succeeded);
+    }
+
     private void changeSaleType(final Product product, final ProductSaveRequest request) {
         ProductSaleType saleType = request.saleTypeOrDefault();
         if (saleType == ProductSaleType.SUBSCRIPTION && request.billingCycle() == null) {
             throw new BusinessException(ErrorCode.BILLING_CYCLE_REQUIRED);
         }
+        if (saleType == ProductSaleType.PASS && (request.passUnit() == null || request.passProgramId() == null
+                || (request.passUnit() == PassUnit.PERIOD && request.passDays() == null)
+                || (request.passUnit() == PassUnit.COUNT && request.passCount() == null))) {
+            throw new BusinessException(ErrorCode.PASS_CONFIG_REQUIRED);
+        }
+        if (saleType == ProductSaleType.PREORDER && request.preorderShipDate() == null) {
+            throw new BusinessException(ErrorCode.PREORDER_SHIP_DATE_REQUIRED);
+        }
+        if (saleType == ProductSaleType.PREORDER && request.preorderSaleStartAt() != null && request.preorderSaleEndAt() != null
+                && !request.preorderSaleEndAt().isAfter(request.preorderSaleStartAt())) {
+            throw new BusinessException(ErrorCode.INVALID_PERIOD);
+        }
+        if (saleType == ProductSaleType.SUBSCRIPTION && request.commitmentMonths() != null && request.earlyTerminationFeeRate() == null) {
+            throw new BusinessException(ErrorCode.COMMITMENT_FEE_RATE_REQUIRED);
+        }
+        if (saleType == ProductSaleType.FUNDING && (request.goalAmount() == null || request.goalAmount().signum() <= 0
+                || request.fundingDeadline() == null)) {
+            throw new BusinessException(ErrorCode.FUNDING_GOAL_REQUIRED);
+        }
+        if (saleType == ProductSaleType.INQUIRY && request.inquiryProgramId() == null) {
+            throw new BusinessException(ErrorCode.INQUIRY_PROGRAM_REQUIRED);
+        }
         product.changeSaleType(saleType, request.billingCycle(), request.donationPresetsText(), request.goalAmount());
+        product.changePass(request.passUnit(), request.passDays(), request.passCount(), request.passProgramId());
+        product.changeInquiry(request.inquiryProgramId());
+        product.changePreorder(request.preorderSaleStartAt(), request.preorderSaleEndAt(), request.preorderShipDate());
+        product.changeCommitment(request.commitmentMonths(), request.earlyTerminationFeeRate());
+        product.changeFunding(request.fundingDeadline());
         product.changeGrades(gradeService.validGradeId(request.accessGradeId()),
                 gradeService.validGradeId(request.grantGradeId()), request.grantGradeDays());
         product.changeShipping(request.requiresShippingOrDefault());

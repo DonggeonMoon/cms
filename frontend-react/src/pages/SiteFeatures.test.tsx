@@ -316,7 +316,7 @@ describe('site features', () => {
         expect(await screen.findByText('상품 좋아요')).toBeInTheDocument();
         expect(screen.getByRole('link', {name: '#7'})).toHaveAttribute('href', '/products/7');
 
-        await userEvent.click(screen.getByRole('tab', {name: '프로그램 리뷰'}));
+        await userEvent.click(screen.getByRole('tab', {name: '예약 상품 리뷰'}));
         expect(await screen.findByText('강좌 좋아요')).toBeInTheDocument();
         expect(screen.getByRole('link', {name: '#9'})).toHaveAttribute('href', '/programs/9');
         expect(requested.some((url) => url.includes('targetType=PROGRAM'))).toBe(true);

@@ -13,7 +13,7 @@ import {LayoutEditor} from './LayoutEditor';
 import {StableLabel} from './StableLabel';
 import {type OptionSet, ProductOptionsEditor} from './ProductOptionsEditor';
 
-export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media' | 'time' | 'layout' | 'formFields' | 'productOptions' | 'categoryAttributes' | 'courseLessons';
+export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'date' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media' | 'time' | 'layout' | 'formFields' | 'productOptions' | 'categoryAttributes' | 'courseLessons';
 
 export interface FieldSpec {
     name: string;
@@ -234,7 +234,7 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
                 <div className="field">
                     {label}
                     <input id={id} type={field.type === 'number' ? 'number' : field.type === 'datetime' ? 'datetime-local'
-                        : field.type === 'password' ? 'password' : field.type === 'time' ? 'time' : 'text'}
+                        : field.type === 'date' ? 'date' : field.type === 'password' ? 'password' : field.type === 'time' ? 'time' : 'text'}
                            value={value == null ? '' : field.type === 'datetime' ? String(value).slice(0, 16) : String(value)}
                            required={field.required} placeholder={field.placeholder} min={field.min}
                            step={field.type === 'number' ? 'any' : undefined}

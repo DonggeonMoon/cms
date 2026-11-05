@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.business.reservation.entity;
 
+import com.dgmoonlabs.cms.domain.business.reservation.constant.QueueStatus;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationType;
 import com.dgmoonlabs.cms.global.crypto.EncryptedStringConverter;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
@@ -19,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Builder
@@ -160,6 +162,79 @@ public class Reservation extends BaseEntity {
     @Comment("반납 메모 (파손·연체로 보증금을 차감한 사유 등)")
     private String returnMemo;
 
+    @Comment("회차 ID (회차가 있는 프로그램·공연)")
+    private Long sessionId;
+
+    @Comment("결제 대신 쓴 이용권 ID")
+    private Long passId;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("예약 당시 연체료 (1개·1일)")
+    private BigDecimal lateFeePerDay;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("반납 때 정산한 연체료")
+    private BigDecimal lateFee;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("반납 때 보증금에서 차감한 미결제 연장료")
+    private BigDecimal unpaidExtensionFee;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("보증금으로 다 받지 못한 금액 (따로 받아야 할 금액)")
+    private BigDecimal outstandingAmount;
+
+    @Comment("결제를 기다리는 연장 ID")
+    private Long pendingExtensionId;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("결제를 기다리는 연장료")
+    private BigDecimal pendingExtensionFee;
+
+    @Column(unique = true, length = 40)
+    @Comment("체크인 코드 (QR로도 보여 줌)")
+    private String checkInCode;
+
+    @Comment("체크인한 일시")
+    private LocalDateTime checkedInAt;
+
+    @Comment("접수·대기 순번 (당일, 프로그램별)")
+    private Integer queueNumber;
+
+    @Column(columnDefinition = "varchar(20)")
+    @Enumerated(EnumType.STRING)
+    @Comment("접수·대기 상태")
+    private QueueStatus queueStatus;
+
+    @Comment("식당 테이블 예약 인원")
+    private Integer partySize;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Comment("인원 유형별 인원 수 (여행·투어, 유형명→인원)")
+    private Map<String, Integer> partyBreakdown;
+
+    public void checkIn(final LocalDateTime now) {
+        if (status != ReservationStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        if (checkedInAt != null) {
+            throw new BusinessException(ErrorCode.ALREADY_CHECKED_IN);
+        }
+        this.checkedInAt = now;
+    }
+
+    public void enterQueue(final int number) {
+        this.queueNumber = number;
+        this.queueStatus = QueueStatus.WAITING;
+    }
+
+    public void changeQueueStatus(final QueueStatus status) {
+        if (queueNumber == null) {
+            throw new BusinessException(ErrorCode.QUEUE_NOT_APPLICABLE);
+        }
+        this.queueStatus = status;
+    }
+
     public List<String> cellKeys() {
         return cells == null || cells.isBlank() ? List.of() : List.of(cells.split(","));
     }
@@ -205,7 +280,7 @@ public class Reservation extends BaseEntity {
         }
     }
 
-    public void markReturned(final LocalDateTime now, final BigDecimal refund, final String memo) {
+    public void requireOpenRental() {
         if (reservationType != ReservationType.ITEM_RENTAL) {
             throw new BusinessException(ErrorCode.NOT_ITEM_RENTAL);
         }
@@ -215,9 +290,58 @@ public class Reservation extends BaseEntity {
         if (status != ReservationStatus.CONFIRMED) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
+    }
+
+    public void markReturned(final LocalDateTime now, final BigDecimal refund, final String memo, final BigDecimal lateFee,
+                             final BigDecimal unpaidExtensionFee, final BigDecimal outstanding) {
+        requireOpenRental();
         this.returnedAt = now;
         this.depositRefunded = refund;
         this.returnMemo = memo;
+        this.lateFee = lateFee;
+        this.unpaidExtensionFee = unpaidExtensionFee.signum() == 0 ? null : unpaidExtensionFee;
+        this.outstandingAmount = outstanding.signum() == 0 ? null : outstanding;
+        clearPendingExtension();
+    }
+
+    /** 연장은 결제 전에도 반납일을 늘려 재고를 잡아 둔다. 결제 대기 연장이 있으면 다음 연장은 받지 않는다. */
+    public void extendTo(final LocalDateTime newEndAt, final Long extensionId, final BigDecimal pendingFee) {
+        requireOpenRental();
+        if (pendingExtensionId != null) {
+            throw new BusinessException(ErrorCode.EXTENSION_PAYMENT_PENDING);
+        }
+        this.endAt = newEndAt;
+        if (pendingFee != null && pendingFee.signum() > 0) {
+            this.pendingExtensionId = extensionId;
+            this.pendingExtensionFee = pendingFee;
+        }
+    }
+
+    public void extensionPaid(final Long extensionId) {
+        if (extensionId.equals(pendingExtensionId)) {
+            clearPendingExtension();
+        }
+    }
+
+    public void revertExtension(final Long extensionId, final LocalDateTime previousEndAt) {
+        requireOpenRental();
+        if (!extensionId.equals(pendingExtensionId)) {
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        this.endAt = previousEndAt;
+        clearPendingExtension();
+    }
+
+    private void clearPendingExtension() {
+        this.pendingExtensionId = null;
+        this.pendingExtensionFee = null;
+    }
+
+    public BigDecimal lateFeeAt(final LocalDateTime now) {
+        if (lateFeePerDay == null || quantity == null) {
+            return BigDecimal.ZERO;
+        }
+        return lateFeePerDay.multiply(BigDecimal.valueOf(lateDaysAt(now) * quantity));
     }
 
     public boolean isOverdueAt(final LocalDateTime now) {

@@ -6,9 +6,10 @@ export interface StoreChoice {
     fulfillmentType: FulfillmentType;
     tableName: string;
     requestMessage: string;
+    deliverySlotAt: string;
 }
 
-export const EMPTY_STORE_CHOICE: StoreChoice = {fulfillmentType: 'PICKUP', tableName: '', requestMessage: ''};
+export const EMPTY_STORE_CHOICE: StoreChoice = {fulfillmentType: 'PICKUP', tableName: '', requestMessage: '', deliverySlotAt: ''};
 
 export function StoreOrderFields({value, onChange, onAvailability}: {
     value: StoreChoice; onChange: (choice: StoreChoice) => void; onAvailability: (open: boolean) => void;
@@ -28,8 +29,9 @@ export function StoreOrderFields({value, onChange, onAvailability}: {
     if (!setting) {
         return error ? <ErrorBanner error={error}/> : <p className="muted">매장 정보를 불러오는 중…</p>;
     }
-    const types = (['PICKUP', 'DINE_IN'] as FulfillmentType[]).filter((type) =>
-        type === 'PICKUP' ? setting.pickupEnabled : setting.dineInEnabled);
+    const types = (['PICKUP', 'DINE_IN', 'LOCAL_DELIVERY'] as FulfillmentType[]).filter((type) =>
+        type === 'PICKUP' ? setting.pickupEnabled : type === 'DINE_IN' ? setting.dineInEnabled : setting.localDeliveryEnabled);
+    const delivering = value.fulfillmentType === 'LOCAL_DELIVERY';
     return (
         <fieldset>
             <legend>받는 방식</legend>
@@ -51,6 +53,20 @@ export function StoreOrderFields({value, onChange, onAvailability}: {
                         <option value="">선택해 주세요</option>
                         {setting.tables.map((table) => <option key={table} value={table}>{table}</option>)}
                     </select>
+                </div>
+            )}
+            {delivering && (
+                <p className="muted small">
+                    배달 가능 지역(우편번호 앞자리): {setting.deliveryZones.join(', ')}
+                    {setting.deliveryFee != null && ` · 배달 요금 ${setting.deliveryFee.toLocaleString()}원`}
+                    {setting.deliveryMinimumAmount != null && ` · 최소 주문 ${setting.deliveryMinimumAmount.toLocaleString()}원`}
+                </p>
+            )}
+            {delivering && setting.deliverySlotMinutes != null && (
+                <div className="field">
+                    <label htmlFor="deliverySlotAt">배달 받을 시간</label>
+                    <input id="deliverySlotAt" type="datetime-local" required step={setting.deliverySlotMinutes * 60}
+                           value={value.deliverySlotAt} onChange={(e) => onChange({...value, deliverySlotAt: e.target.value})}/>
                 </div>
             )}
             <div className="field">

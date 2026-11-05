@@ -8,7 +8,7 @@ import {memberApi} from '../../api/members';
 import {won} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {Field} from '../../components/Field';
-import {formatDateTime} from '../../components/format';
+import {formatDate, formatDateTime} from '../../components/format';
 import {BILLING_CYCLE} from '../../components/labels';
 import {reservationUsage} from '../../components/reservationUsage';
 import {StableLabel} from '../../components/StableLabel';
@@ -21,6 +21,11 @@ const MODES: Record<ProductSaleType, { title: string; receiverLegend: string; to
     SUBSCRIPTION: {title: '구독 신청', receiverLegend: '배송 정보', totalLabel: '회차별 결제 금액', submit: '구독하고 결제하기'},
     DONATION: {title: '후원 정보 입력', receiverLegend: '후원자 정보', totalLabel: '후원 금액', submit: '후원하고 결제하기'},
     QUOTE: {title: '견적 문의', receiverLegend: '연락처', totalLabel: '', submit: '견적 요청 보내기'},
+    PASS: {title: '이용권 구매', receiverLegend: '구매자 정보', totalLabel: '결제 금액', submit: '구매하고 결제하기'},
+    GIFT_CARD: {title: '상품권 구매', receiverLegend: '구매자 정보', totalLabel: '결제 금액', submit: '구매하고 결제하기'},
+    PREORDER: {title: '예약 판매 주문', receiverLegend: '배송 정보', totalLabel: '결제 예정 금액', submit: '예약 주문하고 결제하기'},
+    FUNDING: {title: '펀딩 참여', receiverLegend: '배송 정보', totalLabel: '결제 금액', submit: '펀딩 참여하고 결제하기'},
+    INQUIRY: {title: '', receiverLegend: '', totalLabel: '', submit: ''},
 };
 
 export function OrderFormPage() {
@@ -64,8 +69,11 @@ export function OrderFormPage() {
         : discount ? Math.round(subtotal * (100 - Number(discount.rate)) / 100) : subtotal;
     const mode = MODES[product.saleType ?? 'PURCHASE'];
     const purchase = (product.saleType ?? 'PURCHASE') === 'PURCHASE';
+    const shipsLikePurchase = product.saleType === 'PREORDER' || product.saleType === 'FUNDING';
     const store = purchase && product.storeOrder;
-    const needsAddress = purchase && !store && product.requiresShipping !== false;
+    const delivering = store && storeChoice.fulfillmentType === 'LOCAL_DELIVERY';
+    const needsAddress = shipsLikePurchase ? product.requiresShipping !== false
+        : purchase && ((!store && product.requiresShipping !== false) || delivering);
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
@@ -77,8 +85,9 @@ export function OrderFormPage() {
                 productOptionId: option ? option.id : null,
                 discountId: discount ? discount.id : null,
                 quantity,
-                ...(product.saleType === 'DONATION' || store ? {receiverName: receiver.receiverName, phoneNumber: receiver.phoneNumber} : receiver),
-                ...(store ? storeChoice : {}),
+                ...(product.saleType === 'DONATION' || (store && !delivering)
+                    ? {receiverName: receiver.receiverName, phoneNumber: receiver.phoneNumber} : receiver),
+                ...(store ? {...storeChoice, deliverySlotAt: storeChoice.deliverySlotAt ? `${storeChoice.deliverySlotAt}:00` : null} : {}),
                 amount: product.saleType === 'DONATION' ? amount : null,
                 ...(store ? {} : {requestMessage: product.saleType === 'QUOTE' ? requestMessage : null}),
                 ...(purchase ? rewards : {}),
@@ -101,6 +110,8 @@ export function OrderFormPage() {
                 {discount && (<><dt>할인</dt><dd>{discount.name} ({discount.rate}%)</dd></>)}
                 {product.saleType !== 'DONATION' && (<><dt>수량</dt><dd>{quantity}개</dd></>)}
                 {product.saleType === 'SUBSCRIPTION' && product.billingCycle && (<><dt>결제 주기</dt><dd>{BILLING_CYCLE[product.billingCycle]}</dd></>)}
+                {product.preorder?.shipDate && (<><dt>출고 예정일</dt><dd>{formatDate(product.preorder.shipDate)}</dd></>)}
+                {product.funding?.deadline && (<><dt>펀딩 마감</dt><dd>{formatDateTime(product.funding.deadline)}</dd></>)}
             </dl>
             <form onSubmit={submit}>
                 {product.saleType === 'QUOTE' && (
@@ -119,7 +130,7 @@ export function OrderFormPage() {
                            onChange={(e) => setReceiver({...receiver, receiverName: e.target.value})}/>
                     <Field label="연락처" name="phoneNumber" type="tel" required value={receiver.phoneNumber}
                            onChange={(e) => setReceiver({...receiver, phoneNumber: e.target.value})}/>
-                    {product.saleType !== 'DONATION' && !store && (
+                    {product.saleType !== 'DONATION' && (!store || delivering) && (
                         <>
                             <Field label="우편번호" name="postalCode" value={receiver.postalCode}
                                    onChange={(e) => setReceiver({...receiver, postalCode: e.target.value})}/>
@@ -156,8 +167,12 @@ export function ReservationFormPage() {
     const navigate = useNavigate();
     const programId = Number(params.get('programId'));
     const quantity = positive(params.get('quantity'));
+    const sessionId = params.get('sessionId') ? Number(params.get('sessionId')) : null;
+    const passId = params.get('passId') ? Number(params.get('passId')) : null;
+    const partySize = params.get('partySize') ? Number(params.get('partySize')) : null;
+    const partyCounts = params.get('partyCounts') ? JSON.parse(params.get('partyCounts')!) : null;
     const selection = {startAt: params.get('startAt'), endAt: params.get('endAt'),
-        cells: (params.get('cells') ?? '').split(',').filter(Boolean), quantity};
+        cells: (params.get('cells') ?? '').split(',').filter(Boolean), quantity, partyCounts};
     const [program, setProgram] = useState<Program | null>(null);
     const [form, setForm] = useState({applicantName: '', phoneNumber: ''});
     const [visit, setVisit] = useState({visitPostalCode: '', visitAddress: '', visitDetailAddress: '', requestMemo: ''});
@@ -184,7 +199,7 @@ export function ReservationFormPage() {
         setSubmitting(true);
         setError(null);
         try {
-            const reservation = await shopApi.reserve({programId, ...selection, quantity, ...form,
+            const reservation = await shopApi.reserve({programId, ...selection, quantity, sessionId, passId, partySize, ...form,
                 ...(program.reservationType === 'VISIT' ? visit : {})});
             navigate(reservation.status === 'PENDING_PAYMENT' ? `/checkout/RESERVATION/${reservation.id}` : '/mypage/reservations');
         } catch (e) {
@@ -198,19 +213,24 @@ export function ReservationFormPage() {
         <section className="card">
             <h1>예약 정보 입력</h1>
             <dl className="meta">
-                <dt>예약 항목</dt>
+                <dt>예약 상품</dt>
                 <dd><Link to={`/programs/${program.id}`}>{program.name}</Link></dd>
                 {program.reservationType === 'PROGRAM' ? (
                     <>
                         <dt>진행 일정</dt>
-                        <dd>{formatDateTime(program.startDateTime)} ~ {formatDateTime(program.endDateTime)}</dd>
+                        <dd>{(() => {
+                            const session = program.sessions.find((s) => s.id === sessionId);
+                            return session
+                                ? `${formatDateTime(session.startAt)}${session.endAt ? ` ~ ${formatDateTime(session.endAt)}` : ''}${session.name ? ` · ${session.name}` : ''}`
+                                : `${formatDateTime(program.startDateTime)} ~ ${formatDateTime(program.endDateTime)}`;
+                        })()}</dd>
                         <dt>인원</dt>
                         <dd>{quantity}명</dd>
                     </>
                 ) : (
                     <>
                         <dt>이용</dt>
-                        <dd>{reservationUsage({reservationType: program.reservationType, ...selection,
+                        <dd>{reservationUsage({reservationType: program.reservationType, ...selection, partySize, partyBreakdown: partyCounts,
                             cells: selection.cells.map((key) => program.layout?.cells.find((c) => c.key === key)?.label ?? key)})}</dd>
                         {program.reservationType === 'ITEM_RENTAL' && (
                             <>
@@ -245,7 +265,7 @@ export function ReservationFormPage() {
                         </div>
                     </fieldset>
                 )}
-                <p className="price align-right">결제 금액 {program.reservationType === 'PROGRAM'
+                <p className="price align-right">결제 금액 {passId ? '이용권 사용 (0원)' : program.reservationType === 'PROGRAM'
                     ? (Number(program.price) === 0 ? '무료' : won(Number(program.price) * quantity))
                     : won(estimateReservation(program, selection))}</p>
                 <ErrorBanner error={error}/>

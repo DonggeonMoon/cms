@@ -24,6 +24,7 @@ public record BoardSaveRequest(
         boolean supportsComment,
         boolean supportsLike,
         boolean supportsAttachment,
+        boolean supportsPaidContent,
         @Min(0) @Max(20) int maximumFileCount,
         @Min(1) @Max(100) int pageSize,
         Long readGradeId,

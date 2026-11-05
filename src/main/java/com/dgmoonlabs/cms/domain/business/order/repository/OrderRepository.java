@@ -3,6 +3,7 @@ package com.dgmoonlabs.cms.domain.business.order.repository;
 import com.dgmoonlabs.cms.domain.business.order.constant.FulfillmentType;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
+import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
 import com.dgmoonlabs.cms.domain.business.order.entity.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -44,6 +45,18 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             + "and o.saleType = com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType.DONATION "
             + "and o.status = com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus.PAID")
     long countPaidDonations(Long productId);
+
+    @Query("select coalesce(sum(o.totalPrice), 0) from Order o where o.productId = :productId "
+            + "and o.saleType = com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType.FUNDING "
+            + "and o.status = com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus.PAID")
+    BigDecimal sumPaidFunding(Long productId);
+
+    @Query("select count(o) from Order o where o.productId = :productId "
+            + "and o.saleType = com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType.FUNDING "
+            + "and o.status = com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus.PAID")
+    long countPaidFunding(Long productId);
+
+    List<Order> findAllByProductIdAndSaleTypeAndStatus(Long productId, ProductSaleType saleType, OrderStatus status);
 
     @Query("select o from Order o where o.orderNumber = :orderNumber and (:status is null or o.status = :status)")
     Page<Order> findByOrderNumberAndStatus(String orderNumber, OrderStatus status, Pageable pageable);

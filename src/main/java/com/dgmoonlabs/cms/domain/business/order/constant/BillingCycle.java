@@ -16,4 +16,8 @@ public enum BillingCycle {
     public LocalDate next(final LocalDate from) {
         return this == MONTHLY ? from.plusMonths(1) : from.plusYears(1);
     }
+
+    public int monthsPerCycle() {
+        return this == MONTHLY ? 1 : 12;
+    }
 }

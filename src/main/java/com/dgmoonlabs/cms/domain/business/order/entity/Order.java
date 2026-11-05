@@ -16,6 +16,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -61,7 +62,7 @@ public class Order extends BaseEntity {
     @Column(nullable = false, columnDefinition = "varchar(20)")
     @ColumnDefault("'DELIVERY'")
     @Enumerated(EnumType.STRING)
-    @Comment("받는 방식 (배송 / 포장 / 매장 식사)")
+    @Comment("받는 방식 (배송 / 포장 / 매장 식사 / 배달)")
     private FulfillmentType fulfillmentType = FulfillmentType.DELIVERY;
 
     @Column(length = 30)
@@ -70,6 +71,12 @@ public class Order extends BaseEntity {
 
     @Comment("매장 주문 번호 (날마다 1부터)")
     private Integer pickupNumber;
+
+    @Comment("배달 받을 시간대 (배달 주문만)")
+    private LocalDateTime deliverySlotAt;
+
+    @Comment("출고 예정일 (예약 판매 주문만, 주문 당시 상품 설정을 그대로 남김)")
+    private LocalDate shipDate;
 
     @Column(columnDefinition = "text")
     @Comment("요청 사항 (견적 요청 내용 포함)")
@@ -226,6 +233,15 @@ public class Order extends BaseEntity {
         this.customStatus = null;
         if (!status.isCancelable()) {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        this.status = OrderStatus.CANCELED;
+    }
+
+    /** 반품 승인으로 물건을 받은 뒤의 주문을 취소한다(일반 취소와 달리 배송·전달 완료 상태도 허용). */
+    public void returnCancel() {
+        this.customStatus = null;
+        if (!status.isReturnable()) {
+            throw new BusinessException(ErrorCode.RETURN_NOT_ALLOWED);
         }
         this.status = OrderStatus.CANCELED;
     }

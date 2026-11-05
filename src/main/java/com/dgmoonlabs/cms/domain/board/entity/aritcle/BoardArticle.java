@@ -9,6 +9,7 @@ import org.hibernate.annotations.Comment;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -59,6 +60,18 @@ public class BoardArticle extends BaseEntity {
     @Comment("비공개 여부")
     private boolean isHidden;
 
+    @ColumnDefault("false")
+    @Column(nullable = false)
+    @Comment("유료 글 여부 (결제한 회원만 본문을 본다)")
+    private boolean paid;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("판매 가격")
+    private BigDecimal price;
+
+    @Comment("판매용으로 자동 관리하는 상품 ID")
+    private Long productId;
+
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("사용자 타입")
@@ -105,6 +118,15 @@ public class BoardArticle extends BaseEntity {
         this.noticeStartDateTime = noticeStartDateTime;
         this.noticeEndDateTime = noticeEndDateTime;
         this.isHidden = isHidden;
+    }
+
+    public void changeSale(final boolean paid, final BigDecimal price) {
+        this.paid = paid;
+        this.price = paid ? price : null;
+    }
+
+    public void linkProduct(final Long productId) {
+        this.productId = productId;
     }
 
     public void increaseHit() {

@@ -6,9 +6,14 @@ import com.dgmoonlabs.cms.domain.application.constant.SubmissionStatus;
 import com.dgmoonlabs.cms.domain.application.dto.ApplicationDtos.*;
 import com.dgmoonlabs.cms.domain.application.entity.ApplicationForm;
 import com.dgmoonlabs.cms.domain.application.entity.ApplicationSubmission;
+import com.dgmoonlabs.cms.domain.application.entity.ContestScore;
 import com.dgmoonlabs.cms.domain.application.entity.FormField;
 import com.dgmoonlabs.cms.domain.application.repository.ApplicationFormRepository;
 import com.dgmoonlabs.cms.domain.application.repository.ApplicationSubmissionRepository;
+import com.dgmoonlabs.cms.domain.application.repository.ContestScoreRepository;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderCreateRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderResponse;
+import com.dgmoonlabs.cms.domain.business.order.service.OrderService;
 import com.dgmoonlabs.cms.domain.common.file.service.FileService;
 import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
 import com.dgmoonlabs.cms.domain.common.regex.service.RegexService;
@@ -30,6 +35,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,11 +51,13 @@ public class ApplicationService {
 
     private final ApplicationFormRepository formRepository;
     private final ApplicationSubmissionRepository submissionRepository;
+    private final ContestScoreRepository contestScoreRepository;
     private final MemberRepository memberRepository;
     private final FileService fileService;
     private final RegexService regexService;
     private final HtmlSanitizer htmlSanitizer;
     private final JsonMapper jsonMapper;
+    private final OrderService orderService;
 
     @Transactional(readOnly = true)
     public Page<FormResponse> getForms(final String keyword, final Pageable pageable) {
@@ -72,6 +80,7 @@ public class ApplicationService {
     @Transactional
     public Long createForm(final FormSaveRequest request) {
         Integer winnerCount = requireWinnerCount(request);
+        String judgeMemberIds = requireJudges(request);
         String html = htmlSanitizer.sanitize(request.contentHtml());
         return formRepository.save(ApplicationForm.builder()
                 .title(request.title().trim())
@@ -84,15 +93,18 @@ public class ApplicationService {
                 .isEnabled(request.isEnabled())
                 .selectionMethod(request.selectionMethodOrDefault())
                 .winnerCount(winnerCount)
+                .admissionFeeProductId(request.admissionFeeProductId())
+                .judgeMemberIds(judgeMemberIds)
                 .build()).getId();
     }
 
     @Transactional
     public void updateForm(final Long id, final FormSaveRequest request) {
         Integer winnerCount = requireWinnerCount(request);
+        String judgeMemberIds = requireJudges(request);
         findForm(id).update(request.title().trim(), htmlSanitizer.sanitize(request.contentHtml()), writeFields(request.fields()),
                 request.startDateTime(), request.endDateTime(), request.maximumSubmissions(), request.allowMultiple(),
-                request.isEnabled(), request.selectionMethodOrDefault(), winnerCount);
+                request.isEnabled(), request.selectionMethodOrDefault(), winnerCount, request.admissionFeeProductId(), judgeMemberIds);
     }
 
     @Transactional
@@ -154,12 +166,101 @@ public class ApplicationService {
 
     @Transactional(readOnly = true)
     public Page<SubmissionResponse> getSubmissions(final Long formId, final SubmissionStatus status, final Pageable pageable) {
-        findForm(formId);
+        ApplicationForm form = findForm(formId);
         Page<ApplicationSubmission> page = submissionRepository.search(formId, status, pageable);
         Map<Long, String> usernames = memberRepository.findAllById(page.map(ApplicationSubmission::getMemberId).toList()).stream()
                 .collect(Collectors.toMap(Member::getId, Member::getUsername));
-        return page.map(submission -> SubmissionResponse.of(submission, readAnswers(submission),
-                usernames.getOrDefault(submission.getMemberId(), "(탈퇴 회원)"), true));
+        Map<Long, List<ContestScore>> scoresBySubmission = form.getSelectionMethod() != SelectionMethod.CONTEST ? Map.of()
+                : contestScoreRepository.findAllBySubmissionIdIn(page.map(ApplicationSubmission::getId).toList())
+                .stream().collect(Collectors.groupingBy(ContestScore::getSubmissionId));
+        return page.map(submission -> {
+            List<ContestScore> scores = scoresBySubmission.getOrDefault(submission.getId(), List.of());
+            BigDecimal average = averageOf(scores);
+            return SubmissionResponse.of(submission, readAnswers(submission),
+                    usernames.getOrDefault(submission.getMemberId(), "(탈퇴 회원)"), true, average, scores.isEmpty() ? null : scores.size());
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public List<ScoreDetail> getScores(final Long submissionId) {
+        Map<Long, String> usernames = memberRepository.findAllById(
+                contestScoreRepository.findAllBySubmissionId(submissionId).stream().map(ContestScore::getJudgeMemberId).toList())
+                .stream().collect(Collectors.toMap(Member::getId, Member::getUsername));
+        return contestScoreRepository.findAllBySubmissionId(submissionId).stream()
+                .map(score -> new ScoreDetail(score.getJudgeMemberId(), usernames.getOrDefault(score.getJudgeMemberId(), "(탈퇴 회원)"),
+                        score.getScore(), score.getComment(), score.getModifiedAt()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<JudgeSubmissionResponse> getJudgeSubmissions(final Long judgeMemberId, final Long formId, final Pageable pageable) {
+        ApplicationForm form = findForm(formId);
+        if (!judgeIdsOf(form).contains(judgeMemberId)) {
+            throw new BusinessException(ErrorCode.NOT_JUDGE);
+        }
+        Page<ApplicationSubmission> page = submissionRepository.search(formId, null, pageable);
+        Map<Long, ContestScore> myScores = contestScoreRepository.findAllBySubmissionIdIn(page.map(ApplicationSubmission::getId).toList())
+                .stream().filter(score -> score.getJudgeMemberId().equals(judgeMemberId))
+                .collect(Collectors.toMap(ContestScore::getSubmissionId, score -> score));
+        return page.map(submission -> {
+            ContestScore mine = myScores.get(submission.getId());
+            return new JudgeSubmissionResponse(submission.getId(), submission.getFormId(), readAnswers(submission),
+                    mine == null ? null : mine.getScore(), mine == null ? null : mine.getComment(), submission.getCreatedAt());
+        });
+    }
+
+    @Transactional
+    public ScoreResponse submitScore(final Long judgeMemberId, final Long submissionId, final ScoreRequest request) {
+        ApplicationSubmission submission = submissionRepository.findById(submissionId).orElseThrow(BusinessException::notFound);
+        ApplicationForm form = findForm(submission.getFormId());
+        if (form.getSelectionMethod() != SelectionMethod.CONTEST) {
+            throw new BusinessException(ErrorCode.NOT_CONTEST);
+        }
+        if (!judgeIdsOf(form).contains(judgeMemberId)) {
+            throw new BusinessException(ErrorCode.NOT_JUDGE);
+        }
+        if (submission.getStatus() == SubmissionStatus.WITHDRAWN) {
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        String comment = blankToNull(request.comment());
+        ContestScore score = contestScoreRepository.findBySubmissionIdAndJudgeMemberId(submissionId, judgeMemberId)
+                .map(existing -> {
+                    existing.update(request.score(), comment);
+                    return existing;
+                })
+                .orElseGet(() -> contestScoreRepository.save(ContestScore.builder()
+                        .submissionId(submissionId).judgeMemberId(judgeMemberId).score(request.score()).comment(comment).build()));
+        return new ScoreResponse(submissionId, score.getScore(), score.getComment(), score.getModifiedAt());
+    }
+
+    @Transactional
+    public DrawResponse finalizeContest(final Long formId) {
+        ApplicationForm form = formRepository.findForUpdate(formId).orElseThrow(BusinessException::notFound);
+        LocalDateTime now = LocalDateTime.now();
+        form.markContestFinalized(now);
+        List<ApplicationSubmission> candidates = new ArrayList<>(submissionRepository.findAllByFormIdAndStatusIn(formId,
+                EnumSet.of(SubmissionStatus.RECEIVED, SubmissionStatus.REVIEWING)));
+        Map<Long, List<ContestScore>> scoresBySubmission = contestScoreRepository
+                .findAllBySubmissionIdIn(candidates.stream().map(ApplicationSubmission::getId).toList())
+                .stream().collect(Collectors.groupingBy(ContestScore::getSubmissionId));
+        candidates.sort(Comparator.comparing(
+                (ApplicationSubmission submission) -> averageOf(scoresBySubmission.getOrDefault(submission.getId(), List.of())),
+                Comparator.nullsFirst(Comparator.naturalOrder())).reversed().thenComparing(ApplicationSubmission::getId));
+        int winners = Math.min(form.getWinnerCount(), candidates.size());
+        for (int i = 0; i < candidates.size(); i++) {
+            boolean won = i < winners;
+            candidates.get(i).review(won ? SubmissionStatus.ACCEPTED : SubmissionStatus.REJECTED,
+                    won ? "공모전에 선정되었습니다." : "아쉽게도 선정되지 않았습니다.", candidates.get(i).getAdminMemo());
+        }
+        return new DrawResponse(candidates.size(), winners, now);
+    }
+
+    private static BigDecimal averageOf(final List<ContestScore> scores) {
+        if (scores.isEmpty()) {
+            return null;
+        }
+        BigDecimal sum = scores.stream().map(ContestScore::getScore).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return sum.divide(BigDecimal.valueOf(scores.size()), 2, RoundingMode.HALF_UP);
     }
 
     @Transactional
@@ -167,6 +268,31 @@ public class ApplicationService {
         ApplicationSubmission submission = submissionRepository.findById(submissionId).orElseThrow(BusinessException::notFound);
         submission.review(request.status(), blankToNull(request.resultMessage()), blankToNull(request.adminMemo()));
         return SubmissionResponse.of(submission, readAnswers(submission), null, true);
+    }
+
+    /** 합격한 신청자가 입학금·입회비 등을 결제한다. 가격은 연결한 상품을 그대로 따른다. */
+    @Transactional
+    public OrderResponse payAdmissionFee(final Long memberId, final Long submissionId) {
+        ApplicationSubmission submission = submissionRepository.findByIdAndMemberId(submissionId, memberId).orElseThrow(BusinessException::notFound);
+        if (submission.getStatus() != SubmissionStatus.ACCEPTED) {
+            throw new BusinessException(ErrorCode.SUBMISSION_NOT_ACCEPTED);
+        }
+        if (submission.getAdmissionOrderId() != null) {
+            throw new BusinessException(ErrorCode.ADMISSION_ALREADY_ORDERED);
+        }
+        ApplicationForm form = findForm(submission.getFormId());
+        if (form.getAdmissionFeeProductId() == null) {
+            throw new BusinessException(ErrorCode.ADMISSION_FEE_NOT_CONFIGURED);
+        }
+        Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(BusinessException::notFound);
+        OrderResponse order = orderService.createOrder(memberId, new OrderCreateRequest(form.getAdmissionFeeProductId(), null, 1,
+                null, member.getName(), phoneOf(member), null, null, null, null, form.getTitle(), null, null, null, null, null));
+        submission.linkAdmissionOrder(order.id());
+        return order;
+    }
+
+    private static String phoneOf(final Member member) {
+        return member.getMobilePhoneNumber() != null ? member.getMobilePhoneNumber() : member.getTelephoneNumber();
     }
 
     private Map<String, Object> validateAnswers(final List<FormField> fields, final Map<String, Object> input) {
@@ -258,8 +384,12 @@ public class ApplicationService {
         boolean applied = CurrentUser.isMember() && CurrentUser.get()
                 .map(user -> submissionRepository.existsByFormIdAndMemberIdAndStatusNot(form.getId(), user.id(), SubmissionStatus.WITHDRAWN))
                 .orElse(false);
+        List<Long> judgeIds = judgeIdsOf(form);
+        boolean isJudge = CurrentUser.isMember() && CurrentUser.get().map(user -> judgeIds.contains(user.id())).orElse(false);
+        List<String> judgeUsernames = judgeIds.isEmpty() ? List.of()
+                : memberRepository.findAllById(judgeIds).stream().map(Member::getUsername).toList();
         return FormResponse.of(form, readFields(form), submissionRepository.countActive(form.getId(), SubmissionStatus.WITHDRAWN),
-                form.isOpenAt(LocalDateTime.now()), applied);
+                form.isOpenAt(LocalDateTime.now()), applied, judgeUsernames, isJudge);
     }
 
     private ApplicationForm findForm(final Long id) {
@@ -267,13 +397,36 @@ public class ApplicationService {
     }
 
     private static Integer requireWinnerCount(final FormSaveRequest request) {
-        if (request.selectionMethodOrDefault() != SelectionMethod.LOTTERY) {
+        SelectionMethod method = request.selectionMethodOrDefault();
+        if (method != SelectionMethod.LOTTERY && method != SelectionMethod.CONTEST) {
             return null;
         }
         if (request.winnerCount() == null) {
             throw new BusinessException(ErrorCode.WINNER_COUNT_REQUIRED);
         }
         return request.winnerCount();
+    }
+
+    private String requireJudges(final FormSaveRequest request) {
+        if (request.selectionMethodOrDefault() != SelectionMethod.CONTEST) {
+            return null;
+        }
+        List<String> usernames = request.judgeUsernames();
+        if (usernames == null || usernames.isEmpty()) {
+            throw new BusinessException(ErrorCode.JUDGES_REQUIRED);
+        }
+        List<Long> judgeIds = usernames.stream().distinct().map(username ->
+                memberRepository.findByUsernameAndDeletedAtIsNull(username).orElseThrow(() -> new BusinessException(ErrorCode.JUDGE_NOT_FOUND))
+                        .getId()).toList();
+        return jsonMapper.writeValueAsString(judgeIds);
+    }
+
+    private List<Long> judgeIdsOf(final ApplicationForm form) {
+        if (form.getJudgeMemberIds() == null) {
+            return List.of();
+        }
+        return jsonMapper.readValue(form.getJudgeMemberIds(), new TypeReference<List<Long>>() {
+        });
     }
 
     private static String blankToNull(final String value) {

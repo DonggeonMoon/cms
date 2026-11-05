@@ -4,13 +4,18 @@ import {RequireRole} from './auth/RequireRole';
 import {AdminLayout} from './components/AdminLayout';
 import {RequireFeature} from './components/SiteContext';
 import {SiteLayout} from './components/SiteLayout';
-import {MyVotesPage} from './pages/shop/VotePages';
-import {VoteAdminPage} from './pages/admin/VoteAdminPage';
-import {MyNotificationsPage} from './pages/shop/NotificationPages';
 import {CodePage} from './pages/admin/CodePage';
 import {ApiKeyPage} from './pages/admin/ApiKeyPage';
 import {AllowedIpPage} from './pages/admin/AllowedIpPage';
+import {CustomerRecordAdminPage} from './pages/admin/CustomerRecordAdminPage';
+import {ClassAttendanceAdminPage} from './pages/admin/ClassAttendanceAdminPage';
+import {CheckInAdminPage} from './pages/admin/CheckInAdminPage';
+import {ReceptionQueueAdminPage} from './pages/admin/ReceptionQueueAdminPage';
 import {MyWishlistPage} from './pages/shop/WishlistPages';
+import {MyRecordsPage, MyAttendancePage} from './pages/shop/RecordPages';
+import {MyRepairsPage} from './pages/shop/RepairPages';
+import {MyVotesPage} from './pages/shop/VotePages';
+import {MyNotificationsPage} from './pages/shop/NotificationPages';
 import {CryptoKeyPage} from './pages/admin/CryptoKeyPage';
 import {
     ArchiveAdminPage,
@@ -22,6 +27,8 @@ import {
 import {DashboardPage} from './pages/admin/DashboardPage';
 import {FilePage} from './pages/admin/FilePage';
 import {ApplicationAdminPage} from './pages/admin/ApplicationAdminPage';
+import {RepairAdminPage} from './pages/admin/RepairAdminPage';
+import {VoteAdminPage} from './pages/admin/VoteAdminPage';
 import {MapAdminPage} from './pages/admin/MapAdminPage';
 import {MediaAdminPage} from './pages/admin/MediaAdminPage';
 import {ReportAdminPage, SatisfactionAdminPage} from './pages/admin/GovAdminPages';
@@ -35,9 +42,12 @@ import {PolicyAdminPage} from './pages/admin/PolicyAdminPage';
 import {RegexAdminPage} from './pages/admin/RegexAdminPage';
 import {GradeAdminPage} from './pages/admin/GradeAdminPage';
 import {ShippingPolicyPage} from './pages/admin/ShippingPolicyPage';
+import {LicenseKeyAdminPage} from './pages/admin/LicenseKeyAdminPage';
 import {
     DiscountAdminPage,
     OrderAdminPage,
+    OrderReturnAdminPage,
+    PassAdminPage,
     SubscriptionAdminPage,
     PaymentAdminPage,
     ProductAdminPage,
@@ -62,7 +72,7 @@ import {StoreOrderQueuePage, StoreSettingPage} from './pages/admin/StoreAdminPag
 import {JoinPage} from './pages/JoinPage';
 import {SocialJoinPage} from './pages/SocialJoinPage';
 import {AdminLoginPage, LoginPage} from './pages/LoginPage';
-import {ApplicationDetailPage, ApplicationListPage, MyApplicationsPage} from './pages/ApplicationPages';
+import {ApplicationDetailPage, ApplicationJudgingPage, ApplicationListPage, MyApplicationsPage} from './pages/ApplicationPages';
 import {MapPage} from './pages/MapPage';
 import {MediaDetailPage, MediaListPage, MyMediaPage} from './pages/MediaPages';
 import {CourseDetailPage, CourseListPage, MyCoursesPage} from './pages/CoursePages';
@@ -73,7 +83,10 @@ import {MyReportsPage, ReportDetailPage, ReportWritePage} from './pages/ReportPa
 import {
     CheckoutPage,
     MyOrdersPage,
+    MyPassesPage,
+    MyLicenseKeysPage,
     MyReservationsPage,
+    MyWalletPage,
     MySubscriptionsPage,
     ProductDetailPage,
     ProductListPage,
@@ -175,6 +188,9 @@ export const routes = [
                                 children: [
                                     {path: '/mypage/orders', element: <MyOrdersPage/>},
                                     {path: '/mypage/subscriptions', element: <MySubscriptionsPage/>},
+                                    {path: '/mypage/passes', element: <MyPassesPage/>},
+                                    {path: '/mypage/wallet', element: <MyWalletPage/>},
+                                    {path: '/mypage/license-keys', element: <MyLicenseKeysPage/>},
                                     {path: '/mypage/wishlist', element: <MyWishlistPage/>},
                                     {path: '/orders/new', element: <OrderFormPage/>},
                                     {path: '/cart', element: <CartPage/>},
@@ -188,6 +204,8 @@ export const routes = [
                                 element: <RequireFeature feature="PROGRAM"/>,
                                 children: [
                                     {path: '/mypage/reservations', element: <MyReservationsPage/>},
+                                    {path: '/mypage/records', element: <MyRecordsPage/>},
+                                    {path: '/mypage/attendance/:subscriptionId', element: <MyAttendancePage/>},
                                     {path: '/reservations/new', element: <ReservationFormPage/>},
                                 ],
                             },
@@ -197,7 +215,12 @@ export const routes = [
                             },
                             {
                                 element: <RequireFeature feature="APPLICATION"/>,
-                                children: [{path: '/mypage/applications', element: <MyApplicationsPage/>}, {path: '/mypage/votes', element: <MyVotesPage/>}],
+                                children: [
+                                    {path: '/mypage/applications', element: <MyApplicationsPage/>},
+                                    {path: '/mypage/repairs', element: <MyRepairsPage/>},
+                                    {path: '/mypage/votes', element: <MyVotesPage/>},
+                                    {path: '/applications/:id/judging', element: <ApplicationJudgingPage/>},
+                                ],
                             },
                             {
                                 element: <RequireFeature feature="MEDIA"/>,
@@ -261,7 +284,10 @@ export const routes = [
                                     {path: 'store', element: <StoreSettingPage/>},
                                     {path: 'store-orders', element: <StoreOrderQueuePage/>},
                                     {path: 'orders', element: <OrderAdminPage/>},
+                                    {path: 'order-returns', element: <OrderReturnAdminPage/>},
+                                    {path: 'license-keys', element: <LicenseKeyAdminPage/>},
                                     {path: 'subscriptions', element: <SubscriptionAdminPage/>},
+                                    {path: 'passes', element: <PassAdminPage/>},
                                 ],
                             },
                             {
@@ -269,6 +295,10 @@ export const routes = [
                                 children: [
                                     {path: 'programs', element: <ProgramAdminPage/>},
                                     {path: 'reservations', element: <ReservationAdminPage/>},
+                                    {path: 'customer-records', element: <CustomerRecordAdminPage/>},
+                                    {path: 'check-in', element: <CheckInAdminPage/>},
+                                    {path: 'reception-queue', element: <ReceptionQueueAdminPage/>},
+                                    {path: 'class-attendance', element: <ClassAttendanceAdminPage/>},
                                 ],
                             },
                             {
@@ -277,7 +307,11 @@ export const routes = [
                             },
                             {
                                 element: <RequireFeature feature="APPLICATION"/>,
-                                children: [{path: 'applications', element: <ApplicationAdminPage/>}, {path: 'votes', element: <VoteAdminPage/>}],
+                                children: [
+                                    {path: 'applications', element: <ApplicationAdminPage/>},
+                                    {path: 'repairs', element: <RepairAdminPage/>},
+                                    {path: 'votes', element: <VoteAdminPage/>},
+                                ],
                             },
                             {
                                 element: <RequireFeature feature={['PRODUCT', 'PROGRAM']}/>,

@@ -1,6 +1,6 @@
 import {type FormEvent, useCallback, useEffect, useMemo, useState} from 'react';
 import {Link, useNavigate, useParams, useSearchParams} from 'react-router';
-import type {Order, PaymentMethod, ProductDetail, ProductSaleType, ProductSummary, Program, Reservation, ReservationType, Review, ReviewTargetType, Subscription} from '../../api/domain';
+import type {GiftCard, MemberPass, MyLicenseKey, Order, OrderReturn, OrderReturnType, PaymentMethod, ProductDetail, ProductSaleType, ProductSummary, Program, Reservation, ReservationType, Review, ReviewTargetType, Subscription, WalletLedgerEntry} from '../../api/domain';
 import {shopApi} from '../../api/endpoints';
 import {useStatusLabels} from '../../api/statuses';
 import type {Page} from '../../api/types';
@@ -14,12 +14,13 @@ import {Field} from '../../components/Field';
 import {formatDate, formatDateTime} from '../../components/format';
 import {HtmlView} from '../../components/HtmlView';
 import {ListSearch, pageParams} from '../../components/ListSearch';
-import {BILLING_CYCLE, ORDER_STATUS, RESERVATION_STATUS, RESERVATION_TYPE, SALE_TYPE} from '../../components/labels';
+import {BILLING_CYCLE, LEDGER_TYPE, ORDER_STATUS, PASS_UNIT, QUEUE_STATUS, RESERVATION_STATUS, RESERVATION_TYPE, RETURN_STATUS, RETURN_TYPE, SALE_TYPE} from '../../components/labels';
 import {Pagination} from '../../components/Pagination';
 import {Thumbnail} from '../../components/Thumbnail';
 import {StableLabel} from '../../components/StableLabel';
 import {useFeatureMenuName} from '../../components/SiteContext';
 import {GradeBadge} from '../../components/GradeBadge';
+import {ProgressAndMessages} from '../../components/ProgressPanel';
 import {OptionPicker} from './OptionPicker';
 import {CategoryFilters} from './CategoryFilters';
 import {useCategories} from '../../api/categories';
@@ -102,6 +103,11 @@ const ACTION_LABEL: Record<ProductSaleType, string> = {
     SUBSCRIPTION: '구독하기',
     DONATION: '후원하기',
     QUOTE: '견적 문의하기',
+    PASS: '구매하기',
+    GIFT_CARD: '구매하기',
+    PREORDER: '예약 주문하기',
+    FUNDING: '펀딩 참여하기',
+    INQUIRY: '상담 예약하기',
 };
 
 function DonationProgressBar({product}: { product: ProductDetail }) {
@@ -113,6 +119,28 @@ function DonationProgressBar({product}: { product: ProductDetail }) {
             <p>
                 <strong>{won(raised)}</strong> 모금{goal && <> · 목표 {won(goal)} ({Math.floor(raised * 100 / goal)}%)</>}
                 <span className="muted small"> · 후원자 {product.donation?.supporterCount ?? 0}명</span>
+            </p>
+        </div>
+    );
+}
+
+function FundingProgressBar({product}: { product: ProductDetail }) {
+    const funding = product.funding;
+    if (!funding) {
+        return null;
+    }
+    const raised = Number(funding.raisedAmount);
+    const goal = funding.goalAmount ? Number(funding.goalAmount) : null;
+    return (
+        <div className="donation-progress">
+            {goal && <progress value={Math.min(raised, goal)} max={goal} aria-label="펀딩 달성률"/>}
+            <p>
+                <strong>{won(raised)}</strong> 펀딩{goal && <> · 목표 {won(goal)} ({Math.floor(raised * 100 / goal)}%)</>}
+                <span className="muted small"> · 참여자 {funding.supporterCount}명</span>
+            </p>
+            <p className="notice-box">
+                {funding.deadline && `마감 ${formatDateTime(funding.deadline)}`}
+                {funding.resolved && (funding.succeeded ? ' · 목표를 달성했습니다.' : ' · 목표를 못 채워 모든 결제가 환불되었습니다.')}
             </p>
         </div>
     );
@@ -175,6 +203,13 @@ export function ProductDetailPage() {
         return <p className="muted">불러오는 중…</p>;
     }
     const soldOut = product.availableQuantity === 0;
+    const now = new Date();
+    const preorderClosed = product.preorder != null
+        && ((product.preorder.saleStartAt != null && now < new Date(product.preorder.saleStartAt))
+            || (product.preorder.saleEndAt != null && now > new Date(product.preorder.saleEndAt)));
+    const fundingClosed = product.funding != null
+        && (product.funding.resolved || (product.funding.deadline != null && now > new Date(product.funding.deadline)));
+    const unavailable = (soldOut && product.saleType !== 'DONATION') || preorderClosed || fundingClosed;
     return (
         <>
             <section className="card product-detail">
@@ -187,8 +222,26 @@ export function ProductDetailPage() {
                     {product.description && <p className="muted">{product.description}</p>}
                     <p className="price">{priceLabel(product)}</p>
                     {product.donation && <DonationProgressBar product={product}/>}
+                    {product.funding && <FundingProgressBar product={product}/>}
+                    {product.saleType === 'SUBSCRIPTION' && product.commitmentMonths && (
+                        <p className="notice-box">
+                            {product.commitmentMonths}개월 약정 · 약정 중 해지하면 남은 기간 금액의 {product.earlyTerminationFeeRate}%를 위약금으로 청구합니다.
+                        </p>
+                    )}
+                    {product.preorder && (
+                        <p className="notice-box">
+                            예약 판매{product.preorder.saleStartAt && ` · 판매 시작 ${formatDateTime(product.preorder.saleStartAt)}`}
+                            {product.preorder.saleEndAt && ` · 판매 종료 ${formatDateTime(product.preorder.saleEndAt)}`}
+                            {product.preorder.shipDate && ` · 출고 예정일 ${formatDate(product.preorder.shipDate)}`}
+                        </p>
+                    )}
                     {product.averageRating != null && <p>평점 {'★'.repeat(Math.round(product.averageRating))} {product.averageRating.toFixed(1)}</p>}
-                    {product.saleType !== 'DONATION' && <p className="muted small">재고 {product.availableQuantity ?? '충분'}</p>}
+                    {product.saleType === 'INQUIRY' && (
+                        <p className="notice-box">결제 없이 상담 예약으로 문의할 수 있는 상품입니다.</p>
+                    )}
+                    {product.saleType !== 'DONATION' && product.saleType !== 'INQUIRY' && (
+                        <p className="muted small">재고 {product.availableQuantity ?? '충분'}</p>
+                    )}
                     {product.specs.length > 0 && (
                         <table className="spec-table">
                             <caption>상품 사양</caption>
@@ -207,7 +260,15 @@ export function ProductDetailPage() {
                             {(product.downloadLimit != null || product.downloadDays != null) && ' 받을 수 있습니다.'}
                         </p>
                     )}
-                    {user?.userType === 'MEMBER' ? (
+                    {product.saleType === 'INQUIRY' ? (
+                        user?.userType === 'MEMBER' ? (
+                            <Link className="button primary" to={`/reservations/new?programId=${product.inquiry?.programId}`}>
+                                {ACTION_LABEL.INQUIRY}
+                            </Link>
+                        ) : (
+                            <p className="muted"><Link to="/login" state={{from: `/products/${id}`}}>로그인</Link> 후 상담을 예약할 수 있습니다.</p>
+                        )
+                    ) : user?.userType === 'MEMBER' ? (
                         <form onSubmit={order}>
                             {product.saleType === 'DONATION' && (
                                 <div className="field">
@@ -251,9 +312,11 @@ export function ProductDetailPage() {
                                 {product.saleType === 'PURCHASE' && (
                                     <button type="button" disabled={soldOut || needsOption} onClick={addToCart}>장바구니 담기</button>
                                 )}
-                                <button type="submit" className="primary" disabled={(soldOut && product.saleType !== 'DONATION') || needsOption}>
-                                    <StableLabel current={soldOut && product.saleType !== 'DONATION' ? '품절' : ACTION_LABEL[product.saleType ?? 'PURCHASE']}
-                                                 labels={['품절', ...Object.values(ACTION_LABEL)]}/>
+                                <button type="submit" className="primary" disabled={unavailable || needsOption}>
+                                    <StableLabel current={soldOut && product.saleType !== 'DONATION' ? '품절'
+                                        : preorderClosed ? '판매 기간이 아닙니다'
+                                            : fundingClosed ? '펀딩이 마감되었습니다' : ACTION_LABEL[product.saleType ?? 'PURCHASE']}
+                                                 labels={['품절', '판매 기간이 아닙니다', '펀딩이 마감되었습니다', ...Object.values(ACTION_LABEL)]}/>
                                 </button>
                             </div>
                         </form>
@@ -280,7 +343,7 @@ const REVIEW_TARGETS = {
     PROGRAM: {
         load: shopApi.programReviews,
         add: shopApi.addProgramReview,
-        hint: '예약이 확정된 프로그램에만 리뷰를 남길 수 있습니다.',
+        hint: '예약이 확정된 예약 상품에만 리뷰를 남길 수 있습니다.',
     },
 };
 
@@ -369,12 +432,12 @@ export function ProgramListPage() {
     return (
         <section className="card">
             <h1>{programTitle}</h1>
-            <ListSearch label="프로그램 검색" placeholder="프로그램명 검색"/>
+            <ListSearch label="예약 상품 검색" placeholder="예약 상품명 검색"/>
             <ErrorBanner error={error}/>
             <div className="product-grid">
                 {data?.content.map((program) => <ProgramCard key={program.id} program={program}/>)}
             </div>
-            {data?.content.length === 0 && <p className="muted">{keyword ? '검색 결과가 없습니다.' : '신청 가능한 프로그램이 없습니다.'}</p>}
+            {data?.content.length === 0 && <p className="muted">{keyword ? '검색 결과가 없습니다.' : '신청 가능한 예약 상품이 없습니다.'}</p>}
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={(next) => setParams(pageParams(keyword, next))}/>}
         </section>
     );
@@ -388,6 +451,8 @@ const PRICE_UNIT: Record<ReservationType, string> = {
     EVENT: '좌석',
     ITEM_RENTAL: '1개·1일',
     VISIT: '1회',
+    TABLE: '칸·예약 단위',
+    TOUR: '인원 유형별',
 };
 
 export function ProgramDetailPage() {
@@ -396,15 +461,35 @@ export function ProgramDetailPage() {
     const {user} = useAuth();
     const [program, setProgram] = useState<Program | null>(null);
     const [quantity, setQuantity] = useState(1);
+    const [sessionId, setSessionId] = useState('');
+    const [passes, setPasses] = useState<MemberPass[]>([]);
+    const [passId, setPassId] = useState('');
     const [error, setError] = useState<unknown>(null);
 
     useEffect(() => {
         shopApi.program(id).then(setProgram).catch(setError);
     }, [id]);
 
+    useEffect(() => {
+        if (user?.userType === 'MEMBER') {
+            shopApi.usablePasses(id).then(setPasses).catch(() => setPasses([]));
+        }
+    }, [id, user?.userType]);
+
+    const sessions = (program?.sessions ?? []).filter((s) => s.isOpen);
+    const chosenSession = sessions.find((s) => String(s.id) === sessionId) ?? null;
+    const remaining = chosenSession?.remaining ?? null;
+
     const reserve = (event: FormEvent) => {
         event.preventDefault();
-        navigate(`/reservations/new?${new URLSearchParams({programId: String(id), quantity: String(quantity)})}`);
+        const query = new URLSearchParams({programId: String(id), quantity: String(quantity)});
+        if (sessionId) {
+            query.set('sessionId', sessionId);
+        }
+        if (passId) {
+            query.set('passId', passId);
+        }
+        navigate(`/reservations/new?${query}`);
     };
 
     if (error && !program) {
@@ -426,9 +511,15 @@ export function ProgramDetailPage() {
                     <dt>유형</dt>
                     <dd>{RESERVATION_TYPE[program.reservationType]}</dd>
                     <dt>가격</dt>
-                    <dd>{Number(program.price) === 0 ? '무료' : `${won(program.price)} / ${PRICE_UNIT[program.reservationType]}`}</dd>
-                    <dt>{program.reservationType === 'EVENT' ? '공연 일시' : program.reservationType === 'PROGRAM' ? '진행 일정' : '예약 가능 기간'}</dt>
-                    <dd>{formatDateTime(program.startDateTime)}{program.endDateTime && ` ~ ${formatDateTime(program.endDateTime)}`}</dd>
+                    <dd>{program.reservationType === 'TOUR'
+                        ? (program.priceTiers ?? []).map((t) => `${t.name} ${won(t.price)}`).join(' · ')
+                        : Number(program.price) === 0 ? '무료' : `${won(program.price)} / ${PRICE_UNIT[program.reservationType]}`}</dd>
+                    {program.reservationType !== 'TOUR' && (
+                        <>
+                            <dt>{program.reservationType === 'EVENT' ? '공연 일시' : program.reservationType === 'PROGRAM' ? '진행 일정' : '예약 가능 기간'}</dt>
+                            <dd>{formatDateTime(program.startDateTime)}{program.endDateTime && ` ~ ${formatDateTime(program.endDateTime)}`}</dd>
+                        </>
+                    )}
                     <dt>신청 기간</dt>
                     <dd>{formatDateTime(program.applicationStartDateTime)} ~ {formatDateTime(program.applicationEndDateTime)}</dd>
                     {program.averageRating != null && (
@@ -450,12 +541,46 @@ export function ProgramDetailPage() {
                     <ReservationPicker program={program}/>
                 ) : user?.userType === 'MEMBER' ? (
                     <form onSubmit={reserve}>
-                        <Field label="인원" name="quantity" type="number" min={1} value={quantity}
+                        {sessions.length > 0 && (
+                            <div className="field">
+                                <label htmlFor="sessionId">수업 선택</label>
+                                <select id="sessionId" required value={sessionId} onChange={(e) => {
+                                    setSessionId(e.target.value);
+                                    setQuantity(1);
+                                }}>
+                                    <option value="">선택</option>
+                                    {sessions.map((s) => (
+                                        <option key={s.id} value={s.id} disabled={s.remaining === 0}>
+                                            {s.name ? `${s.name} · ` : ''}{formatDateTime(s.startAt)}
+                                            {s.remaining != null && ` (잔여 ${s.remaining}명)`}{s.remaining === 0 && ' 마감'}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        <Field label="인원" name="quantity" type="number" min={1} max={remaining ?? undefined} value={quantity}
                                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}/>
-                        <p className="price align-right">결제 금액 {won(Number(program.price) * quantity)}</p>
+                        {passes.length > 0 && (
+                            <div className="field">
+                                <label htmlFor="passId">이용권으로 신청</label>
+                                <select id="passId" value={passId} onChange={(e) => setPassId(e.target.value)}>
+                                    <option value="">결제로 신청</option>
+                                    {passes.map((pass) => (
+                                        <option key={pass.id} value={pass.id}>
+                                            {pass.productName}{pass.unit === 'COUNT' ? ` (잔여 ${pass.remainingCount}회)` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        <p className="price align-right">
+                            결제 금액 {passId ? '이용권 사용 (0원)' : won(Number(program.price) * quantity)}
+                        </p>
                         <ErrorBanner error={error}/>
                         <div className="toolbar form-actions">
-                            <button type="submit" className="primary">신청하기</button>
+                            <button type="submit" className="primary" disabled={sessions.length > 0 && (!chosenSession || (remaining != null && quantity > remaining))}>
+                                신청하기
+                            </button>
                         </div>
                     </form>
                 ) : (
@@ -476,11 +601,12 @@ const METHODS: { value: PaymentMethod; label: string }[] = [
     {value: 'BANK_TRANSFER', label: '계좌이체'},
     {value: 'VIRTUAL_ACCOUNT', label: '가상계좌'},
     {value: 'MOBILE', label: '휴대폰'},
+    {value: 'PREPAID', label: '지갑(적립금)'},
 ];
 
 export function CheckoutPage() {
     const params = useParams();
-    const type = params.type === 'RESERVATION' ? 'RESERVATION' : 'ORDER';
+    const type = params.type === 'RESERVATION' ? 'RESERVATION' : params.type === 'RESERVATION_EXTENSION' ? 'RESERVATION_EXTENSION' : 'ORDER';
     const id = Number(params.id);
     const navigate = useNavigate();
     const [target, setTarget] = useState<{ title: string; amount: number; payable: boolean } | null>(null);
@@ -495,6 +621,17 @@ export function CheckoutPage() {
                 amount: Number(order.totalPrice),
                 payable: order.status === 'PENDING_PAYMENT',
             })).catch(setError);
+        } else if (type === 'RESERVATION_EXTENSION') {
+            shopApi.myReservations(0).then((page) => {
+                const reservation = page.content.find((r) => r.pendingExtensionId === id);
+                if (reservation) {
+                    setTarget({
+                        title: `${reservation.programName} 연장료 (${reservation.reservationNumber})`,
+                        amount: Number(reservation.pendingExtensionFee ?? 0),
+                        payable: true,
+                    });
+                }
+            }).catch(setError);
         } else {
             shopApi.myReservations(0).then((page) => {
                 const reservation = page.content.find((r) => r.id === id);
@@ -557,9 +694,15 @@ export function MyOrdersPage() {
     const navigate = useNavigate();
     const [page, setPage] = useState(0);
     const [data, setData] = useState<Page<Order> | null>(null);
+    const [returns, setReturns] = useState<Map<number, OrderReturn>>(new Map());
     const [error, setError] = useState<unknown>(null);
     const reload = useCallback(() => {
         shopApi.myOrders(page).then(setData).catch(setError);
+        shopApi.myReturnRequests(0).then((returnPage) => {
+            const byOrder = new Map<number, OrderReturn>();
+            returnPage.content.forEach((r) => byOrder.set(r.orderId, r));
+            setReturns(byOrder);
+        }).catch(setError);
     }, [page]);
     useEffect(reload, [reload]);
 
@@ -569,7 +712,7 @@ export function MyOrdersPage() {
             <ErrorBanner error={error}/>
             <div className="table-wrap">
                 <table>
-                    <thead><tr><th>주문번호</th><th>상품</th><th>금액</th><th>상태</th><th>주문일</th><th>결제</th><th>취소</th></tr></thead>
+                    <thead><tr><th>주문번호</th><th>상품</th><th>금액</th><th>상태</th><th>주문일</th><th>진행·메시지</th><th>결제</th><th>반품·교환</th><th>취소</th></tr></thead>
                     <tbody>
                     {data?.content.map((order) => (
                         <tr key={order.id}>
@@ -598,6 +741,7 @@ export function MyOrdersPage() {
                             <td>
                                 <OrderAmount order={order}/>
                                 {order.saleType !== 'PURCHASE' && <span className="badge">{SALE_TYPE[order.saleType]}</span>}
+                                {order.shipDate && <div className="muted small">출고 예정일 {formatDate(order.shipDate)}</div>}
                                 {order.quoteMessage && <div className="muted small">{order.quoteMessage}</div>}
                             </td>
                             <td>
@@ -605,12 +749,27 @@ export function MyOrdersPage() {
                                 {order.trackingNumber && <div className="muted small">{order.courier} {order.trackingNumber}</div>}
                             </td>
                             <td>{formatDateTime(order.createdAt)}</td>
+                            <td>
+                                <details>
+                                    <summary>보기</summary>
+                                    <ProgressAndMessages
+                                        getProgress={() => shopApi.progress('ORDER', order.id)}
+                                        listMessages={() => shopApi.messages.list('ORDER', order.id)}
+                                        postMessage={(content, fileIds) => shopApi.messages.post('ORDER', order.id, {content, fileIds})}
+                                    />
+                                </details>
+                            </td>
                             <td className="button-cell">
                                 {order.status === 'PENDING_PAYMENT' && <Link className="button primary" to={`/checkout/ORDER/${order.id}`}>결제</Link>}
                                 {order.status === 'QUOTED' && (
                                     <button type="button" className="primary" onClick={() => {
                                         shopApi.acceptQuote(order.id).then(() => navigate(`/checkout/ORDER/${order.id}`)).catch(setError);
                                     }}>견적 수락</button>
+                                )}
+                            </td>
+                            <td className="button-cell">
+                                {order.saleType === 'PURCHASE' && ['PAID', 'SHIPPING', 'PREPARING', 'READY', 'DELIVERED', 'COMPLETED'].includes(order.status) && (
+                                    <ReturnCell order={order} existing={returns.get(order.id)} onDone={reload}/>
                                 )}
                             </td>
                             <td className="button-cell">
@@ -624,12 +783,63 @@ export function MyOrdersPage() {
                             </td>
                         </tr>
                     ))}
-                    {data?.content.length === 0 && <tr><td colSpan={7} className="muted">주문 내역이 없습니다.</td></tr>}
+                    {data?.content.length === 0 && <tr><td colSpan={9} className="muted">주문 내역이 없습니다.</td></tr>}
                     </tbody>
                 </table>
             </div>
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
         </section>
+    );
+}
+
+function ReturnCell({order, existing, onDone}: { order: Order; existing: OrderReturn | undefined; onDone: () => void }) {
+    const [open, setOpen] = useState(false);
+    const [type, setType] = useState<OrderReturnType>('RETURN');
+    const [reason, setReason] = useState('');
+    const [exchangeOptionId, setExchangeOptionId] = useState('');
+    const [product, setProduct] = useState<ProductDetail | null>(null);
+    const [error, setError] = useState<unknown>(null);
+    const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (open && type === 'EXCHANGE' && !product) {
+            shopApi.product(order.productId).then(setProduct).catch(setError);
+        }
+    }, [open, type, product, order.productId]);
+
+    if (existing && existing.status !== 'REJECTED') {
+        return (
+            <span className="badge">{RETURN_TYPE[existing.type]} {RETURN_STATUS[existing.status]}</span>
+        );
+    }
+    if (!open) {
+        return <button type="button" onClick={() => setOpen(true)}>반품·교환 신청</button>;
+    }
+    return (
+        <div className="small">
+            {existing?.status === 'REJECTED' && <div className="muted">지난 신청 거절됨{existing.adminMemo ? `: ${existing.adminMemo}` : ''}</div>}
+            <select value={type} onChange={(e) => setType(e.target.value as OrderReturnType)}>
+                <option value="RETURN">반품</option>
+                <option value="EXCHANGE">교환</option>
+            </select>
+            {type === 'EXCHANGE' && (
+                <select value={exchangeOptionId} onChange={(e) => setExchangeOptionId(e.target.value)}>
+                    <option value="">교환할 옵션</option>
+                    {product?.options.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                </select>
+            )}
+            <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="신청 이유"/>
+            <button type="button" className="primary" disabled={submitting || !reason.trim() || (type === 'EXCHANGE' && !exchangeOptionId)}
+                    onClick={() => {
+                        setSubmitting(true);
+                        shopApi.requestReturn(order.id, type, reason.trim(), type === 'EXCHANGE' ? Number(exchangeOptionId) : null)
+                            .then(() => {
+                                setOpen(false);
+                                onDone();
+                            }).catch(setError).finally(() => setSubmitting(false));
+                    }}>신청하기</button>
+            <ErrorBanner error={error}/>
+        </div>
     );
 }
 
@@ -649,7 +859,7 @@ export function MyReservationsPage() {
             <ErrorBanner error={error}/>
             <div className="table-wrap">
                 <table>
-                    <thead><tr><th>예약번호</th><th>예약 항목</th><th>이용</th><th>수량</th><th>금액</th><th>상태</th><th>결제</th><th>취소</th></tr></thead>
+                    <thead><tr><th>예약번호</th><th>예약 상품</th><th>이용</th><th>수량</th><th>금액</th><th>상태</th><th>체크인</th><th>결제</th><th>연장</th><th>취소</th></tr></thead>
                     <tbody>
                     {data?.content.map((reservation) => (
                         <tr key={reservation.id}>
@@ -685,9 +895,31 @@ export function MyReservationsPage() {
                                     </div>
                                 )}
                             </td>
+                            <td>
+                                {reservation.checkedInAt ? (
+                                    <>
+                                        <span className="badge ok">{formatDateTime(reservation.checkedInAt)} 체크인</span>
+                                        {reservation.queueNumber != null && (
+                                            <div className="muted small">대기 {reservation.queueNumber}번 · {QUEUE_STATUS[reservation.queueStatus ?? 'WAITING']}</div>
+                                        )}
+                                    </>
+                                ) : reservation.status === 'CONFIRMED' && reservation.checkInCode && (
+                                    <details>
+                                        <summary>체크인 코드</summary>
+                                        <img alt="체크인 QR 코드" width={120} height={120}
+                                             src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${reservation.checkInCode}`}/>
+                                        <div><code>{reservation.checkInCode}</code></div>
+                                    </details>
+                                )}
+                            </td>
                             <td className="button-cell">
                                 {reservation.status === 'PENDING_PAYMENT' && (
                                     <Link className="button primary" to={`/checkout/RESERVATION/${reservation.id}`}>결제</Link>
+                                )}
+                            </td>
+                            <td className="button-cell">
+                                {reservation.reservationType === 'ITEM_RENTAL' && reservation.status === 'CONFIRMED' && !reservation.returnedAt && (
+                                    <ExtensionCell reservation={reservation} onDone={reload}/>
                                 )}
                             </td>
                             <td className="button-cell">
@@ -701,11 +933,222 @@ export function MyReservationsPage() {
                             </td>
                         </tr>
                     ))}
-                    {data?.content.length === 0 && <tr><td colSpan={7} className="muted">예약 내역이 없습니다.</td></tr>}
+                    {data?.content.length === 0 && <tr><td colSpan={9} className="muted">예약 내역이 없습니다.</td></tr>}
                     </tbody>
                 </table>
             </div>
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
+        </section>
+    );
+}
+
+function ExtensionCell({reservation, onDone}: { reservation: Reservation; onDone: () => void }) {
+    const [newEndAt, setNewEndAt] = useState('');
+    const [error, setError] = useState<unknown>(null);
+
+    if (reservation.pendingExtensionId) {
+        return (
+            <div className="small">
+                <div>연장료 {won(reservation.pendingExtensionFee ?? 0)}</div>
+                <Link className="button primary" to={`/checkout/RESERVATION_EXTENSION/${reservation.pendingExtensionId}`}>결제</Link>
+                <button type="button" className="danger" onClick={() => {
+                    if (window.confirm('연장 신청을 취소할까요?')) {
+                        shopApi.cancelExtension(reservation.id).then(onDone).catch(setError);
+                    }
+                }}>연장 취소</button>
+                <ErrorBanner error={error}/>
+            </div>
+        );
+    }
+    return (
+        <div className="small">
+            <input type="date" aria-label="새 반납일" min={dateOf(reservation.endAt)} value={newEndAt}
+                   onChange={(e) => setNewEndAt(e.target.value)}/>
+            <button type="button" disabled={!newEndAt} onClick={() => {
+                shopApi.extendReservation(reservation.id, `${newEndAt}T00:00:00`).then(onDone).catch(setError);
+            }}>연장 신청</button>
+            {reservation.unpaidExtensionFee != null && Number(reservation.unpaidExtensionFee) > 0 && (
+                <div className="muted">미결제 연장료 {won(reservation.unpaidExtensionFee)}</div>
+            )}
+            <ErrorBanner error={error}/>
+        </div>
+    );
+}
+
+const dateOf = (value: string | null) => (value ? value.slice(0, 10) : '');
+
+export function MyPassesPage() {
+    const [page, setPage] = useState(0);
+    const [data, setData] = useState<Page<MemberPass> | null>(null);
+    const [error, setError] = useState<unknown>(null);
+    useEffect(() => {
+        shopApi.myPasses(page).then(setData).catch(setError);
+    }, [page]);
+
+    return (
+        <section className="card">
+            <h1>이용권</h1>
+            <ErrorBanner error={error}/>
+            <div className="table-wrap">
+                <table>
+                    <thead><tr><th>이용권</th><th>단위</th><th>남은 횟수</th><th>만료일</th><th>상태</th></tr></thead>
+                    <tbody>
+                    {data?.content.map((pass) => (
+                        <tr key={pass.id}>
+                            <td>{pass.productName}</td>
+                            <td>{PASS_UNIT[pass.unit]}</td>
+                            <td>{pass.unit === 'COUNT' ? `${pass.remainingCount ?? 0}/${pass.totalCount ?? 0}` : '-'}</td>
+                            <td>{pass.expiresAt ? formatDate(pass.expiresAt) : '-'}</td>
+                            <td>
+                                {pass.status === 'ACTIVE' && <span className="badge ok">사용 가능</span>}
+                                {pass.status === 'USED_UP' && <span className="badge">다 씀</span>}
+                                {pass.status === 'CANCELED' && <span className="badge">취소</span>}
+                            </td>
+                        </tr>
+                    ))}
+                    {data?.content.length === 0 && <tr><td colSpan={5} className="muted">이용권이 없습니다.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
+        </section>
+    );
+}
+
+export function MyLicenseKeysPage() {
+    const [page, setPage] = useState(0);
+    const [data, setData] = useState<Page<MyLicenseKey> | null>(null);
+    const [error, setError] = useState<unknown>(null);
+    useEffect(() => {
+        shopApi.myLicenseKeys(page).then(setData).catch(setError);
+    }, [page]);
+
+    return (
+        <section className="card">
+            <h1>라이선스 키</h1>
+            <ErrorBanner error={error}/>
+            <div className="table-wrap">
+                <table>
+                    <thead><tr><th>상품</th><th>키</th><th>받은 날</th></tr></thead>
+                    <tbody>
+                    {data?.content.map((key) => (
+                        <tr key={key.id}>
+                            <td>{key.productName}</td>
+                            <td><code>{key.code}</code></td>
+                            <td>{key.assignedAt ? formatDateTime(key.assignedAt) : '-'}</td>
+                        </tr>
+                    ))}
+                    {data?.content.length === 0 && <tr><td colSpan={3} className="muted">받은 라이선스 키가 없습니다.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
+        </section>
+    );
+}
+
+export function MyWalletPage() {
+    const [balance, setBalance] = useState(0);
+    const [ledgerPage, setLedgerPage] = useState(0);
+    const [ledger, setLedger] = useState<Page<WalletLedgerEntry> | null>(null);
+    const [codesPage, setCodesPage] = useState(0);
+    const [codes, setCodes] = useState<Page<GiftCard> | null>(null);
+    const [issueAmount, setIssueAmount] = useState('');
+    const [redeemCode, setRedeemCode] = useState('');
+    const [error, setError] = useState<unknown>(null);
+    const [busy, setBusy] = useState(false);
+
+    const reload = useCallback(() => {
+        shopApi.wallet.balance().then(setBalance).catch(setError);
+        shopApi.wallet.ledger(ledgerPage).then(setLedger).catch(setError);
+        shopApi.wallet.myGiftCodes(codesPage).then(setCodes).catch(setError);
+    }, [ledgerPage, codesPage]);
+    useEffect(reload, [reload]);
+
+    const issueCode = async (e: FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setBusy(true);
+        try {
+            await shopApi.wallet.issueGiftCode(Number(issueAmount));
+            setIssueAmount('');
+            reload();
+        } catch (err) {
+            setError(err);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const redeem = async (e: FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setBusy(true);
+        try {
+            await shopApi.wallet.redeem(redeemCode);
+            setRedeemCode('');
+            reload();
+        } catch (err) {
+            setError(err);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <section className="card">
+            <h1>지갑</h1>
+            <ErrorBanner error={error}/>
+            <p className="price">{won(balance)}</p>
+
+            <h2>상품권 코드로 충전</h2>
+            <form onSubmit={redeem} className="inline-form">
+                <input value={redeemCode} onChange={(e) => setRedeemCode(e.target.value)} placeholder="상품권 코드" required/>
+                <button type="submit" className="primary" disabled={busy}>충전하기</button>
+            </form>
+
+            <h2>상품권 발급 (잔액에서 차감)</h2>
+            <form onSubmit={issueCode} className="inline-form">
+                <input type="number" min={1} value={issueAmount} onChange={(e) => setIssueAmount(e.target.value)} placeholder="금액(원)" required/>
+                <button type="submit" className="primary" disabled={busy}>발급하기</button>
+            </form>
+            <div className="table-wrap">
+                <table>
+                    <thead><tr><th>코드</th><th>금액</th><th>상태</th><th>발급일</th></tr></thead>
+                    <tbody>
+                    {codes?.content.map((card) => (
+                        <tr key={card.id}>
+                            <td><code>{card.code}</code></td>
+                            <td>{won(card.amount)}</td>
+                            <td>{card.status === 'UNUSED' ? <span className="badge ok">미사용</span> : <span className="badge">사용됨</span>}</td>
+                            <td>{formatDateTime(card.createdAt)}</td>
+                        </tr>
+                    ))}
+                    {codes?.content.length === 0 && <tr><td colSpan={4} className="muted">발급한 상품권이 없습니다.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+            {codes && <Pagination page={codesPage} totalPages={codes.page.totalPages} onChange={setCodesPage}/>}
+
+            <h2>이용 내역</h2>
+            <div className="table-wrap">
+                <table>
+                    <thead><tr><th>구분</th><th>금액</th><th>잔액</th><th>메모</th><th>일시</th></tr></thead>
+                    <tbody>
+                    {ledger?.content.map((entry) => (
+                        <tr key={entry.id}>
+                            <td>{LEDGER_TYPE[entry.type]}</td>
+                            <td>{won(entry.amount)}</td>
+                            <td>{won(entry.balanceAfter)}</td>
+                            <td>{entry.memo ?? '-'}</td>
+                            <td>{formatDateTime(entry.createdAt)}</td>
+                        </tr>
+                    ))}
+                    {ledger?.content.length === 0 && <tr><td colSpan={5} className="muted">내역이 없습니다.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+            {ledger && <Pagination page={ledgerPage} totalPages={ledger.page.totalPages} onChange={setLedgerPage}/>}
         </section>
     );
 }
@@ -736,10 +1179,17 @@ export function MySubscriptionsPage() {
                                 {item.status === 'PAUSED' && <span className="badge">일시정지{item.resumeOn ? ` (${item.resumeOn}에 재개)` : ''}</span>}
                                 {item.status === 'CANCELED' && <span className="badge">해지</span>}
                                 {item.pendingProductId && <div className="muted small">다음 결제부터 {item.pendingProductName}로 변경</div>}
+                                {item.commitmentEndDate && item.status !== 'CANCELED' && (
+                                    <div className="muted small">
+                                        {formatDate(item.commitmentEndDate)}까지 약정
+                                        {item.earlyTerminationFee > 0 && ` (지금 해지하면 위약금 ${won(item.earlyTerminationFee)})`}
+                                    </div>
+                                )}
                             </td>
                             <td>{item.nextBillingDate ?? '-'}</td>
                             <td>{formatDateTime(item.startedAt)}</td>
                             <td className="button-cell">
+                                <Link to={`/mypage/attendance/${item.id}`}>출결 보기</Link>
                                 {item.status !== 'CANCELED' && <SubscriptionActions subscription={item} onDone={reload}/>}
                             </td>
                         </tr>
@@ -787,7 +1237,10 @@ function SubscriptionActions({subscription, onDone}: { subscription: Subscriptio
                 <button type="button" onClick={openPlans}>상품 변경</button>
             )}
             <button type="button" className="danger" onClick={() => {
-                if (window.confirm('구독을 해지할까요? 다음 결제일부터 결제되지 않습니다.')) {
+                const message = subscription.earlyTerminationFee > 0
+                    ? `구독을 해지할까요? 약정 기간이 남아 위약금 ${won(subscription.earlyTerminationFee)}이 바로 결제됩니다.`
+                    : '구독을 해지할까요? 다음 결제일부터 결제되지 않습니다.';
+                if (window.confirm(message)) {
                     run(shopApi.cancelSubscription(subscription.id));
                 }
             }}>해지</button>

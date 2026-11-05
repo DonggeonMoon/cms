@@ -75,8 +75,11 @@ export const adminApi = {
         unpublish: (id: number) => request<D.Content>(`/api/admin/contents/${id}/unpublish`, {method: 'POST'}),
     },
     discounts: resource<D.Discount>('/api/admin/discounts'),
-    products: resource<D.ProductDetail>('/api/products', (id) => `/api/products/${id}`, '/api/admin/products',
-        (id) => `/api/admin/products/${id}`),
+    products: {
+        ...resource<D.ProductDetail>('/api/products', (id) => `/api/products/${id}`, '/api/admin/products',
+            (id) => `/api/admin/products/${id}`),
+        resolveFunding: () => request<{ failed: number }>('/api/admin/products/funding/resolve', {method: 'POST'}),
+    },
     programs: resource<D.Program>('/api/programs', (id) => `/api/programs/${id}`, '/api/admin/programs',
         (id) => `/api/admin/programs/${id}`),
     menus: {
@@ -124,6 +127,26 @@ export const adminApi = {
         ship: (id: number, courier: string, trackingNumber: string) =>
             request<D.Order>(`/api/admin/orders/${id}/shipment`, {method: 'PUT', body: {courier, trackingNumber}}),
     },
+    returnRequests: {
+        search: (query: Query) => request<Page<D.OrderReturn>>('/api/admin/orders/return-requests', {query}),
+        approve: (id: number) => request<D.OrderReturn>(`/api/admin/orders/return-requests/${id}/approve`, {method: 'POST'}),
+        reject: (id: number, adminMemo: string) =>
+            request<D.OrderReturn>(`/api/admin/orders/return-requests/${id}/reject`, {method: 'POST', body: {adminMemo}}),
+    },
+    licenseKeys: {
+        addBulk: (productId: number, codes: string[]) =>
+            request<{ added: number; duplicate: number }>('/api/admin/license-keys/bulk', {method: 'POST', body: {productId, codes}}),
+        search: (productId: number, page: number) =>
+            request<Page<D.LicenseKey>>('/api/admin/license-keys', {query: {productId, page}}),
+        availableCount: (productId: number) => request<number>('/api/admin/license-keys/available-count', {query: {productId}}),
+        remove: (id: number) => request<void>(`/api/admin/license-keys/${id}`, {method: 'DELETE'}),
+    },
+    votes: {
+        search: (query: Query) => request<Page<D.Vote>>('/api/admin/votes', {query}),
+        create: (body: Body) => request<D.Vote>('/api/admin/votes', {method: 'POST', body}),
+        close: (id: number) => request<D.Vote>(`/api/admin/votes/${id}/close`, {method: 'POST'}),
+        remove: (id: number) => request<void>(`/api/admin/votes/${id}`, {method: 'DELETE'}),
+    },
     shippingPolicy: {
         save: (body: Body) => request<D.ShippingPolicy>('/api/admin/shipping-policy', {method: 'PUT', body}),
     },
@@ -135,6 +158,9 @@ export const adminApi = {
             request<D.Submission>(`/api/admin/applications/submissions/${submissionId}`, {method: 'PUT', body}),
         draw: (id: number) => request<D.DrawResult>(`/api/admin/applications/${id}/draw`, {method: 'POST'}),
         summary: (id: number, query: Query) => request<D.SubmissionSummary>(`/api/admin/applications/${id}/summary`, {query}),
+        finalizeContest: (id: number) => request<D.DrawResult>(`/api/admin/applications/${id}/finalize-contest`, {method: 'POST'}),
+        scores: (submissionId: number) =>
+            request<D.ScoreDetail[]>(`/api/admin/applications/submissions/${submissionId}/scores`),
     },
     subscriptions: {
         search: (query: Query) => request<Page<D.Subscription>>('/api/admin/subscriptions', {query}),
@@ -156,6 +182,61 @@ export const adminApi = {
             request<D.Reservation>(`/api/admin/reservations/${id}/complete`, {method: 'POST', body}),
         returnItems: (id: number, body: { deduction: number; memo: string }) =>
             request<D.Reservation>(`/api/admin/reservations/${id}/return`, {method: 'POST', body}),
+        extend: (id: number, endAt: string, paid: boolean) =>
+            request<D.Reservation>(`/api/admin/reservations/${id}/extend`, {method: 'POST', body: {endAt, paid}}),
+        cancelExtension: (id: number) => request<D.Reservation>(`/api/admin/reservations/${id}/extension/cancel`, {method: 'POST'}),
+        extensions: (id: number) => request<D.ReservationExtension[]>(`/api/admin/reservations/${id}/extensions`),
+        checkIn: (code: string) => request<D.Reservation>('/api/admin/reservations/check-in', {method: 'POST', body: {code}}),
+        queue: (programId: number, date?: string) =>
+            request<D.Reservation[]>('/api/admin/reservations/queue', {query: {programId, date}}),
+        changeQueueStatus: (id: number, status: D.QueueStatus) =>
+            request<D.Reservation>(`/api/admin/reservations/${id}/queue-status`, {method: 'POST', body: {status}}),
+    },
+    sessions: {
+        create: (programId: number, body: Body) =>
+            request<D.ProgramSession>(`/api/admin/programs/${programId}/sessions`, {method: 'POST', body}),
+        update: (programId: number, id: number, body: Body) =>
+            request<D.ProgramSession>(`/api/admin/programs/${programId}/sessions/${id}`, {method: 'PUT', body}),
+        remove: (programId: number, id: number) =>
+            request<void>(`/api/admin/programs/${programId}/sessions/${id}`, {method: 'DELETE'}),
+    },
+    customerRecords: {
+        search: (query: Query) => request<Page<D.CustomerRecord>>('/api/admin/customer-records', {query}),
+        create: (body: Body) => request<D.CustomerRecord>('/api/admin/customer-records', {method: 'POST', body}),
+        update: (id: number, body: Body) => request<D.CustomerRecord>(`/api/admin/customer-records/${id}`, {method: 'PUT', body}),
+        remove: (id: number) => request<void>(`/api/admin/customer-records/${id}`, {method: 'DELETE'}),
+    },
+    classAttendance: {
+        roster: (productId: number, date: string) =>
+            request<D.AttendanceRosterEntry[]>('/api/admin/class-attendance/roster', {query: {productId, date}}),
+        mark: (subscriptionId: number, attendedOn: string, present: boolean, note: string) =>
+            request<D.AttendanceRosterEntry>('/api/admin/class-attendance/mark', {method: 'POST', body: {subscriptionId, attendedOn, present, note}}),
+    },
+    passes: {
+        search: (query: Query) => request<Page<D.MemberPass>>('/api/admin/passes', {query}),
+        cancel: (id: number) => request<void>(`/api/admin/passes/${id}`, {method: 'DELETE'}),
+    },
+    progress: {
+        templates: (targetType: D.ProgressTargetType) => request<D.ProgressStageTemplate[]>(`/api/admin/progress/${targetType}/templates`),
+        createTemplate: (targetType: D.ProgressTargetType, body: Body) =>
+            request<D.ProgressStageTemplate>(`/api/admin/progress/${targetType}/templates`, {method: 'POST', body}),
+        updateTemplate: (id: number, body: Body) => request<D.ProgressStageTemplate>(`/api/admin/progress/templates/${id}`, {method: 'PUT', body}),
+        removeTemplate: (id: number) => request<void>(`/api/admin/progress/templates/${id}`, {method: 'DELETE'}),
+        get: (targetType: D.ProgressTargetType, targetId: number) => request<D.Progress>(`/api/admin/progress/${targetType}/${targetId}`),
+        advance: (targetType: D.ProgressTargetType, targetId: number, body: Body) =>
+            request<D.ProgressStageEvent>(`/api/admin/progress/${targetType}/${targetId}/advance`, {method: 'POST', body}),
+    },
+    messages: {
+        list: (targetType: D.ProgressTargetType, targetId: number) =>
+            request<D.CustomerMessage[]>('/api/admin/messages', {query: {targetType, targetId}}),
+        post: (targetType: D.ProgressTargetType, targetId: number, body: Body) =>
+            request<D.CustomerMessage>('/api/admin/messages', {method: 'POST', query: {targetType, targetId}, body}),
+    },
+    repairs: {
+        search: (query: Query) => request<Page<D.RepairRequest>>('/api/admin/repairs', {query}),
+        get: (id: number) => request<D.RepairRequest>(`/api/admin/repairs/${id}`),
+        createQuoteOrder: (id: number, productId: number) =>
+            request<D.Order>(`/api/admin/repairs/${id}/quote-order`, {method: 'POST', body: {productId}}),
     },
     payments: (query: Query) => request<Page<D.Payment>>('/api/admin/payments', {query}),
     cryptoKey: {
@@ -271,6 +352,13 @@ export const shopApi = {
     acceptQuote: (id: number) => request<D.Order>(`/api/orders/${id}/accept-quote`, {method: 'POST'}),
     cancelOrderItem: (id: number, itemId: number) =>
         request<D.Order>(`/api/orders/${id}/items/${itemId}/cancel`, {method: 'POST'}),
+    requestReturn: (id: number, type: D.OrderReturnType, reason: string, exchangeOptionId: number | null) =>
+        request<D.OrderReturn>(`/api/orders/${id}/return-requests`, {method: 'POST', body: {type, reason, exchangeOptionId}}),
+    myReturnRequests: (page: number) => request<Page<D.OrderReturn>>('/api/orders/return-requests/me', {query: {page}}),
+    myLicenseKeys: (page: number) => request<Page<D.MyLicenseKey>>('/api/license-keys/me', {query: {page}}),
+    votes: (page: number) => request<Page<D.MyVote>>('/api/votes', {query: {page}}),
+    castBallot: (id: number, optionIndex: number) =>
+        request<D.MyVote>(`/api/votes/${id}/ballots`, {method: 'POST', body: {optionIndex}}),
     shippingPolicy: () => request<D.ShippingPolicy>('/api/shipping-policy'),
     cart: (postalCode?: string) => request<D.Cart>('/api/cart', {query: postalCode ? {postalCode} : {}}),
     addToCart: (body: { productId: number; productOptionId: number | null; quantity: number }) =>
@@ -280,6 +368,36 @@ export const shopApi = {
     checkoutCart: (body: Body) => request<D.Order>('/api/cart/checkout', {method: 'POST', body}),
     mySubscriptions: (page: number) => request<Page<D.Subscription>>('/api/subscriptions/me', {query: {page}}),
     cancelSubscription: (id: number) => request<D.Subscription>(`/api/subscriptions/${id}/cancel`, {method: 'POST'}),
+    extendReservation: (id: number, endAt: string) =>
+        request<D.Reservation>(`/api/reservations/${id}/extend`, {method: 'POST', body: {endAt}}),
+    cancelExtension: (id: number) => request<D.Reservation>(`/api/reservations/${id}/extension/cancel`, {method: 'POST'}),
+    myRecords: (page: number) => request<Page<D.MyCustomerRecord>>('/api/customer-records/me', {query: {page}}),
+    myNotifications: (page: number) => request<Page<D.AppNotification>>('/api/members/me/notifications', {query: {page}}),
+    unreadNotificationCount: () => request<number>('/api/members/me/notifications/unread-count'),
+    markNotificationRead: (id: number) => request<void>(`/api/members/me/notifications/${id}/read`, {method: 'POST'}),
+    myAttendance: (subscriptionId: number, page: number) =>
+        request<Page<D.MyAttendance>>('/api/class-attendance/me', {query: {subscriptionId, page}}),
+    myPasses: (page: number) => request<Page<D.MemberPass>>('/api/passes/me', {query: {page}}),
+    usablePasses: (programId: number) => request<D.MemberPass[]>('/api/passes/usable', {query: {programId}}),
+    wallet: {
+        balance: () => request<number>('/api/wallet/balance'),
+        ledger: (page: number) => request<Page<D.WalletLedgerEntry>>('/api/wallet/ledger', {query: {page}}),
+        myGiftCodes: (page: number) => request<Page<D.GiftCard>>('/api/wallet/gift-codes', {query: {page}}),
+        issueGiftCode: (amount: number) => request<D.GiftCard>('/api/wallet/gift-codes', {method: 'POST', body: {amount}}),
+        redeem: (code: string) => request<D.GiftCard>('/api/wallet/redeem', {method: 'POST', body: {code}}),
+    },
+    progress: (targetType: D.ProgressTargetType, targetId: number) =>
+        request<D.Progress>('/api/progress', {query: {targetType, targetId}}),
+    messages: {
+        list: (targetType: D.ProgressTargetType, targetId: number) =>
+            request<D.CustomerMessage[]>('/api/messages', {query: {targetType, targetId}}),
+        post: (targetType: D.ProgressTargetType, targetId: number, body: Body) =>
+            request<D.CustomerMessage>('/api/messages', {method: 'POST', query: {targetType, targetId}, body}),
+    },
+    repairs: {
+        create: (body: Body) => request<D.RepairRequest>('/api/repairs', {method: 'POST', body}),
+        mine: (page: number) => request<Page<D.RepairRequest>>('/api/repairs/me', {query: {page}}),
+    },
     pauseSubscription: (id: number, resumeOn: string | null) =>
         request<D.Subscription>(`/api/subscriptions/${id}/pause`, {method: 'POST', body: {resumeOn}}),
     resumeSubscription: (id: number) => request<D.Subscription>(`/api/subscriptions/${id}/resume`, {method: 'POST'}),
@@ -294,7 +412,7 @@ export const shopApi = {
     programs: (keyword: string, page: number) =>
         request<Page<D.Program>>('/api/programs', {query: {keyword, page}}),
     program: (id: number) => request<D.Program>(`/api/programs/${id}`),
-    availability: (id: number, query: { date?: string; from?: string; to?: string }) =>
+    availability: (id: number, query: { date?: string; from?: string; to?: string; sessionId?: number }) =>
         request<D.Availability>(`/api/programs/${id}/availability`, {query}),
     programReviews: (id: number, page: number) => request<Page<D.Review>>(`/api/programs/${id}/reviews`, {query: {page}}),
     addProgramReview: (id: number, body: Body) => request<void>(`/api/programs/${id}/reviews`, {method: 'POST', body}),
@@ -303,9 +421,6 @@ export const shopApi = {
     cancelReservation: (id: number) => request<void>(`/api/reservations/${id}/cancel`, {method: 'POST'}),
     pay: (targetType: D.PaymentTargetType, targetId: number, amount: number, method: D.PaymentMethod) =>
         request<D.Payment>('/api/payments', {method: 'POST', body: {targetType, targetId, amount, method}}),
-    myNotifications: (page: number) => request<Page<D.AppNotification>>('/api/members/me/notifications', {query: {page}}),
-    unreadNotificationCount: () => request<number>('/api/members/me/notifications/unread-count'),
-    markNotificationRead: (id: number) => request<void>(`/api/members/me/notifications/${id}/read`, {method: 'POST'}),
 };
 
 export const govApi = {
@@ -337,6 +452,11 @@ export const applicationApi = {
         request<D.Submission>(`/api/applications/${id}/submissions`, {method: 'POST', body: {answers}}),
     mine: (page: number) => request<Page<D.Submission>>('/api/applications/me', {query: {page}}),
     withdraw: (id: number) => request<D.Submission>(`/api/applications/submissions/${id}/withdraw`, {method: 'POST'}),
+    payAdmission: (id: number) => request<D.Order>(`/api/applications/submissions/${id}/admission-payment`, {method: 'POST'}),
+    judging: (id: number, page: number) => request<Page<D.JudgeSubmission>>(`/api/applications/${id}/judging`, {query: {page}}),
+    score: (submissionId: number, score: number, comment: string) =>
+        request<{ submissionId: number; score: number; comment: string | null }>(`/api/applications/submissions/${submissionId}/score`,
+            {method: 'POST', body: {score, comment}}),
 };
 
 export const chatbotApi = {

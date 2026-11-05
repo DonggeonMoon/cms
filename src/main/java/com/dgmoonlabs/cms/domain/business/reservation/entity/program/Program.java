@@ -65,6 +65,10 @@ public class Program extends BaseEntity {
     @Comment("물품 대여 최대 일수 (없으면 제한 없음)")
     private Integer maxRentalDays;
 
+    @Column(precision = 15, scale = 2)
+    @Comment("물품 대여 연체료 (1개·1일)")
+    private BigDecimal lateFeePerDay;
+
     @Comment("예약 가능 등급 ID (없으면 누구나)")
     private Long accessGradeId;
 
@@ -104,6 +108,15 @@ public class Program extends BaseEntity {
     @ColumnDefault("true")
     @Comment("사용 여부")
     private boolean isEnabled;
+
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    @Comment("접수·대기(진료 등 상담 유형 전용) 사용 여부")
+    private boolean supportsQueue;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Comment("인원 유형별 요금 (여행·투어: 성인·아동 등, [{name, price}])")
+    private String priceTiers;
 
     public void update(final String name, final String description, final Long imageFileId, final BigDecimal price,
                        final Integer maximumPerson, final LocalDateTime startDateTime, final LocalDateTime endDateTime,
@@ -146,10 +159,24 @@ public class Program extends BaseEntity {
         this.layout = reservationType.usesLayout() ? layout : null;
     }
 
-    public void changeRentalSettings(final BigDecimal depositAmount, final Integer maxRentalDays) {
+    public void changeRentalSettings(final BigDecimal depositAmount, final Integer maxRentalDays, final BigDecimal lateFeePerDay) {
         boolean rental = reservationType == ReservationType.ITEM_RENTAL;
         this.depositAmount = rental ? depositAmount : null;
         this.maxRentalDays = rental ? maxRentalDays : null;
+        this.lateFeePerDay = rental ? lateFeePerDay : null;
+    }
+
+    public void changeQueueSetting(final boolean supportsQueue) {
+        this.supportsQueue = reservationType == ReservationType.CONSULTATION && supportsQueue;
+    }
+
+    public void changeTourSettings(final String priceTiers) {
+        this.priceTiers = reservationType == ReservationType.TOUR ? priceTiers : null;
+    }
+
+    public boolean supportsSessions() {
+        return reservationType == ReservationType.PROGRAM || reservationType == ReservationType.EVENT
+                || reservationType == ReservationType.TOUR;
     }
 
     public boolean isOpenAt(final LocalDateTime now) {

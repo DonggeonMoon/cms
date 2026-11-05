@@ -82,11 +82,17 @@ function SiteFrame() {
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/orders">{t('mypage.orders', '주문 내역')}</NavLink>}
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/wishlist">{t('mypage.wishlist', '찜한 상품')}</NavLink>}
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/subscriptions">{t('mypage.subscriptions', '구독')}</NavLink>}
+                    {isEnabled('PRODUCT') && <NavLink to="/mypage/passes">{t('mypage.passes', '이용권')}</NavLink>}
+                    {isEnabled('PRODUCT') && <NavLink to="/mypage/wallet">{t('mypage.wallet', '지갑')}</NavLink>}
+                    {isEnabled('PRODUCT') && <NavLink to="/mypage/license-keys">{t('mypage.licenseKeys', '라이선스 키')}</NavLink>}
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/points">{t('mypage.points', '포인트')}</NavLink>}
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/coupons">{t('mypage.coupons', '쿠폰함')}</NavLink>}
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/downloads">{t('mypage.downloads', '내려받기')}</NavLink>}
                     {isEnabled('PROGRAM') && <NavLink to="/mypage/reservations">{t('mypage.reservations', '예약 내역')}</NavLink>}
+                    {isEnabled('PROGRAM') && <NavLink to="/mypage/records">{t('mypage.records', '이용 기록')}</NavLink>}
                     {isEnabled('APPLICATION') && <NavLink to="/mypage/applications">{t('mypage.applications', '신청 내역')}</NavLink>}
+                    {isEnabled('APPLICATION') && <NavLink to="/mypage/repairs">{t('mypage.repairs', '수리·AS 접수')}</NavLink>}
+                    {isEnabled('APPLICATION') && <NavLink to="/mypage/votes">{t('mypage.votes', '투표')}</NavLink>}
                     {isEnabled('REPORT') && <NavLink to="/mypage/reports">{t('mypage.reports', '신고')}</NavLink>}
                     {isEnabled('MEDIA') && <NavLink to="/mypage/media">{t('mypage.media', '수강 내역')}</NavLink>}
                     {isEnabled('MEDIA') && <NavLink to="/mypage/courses">{t('mypage.courses', '교육 과정')}</NavLink>}

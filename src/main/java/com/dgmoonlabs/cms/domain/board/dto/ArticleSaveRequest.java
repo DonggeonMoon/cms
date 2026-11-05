@@ -1,9 +1,11 @@
 package com.dgmoonlabs.cms.domain.board.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -16,6 +18,8 @@ public record ArticleSaveRequest(
         LocalDateTime noticeStartDateTime,
         LocalDateTime noticeEndDateTime,
         boolean isHidden,
+        boolean paid,
+        @PositiveOrZero BigDecimal price,
         @Size(max = 50) String authorName,
         @Size(max = 64) String password,
         @Size(max = 20) List<Long> fileIds

@@ -1,20 +1,21 @@
 import {fileApi} from '../../api/files';
 import {attributesToForm, productCategoryFields, splitCategoryValues, useCategories} from '../../api/categories';
 import type {FileInfo} from '../../api/types';
-import {type FormEvent, useEffect, useMemo, useState} from 'react';
+import {type FormEvent, useCallback, useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router';
 import type {Query} from '../../api/client';
-import type {Discount, Order, OrderStatus, Payment, ProductSummary, Program, Reservation, ReservationType, Review, ReviewTargetType, Subscription} from '../../api/domain';
+import type {Discount, MemberPass, Order, OrderReturn, OrderReturnStatus, OrderStatus, Payment, ProductSummary, Program, ProgramSession, Reservation, ReservationType, Review, ReviewTargetType, Subscription} from '../../api/domain';
 import {adminApi, shopApi} from '../../api/endpoints';
 import {statusApi, useStatusLabels} from '../../api/statuses';
 import {AdminCrudPage, won, YesNo} from '../../components/AdminCrudPage';
+import {ProgressAndMessages, ProgressTemplateManager} from '../../components/ProgressPanel';
 import {ErrorBanner} from '../../components/ErrorBanner';
-import {formatDateTime} from '../../components/format';
+import {formatDate, formatDateTime} from '../../components/format';
 import {priceLabel} from '../../components/price';
 import {reservationUsage} from '../../components/reservationUsage';
 import {RegexBindingSelect} from '../../components/RegexBindingSelect';
 import {CustomStatusSelect, StatusManager} from '../../components/StatusManager';
-import {BILLING_CYCLE, ORDER_STATUS, RESERVATION_STATUS, RESERVATION_TYPE, RESERVATION_TYPE_GROUPS, SALE_TYPE, toOptions} from '../../components/labels';
+import {BILLING_CYCLE, ORDER_STATUS, PASS_UNIT, RESERVATION_STATUS, RESERVATION_TYPE, RESERVATION_TYPE_GROUPS, RETURN_STATUS, RETURN_TYPE, SALE_TYPE, toOptions} from '../../components/labels';
 import {EMPTY_LAYOUT} from '../../components/LayoutEditor';
 import type {FieldSpec, FormValues} from '../../components/SchemaForm';
 import {type Grade, gradeSelectField, useWithGradeFields} from '../../api/grades';
@@ -24,15 +25,41 @@ import {OrderAmount, OrderItemsTable} from '../shop/OrderItems';
 const PRODUCT_FIELDS: FieldSpec[] = [
     {name: 'name', label: '상품명', required: true, wide: true},
     {name: 'saleType', label: '판매 방식', type: 'select', required: true, wide: true, options: toOptions(SALE_TYPE),
-        help: '구매: 한 번 결제 / 구독: 주기마다 결제 / 후원: 금액을 정해 후원 / 견적 문의: 요청을 받고 관리자가 금액을 회신'},
+        help: '구매: 한 번 결제 / 구독: 주기마다 결제 / 후원: 금액을 정해 후원 / 견적 문의: 요청을 받고 관리자가 금액을 회신 / 이용권: 예약에서 결제 대신 차감 / 상품권: 결제하면 가격만큼 지갑에 충전 / 예약 판매: 판매 기간에만 주문받고 정해둔 날짜에 출고 / 펀딩: 마감일까지 목표 금액을 못 채우면 전부 환불 / 문의만: 결제 없이 상담 예약으로만 연결(매물 게시 등)'},
+    {name: 'preorderSaleStartAt', label: '판매 시작', type: 'datetime', wide: true, help: '비워두면 지금부터 바로 받습니다.',
+        visibleWhen: (v) => v.saleType === 'PREORDER'},
+    {name: 'preorderSaleEndAt', label: '판매 종료', type: 'datetime', wide: true, help: '비워두면 계속 받습니다.',
+        visibleWhen: (v) => v.saleType === 'PREORDER'},
+    {name: 'preorderShipDate', label: '출고 예정일', type: 'date', required: true, wide: true,
+        help: '주문한 회원에게 이 날짜를 안내합니다.', visibleWhen: (v) => v.saleType === 'PREORDER'},
     {name: 'billingCycle', label: '결제 주기', type: 'select', required: true, wide: true, options: toOptions(BILLING_CYCLE),
         visibleWhen: (v) => v.saleType === 'SUBSCRIPTION'},
+    {name: 'commitmentMonths', label: '약정 기간(개월)', type: 'number', wide: true, help: '비워두면 약정 없이 언제든 해지할 수 있습니다.',
+        visibleWhen: (v) => v.saleType === 'SUBSCRIPTION'},
+    {name: 'earlyTerminationFeeRate', label: '약정 중 해지 위약금(%)', type: 'number', wide: true,
+        help: '남은 약정 회차 금액의 이 비율만큼 해지할 때 바로 청구합니다.',
+        visibleWhen: (v) => v.saleType === 'SUBSCRIPTION' && Boolean(v.commitmentMonths)},
+    {name: 'passUnit', label: '이용권 단위', type: 'select', required: true, wide: true, options: toOptions(PASS_UNIT),
+        visibleWhen: (v) => v.saleType === 'PASS'},
+    {name: 'passDays', label: '사용 기간(일)', type: 'number', wide: true, help: '결제일부터 셉니다.',
+        visibleWhen: (v) => v.saleType === 'PASS' && v.passUnit === 'PERIOD'},
+    {name: 'passCount', label: '횟수', type: 'number', wide: true, help: '주문 수량만큼 곱해 발급합니다.',
+        visibleWhen: (v) => v.saleType === 'PASS' && v.passUnit === 'COUNT'},
+    {name: 'passProgramId', label: '쓸 수 있는 예약 상품', type: 'select', required: true, wide: true,
+        help: '이 이용권으로 예약할 수 있는 예약 상품 하나를 고릅니다.', visibleWhen: (v) => v.saleType === 'PASS'},
+    {name: 'inquiryProgramId', label: '연결할 상담 예약 상품', type: 'select', required: true, wide: true,
+        help: '매물 등 문의만 받는 상품에서 "상담 예약하기"를 누르면 이 예약 상품의 예약 화면으로 이동합니다.',
+        visibleWhen: (v) => v.saleType === 'INQUIRY'},
     {name: 'price', label: '가격(원)', type: 'number', required: true, wide: true,
-        help: '구독은 회차별 금액, 후원은 최소 후원 금액입니다. 견적 문의는 0으로 두면 됩니다.'},
+        help: '구독은 회차별 금액, 후원은 최소 후원 금액입니다. 견적 문의·문의만은 0으로 두면 됩니다.'},
     {name: 'donationPresetsText', label: '추천 후원 금액', wide: true, placeholder: '5000, 10000, 30000',
         help: '쉼표로 구분합니다. 후원하는 사람이 버튼으로 고를 수 있습니다.', visibleWhen: (v) => v.saleType === 'DONATION'},
-    {name: 'goalAmount', label: '목표 금액(원)', type: 'number', wide: true, help: '비워두면 달성률을 표시하지 않습니다.',
-        visibleWhen: (v) => v.saleType === 'DONATION'},
+    {name: 'goalAmount', label: '목표 금액(원)', type: 'number', wide: true,
+        help: '후원은 비워두면 달성률을 표시하지 않습니다. 펀딩은 꼭 정해야 합니다.',
+        visibleWhen: (v) => v.saleType === 'DONATION' || v.saleType === 'FUNDING'},
+    {name: 'fundingDeadline', label: '펀딩 마감일시', type: 'datetime', required: true, wide: true,
+        help: '마감일까지 목표 금액을 못 채우면 결제된 주문을 모두 취소하고 환불합니다.',
+        visibleWhen: (v) => v.saleType === 'FUNDING'},
     {name: 'availableQuantity', label: '재고', type: 'number', help: '상품 전체 재고입니다. 비워두면 무제한이고, 옵션 조합별 재고는 아래에서 따로 정합니다.', wide: true},
     {name: 'storeOrder', label: '매장 주문 전용 (포장·매장 식사)', type: 'checkbox', wide: true,
         help: '켜면 배송 주문은 받지 않고, 매장 주문 설정에 따라 포장이나 매장 식사로만 주문받습니다.'},
@@ -63,7 +90,7 @@ const productGradeFields = (grades: Grade[]): FieldSpec[] => [
 
 const toProductBody = (form: FormValues) => {
     const {rest, categoryId, attributes} = splitCategoryValues(form);
-    const {donationPresetsText, optionSet, digitalFiles, ...values} = rest;
+    const {donationPresetsText, optionSet, digitalFiles, pass, inquiry, preorder, funding, ...values} = rest;
     return {
     ...values,
     categoryId,
@@ -78,14 +105,30 @@ const loadProducts = (query: Query) => adminApi.products.search(query);
 
 export function ProductAdminPage() {
     const categories = useCategories();
+    const [programChoices, setProgramChoices] = useState<{ value: string; label: string }[]>([]);
+    const [fundingNotice, setFundingNotice] = useState<string | null>(null);
+    useEffect(() => {
+        adminApi.programs.search({size: 100}).then((page) => setProgramChoices(page.content.map((p) => ({value: String(p.id), label: p.name}))))
+            .catch(() => setProgramChoices([]));
+    }, []);
     const base = useMemo(() => {
-        const at = PRODUCT_FIELDS.findIndex((field) => field.name === 'requiresShipping');
-        return [...PRODUCT_FIELDS.slice(0, at), ...productCategoryFields(categories), ...PRODUCT_FIELDS.slice(at)];
-    }, [categories]);
+        let fields = PRODUCT_FIELDS.map((field) => field.name === 'passProgramId' || field.name === 'inquiryProgramId'
+            ? {...field, options: programChoices} : field);
+        const at = fields.findIndex((field) => field.name === 'requiresShipping');
+        fields = [...fields.slice(0, at), ...productCategoryFields(categories), ...fields.slice(at)];
+        return fields;
+    }, [categories, programChoices]);
     const fields = useWithGradeFields(base, productGradeFields);
     return (
         <AdminCrudPage<ProductSummary>
             title="상품"
+            description={<div className="toolbar">
+                <button type="button" onClick={async () => {
+                    const result = await adminApi.products.resolveFunding();
+                    setFundingNotice(`마감된 펀딩 중 목표를 못 채운 ${result.failed}건을 환불 처리했습니다.`);
+                }}>펀딩 마감 처리</button>
+                {fundingNotice && <span className="ok">{fundingNotice}</span>}
+            </div>}
             load={loadProducts}
             fields={fields}
             emptyForm={{isEnabled: true, requiresShipping: true, saleType: 'PURCHASE', price: 0, contentHtml: '', optionSet: EMPTY_OPTION_SET}}
@@ -104,6 +147,15 @@ export function ProductAdminPage() {
                 donationPresetsText: full.donationPresets.join(', '),
                 digitalFiles: full.digitalFiles ?? [],
                 categoryId: full.categoryId == null ? '' : String(full.categoryId),
+                passUnit: full.pass?.unit ?? '',
+                passDays: full.pass?.days ?? '',
+                passCount: full.pass?.count ?? '',
+                passProgramId: full.pass?.programId == null ? '' : String(full.pass.programId),
+                inquiryProgramId: full.inquiry?.programId == null ? '' : String(full.inquiry.programId),
+                preorderSaleStartAt: full.preorder?.saleStartAt ?? '',
+                preorderSaleEndAt: full.preorder?.saleEndAt ?? '',
+                preorderShipDate: full.preorder?.shipDate ?? '',
+                fundingDeadline: full.funding?.deadline ?? '',
                 ...attributesToForm(full.categoryId, full.attributes),
             }))}
             create={(v) => adminApi.products.create(toProductBody(v))}
@@ -266,6 +318,12 @@ function OrderDetailPanel({order, onChange}: { order: Order; onChange: () => voi
                 </form>
             )}
             <ErrorBanner error={error}/>
+            <ProgressAndMessages
+                getProgress={() => adminApi.progress.get('ORDER', order.id)}
+                advance={(stageCode, memo) => adminApi.progress.advance('ORDER', order.id, {stageCode, memo})}
+                listMessages={() => adminApi.messages.list('ORDER', order.id)}
+                postMessage={(content, fileIds) => adminApi.messages.post('ORDER', order.id, {content, fileIds})}
+            />
         </div>
     );
 }
@@ -286,6 +344,7 @@ export function OrderAdminPage() {
                 <p>관리자가 전화·방문 주문을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다.</p>
                 <RegexBindingSelect target="ORDER_NUMBER" label="주문번호 정규식"/>
                 <StatusManager domain="ORDER" statuses={statuses} onChange={reloadStatuses}/>
+                <ProgressTemplateManager targetType="ORDER"/>
             </>}
             load={loadOrders}
             fields={orderFields(productChoices)}
@@ -306,6 +365,7 @@ export function OrderAdminPage() {
                     </button>
                 )},
                 {label: '판매 방식', render: (o) => <span className="badge">{SALE_TYPE[o.saleType]}</span>},
+                {label: '출고예정일', render: (o) => o.shipDate ? formatDate(o.shipDate) : '-'},
                 {label: '금액', render: (o) => <OrderAmount order={o}/>},
                 {label: '수령인', render: (o) => `${o.receiverName} (${o.phoneNumber})`},
                 {label: '상태', render: (o, reload) => (
@@ -358,6 +418,53 @@ export function OrderAdminPage() {
     );
 }
 
+const loadReturnRequests = (query: Query) => adminApi.returnRequests.search(query);
+
+export function OrderReturnAdminPage() {
+    const [status, setStatus] = useState<OrderReturnStatus | ''>('');
+    return (
+        <AdminCrudPage<OrderReturn>
+            title="반품·교환"
+            searchable={false}
+            description="주문이 결제·배송 완료된 뒤 회원이 신청한 반품·교환입니다. 승인하면 반품은 환불·재고 복구, 교환은 새 옵션으로 결제 완료된 주문을 바로 만듭니다."
+            load={loadReturnRequests}
+            extraQuery={{status}}
+            filters={
+                <select aria-label="처리 상태" value={status} onChange={(e) => setStatus(e.target.value as OrderReturnStatus | '')}>
+                    <option value="">전체 상태</option>
+                    {toOptions(RETURN_STATUS).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+            }
+            columns={[
+                {label: '주문번호', render: (r) => <code>{r.orderNumber}</code>},
+                {label: '구분', render: (r) => <span className="badge">{RETURN_TYPE[r.type]}</span>},
+                {label: '이유', render: (r) => r.reason},
+                {label: '상태', render: (r) => r.status === 'REQUESTED' ? <span className="badge">{RETURN_STATUS[r.status]}</span>
+                        : r.status === 'APPROVED' ? <span className="badge ok">{RETURN_STATUS[r.status]}</span>
+                            : <span className="badge danger">{RETURN_STATUS[r.status]}</span>},
+                {label: '관리자 메모', render: (r) => r.adminMemo ?? '-'},
+                {label: '신청일', render: (r) => formatDateTime(r.createdAt)},
+            ]}
+            actions={(r, reload) => r.status === 'REQUESTED' && (
+                <>
+                    <button type="button" onClick={() => {
+                        if (window.confirm(r.type === 'EXCHANGE' ? '교환을 승인할까요? 원래 주문은 취소·환불되고 새 옵션으로 결제 완료된 주문이 만들어집니다.'
+                            : '반품을 승인할까요? 주문이 취소되고 환불·재고 복구가 이루어집니다.')) {
+                            void adminApi.returnRequests.approve(r.id).then(reload);
+                        }
+                    }}>승인</button>
+                    <button type="button" className="danger" onClick={() => {
+                        const memo = window.prompt('거절 이유를 입력해 주세요.');
+                        if (memo != null) {
+                            void adminApi.returnRequests.reject(r.id, memo).then(reload);
+                        }
+                    }}>거절</button>
+                </>
+            )}
+        />
+    );
+}
+
 const loadSubscriptions = (query: Query) => adminApi.subscriptions.search(query);
 
 export function SubscriptionAdminPage() {
@@ -391,6 +498,9 @@ export function SubscriptionAdminPage() {
                         : <span className="badge">해지</span>
                 )},
                 {label: '다음 결제일', render: (s) => s.nextBillingDate ?? '-'},
+                {label: '약정', render: (s) => s.commitmentEndDate
+                    ? <>{formatDate(s.commitmentEndDate)}까지{s.earlyTerminationFee > 0 && ` · 위약금 ${won(s.earlyTerminationFee)}`}</>
+                    : '-'},
                 {label: '시작일', render: (s) => formatDateTime(s.startedAt)},
             ]}
             actions={(s, reload) => s.status !== 'CANCELED' && (
@@ -406,11 +516,44 @@ export function SubscriptionAdminPage() {
                         <button type="button" onClick={() => void adminApi.subscriptions.resume(s.id).then(reload)}>재개</button>
                     )}
                     <button type="button" className="danger" onClick={() => {
-                        if (window.confirm('구독을 해지할까요? 다음 결제일부터 결제되지 않습니다.')) {
+                        const message = s.earlyTerminationFee > 0
+                            ? `구독을 해지할까요? 약정 기간이 남아 위약금 ${won(s.earlyTerminationFee)}이 바로 결제됩니다.`
+                            : '구독을 해지할까요? 다음 결제일부터 결제되지 않습니다.';
+                        if (window.confirm(message)) {
                             void adminApi.subscriptions.cancel(s.id).then(reload);
                         }
                     }}>해지</button>
                 </>
+            )}
+        />
+    );
+}
+
+const loadPasses = (query: Query) => adminApi.passes.search(query);
+
+export function PassAdminPage() {
+    return (
+        <AdminCrudPage<MemberPass>
+            title="이용권"
+            searchable={false}
+            description="회원이 이용권 상품을 결제하면 발급됩니다. 예약할 때 이용권을 고르면 결제 대신 기간·횟수가 차감됩니다."
+            load={loadPasses}
+            columns={[
+                {label: 'ID', render: (p) => p.id},
+                {label: '회원 ID', render: (p) => p.memberId},
+                {label: '이용권', render: (p) => <>{p.productName} <span className="badge">{PASS_UNIT[p.unit]}</span></>},
+                {label: '남은 횟수', render: (p) => p.unit === 'COUNT' ? `${p.remainingCount ?? 0}/${p.totalCount ?? 0}` : '-'},
+                {label: '만료일', render: (p) => p.expiresAt ? formatDateTime(p.expiresAt) : '-'},
+                {label: '상태', render: (p) => p.status === 'ACTIVE' ? <span className="badge ok">사용 가능</span>
+                        : p.status === 'USED_UP' ? <span className="badge">다 씀</span> : <span className="badge">취소</span>},
+                {label: '발급일', render: (p) => formatDateTime(p.createdAt)},
+            ]}
+            actions={(p, reload) => p.status === 'ACTIVE' && (
+                <button type="button" className="danger" onClick={() => {
+                    if (window.confirm('이 이용권을 취소할까요? 더 이상 쓸 수 없게 됩니다.')) {
+                        void adminApi.passes.cancel(p.id).then(reload);
+                    }
+                }}>취소</button>
             )}
         />
     );
@@ -424,23 +567,29 @@ const PROGRAM_FIELDS: FieldSpec[] = [
         help: '시간 예약은 회차나 시간대를, 공간 예약은 배치표의 좌석·객실·공간을 골라 예약합니다.'},
     {name: 'name', label: '이름', required: true, wide: true},
     {name: 'price', label: '기본 가격(원)', type: 'number', required: true, wide: true,
-        help: '프로그램은 1인, 상담은 1회, 대관은 칸·예약 단위당, 숙박은 칸·1박당, 공연은 좌석당, 물품 대여는 1개·1일당 가격입니다. 배치표에서 칸별 가격을 따로 줄 수 있습니다.'},
+        help: '프로그램은 1인, 상담은 1회, 대관·식당 테이블은 칸·예약 단위당, 숙박은 칸·1박당, 공연은 좌석당, 물품 대여는 1개·1일당 가격입니다. 배치표에서 칸별 가격을 따로 줄 수 있습니다. 식당 테이블은 보통 0원으로 둡니다. 여행·투어는 아래 인원 유형별 요금을 쓰므로 이 값은 사용하지 않습니다(0으로 둡니다).'},
+    {name: 'priceTiersText', label: '인원 유형별 요금', wide: true, required: true, placeholder: '성인:100000, 아동:50000',
+        help: '이름:가격 형태로 쉼표로 구분해 적습니다. 예약할 때 유형별 인원을 입력받아 합산합니다.', visibleWhen: isType('TOUR')},
     {name: 'maximumPerson', label: '정원·수량', type: 'number', wide: true, visibleWhen: isType('PROGRAM', 'CONSULTATION', 'VISIT', 'ITEM_RENTAL'),
         help: '프로그램은 전체 인원, 상담·방문은 시간대별 동시 예약 수(비우면 프로그램은 제한 없음, 상담·방문은 1건), 물품 대여는 보유 수량(필수)입니다.'},
     {name: 'depositAmount', label: '보증금(원, 1개당)', type: 'number', wide: true, visibleWhen: isType('ITEM_RENTAL'),
         help: '결제 금액에 더해 받고, 반납 처리할 때 차감액을 뺀 만큼 돌려줍니다.'},
     {name: 'maxRentalDays', label: '최대 대여 일수', type: 'number', min: 1, wide: true, visibleWhen: isType('ITEM_RENTAL'),
         help: '비워두면 제한이 없습니다.'},
+    {name: 'lateFeePerDay', label: '연체료(원, 1일당)', type: 'number', wide: true, visibleWhen: isType('ITEM_RENTAL'),
+        help: '반납일을 넘기면 하루당 이 금액을 보증금에서 뗍니다. 비워두면 연체료를 받지 않습니다.'},
+    {name: 'supportsQueue', label: '접수·대기 사용', type: 'checkbox', wide: true, visibleWhen: isType('CONSULTATION'),
+        help: '체크인할 때 대기 순번을 매기고, 관리자 "접수·대기" 메뉴에서 호출·완료를 관리합니다. (진료 접수 등)'},
     {name: 'isEnabled', label: '공개', type: 'checkbox', wide: true},
     {name: 'startDateTime', label: '시작 일시', type: 'datetime', wide: true,
         help: '프로그램은 진행 시작, 상담·방문·대관·숙박은 예약을 받는 기간의 시작, 공연은 공연 일시입니다.'},
     {name: 'endDateTime', label: '종료 일시', type: 'datetime', wide: true},
-    {name: 'slotMinutes', label: '예약 단위(분)', type: 'number', wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL'),
-        help: '상담·방문 1회 길이, 대관 최소 단위입니다.'},
-    {name: 'openTime', label: '운영 시작 시각', type: 'time', wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL')},
-    {name: 'closeTime', label: '운영 종료 시각', type: 'time', wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL')},
-    {name: 'layout', label: '배치표', type: 'layout', visibleWhen: isType('RENTAL', 'LODGING', 'EVENT'),
-        help: '좌석·객실·공간을 칠해 두면 사용자가 그 칸을 골라 예약합니다.'},
+    {name: 'slotMinutes', label: '예약 단위(분)', type: 'number', wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL', 'TABLE'),
+        help: '상담·방문 1회 길이, 대관·식당 테이블 최소 단위입니다.'},
+    {name: 'openTime', label: '운영 시작 시각', type: 'time', wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL', 'TABLE')},
+    {name: 'closeTime', label: '운영 종료 시각', type: 'time', wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL', 'TABLE')},
+    {name: 'layout', label: '배치표', type: 'layout', visibleWhen: isType('RENTAL', 'LODGING', 'EVENT', 'TABLE'),
+        help: '좌석·객실·공간을 칠해 두면 사용자가 그 칸을 골라 예약합니다. 식당 테이블은 칸별로 인원(좌석 수)을 함께 정해 두면 예약할 때 인원을 넘지 못하게 막습니다.'},
     {name: 'applicationStartDateTime', label: '신청 시작', type: 'datetime', wide: true},
     {name: 'applicationEndDateTime', label: '신청 마감', type: 'datetime', wide: true},
     {name: 'description', label: '요약 설명', wide: true},
@@ -452,6 +601,16 @@ const programGradeFields = (grades: Grade[]) => [
     gradeSelectField('accessGradeId', '예약 가능 등급', grades, '이 등급 이상 회원만 예약할 수 있습니다.'),
 ];
 
+const toProgramBody = ({priceTiersText, ...values}: FormValues) => ({
+    ...values,
+    priceTiers: values.reservationType === 'TOUR'
+        ? String(priceTiersText ?? '').split(',').map((part) => part.trim()).filter(Boolean).map((part) => {
+            const [name, price] = part.split(':');
+            return {name: (name ?? '').trim(), price: Number((price ?? '').trim())};
+        })
+        : null,
+});
+
 const loadPrograms = (query: Query) => adminApi.programs.search(query);
 
 export function ProgramAdminPage() {
@@ -459,7 +618,7 @@ export function ProgramAdminPage() {
     return (
         <AdminCrudPage<Program>
             title="예약"
-            description="시간 예약(프로그램·상담), 공간 예약(대관·숙박·공연), 물품 대여를 등록합니다. 예약 내역은 하위 메뉴에서 확인합니다."
+            description="시간 예약(프로그램·상담), 공간 예약(대관·숙박·공연·식당 테이블), 물품 대여, 패키지 예약(여행·투어)을 등록합니다. 예약 내역은 하위 메뉴에서 확인합니다."
             load={loadPrograms}
             fields={fields}
             emptyForm={{reservationType: 'PROGRAM', isEnabled: true, price: 0, contentHtml: '', layout: EMPTY_LAYOUT}}
@@ -472,11 +631,102 @@ export function ProgramAdminPage() {
                 {label: '신청 기간', render: (p) => `${formatDateTime(p.applicationStartDateTime)} ~ ${formatDateTime(p.applicationEndDateTime)}`},
                 {label: '접수 중', render: (p) => <YesNo value={p.isOpen}/>},
             ]}
-            toForm={(p) => adminApi.programs.get(p.id).then((full) => ({...full, layout: full.layout ?? EMPTY_LAYOUT}))}
-            create={(v) => adminApi.programs.create(v)}
-            update={(p, v) => adminApi.programs.update(p.id, v)}
+            toForm={(p) => adminApi.programs.get(p.id).then((full) => ({...full, layout: full.layout ?? EMPTY_LAYOUT,
+                priceTiersText: (full.priceTiers ?? []).map((t) => `${t.name}:${t.price}`).join(', ')}))}
+            create={(v) => adminApi.programs.create(toProgramBody(v))}
+            update={(p, v) => adminApi.programs.update(p.id, toProgramBody(v))}
             remove={(p) => adminApi.programs.remove(p.id)}
+            expandedRow={(p) => (p.reservationType === 'PROGRAM' || p.reservationType === 'EVENT' || p.reservationType === 'TOUR')
+                ? <SessionManager program={p}/> : undefined}
         />
+    );
+}
+
+function SessionManager({program}: { program: Program }) {
+    const [sessions, setSessions] = useState<ProgramSession[] | null>(null);
+    const [error, setError] = useState<unknown>(null);
+    const [editing, setEditing] = useState<{ id: number | null; name: string; startAt: string; endAt: string; capacity: string } | null>(null);
+
+    const reload = useCallback(() => {
+        adminApi.programs.get(program.id).then((full) => setSessions(full.sessions)).catch(setError);
+    }, [program.id]);
+    useEffect(reload, [reload]);
+
+    const startNew = () => setEditing({id: null, name: '', startAt: '', endAt: '', capacity: ''});
+    const startEdit = (session: ProgramSession) => setEditing({
+        id: session.id, name: session.name ?? '', startAt: session.startAt.slice(0, 16),
+        endAt: session.endAt?.slice(0, 16) ?? '', capacity: session.capacity != null ? String(session.capacity) : '',
+    });
+
+    const save = async () => {
+        if (!editing || !editing.startAt) {
+            return;
+        }
+        const body = {
+            name: editing.name || null, startAt: `${editing.startAt}:00`, endAt: editing.endAt ? `${editing.endAt}:00` : null,
+            capacity: editing.capacity ? Number(editing.capacity) : null,
+        };
+        try {
+            if (editing.id) {
+                await adminApi.sessions.update(program.id, editing.id, body);
+            } else {
+                await adminApi.sessions.create(program.id, body);
+            }
+            setEditing(null);
+            reload();
+        } catch (e) {
+            setError(e);
+        }
+    };
+
+    const remove = async (session: ProgramSession) => {
+        if (!window.confirm('이 회차를 지울까요?')) {
+            return;
+        }
+        try {
+            await adminApi.sessions.remove(program.id, session.id);
+            reload();
+        } catch (e) {
+            setError(e);
+        }
+    };
+
+    return (
+        <div>
+            <h3>{program.reservationType === 'TOUR' ? '출발일' : '회차'}</h3>
+            <ErrorBanner error={error}/>
+            <table className="compact">
+                <thead><tr><th>이름</th><th>시작</th><th>종료</th><th>정원/예약</th><th/></tr></thead>
+                <tbody>
+                {sessions?.map((session) => (
+                    <tr key={session.id}>
+                        <td>{session.name || '-'}</td>
+                        <td>{formatDateTime(session.startAt)}</td>
+                        <td>{session.endAt ? formatDateTime(session.endAt) : '-'}</td>
+                        <td>{session.capacity != null ? `${session.reservedCount}/${session.capacity}` : `${session.reservedCount}/제한 없음`}</td>
+                        <td className="actions">
+                            <button type="button" onClick={() => startEdit(session)}>수정</button>
+                            <button type="button" className="danger" onClick={() => remove(session)}>삭제</button>
+                        </td>
+                    </tr>
+                ))}
+                {sessions?.length === 0 && <tr><td colSpan={5} className="muted">회차가 없습니다.</td></tr>}
+                </tbody>
+            </table>
+            {editing ? (
+                <div className="toolbar">
+                    <input aria-label="회차 이름" placeholder="이름" value={editing.name} onChange={(e) => setEditing({...editing, name: e.target.value})}/>
+                    <input type="datetime-local" aria-label="시작 일시" required value={editing.startAt}
+                           onChange={(e) => setEditing({...editing, startAt: e.target.value})}/>
+                    <input type="datetime-local" aria-label="종료 일시" value={editing.endAt}
+                           onChange={(e) => setEditing({...editing, endAt: e.target.value})}/>
+                    <input type="number" aria-label="정원" placeholder="정원" min={1} value={editing.capacity}
+                           onChange={(e) => setEditing({...editing, capacity: e.target.value})}/>
+                    <button type="button" className="primary" onClick={save}>저장</button>
+                    <button type="button" onClick={() => setEditing(null)}>취소</button>
+                </div>
+            ) : <button type="button" onClick={startNew}>회차 추가</button>}
+        </div>
     );
 }
 
@@ -511,7 +761,7 @@ export function ReservationAdminPage() {
         <AdminCrudPage<Reservation>
             title="예약"
             description={<>
-                <p>관리자가 전화·현장 예약을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다. 예약번호나 프로그램명으로 검색할 수 있습니다.</p>
+                <p>관리자가 전화·현장 예약을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다. 예약번호나 예약 상품명으로 검색할 수 있습니다.</p>
                 <RegexBindingSelect target="RESERVATION_NUMBER" label="예약번호 정규식"/>
                 <StatusManager domain="RESERVATION" statuses={statuses} onChange={reloadStatuses}/>
             </>}
@@ -528,7 +778,7 @@ export function ReservationAdminPage() {
             }
             columns={[
                 {label: '예약번호', render: (r) => <code>{r.reservationNumber}</code>},
-                {label: '예약 항목', render: (r) => <>{r.programName} <span className="badge">{RESERVATION_TYPE[r.reservationType]}</span></>},
+                {label: '예약 상품', render: (r) => <>{r.programName} <span className="badge">{RESERVATION_TYPE[r.reservationType]}</span></>},
                 {label: '이용', render: (r) => reservationUsage(r)},
                 {label: '수량', render: (r) => r.quantity},
                 {label: '금액', render: (r) => won(r.totalPrice)},
@@ -557,6 +807,9 @@ export function ReservationAdminPage() {
                     }}>취소</button>
                 )},
             ]}
+            actions={(r) => r.userType === 'MEMBER' && (
+                <Link to={`/admin/customer-records?memberId=${r.userId}&reservationId=${r.id}`}>기록 남기기</Link>
+            )}
         />
     );
 }
@@ -641,12 +894,48 @@ function ReturnCell({reservation, onDone}: { reservation: Reservation; onDone: (
     return (
         <div className="review-cell">
             {reservation.overdue && <span className="badge danger">{reservation.lateDays}일 연체</span>}
+            {Number(reservation.expectedLateFee ?? 0) > 0 && <div className="muted small">예상 연체료 {won(reservation.expectedLateFee)}</div>}
+            {Number(reservation.unpaidExtensionFee ?? 0) > 0 && <div className="muted small">미결제 연장료 {won(reservation.unpaidExtensionFee)}</div>}
+            {Number(reservation.outstandingAmount ?? 0) > 0 && <div className="muted small">미수금 {won(reservation.outstandingAmount)}</div>}
             <input type="number" min={0} aria-label="보증금 차감액" placeholder="차감액(원)" value={deduction}
                    onChange={(e) => setDeduction(e.target.value)}/>
             <input aria-label="반납 메모" placeholder="메모(파손 등)" value={memo} onChange={(e) => setMemo(e.target.value)}/>
             <button type="button" onClick={submit}>반납 처리</button>
+            <ExtensionAdminCell reservation={reservation} onDone={onDone}/>
             <ErrorBanner error={error}/>
         </div>
+    );
+}
+
+function ExtensionAdminCell({reservation, onDone}: { reservation: Reservation; onDone: () => void }) {
+    const [newEndAt, setNewEndAt] = useState('');
+    const [paid, setPaid] = useState(false);
+    const [error, setError] = useState<unknown>(null);
+
+    if (reservation.pendingExtensionId) {
+        return (
+            <>
+                <span className="muted small">연장료 {won(reservation.pendingExtensionFee ?? 0)} 결제 대기</span>
+                <button type="button" className="danger" onClick={() => {
+                    if (window.confirm('연장을 취소할까요?')) {
+                        void adminApi.reservations.cancelExtension(reservation.id).then(onDone).catch(setError);
+                    }
+                }}>연장 취소</button>
+                <ErrorBanner error={error}/>
+            </>
+        );
+    }
+    return (
+        <>
+            <input type="date" aria-label="연장할 반납일" value={newEndAt} onChange={(e) => setNewEndAt(e.target.value)}/>
+            <label className="checkbox small">
+                <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)}/>결제됨
+            </label>
+            <button type="button" disabled={!newEndAt} onClick={() => {
+                void adminApi.reservations.extend(reservation.id, `${newEndAt}T00:00:00`, paid).then(onDone).catch(setError);
+            }}>연장</button>
+            <ErrorBanner error={error}/>
+        </>
     );
 }
 
@@ -664,7 +953,7 @@ export function PaymentAdminPage() {
             columns={[
                 {label: '결제번호', render: (p) => <code>{p.paymentNumber ?? '-'}</code>},
                 {label: '거래 ID', render: (p) => <code className="small">{p.transactionId}</code>},
-                {label: '대상', render: (p) => `${p.targetType === 'ORDER' ? '주문' : '예약'} #${p.targetId}`},
+                {label: '대상', render: (p) => `${p.targetType === 'ORDER' ? '주문' : p.targetType === 'RESERVATION_EXTENSION' ? '예약 연장' : '예약'} #${p.targetId}`},
                 {label: '금액', render: (p) => won(p.amount)},
                 {label: '수단', render: (p) => p.method},
                 {label: '상태', render: (p) => (p.status === 'APPROVED' ? '승인' : '취소')},
@@ -678,7 +967,7 @@ const loadReviews = (query: Query) => adminApi.reviews(query);
 
 const REVIEW_TABS: { value: ReviewTargetType; label: string }[] = [
     {value: 'PRODUCT', label: '상품 리뷰'},
-    {value: 'PROGRAM', label: '프로그램 리뷰'},
+    {value: 'PROGRAM', label: '예약 상품 리뷰'},
 ];
 
 export function ReviewAdminPage() {
@@ -697,7 +986,7 @@ export function ReviewAdminPage() {
             </div>
             <AdminCrudPage<Review>
                 key={targetType}
-                title={isProduct ? '상품 리뷰' : '프로그램 리뷰'}
+                title={isProduct ? '상품 리뷰' : '예약 상품 리뷰'}
                 searchable={false}
                 load={loadReviews}
                 extraQuery={{targetType}}

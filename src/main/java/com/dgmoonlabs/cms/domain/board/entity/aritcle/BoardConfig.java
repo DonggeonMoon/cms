@@ -77,6 +77,11 @@ public class BoardConfig extends BaseEntity {
     @Comment("첨부 파일 기능 활성화 여부")
     private boolean supportsAttachment;
 
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    @Comment("유료 글(페이월) 기능 활성화 여부")
+    private boolean supportsPaidContent;
+
     @Builder.Default
     @Column(nullable = false)
     @ColumnDefault("5")
@@ -115,6 +120,7 @@ public class BoardConfig extends BaseEntity {
         this.supportsComment = request.supportsComment();
         this.supportsLike = request.supportsLike();
         this.supportsAttachment = request.supportsAttachment();
+        this.supportsPaidContent = request.supportsPaidContent();
         this.maximumFileCount = request.maximumFileCount();
         this.pageSize = request.pageSize();
     }

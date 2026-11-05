@@ -4,6 +4,7 @@ import com.dgmoonlabs.cms.domain.board.entity.aritcle.BoardArticle;
 import com.dgmoonlabs.cms.domain.common.file.dto.FileResponse;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,6 +20,10 @@ public record ArticleDetailResponse(
         LocalDateTime noticeEndDateTime,
         boolean isSecret,
         boolean isHidden,
+        boolean paid,
+        BigDecimal price,
+        Long productId,
+        boolean purchased,
         int hit,
         int likes,
         List<FileResponse> files,
@@ -26,12 +31,14 @@ public record ArticleDetailResponse(
         LocalDateTime createdAt,
         LocalDateTime modifiedAt
 ) {
-    public static ArticleDetailResponse of(final BoardArticle article, final List<FileResponse> files, final boolean canModify) {
+    public static ArticleDetailResponse of(final BoardArticle article, final List<FileResponse> files, final boolean canModify,
+                                           final boolean purchased) {
+        boolean locked = article.isPaid() && !purchased;
         return new ArticleDetailResponse(
                 article.getId(),
                 article.getBoardId(),
                 article.getTitle(),
-                article.getContentHtml(),
+                locked ? null : article.getContentHtml(),
                 article.getAuthorName(),
                 article.getUserType(),
                 article.isNotice(),
@@ -39,9 +46,13 @@ public record ArticleDetailResponse(
                 article.getNoticeEndDateTime(),
                 article.isSecret(),
                 article.isHidden(),
+                article.isPaid(),
+                article.getPrice(),
+                article.getProductId(),
+                purchased,
                 article.getHit(),
                 article.getLikes(),
-                files,
+                locked ? List.of() : files,
                 canModify,
                 article.getCreatedAt(),
                 article.getModifiedAt()

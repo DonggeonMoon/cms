@@ -10,6 +10,8 @@ export function priceLabel(product: Pick<ProductSummary, 'saleType' | 'price' | 
             return `${won(product.price)}부터`;
         case 'QUOTE':
             return '견적 문의';
+        case 'INQUIRY':
+            return '문의만';
         default:
             return won(product.price);
     }

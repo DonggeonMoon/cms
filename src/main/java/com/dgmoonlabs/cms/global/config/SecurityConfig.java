@@ -31,16 +31,20 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/files").authenticated()
                 .requestMatchers("/api/orders/**", "/api/orders", "/api/reservations/**", "/api/reservations",
                         "/api/payments/**", "/api/payments", "/api/subscriptions/**", "/api/cart/**", "/api/cart",
-                        "/api/wishlist/**", "/api/wishlist", "/api/votes/**", "/api/votes").hasRole("MEMBER")
+                        "/api/wishlist/**", "/api/wishlist", "/api/customer-records/**", "/api/passes/**",
+                        "/api/progress", "/api/messages", "/api/repairs/**", "/api/repairs", "/api/wallet/**",
+                        "/api/class-attendance/**", "/api/class-attendance", "/api/votes/**", "/api/votes").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/coupons/*/download").hasRole("MEMBER")
                 .requestMatchers("/api/digital/**").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/products/*/reviews", "/api/programs/*/reviews").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.DELETE, "/api/reviews/*").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/satisfactions").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.GET, "/api/reports/me").hasRole("MEMBER")
-                .requestMatchers(HttpMethod.GET, "/api/media/me", "/api/applications/me", "/api/courses/me").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.GET, "/api/media/me", "/api/applications/me", "/api/courses/me",
+                        "/api/applications/*/judging").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/courses/*/enroll", "/api/courses/*/lessons/*/quiz").hasRole("MEMBER")
-                .requestMatchers(HttpMethod.POST, "/api/applications/*/submissions", "/api/applications/submissions/*/withdraw").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.POST, "/api/applications/*/submissions", "/api/applications/submissions/*/withdraw",
+                        "/api/applications/submissions/*/admission-payment", "/api/applications/submissions/*/score").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/media/*/start", "/api/media/*/progress").hasRole("MEMBER")
                 .requestMatchers(API).permitAll()
                 .anyRequest().permitAll()

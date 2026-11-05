@@ -11,7 +11,8 @@ function respond(status: number, body?: unknown) {
 }
 
 const SETTING = {pickupEnabled: true, dineInEnabled: true, tables: ['1번', '2번'], openTime: null, closeTime: null, closedDays: [],
-    paused: false, notice: '포장은 10분 걸립니다', openNow: true};
+    paused: false, notice: '포장은 10분 걸립니다', localDeliveryEnabled: true, deliveryZones: ['062'], deliveryFee: 3000,
+    deliveryMinimumAmount: null, deliverySlotMinutes: 30, openNow: true};
 const LATTE = {id: 5, productId: 50, productOptionId: null, productName: '라떼', optionName: null, imageUrl: null, unitPrice: 5000,
     quantity: 2, amount: 10000, stock: null, requiresShipping: false, storeOrder: true, available: true};
 
@@ -57,6 +58,30 @@ describe('store orders', () => {
         await waitFor(() => expect(sent[0]).toMatchObject({cartItemIds: [5], fulfillmentType: 'DINE_IN', tableName: '2번',
             requestMessage: '덜 달게', receiverName: '손님'}));
         expect(sent[0]).not.toHaveProperty('address');
+    });
+
+    it('orders local delivery with an address and a delivery time slot', async () => {
+        const sent: unknown[] = [];
+        stub((url, init) => {
+            if (url === '/api/cart') return respond(200, {items: [LATTE], itemsAmount: 10000, shippingFee: 0, shippingRegion: null,
+                freeShippingThreshold: null, totalPrice: 10000});
+            if (url === '/api/cart/checkout') {
+                sent.push(JSON.parse(String(init?.body)));
+                return respond(201, {id: 9});
+            }
+            return undefined;
+        });
+        render(<AuthProvider><RouterProvider router={createMemoryRouter(routes, {initialEntries: ['/orders/cart?items=5']})}/></AuthProvider>);
+
+        expect(await screen.findByText('포장은 10분 걸립니다')).toBeInTheDocument();
+        await userEvent.click(screen.getByLabelText('배달'));
+        expect(screen.getByText(/배달 가능 지역/)).toBeInTheDocument();
+        await userEvent.type(screen.getByLabelText(/^주소/), '서울시 어딘가');
+        await userEvent.type(screen.getByLabelText('배달 받을 시간'), '2026-11-06T12:30');
+        await userEvent.click(screen.getByRole('button', {name: '주문하고 결제하기'}));
+
+        await waitFor(() => expect(sent[0]).toMatchObject({cartItemIds: [5], fulfillmentType: 'LOCAL_DELIVERY',
+            address: '서울시 어딘가', deliverySlotAt: '2026-11-06T12:30:00'}));
     });
 
     it('shows paid store orders as tickets and moves them to the next step', async () => {

@@ -10,6 +10,7 @@ import lombok.*;
 import org.hibernate.annotations.Comment;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -82,6 +83,15 @@ public class Subscription extends BaseEntity {
     @Comment("다음 결제부터 바꿀 결제 주기")
     private BillingCycle pendingBillingCycle;
 
+    @Comment("약정 기간(개월, 구독 시작 당시 상품 설정을 그대로 남김)")
+    private Integer commitmentMonths;
+
+    @Comment("약정 종료일")
+    private LocalDate commitmentEndDate;
+
+    @Comment("약정 중 해지 위약금 비율(%)")
+    private Integer earlyTerminationFeeRate;
+
     public boolean isActive() {
         return status == SubscriptionStatus.ACTIVE;
     }
@@ -150,6 +160,18 @@ public class Subscription extends BaseEntity {
         this.status = SubscriptionStatus.ACTIVE;
         this.pausedOn = null;
         this.resumeOn = null;
+    }
+
+    /** 약정이 없거나 이미 끝났으면 0원. 남은 회차 수 × 회차 금액 × 위약금 비율. */
+    public BigDecimal earlyTerminationFee(final LocalDate today) {
+        if (commitmentEndDate == null || !today.isBefore(commitmentEndDate) || earlyTerminationFeeRate == null
+                || earlyTerminationFeeRate <= 0) {
+            return BigDecimal.ZERO;
+        }
+        long remainingMonths = ChronoUnit.MONTHS.between(today, commitmentEndDate);
+        long remainingCycles = Math.max(1, (long) Math.ceil(remainingMonths / (double) billingCycle.monthsPerCycle()));
+        return price.multiply(BigDecimal.valueOf(remainingCycles)).multiply(BigDecimal.valueOf(earlyTerminationFeeRate))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
     }
 
     public void cancel() {

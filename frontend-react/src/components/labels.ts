@@ -1,4 +1,4 @@
-import type {BillingCycle, CellKind, ContentStatus, FormFieldType, ReservationType, SelectionMethod, SubmissionStatus, EnrollmentStatus, OrderStatus, ProductSaleType, PublishStatus, ReportStatus, ReservationStatus} from '../api/domain';
+import type {BillingCycle, CellKind, ContentStatus, FormFieldType, LedgerType, QueueStatus, ReservationType, SelectionMethod, SubmissionStatus, EnrollmentStatus, OrderReturnStatus, OrderReturnType, OrderStatus, PassUnit, ProductSaleType, PublishStatus, ReportStatus, ReservationStatus} from '../api/domain';
 
 export const ORDER_STATUS: Record<OrderStatus, string> = {
     QUOTE_REQUESTED: '견적 요청',
@@ -17,6 +17,13 @@ export const RESERVATION_STATUS: Record<ReservationStatus, string> = {
     PENDING_PAYMENT: '결제 대기',
     CONFIRMED: '확정',
     CANCELED: '취소',
+};
+
+export const QUEUE_STATUS: Record<QueueStatus, string> = {
+    WAITING: '대기',
+    CALLED: '호출',
+    DONE: '완료',
+    SKIPPED: '건너뜀',
 };
 
 export const REPORT_STATUS: Record<ReportStatus, string> = {
@@ -52,6 +59,36 @@ export const SALE_TYPE: Record<ProductSaleType, string> = {
     SUBSCRIPTION: '구독',
     DONATION: '후원',
     QUOTE: '견적 문의',
+    PASS: '이용권',
+    GIFT_CARD: '상품권',
+    PREORDER: '예약 판매',
+    FUNDING: '펀딩',
+    INQUIRY: '문의만',
+};
+
+export const LEDGER_TYPE: Record<LedgerType, string> = {
+    CHARGE: '충전',
+    GIFT_ISSUED: '상품권 발급',
+    GIFT_REDEEMED: '상품권 충전',
+    PAYMENT: '결제',
+    REFUND: '환불',
+    ADMIN: '관리자 조정',
+};
+
+export const RETURN_TYPE: Record<OrderReturnType, string> = {
+    RETURN: '반품',
+    EXCHANGE: '교환',
+};
+
+export const RETURN_STATUS: Record<OrderReturnStatus, string> = {
+    REQUESTED: '신청',
+    APPROVED: '승인',
+    REJECTED: '거절',
+};
+
+export const PASS_UNIT: Record<PassUnit, string> = {
+    PERIOD: '기간권',
+    COUNT: '횟수권',
 };
 
 export const BILLING_CYCLE: Record<BillingCycle, string> = {
@@ -67,12 +104,15 @@ export const RESERVATION_TYPE: Record<ReservationType, string> = {
     EVENT: '공연·행사',
     ITEM_RENTAL: '물품 대여',
     VISIT: '출장·방문',
+    TABLE: '식당 테이블',
+    TOUR: '여행·투어',
 };
 
 export const RESERVATION_TYPE_GROUPS: { label: string; types: ReservationType[] }[] = [
     {label: '시간 예약', types: ['PROGRAM', 'CONSULTATION', 'VISIT']},
-    {label: '공간 예약', types: ['RENTAL', 'LODGING', 'EVENT']},
+    {label: '공간 예약', types: ['RENTAL', 'LODGING', 'EVENT', 'TABLE']},
     {label: '물품', types: ['ITEM_RENTAL']},
+    {label: '패키지 예약', types: ['TOUR']},
 ];
 
 export const CELL_KIND: Record<CellKind, string> = {
@@ -87,6 +127,7 @@ export const CELL_KIND: Record<CellKind, string> = {
 export const SELECTION_METHOD: Record<SelectionMethod, string> = {
     REVIEW: '심사',
     LOTTERY: '추첨',
+    CONTEST: '공모전',
 };
 
 export const SUBMISSION_STATUS: Record<SubmissionStatus, string> = {

@@ -5,6 +5,7 @@ import com.dgmoonlabs.cms.domain.application.dto.ApplicationDtos.*;
 import com.dgmoonlabs.cms.domain.admin.logging.AuditedRead;
 import com.dgmoonlabs.cms.domain.application.service.ApplicationReportService;
 import com.dgmoonlabs.cms.domain.application.service.ApplicationService;
+import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.OrderResponse;
 import com.dgmoonlabs.cms.global.security.LoginUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -56,6 +58,24 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.withdrawMine(user.id(), id));
     }
 
+    @PostMapping("/api/applications/submissions/{id}/admission-payment")
+    public ResponseEntity<OrderResponse> payAdmission(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id) {
+        return ResponseEntity.ok(applicationService.payAdmissionFee(user.id(), id));
+    }
+
+    @GetMapping("/api/applications/{id:\\d+}/judging")
+    public ResponseEntity<PagedModel<JudgeSubmissionResponse>> judging(@AuthenticationPrincipal final LoginUser user,
+                                                                       @PathVariable final Long id,
+                                                                       @PageableDefault(size = 20) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(applicationService.getJudgeSubmissions(user.id(), id, pageable)));
+    }
+
+    @PostMapping("/api/applications/submissions/{id}/score")
+    public ResponseEntity<ScoreResponse> score(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id,
+                                               @RequestBody @Valid final ScoreRequest request) {
+        return ResponseEntity.ok(applicationService.submitScore(user.id(), id, request));
+    }
+
     @GetMapping("/api/admin/applications")
     public ResponseEntity<PagedModel<FormResponse>> adminForms(@RequestParam(required = false) final String keyword,
                                                                @PageableDefault(size = 20) final Pageable pageable) {
@@ -87,6 +107,16 @@ public class ApplicationController {
     @PostMapping("/api/admin/applications/{id}/draw")
     public ResponseEntity<DrawResponse> draw(@PathVariable final Long id) {
         return ResponseEntity.ok(applicationService.draw(id));
+    }
+
+    @PostMapping("/api/admin/applications/{id}/finalize-contest")
+    public ResponseEntity<DrawResponse> finalizeContest(@PathVariable final Long id) {
+        return ResponseEntity.ok(applicationService.finalizeContest(id));
+    }
+
+    @GetMapping("/api/admin/applications/submissions/{id}/scores")
+    public ResponseEntity<List<ScoreDetail>> scores(@PathVariable final Long id) {
+        return ResponseEntity.ok(applicationService.getScores(id));
     }
 
     @GetMapping("/api/admin/applications/{id}/submissions")

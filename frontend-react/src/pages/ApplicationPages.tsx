@@ -1,8 +1,8 @@
 import {type FormEvent, useCallback, useEffect, useState} from 'react';
 import {Link, useNavigate, useParams, useSearchParams} from 'react-router';
 import {ApiError} from '../api/client';
-import type {ApplicationForm, FormField, Submission} from '../api/domain';
-import {applicationApi} from '../api/endpoints';
+import type {ApplicationForm, FormField, JudgeSubmission, Submission} from '../api/domain';
+import {applicationApi, shopApi} from '../api/endpoints';
 import {fileApi} from '../api/files';
 import type {Page} from '../api/types';
 import {useAuth} from '../auth/AuthContext';
@@ -13,6 +13,7 @@ import {SUBMISSION_STATUS} from '../components/labels';
 import {ListSearch, pageParams} from '../components/ListSearch';
 import {MemberOnlyNotice} from '../components/MemberOnlyNotice';
 import {Pagination} from '../components/Pagination';
+import {ProgressAndMessages} from '../components/ProgressPanel';
 import {useFeatureMenuName} from '../components/SiteContext';
 import {StableLabel} from '../components/StableLabel';
 
@@ -71,10 +72,16 @@ export function ApplicationDetailPage() {
                 접수 기간 {period(form)}
                 {form.maximumSubmissions && ` · 모집 ${form.maximumSubmissions}명 (접수 ${form.submissionCount}명)`}
                 {form.selectionMethod === 'LOTTERY' && ` · 추첨으로 ${form.winnerCount}명 선정`}
+                {form.selectionMethod === 'CONTEST' && ` · 심사위원 채점으로 ${form.winnerCount}명 선정`}
             </p>
+            {form.isJudge && (
+                <p className="notice-box">심사위원으로 지정되었습니다. <Link to={`/applications/${form.id}/judging`}>접수작 채점하기</Link></p>
+            )}
             {form.contentHtml && <HtmlView html={form.contentHtml}/>}
             {form.drawnAt ? (
-                <p className="notice-box">추첨을 마쳤습니다. 결과는 <Link to="/mypage/applications">신청 내역</Link>에서 확인하세요.</p>
+                <p className="notice-box">
+                    {form.selectionMethod === 'CONTEST' ? '선정을' : '추첨을'} 마쳤습니다. 결과는 <Link to="/mypage/applications">신청 내역</Link>에서 확인하세요.
+                </p>
             ) : !form.isOpen ? (
                 <p className="notice-box">지금은 신청을 받지 않습니다.</p>
             ) : user?.userType !== 'MEMBER' ? (
@@ -236,6 +243,89 @@ function AnswerInput({field, value, onChange, error}: {
     }
 }
 
+export function ApplicationJudgingPage() {
+    const id = Number(useParams().id);
+    const [form, setForm] = useState<ApplicationForm | null>(null);
+    const [page, setPage] = useState(0);
+    const [data, setData] = useState<Page<JudgeSubmission> | null>(null);
+    const [error, setError] = useState<unknown>(null);
+    useEffect(() => {
+        applicationApi.get(id).then(setForm).catch(setError);
+    }, [id]);
+    const reload = useCallback(() => {
+        applicationApi.judging(id, page).then(setData).catch(setError);
+    }, [id, page]);
+    useEffect(reload, [reload]);
+
+    const answer = (submission: JudgeSubmission, field: FormField) => {
+        const value = submission.answers[field.key];
+        if (value == null) {
+            return '-';
+        }
+        if (field.type === 'FILE') {
+            return <a href={`/api/files/${value}/download`}>첨부 파일</a>;
+        }
+        return Array.isArray(value) ? value.join(', ') : value === true ? '예' : String(value);
+    };
+
+    if (!form) {
+        return error ? <ErrorBanner error={error}/> : <p className="muted">불러오는 중…</p>;
+    }
+    return (
+        <section className="card">
+            <h1>{form.title} - 접수작 채점</h1>
+            <ErrorBanner error={error}/>
+            <div className="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        {form.fields.map((f) => <th key={f.key}>{f.label}</th>)}
+                        <th>내 점수</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {data?.content.map((submission) => (
+                        <tr key={submission.id}>
+                            {form.fields.map((f) => <td key={f.key} className="small">{answer(submission, f)}</td>)}
+                            <td><JudgeScoreForm submission={submission} onSaved={reload}/></td>
+                        </tr>
+                    ))}
+                    {data?.content.length === 0 && <tr><td colSpan={form.fields.length + 1} className="muted">채점할 접수작이 없습니다.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
+        </section>
+    );
+}
+
+function JudgeScoreForm({submission, onSaved}: { submission: JudgeSubmission; onSaved: () => void }) {
+    const [score, setScore] = useState(submission.myScore == null ? '' : String(submission.myScore));
+    const [comment, setComment] = useState(submission.myComment ?? '');
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<unknown>(null);
+    const save = async () => {
+        setSaving(true);
+        setError(null);
+        try {
+            await applicationApi.score(submission.id, Number(score), comment);
+            onSaved();
+        } catch (e) {
+            setError(e);
+        } finally {
+            setSaving(false);
+        }
+    };
+    return (
+        <div className="review-cell">
+            <input aria-label="점수" type="number" min={0} max={100} value={score} onChange={(e) => setScore(e.target.value)}/>
+            <input aria-label="심사평" placeholder="심사평" value={comment} onChange={(e) => setComment(e.target.value)}/>
+            <button type="button" disabled={saving || score === ''} onClick={save}>저장</button>
+            <ErrorBanner error={error}/>
+        </div>
+    );
+}
+
 export function MyApplicationsPage() {
     const [page, setPage] = useState(0);
     const [data, setData] = useState<Page<Submission> | null>(null);
@@ -251,7 +341,7 @@ export function MyApplicationsPage() {
             <ErrorBanner error={error}/>
             <div className="table-wrap">
                 <table>
-                    <thead><tr><th>신청</th><th>신청일</th><th>상태</th><th>안내</th><th/></tr></thead>
+                    <thead><tr><th>신청</th><th>신청일</th><th>상태</th><th>안내</th><th>선정 후 결제</th><th>진행·메시지</th><th/></tr></thead>
                     <tbody>
                     {data?.content.map((submission) => (
                         <tr key={submission.id}>
@@ -260,6 +350,17 @@ export function MyApplicationsPage() {
                             <td><span className={`badge${submission.status === 'ACCEPTED' ? ' ok' : submission.status === 'REJECTED' ? ' danger' : ''}`}>
                                 {SUBMISSION_STATUS[submission.status]}</span></td>
                             <td className="small">{submission.resultMessage ?? '-'}</td>
+                            <td><AdmissionFeeCell submission={submission} onPaid={reload}/></td>
+                            <td>
+                                <details>
+                                    <summary>보기</summary>
+                                    <ProgressAndMessages
+                                        getProgress={() => shopApi.progress('APPLICATION', submission.id)}
+                                        listMessages={() => shopApi.messages.list('APPLICATION', submission.id)}
+                                        postMessage={(content, fileIds) => shopApi.messages.post('APPLICATION', submission.id, {content, fileIds})}
+                                    />
+                                </details>
+                            </td>
                             <td className="button-cell">
                                 {submission.status === 'RECEIVED' && (
                                     <button type="button" className="danger" onClick={() => {
@@ -271,11 +372,52 @@ export function MyApplicationsPage() {
                             </td>
                         </tr>
                     ))}
-                    {data?.content.length === 0 && <tr><td colSpan={5} className="muted">신청 내역이 없습니다.</td></tr>}
+                    {data?.content.length === 0 && <tr><td colSpan={7} className="muted">신청 내역이 없습니다.</td></tr>}
                     </tbody>
                 </table>
             </div>
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
         </section>
+    );
+}
+
+function AdmissionFeeCell({submission, onPaid}: { submission: Submission; onPaid: () => void }) {
+    const navigate = useNavigate();
+    const [feeProductId, setFeeProductId] = useState<number | null>(null);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState<unknown>(null);
+    const needsCheck = submission.status === 'ACCEPTED' && !submission.admissionOrderId;
+
+    useEffect(() => {
+        if (!needsCheck) {
+            return;
+        }
+        applicationApi.get(submission.formId).then((form) => setFeeProductId(form.admissionFeeProductId)).catch(() => setFeeProductId(null));
+    }, [needsCheck, submission.formId]);
+
+    if (submission.admissionOrderId) {
+        return <Link to={`/checkout/ORDER/${submission.admissionOrderId}`}>결제 보기</Link>;
+    }
+    if (!needsCheck || !feeProductId) {
+        return <span className="muted">-</span>;
+    }
+    const pay = async () => {
+        setBusy(true);
+        setError(null);
+        try {
+            const order = await applicationApi.payAdmission(submission.id);
+            onPaid();
+            navigate(`/checkout/ORDER/${order.id}`);
+        } catch (e) {
+            setError(e);
+        } finally {
+            setBusy(false);
+        }
+    };
+    return (
+        <>
+            <button type="button" className="primary" disabled={busy} onClick={pay}>입학금 결제하기</button>
+            <ErrorBanner error={error}/>
+        </>
     );
 }

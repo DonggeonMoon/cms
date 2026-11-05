@@ -1,13 +1,20 @@
 package com.dgmoonlabs.cms.domain.business.reservation.service;
 
 import com.dgmoonlabs.cms.domain.business.BusinessNumbers;
+import com.dgmoonlabs.cms.domain.business.pass.entity.MemberPass;
+import com.dgmoonlabs.cms.domain.business.pass.service.PassService;
 import com.dgmoonlabs.cms.domain.business.payment.constant.PaymentTargetType;
 import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
+import com.dgmoonlabs.cms.domain.business.reservation.constant.QueueStatus;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.*;
 import com.dgmoonlabs.cms.domain.business.reservation.entity.Reservation;
+import com.dgmoonlabs.cms.domain.business.reservation.entity.ReservationExtension;
 import com.dgmoonlabs.cms.domain.business.reservation.entity.program.Program;
+import com.dgmoonlabs.cms.domain.business.reservation.entity.program.ProgramSession;
 import com.dgmoonlabs.cms.domain.business.reservation.repository.ProgramRepository;
+import com.dgmoonlabs.cms.domain.business.reservation.repository.ProgramSessionRepository;
+import com.dgmoonlabs.cms.domain.business.reservation.repository.ReservationExtensionRepository;
 import com.dgmoonlabs.cms.domain.business.reservation.repository.ReservationRepository;
 import com.dgmoonlabs.cms.domain.business.review.repository.ReviewRepository;
 import com.dgmoonlabs.cms.domain.common.file.service.FileService;
@@ -35,6 +42,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +56,9 @@ public class ReservationService {
     private final RegexService regexService;
     private final JsonMapper jsonMapper;
     private final GradeService gradeService;
+    private final ProgramSessionRepository sessionRepository;
+    private final ReservationExtensionRepository extensionRepository;
+    private final PassService passService;
 
     @Transactional(readOnly = true)
     public Page<ProgramResponse> getPrograms(final String keyword, final Pageable pageable) {
@@ -65,8 +76,74 @@ public class ReservationService {
         if (!program.isEnabled() && !CurrentUser.isAdmin()) {
             throw BusinessException.notFound();
         }
-        return ProgramResponse.of(program, layoutOf(program), program.isOpenAt(LocalDateTime.now()),
-                reviewRepository.averageProgramRating(id));
+        LocalDateTime now = LocalDateTime.now();
+        return ProgramResponse.of(program, layoutOf(program), program.isOpenAt(now),
+                reviewRepository.averageProgramRating(id), sessionsOf(program).stream()
+                        .map(session -> SessionResponse.of(session, now)).toList(), priceTiersOf(program));
+    }
+
+    private List<ProgramSession> sessionsOf(final Program program) {
+        return program.supportsSessions()
+                ? sessionRepository.findAllByProgramIdAndDeletedAtIsNullOrderByStartAtAsc(program.getId()) : List.of();
+    }
+
+    @Transactional
+    public SessionResponse createSession(final Long programId, final SessionSaveRequest request) {
+        Program program = findProgram(programId);
+        if (!program.supportsSessions()) {
+            throw new BusinessException(ErrorCode.SESSIONS_NOT_SUPPORTED);
+        }
+        requireOrdered(request);
+        ProgramSession session = sessionRepository.save(ProgramSession.builder()
+                .programId(program.getId())
+                .name(blankToNull(request.name()))
+                .startAt(request.startAt())
+                .endAt(request.endAt())
+                .capacity(request.capacity())
+                .build());
+        return SessionResponse.of(session, LocalDateTime.now());
+    }
+
+    @Transactional
+    public SessionResponse updateSession(final Long programId, final Long sessionId, final SessionSaveRequest request) {
+        requireOrdered(request);
+        ProgramSession session = lockedSession(programId, sessionId);
+        session.update(blankToNull(request.name()), request.startAt(), request.endAt(), request.capacity());
+        return SessionResponse.of(session, LocalDateTime.now());
+    }
+
+    @Transactional
+    public void deleteSession(final Long programId, final Long sessionId) {
+        ProgramSession session = lockedSession(programId, sessionId);
+        if (reservationRepository.existsBySessionIdAndStatusNot(session.getId(), ReservationStatus.CANCELED)) {
+            throw new BusinessException(ErrorCode.SESSION_HAS_RESERVATIONS);
+        }
+        session.delete();
+    }
+
+    private ProgramSession lockedSession(final Long programId, final Long sessionId) {
+        return sessionRepository.findForUpdate(sessionId)
+                .filter(session -> session.getProgramId().equals(programId) && session.getDeletedAt() == null)
+                .orElseThrow(BusinessException::notFound);
+    }
+
+    private static void requireOrdered(final SessionSaveRequest request) {
+        if (request.endAt() != null && !request.endAt().isAfter(request.startAt())) {
+            throw new BusinessException(ErrorCode.INVALID_PERIOD);
+        }
+    }
+
+    /** 회차가 있는 상품은 회차를 꼭 골라야 한다. 회차를 잠가 두고 정원을 확인한다. */
+    private Optional<ProgramSession> sessionFor(final Program program, final Long sessionId) {
+        if (!program.supportsSessions() || !sessionRepository.existsByProgramIdAndDeletedAtIsNull(program.getId())) {
+            return Optional.empty();
+        }
+        if (sessionId == null) {
+            throw new BusinessException(ErrorCode.SESSION_REQUIRED);
+        }
+        return Optional.of(sessionRepository.findForUpdate(sessionId)
+                .filter(session -> session.getProgramId().equals(program.getId()) && session.isOpenAt(LocalDateTime.now()))
+                .orElseThrow(() -> new BusinessException(ErrorCode.SESSION_NOT_OPEN)));
     }
 
     @Transactional
@@ -132,10 +209,27 @@ public class ReservationService {
 
     private ReservationResponse create(final UserType userType, final Long userId, final Program program,
                                        final ReservationCreateRequest request, final boolean paid) {
+        Optional<ProgramSession> session = sessionFor(program, request.sessionId());
         Booking booking = switch (program.getReservationType()) {
             case PROGRAM -> {
-                program.reserve(request.quantity());
-                yield new Booking(request.quantity(), program.getPrice().multiply(BigDecimal.valueOf(request.quantity())), null, null, null);
+                if (session.isPresent()) {
+                    session.get().reserve(request.quantity());
+                } else {
+                    program.reserve(request.quantity());
+                }
+                yield new Booking(request.quantity(), program.getPrice().multiply(BigDecimal.valueOf(request.quantity())),
+                        session.map(ProgramSession::getStartAt).orElse(null), session.map(ProgramSession::getEndAt).orElse(null), null);
+            }
+            case EVENT -> {
+                if (session.isEmpty()) {
+                    yield bookSpace(program, request.cellsOrEmpty(), new Period(program.getStartDateTime(),
+                            program.getEndDateTime() != null ? program.getEndDateTime() : program.getStartDateTime().plusMinutes(1), 1));
+                }
+                ProgramSession show = session.get();
+                Booking seats = bookSpace(program, request.cellsOrEmpty(), sessionTakenCells(show.getId()),
+                        new Period(show.getStartAt(), show.endOrStart(), 1));
+                show.reserve(seats.quantity());
+                yield seats;
             }
             case CONSULTATION -> bookConsultation(program, request.startAt());
             case VISIT -> {
@@ -143,15 +237,20 @@ public class ReservationService {
                 yield bookConsultation(program, request.startAt());
             }
             case RENTAL -> bookSpace(program, request.cellsOrEmpty(), rentalPeriod(program, request.startAt(), request.endAt()));
+            case TABLE -> bookTable(program, request.cellsOrEmpty(), rentalPeriod(program, request.startAt(), request.endAt()),
+                    request.partySize());
             case LODGING -> bookSpace(program, request.cellsOrEmpty(), lodgingPeriod(program, request.startAt(), request.endAt()));
-            case EVENT -> bookSpace(program, request.cellsOrEmpty(), new Period(program.getStartDateTime(),
-                    program.getEndDateTime() != null ? program.getEndDateTime() : program.getStartDateTime().plusMinutes(1), 1));
             case ITEM_RENTAL -> bookItems(program, request.quantity(), request.startAt(), request.endAt());
+            case TOUR -> bookTour(program, session, request.partyCounts());
         };
-        ReservationStatus status = paid || booking.total().signum() == 0 ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING_PAYMENT;
+        MemberPass usedPass = request.passId() == null ? null
+                : passService.consumeForMember(userId, request.passId(), program.getId(), booking.quantity());
+        BigDecimal totalPrice = usedPass == null ? booking.total() : BigDecimal.ZERO;
+        ReservationStatus status = paid || totalPrice.signum() == 0 ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING_PAYMENT;
         Reservation reservation = reservationRepository.save(Reservation.builder()
                 .reservationNumber(regexService.requireNumberFormat(RegexTarget.RESERVATION_NUMBER,
                         BusinessNumbers.next("R", reservationRepository::existsByReservationNumber)))
+                .checkInCode(BusinessNumbers.next("CHK", reservationRepository::existsByCheckInCode))
                 .userType(userType)
                 .userId(userId)
                 .programId(program.getId())
@@ -161,7 +260,7 @@ public class ReservationService {
                 .endAt(booking.endAt())
                 .cells(booking.cells())
                 .quantity(booking.quantity())
-                .totalPrice(booking.total())
+                .totalPrice(totalPrice)
                 .depositAmount(booking.deposit())
                 .status(status)
                 .applicantName(request.applicantName())
@@ -170,6 +269,11 @@ public class ReservationService {
                 .visitAddress(program.getReservationType() == ReservationType.VISIT ? request.visitAddress().trim() : null)
                 .visitDetailAddress(program.getReservationType() == ReservationType.VISIT ? blankToNull(request.visitDetailAddress()) : null)
                 .requestMemo(blankToNull(request.requestMemo()))
+                .sessionId(session.map(ProgramSession::getId).orElse(null))
+                .passId(usedPass == null ? null : usedPass.getId())
+                .lateFeePerDay(program.getReservationType() == ReservationType.ITEM_RENTAL ? program.getLateFeePerDay() : null)
+                .partySize(program.getReservationType() == ReservationType.TABLE ? request.partySize() : null)
+                .partyBreakdown(program.getReservationType() == ReservationType.TOUR ? request.partyCounts() : null)
                 .build());
         return ReservationResponse.from(reservation);
     }
@@ -198,8 +302,11 @@ public class ReservationService {
     }
 
     private Booking bookSpace(final Program program, final List<String> keys, final Period period) {
+        return bookSpace(program, keys, takenCells(program.getId(), period.from(), period.to()), period);
+    }
+
+    private Booking bookSpace(final Program program, final List<String> keys, final Set<String> taken, final Period period) {
         List<SpaceLayout.Cell> cells = layoutOf(program).bookable(keys);
-        Set<String> taken = takenCells(program.getId(), period.from(), period.to());
         if (cells.stream().anyMatch(cell -> taken.contains(cell.key()))) {
             throw new BusinessException(ErrorCode.CELL_ALREADY_RESERVED);
         }
@@ -208,6 +315,45 @@ public class ReservationService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         String joined = String.join(",", cells.stream().map(SpaceLayout.Cell::key).toList());
         return new Booking(cells.size(), perUnit.multiply(BigDecimal.valueOf(period.units())), period.from(), period.to(), joined);
+    }
+
+    private Booking bookTable(final Program program, final List<String> keys, final Period period, final Integer partySize) {
+        if (partySize == null || partySize <= 0) {
+            throw new BusinessException(ErrorCode.PARTY_SIZE_REQUIRED);
+        }
+        List<SpaceLayout.Cell> cells = layoutOf(program).bookable(keys);
+        int capacity = cells.stream().mapToInt(cell -> cell.capacity() == null ? Integer.MAX_VALUE : cell.capacity()).sum();
+        if (capacity < partySize) {
+            throw new BusinessException(ErrorCode.TABLE_CAPACITY_EXCEEDED);
+        }
+        return bookSpace(program, keys, period);
+    }
+
+    /** 인원 유형(성인·아동 등)별 인원 × 요금을 더해 총액을 낸다. 출발일 회차가 있으면 전체 인원만큼 정원을 잡는다. */
+    private Booking bookTour(final Program program, final Optional<ProgramSession> session, final Map<String, Integer> counts) {
+        if (counts == null || counts.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARTY_BREAKDOWN_REQUIRED);
+        }
+        Map<String, BigDecimal> priceByTier = priceTiersOf(program).stream()
+                .collect(Collectors.toMap(PriceTier::name, PriceTier::price));
+        int quantity = 0;
+        BigDecimal total = BigDecimal.ZERO;
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+            BigDecimal unitPrice = priceByTier.get(entry.getKey());
+            if (unitPrice == null || entry.getValue() == null || entry.getValue() <= 0) {
+                throw new BusinessException(ErrorCode.INVALID_PARTY_BREAKDOWN);
+            }
+            quantity += entry.getValue();
+            total = total.add(unitPrice.multiply(BigDecimal.valueOf(entry.getValue())));
+        }
+        final int totalQuantity = quantity;
+        session.ifPresent(show -> show.reserve(totalQuantity));
+        return new Booking(totalQuantity, total, session.map(ProgramSession::getStartAt).orElse(null),
+                session.map(ProgramSession::getEndAt).orElse(null), null);
+    }
+
+    private List<PriceTier> priceTiersOf(final Program program) {
+        return program.getPriceTiers() == null ? List.of() : List.of(jsonMapper.readValue(program.getPriceTiers(), PriceTier[].class));
     }
 
     /** 대여일부터 반납일 전날까지를 대여 일수로 센다. 금액은 1일 대여료 × 일수 × 수량에 보증금을 더한다. */
@@ -232,8 +378,14 @@ public class ReservationService {
     }
 
     private int remainingItems(final Program program, final LocalDate from, final LocalDate to) {
+        return remainingItems(program, from, to, null);
+    }
+
+    /** excludeId: 연장할 예약 자신은 빼고 센다. */
+    private int remainingItems(final Program program, final LocalDate from, final LocalDate to, final Long excludeId) {
         int stock = program.getMaximumPerson() == null ? 0 : program.getMaximumPerson();
-        List<Reservation> active = activeReservations(program.getId());
+        List<Reservation> active = activeReservations(program.getId()).stream()
+                .filter(reservation -> !reservation.getId().equals(excludeId)).toList();
         int remaining = stock;
         for (LocalDate day = from; day.isBefore(to); day = day.plusDays(1)) {
             LocalDate date = day;
@@ -274,16 +426,101 @@ public class ReservationService {
     @Transactional
     public ReservationResponse returnItems(final Long reservationId, final ReturnRequest request) {
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound);
+        reservation.requireOpenRental();
+        LocalDateTime now = LocalDateTime.now();
         BigDecimal deposit = reservation.getDepositAmount() == null ? BigDecimal.ZERO : reservation.getDepositAmount();
         BigDecimal deduction = request.deduction() == null ? BigDecimal.ZERO : request.deduction();
         if (deduction.compareTo(deposit) > 0) {
             throw new BusinessException(ErrorCode.INVALID_DEPOSIT_DEDUCTION);
         }
-        BigDecimal refund = deposit.subtract(deduction);
+        BigDecimal lateFee = reservation.lateFeeAt(now);
+        BigDecimal unpaidExtension = BigDecimal.ZERO;
+        for (ReservationExtension extension : extensionRepository.findAllByReservationIdOrderByIdAsc(reservation.getId())) {
+            if (extension.getStatus() == ReservationExtension.Status.PENDING_PAYMENT) {
+                unpaidExtension = unpaidExtension.add(extension.getFee());
+                extension.deductFromDeposit();
+            }
+        }
+        // 파손 차감액, 연체료, 결제하지 않은 연장료 순으로 보증금에서 빼고, 모자라면 따로 받을 금액으로 남긴다.
+        BigDecimal owed = deduction.add(lateFee).add(unpaidExtension);
+        BigDecimal refund = deposit.subtract(owed).max(BigDecimal.ZERO);
+        BigDecimal outstanding = owed.subtract(deposit).max(BigDecimal.ZERO);
         String memo = request.memo() == null || request.memo().isBlank() ? null : request.memo().trim();
-        reservation.markReturned(LocalDateTime.now(), refund, memo);
+        reservation.markReturned(now, refund, memo, lateFee, unpaidExtension, outstanding);
         paymentService.refundPartially(PaymentTargetType.RESERVATION, reservation.getId(), refund);
         return ReservationResponse.from(reservation);
+    }
+
+    @Transactional
+    public ReservationResponse extendMine(final Long memberId, final Long reservationId, final ExtendRequest request) {
+        Reservation reservation = reservationRepository.findByIdAndUserTypeAndUserId(reservationId, UserType.MEMBER, memberId)
+                .orElseThrow(BusinessException::notFound);
+        return extend(reservation, request.endAt(), false);
+    }
+
+    @Transactional
+    public ReservationResponse extend(final Long reservationId, final ExtendRequest request) {
+        return extend(reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound), request.endAt(), request.paid());
+    }
+
+    /** 늘린 날만큼 1일 대여료 × 수량을 받는다. 늘린 기간에 남는 수량이 있어야 한다. */
+    private ReservationResponse extend(final Reservation reservation, final LocalDateTime endAt, final boolean paid) {
+        reservation.requireOpenRental();
+        Program program = programRepository.findForUpdate(reservation.getProgramId()).orElseThrow(BusinessException::notFound);
+        LocalDate currentEnd = reservation.getEndAt().toLocalDate();
+        LocalDate newEnd = endAt.toLocalDate();
+        int days = (int) ChronoUnit.DAYS.between(currentEnd, newEnd);
+        long totalDays = ChronoUnit.DAYS.between(reservation.getStartAt().toLocalDate(), newEnd);
+        if (days <= 0 || !withinPeriod(program, newEnd.minusDays(1))
+                || (program.getMaxRentalDays() != null && totalDays > program.getMaxRentalDays())) {
+            throw new BusinessException(ErrorCode.INVALID_EXTENSION);
+        }
+        if (reservation.getPendingExtensionId() != null) {
+            throw new BusinessException(ErrorCode.EXTENSION_PAYMENT_PENDING);
+        }
+        if (remainingItems(program, currentEnd, newEnd, reservation.getId()) < reservation.getQuantity()) {
+            throw new BusinessException(ErrorCode.RENTAL_OUT_OF_STOCK);
+        }
+        BigDecimal fee = program.getPrice().multiply(BigDecimal.valueOf((long) days * reservation.getQuantity()));
+        boolean settled = paid || fee.signum() == 0;
+        ReservationExtension extension = extensionRepository.save(ReservationExtension.builder()
+                .reservationId(reservation.getId())
+                .previousEndAt(reservation.getEndAt())
+                .newEndAt(newEnd.atStartOfDay())
+                .days(days)
+                .fee(fee)
+                .status(settled ? ReservationExtension.Status.PAID : ReservationExtension.Status.PENDING_PAYMENT)
+                .build());
+        reservation.extendTo(newEnd.atStartOfDay(), extension.getId(), settled ? null : fee);
+        return ReservationResponse.from(reservation);
+    }
+
+    @Transactional
+    public ReservationResponse cancelMyExtension(final Long memberId, final Long reservationId) {
+        Reservation reservation = reservationRepository.findByIdAndUserTypeAndUserId(reservationId, UserType.MEMBER, memberId)
+                .orElseThrow(BusinessException::notFound);
+        return cancelExtension(reservation);
+    }
+
+    @Transactional
+    public ReservationResponse cancelExtension(final Long reservationId) {
+        return cancelExtension(reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound));
+    }
+
+    private ReservationResponse cancelExtension(final Reservation reservation) {
+        if (reservation.getPendingExtensionId() == null) {
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        ReservationExtension extension = extensionRepository.findById(reservation.getPendingExtensionId())
+                .orElseThrow(BusinessException::notFound);
+        extension.cancel();
+        reservation.revertExtension(extension.getId(), extension.getPreviousEndAt());
+        return ReservationResponse.from(reservation);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ExtensionResponse> getExtensions(final Long reservationId) {
+        return extensionRepository.findAllByReservationIdOrderByIdAsc(reservationId).stream().map(ExtensionResponse::from).toList();
     }
 
     private Period rentalPeriod(final Program program, final LocalDateTime startAt, final LocalDateTime endAt) {
@@ -353,23 +590,36 @@ public class ReservationService {
         return taken;
     }
 
+    private Set<String> sessionTakenCells(final Long sessionId) {
+        Set<String> taken = new HashSet<>();
+        reservationRepository.findAllBySessionIdAndStatusNot(sessionId, ReservationStatus.CANCELED)
+                .forEach(reservation -> taken.addAll(reservation.cellKeys()));
+        return taken;
+    }
+
     private List<Reservation> activeReservations(final Long programId) {
         return reservationRepository.findAllByProgramIdAndStatusNot(programId, ReservationStatus.CANCELED);
     }
 
     @Transactional(readOnly = true)
-    public Availability availability(final Long programId, final LocalDate date, final LocalDateTime from, final LocalDateTime to) {
+    public Availability availability(final Long programId, final LocalDate date, final LocalDateTime from, final LocalDateTime to,
+                                     final Long sessionId) {
         Program program = findProgram(programId);
+        if (sessionId != null && program.getReservationType() == ReservationType.EVENT) {
+            sessionRepository.findByIdAndProgramIdAndDeletedAtIsNull(sessionId, programId).orElseThrow(BusinessException::notFound);
+            return new Availability(sorted(sessionTakenCells(sessionId)), List.of());
+        }
         return switch (program.getReservationType()) {
             case PROGRAM -> new Availability(List.of(), List.of());
             case CONSULTATION, VISIT -> new Availability(List.of(), slotsOf(program, date));
-            case RENTAL -> new Availability(from == null || to == null ? List.of() : sorted(takenCells(programId, from, to)),
+            case RENTAL, TABLE -> new Availability(from == null || to == null ? List.of() : sorted(takenCells(programId, from, to)),
                     slotsOf(program, date));
             case LODGING -> new Availability(from == null || to == null ? List.of()
                     : sorted(takenCells(programId, from.toLocalDate().atStartOfDay(), to.toLocalDate().atStartOfDay())), List.of());
             case EVENT -> new Availability(sorted(takenCells(programId, null, null)), List.of());
             case ITEM_RENTAL -> new Availability(List.of(), List.of(), from == null || to == null || !to.toLocalDate().isAfter(from.toLocalDate())
                     ? null : remainingItems(program, from.toLocalDate(), to.toLocalDate()));
+            case TOUR -> new Availability(List.of(), List.of());
         };
     }
 
@@ -399,8 +649,13 @@ public class ReservationService {
         if (type == ReservationType.ITEM_RENTAL && request.maximumPerson() == null) {
             throw new BusinessException(ErrorCode.RESERVATION_SETTINGS_REQUIRED);
         }
+        if (type == ReservationType.TOUR && (request.priceTiers() == null || request.priceTiers().isEmpty())) {
+            throw new BusinessException(ErrorCode.RESERVATION_SETTINGS_REQUIRED);
+        }
         program.changeReservationSettings(type, request.slotMinutes(), request.openTime(), request.closeTime(), layout);
-        program.changeRentalSettings(request.depositAmount(), request.maxRentalDays());
+        program.changeRentalSettings(request.depositAmount(), request.maxRentalDays(), request.lateFeePerDay());
+        program.changeQueueSetting(request.supportsQueue());
+        program.changeTourSettings(type == ReservationType.TOUR ? jsonMapper.writeValueAsString(request.priceTiers()) : null);
     }
 
     private SpaceLayout layoutOf(final Program program) {
@@ -437,12 +692,53 @@ public class ReservationService {
         cancel(reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound));
     }
 
+    @Transactional
+    public ReservationResponse checkIn(final String code) {
+        Reservation reservation = reservationRepository.findByCheckInCode(code).orElseThrow(BusinessException::notFound);
+        reservation.checkIn(LocalDateTime.now());
+        programRepository.findByIdAndDeletedAtIsNull(reservation.getProgramId())
+                .filter(Program::isSupportsQueue)
+                .ifPresent(program -> {
+                    LocalDate today = LocalDate.now();
+                    int next = reservationRepository.maxQueueNumber(program.getId(), today.atStartOfDay(),
+                            today.plusDays(1).atStartOfDay()) + 1;
+                    reservation.enterQueue(next);
+                });
+        return ReservationResponse.from(reservation);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservationResponse> getQueue(final Long programId, final LocalDate date) {
+        LocalDate day = date == null ? LocalDate.now() : date;
+        return reservationRepository.findQueue(programId, day.atStartOfDay(), day.plusDays(1).atStartOfDay())
+                .stream().map(ReservationResponse::from).toList();
+    }
+
+    @Transactional
+    public ReservationResponse changeQueueStatus(final Long reservationId, final QueueStatus status) {
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound);
+        reservation.changeQueueStatus(status);
+        return ReservationResponse.from(reservation);
+    }
+
     private void cancel(final Reservation reservation) {
         reservation.cancel();
-        if (reservation.getReservationType() == ReservationType.PROGRAM) {
+        if (reservation.getSessionId() != null) {
+            sessionRepository.findForUpdate(reservation.getSessionId()).ifPresent(session -> session.release(reservation.getQuantity()));
+        } else if (reservation.getReservationType() == ReservationType.PROGRAM) {
             programRepository.findForUpdate(reservation.getProgramId()).ifPresent(program -> program.release(reservation.getQuantity()));
         }
+        if (reservation.getPassId() != null) {
+            passService.restoreUsage(reservation.getPassId(), reservation.getQuantity());
+        }
         paymentService.refundIfPaid(PaymentTargetType.RESERVATION, reservation.getId());
+        for (ReservationExtension extension : extensionRepository.findAllByReservationIdOrderByIdAsc(reservation.getId())) {
+            if (extension.getStatus() == ReservationExtension.Status.PENDING_PAYMENT) {
+                extension.cancel();
+            } else if (extension.getStatus() == ReservationExtension.Status.PAID) {
+                paymentService.refundIfPaid(PaymentTargetType.RESERVATION_EXTENSION, extension.getId());
+            }
+        }
     }
 
     private void validate(final ProgramSaveRequest request) {

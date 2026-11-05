@@ -2,6 +2,7 @@ package com.dgmoonlabs.cms.domain.business.order.dto;
 
 import com.dgmoonlabs.cms.domain.business.category.dto.CategoryDtos.Spec;
 import com.dgmoonlabs.cms.domain.business.order.constant.BillingCycle;
+import com.dgmoonlabs.cms.domain.business.order.constant.PassUnit;
 import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
 import com.dgmoonlabs.cms.domain.business.discount.dto.DiscountDtos.DiscountResponse;
 import com.dgmoonlabs.cms.domain.business.order.entity.product.Product;
@@ -12,6 +13,7 @@ import jakarta.validation.constraints.*;
 import lombok.Builder;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -51,8 +53,19 @@ public final class ProductDtos {
             @NotNull @PositiveOrZero BigDecimal price,
             ProductSaleType saleType,
             BillingCycle billingCycle,
+            @Positive @Max(600) Integer commitmentMonths,
+            @Positive @Max(100) Integer earlyTerminationFeeRate,
             @Size(max = 10) List<@Positive Integer> donationPresets,
             @PositiveOrZero BigDecimal goalAmount,
+            LocalDateTime fundingDeadline,
+            PassUnit passUnit,
+            @Positive @Max(3_650) Integer passDays,
+            @Positive @Max(100_000) Integer passCount,
+            Long passProgramId,
+            Long inquiryProgramId,
+            LocalDateTime preorderSaleStartAt,
+            LocalDateTime preorderSaleEndAt,
+            LocalDate preorderShipDate,
             @PositiveOrZero Integer availableQuantity,
             Long accessGradeId,
             Long grantGradeId,
@@ -104,24 +117,52 @@ public final class ProductDtos {
     }
 
     public record ProductSummary(Long id, String name, String description, BigDecimal price, ProductSaleType saleType,
-                                 BillingCycle billingCycle, Integer availableQuantity, boolean isEnabled, String imageUrl,
+                                 BillingCycle billingCycle, Integer commitmentMonths, Integer earlyTerminationFeeRate,
+                                 Integer availableQuantity, boolean isEnabled, String imageUrl,
                                  Long accessGradeId, Long grantGradeId, Integer grantGradeDays, Long categoryId,
                                  boolean storeOrder, LocalDateTime createdAt) {
         public static ProductSummary from(final Product product) {
             return new ProductSummary(product.getId(), product.getName(), product.getDescription(), product.getPrice(),
-                    product.getSaleType(), product.getBillingCycle(), product.getAvailableQuantity(), product.isEnabled(),
+                    product.getSaleType(), product.getBillingCycle(), product.getCommitmentMonths(), product.getEarlyTerminationFeeRate(),
+                    product.getAvailableQuantity(), product.isEnabled(),
                     toImageUrl(product.getImageFileId()), product.getAccessGradeId(), product.getGrantGradeId(),
                     product.getGrantGradeDays(), product.getCategoryId(), product.isStoreOrder(), product.getCreatedAt());
+        }
+    }
+
+    public record PassInfo(PassUnit unit, Integer days, Integer count, Long programId) {
+        public static PassInfo of(final Product product) {
+            return product.getPassUnit() == null ? null
+                    : new PassInfo(product.getPassUnit(), product.getPassDays(), product.getPassCount(), product.getPassProgramId());
+        }
+    }
+
+    public record InquiryInfo(Long programId) {
+        public static InquiryInfo of(final Product product) {
+            return product.getSaleType() == ProductSaleType.INQUIRY ? new InquiryInfo(product.getInquiryProgramId()) : null;
+        }
+    }
+
+    public record PreorderInfo(LocalDateTime saleStartAt, LocalDateTime saleEndAt, LocalDate shipDate) {
+        public static PreorderInfo of(final Product product) {
+            return product.getSaleType() != ProductSaleType.PREORDER ? null
+                    : new PreorderInfo(product.getPreorderSaleStartAt(), product.getPreorderSaleEndAt(), product.getPreorderShipDate());
         }
     }
 
     public record DonationProgress(BigDecimal raisedAmount, long supporterCount) {
     }
 
+    public record FundingInfo(BigDecimal goalAmount, LocalDateTime deadline, BigDecimal raisedAmount, long supporterCount,
+                              boolean resolved, boolean succeeded) {
+    }
+
     public record ProductDetail(Long id, String name, String description, BigDecimal price, ProductSaleType saleType,
-                                BillingCycle billingCycle, List<Integer> donationPresets, BigDecimal goalAmount,
-                                DonationProgress donation, Integer availableQuantity, boolean isEnabled, Long imageFileId,
-                                String imageUrl, String contentHtml, List<OptionResponse> options,
+                                BillingCycle billingCycle, Integer commitmentMonths, Integer earlyTerminationFeeRate,
+                                List<Integer> donationPresets, BigDecimal goalAmount,
+                                PassInfo pass, InquiryInfo inquiry, PreorderInfo preorder, DonationProgress donation, FundingInfo funding,
+                                Integer availableQuantity,
+                                boolean isEnabled, Long imageFileId, String imageUrl, String contentHtml, List<OptionResponse> options,
                                 List<DiscountResponse> discounts, Double averageRating, Long accessGradeId,
                                 Long grantGradeId, Integer grantGradeDays, List<Product.OptionGroup> optionGroups,
                                 boolean requiresShipping, int digitalFileCount, Integer downloadLimit, Integer downloadDays,
@@ -129,13 +170,14 @@ public final class ProductDtos {
                                 List<Spec> specs, boolean storeOrder) {
         public static ProductDetail of(final Product product, final List<OptionResponse> options,
                                        final List<DiscountResponse> discounts, final Double averageRating,
-                                       final DonationProgress donation, final List<FileResponse> digitalFiles,
+                                       final DonationProgress donation, final FundingInfo funding, final List<FileResponse> digitalFiles,
                                        final Map<String, Object> attributes, final List<Spec> specs) {
             List<Integer> presets = product.getDonationPresets() == null || product.getDonationPresets().isBlank() ? List.of()
                     : Arrays.stream(product.getDonationPresets().split(",")).map(String::trim).map(Integer::valueOf).toList();
             return new ProductDetail(product.getId(), product.getName(), product.getDescription(), product.getPrice(),
-                    product.getSaleType(), product.getBillingCycle(), presets, product.getGoalAmount(), donation,
-                    product.getAvailableQuantity(), product.isEnabled(), product.getImageFileId(),
+                    product.getSaleType(), product.getBillingCycle(), product.getCommitmentMonths(), product.getEarlyTerminationFeeRate(),
+                    presets, product.getGoalAmount(), PassInfo.of(product), InquiryInfo.of(product),
+                    PreorderInfo.of(product), donation, funding, product.getAvailableQuantity(), product.isEnabled(), product.getImageFileId(),
                     toImageUrl(product.getImageFileId()), product.getContentHtml(), options, discounts, averageRating,
                     product.getAccessGradeId(), product.getGrantGradeId(), product.getGrantGradeDays(),
                     product.getOptionGroups() == null ? List.of() : product.getOptionGroups(), product.isRequiresShipping(),

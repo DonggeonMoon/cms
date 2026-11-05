@@ -17,7 +17,7 @@ public record SpaceLayout(int rows, int cols, List<Cell> cells) {
         }
     }
 
-    public record Cell(String key, int row, int col, CellKind kind, String label, BigDecimal price) {
+    public record Cell(String key, int row, int col, CellKind kind, String label, BigDecimal price, Integer capacity) {
     }
 
     public SpaceLayout {
