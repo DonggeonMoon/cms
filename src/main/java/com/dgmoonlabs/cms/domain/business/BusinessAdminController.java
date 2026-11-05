@@ -26,6 +26,7 @@ import com.dgmoonlabs.cms.domain.business.review.service.ReviewService;
 import com.dgmoonlabs.cms.global.security.LoginUser;
 import jakarta.validation.Valid;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.QuoteRequest;
+import com.dgmoonlabs.cms.domain.business.subscription.dto.SubscriptionRequests.PauseRequest;
 import com.dgmoonlabs.cms.domain.business.subscription.dto.SubscriptionResponse;
 import com.dgmoonlabs.cms.domain.business.subscription.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
@@ -125,6 +126,17 @@ public class BusinessAdminController {
     @PostMapping("/subscriptions/{id}/cancel")
     public ResponseEntity<SubscriptionResponse> cancelSubscription(@PathVariable final Long id) {
         return ResponseEntity.ok(subscriptionService.cancel(id));
+    }
+
+    @PostMapping("/subscriptions/{id}/pause")
+    public ResponseEntity<SubscriptionResponse> pauseSubscription(@PathVariable final Long id,
+                                                                  @RequestBody(required = false) final PauseRequest request) {
+        return ResponseEntity.ok(subscriptionService.pause(id, request == null ? null : request.resumeOn()));
+    }
+
+    @PostMapping("/subscriptions/{id}/resume")
+    public ResponseEntity<SubscriptionResponse> resumeSubscription(@PathVariable final Long id) {
+        return ResponseEntity.ok(subscriptionService.resume(id));
     }
 
     @PostMapping("/subscriptions/renew")

@@ -462,10 +462,16 @@ export interface Subscription {
     firstOrderId: number;
     price: number;
     billingCycle: BillingCycle;
-    status: 'ACTIVE' | 'CANCELED';
+    status: 'ACTIVE' | 'PAUSED' | 'CANCELED';
     nextBillingDate: string | null;
     startedAt: string;
     canceledAt: string | null;
+    pausedOn: string | null;
+    resumeOn: string | null;
+    pendingProductId: number | null;
+    pendingProductName: string | null;
+    pendingPrice: number | null;
+    pendingBillingCycle: BillingCycle | null;
 }
 
 export interface WishlistEntry {

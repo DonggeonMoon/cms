@@ -326,18 +326,22 @@ public class OrderService {
     }
 
     @Transactional
-    public Order createRenewal(final Long memberId, final Long subscriptionId, final Long firstOrderId, final BigDecimal price) {
+    /** 구독 상품을 바꾼 뒤에는 첫 주문의 옵션이 새 상품에 없으므로 옵션 없이 주문한다. */
+    public Order createRenewal(final Long memberId, final Long subscriptionId, final Long firstOrderId, final Long productId,
+                               final String productName, final BigDecimal price) {
         Order first = orderRepository.findById(firstOrderId).orElseThrow(BusinessException::notFound);
-        takeStock(first.getProductId(), first.getProductOptionId(), first.getQuantity());
+        boolean sameProduct = first.getProductId().equals(productId);
+        Long optionId = sameProduct ? first.getProductOptionId() : null;
+        takeStock(productId, optionId, first.getQuantity());
         return orderRepository.save(Order.builder()
                 .orderNumber(nextOrderNumber())
                 .userType(UserType.MEMBER)
                 .userId(memberId)
-                .productId(first.getProductId())
+                .productId(productId)
                 .saleType(ProductSaleType.SUBSCRIPTION)
                 .subscriptionId(subscriptionId)
-                .productOptionId(first.getProductOptionId())
-                .productName(first.getProductName())
+                .productOptionId(optionId)
+                .productName(sameProduct ? first.getProductName() : productName)
                 .quantity(first.getQuantity())
                 .totalPrice(price)
                 .status(OrderStatus.PAID)

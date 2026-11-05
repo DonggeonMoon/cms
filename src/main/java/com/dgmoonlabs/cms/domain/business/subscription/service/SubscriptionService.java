@@ -1,6 +1,7 @@
 package com.dgmoonlabs.cms.domain.business.subscription.service;
 
 import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
+import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.ProductSummary;
 import com.dgmoonlabs.cms.domain.business.order.entity.Order;
 import com.dgmoonlabs.cms.domain.business.order.entity.product.Product;
 import com.dgmoonlabs.cms.domain.business.order.repository.OrderRepository;
@@ -12,8 +13,10 @@ import com.dgmoonlabs.cms.domain.business.subscription.constant.SubscriptionStat
 import com.dgmoonlabs.cms.domain.business.subscription.dto.SubscriptionResponse;
 import com.dgmoonlabs.cms.domain.business.subscription.entity.Subscription;
 import com.dgmoonlabs.cms.domain.business.subscription.repository.SubscriptionRepository;
+import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.error.BusinessException;
+import com.dgmoonlabs.cms.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -23,7 +26,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -34,6 +39,7 @@ public class SubscriptionService {
     private final ProductRepository productRepository;
     private final OrderService orderService;
     private final PaymentService paymentService;
+    private final GradeService gradeService;
 
     @EventListener
     public void startOnFirstPayment(final OrderPaidEvent event) {
@@ -66,14 +72,23 @@ public class SubscriptionService {
         }
     }
 
+    /** 다시 시작할 날이 된 일시정지 구독을 먼저 재개한 뒤, 결제일이 된 구독을 결제한다. */
     @Transactional
     public int renewDue(final LocalDate today) {
+        for (Subscription paused : subscriptionRepository.findAllByStatusAndResumeOnLessThanEqual(SubscriptionStatus.PAUSED, today)) {
+            paused.resume(today);
+        }
         int renewed = 0;
         for (Subscription subscription : subscriptionRepository.findAllByStatusAndNextBillingDateLessThanEqual(SubscriptionStatus.ACTIVE, today)) {
             try {
+                boolean change = subscription.hasPendingChange();
                 Order order = orderService.createRenewal(subscription.getMemberId(), subscription.getId(),
-                        subscription.getFirstOrderId(), subscription.getPrice());
+                        subscription.getFirstOrderId(),
+                        change ? subscription.getPendingProductId() : subscription.getProductId(),
+                        change ? subscription.getPendingProductName() : subscription.getProductName(),
+                        change ? subscription.getPendingPrice() : subscription.getPrice());
                 paymentService.recordAutomaticPayment(subscription.getMemberId(), order);
+                subscription.applyPlanChange();
                 subscription.billed();
                 renewed++;
             } catch (BusinessException e) {
@@ -95,15 +110,89 @@ public class SubscriptionService {
 
     @Transactional
     public SubscriptionResponse cancelMine(final Long memberId, final Long id) {
-        Subscription subscription = subscriptionRepository.findByIdAndMemberId(id, memberId).orElseThrow(BusinessException::notFound);
+        Subscription subscription = findMine(memberId, id);
         subscription.cancel();
         return SubscriptionResponse.from(subscription);
     }
 
     @Transactional
     public SubscriptionResponse cancel(final Long id) {
-        Subscription subscription = subscriptionRepository.findById(id).orElseThrow(BusinessException::notFound);
+        Subscription subscription = find(id);
         subscription.cancel();
         return SubscriptionResponse.from(subscription);
+    }
+
+    @Transactional
+    public SubscriptionResponse pauseMine(final Long memberId, final Long id, final LocalDate resumeOn) {
+        return pause(findMine(memberId, id), resumeOn);
+    }
+
+    @Transactional
+    public SubscriptionResponse pause(final Long id, final LocalDate resumeOn) {
+        return pause(find(id), resumeOn);
+    }
+
+    @Transactional
+    public SubscriptionResponse resumeMine(final Long memberId, final Long id) {
+        return resume(findMine(memberId, id));
+    }
+
+    @Transactional
+    public SubscriptionResponse resume(final Long id) {
+        return resume(find(id));
+    }
+
+    /** 바꿀 수 있는 구독 상품: 판매 중인 다른 구독 상품. */
+    @Transactional(readOnly = true)
+    public List<ProductSummary> getPlanOptions(final Long memberId, final Long id) {
+        Subscription subscription = findMine(memberId, id);
+        return productRepository.findAllByIsEnabledTrueAndDeletedAtIsNullOrderByIdAsc().stream()
+                .filter(product -> product.getSaleType() == ProductSaleType.SUBSCRIPTION && product.getBillingCycle() != null
+                        && !product.getId().equals(subscription.getProductId()))
+                .map(ProductSummary::from)
+                .toList();
+    }
+
+    /** 바꾼 상품은 다음 결제일부터 적용한다. 금액은 새 상품 가격 × 처음 구독한 수량. */
+    @Transactional
+    public SubscriptionResponse changePlanMine(final Long memberId, final Long id, final Long productId) {
+        Subscription subscription = findMine(memberId, id);
+        if (productId.equals(subscription.getProductId())) {
+            subscription.cancelPlanChange();
+            return SubscriptionResponse.from(subscription);
+        }
+        Product product = productRepository.findByIdAndDeletedAtIsNull(productId)
+                .filter(found -> found.isEnabled() && found.getSaleType() == ProductSaleType.SUBSCRIPTION && found.getBillingCycle() != null)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_SUBSCRIPTION_PLAN));
+        gradeService.require(product.getAccessGradeId());
+        int quantity = orderRepository.findById(subscription.getFirstOrderId()).map(Order::getQuantity).orElse(1);
+        subscription.schedulePlanChange(product.getId(), product.getName(),
+                product.getPrice().multiply(BigDecimal.valueOf(quantity)), product.getBillingCycle());
+        return SubscriptionResponse.from(subscription);
+    }
+
+    @Transactional
+    public SubscriptionResponse cancelPlanChangeMine(final Long memberId, final Long id) {
+        Subscription subscription = findMine(memberId, id);
+        subscription.cancelPlanChange();
+        return SubscriptionResponse.from(subscription);
+    }
+
+    private SubscriptionResponse pause(final Subscription subscription, final LocalDate resumeOn) {
+        subscription.pause(LocalDate.now(), resumeOn);
+        return SubscriptionResponse.from(subscription);
+    }
+
+    private SubscriptionResponse resume(final Subscription subscription) {
+        subscription.resume(LocalDate.now());
+        return SubscriptionResponse.from(subscription);
+    }
+
+    private Subscription findMine(final Long memberId, final Long id) {
+        return subscriptionRepository.findByIdAndMemberId(id, memberId).orElseThrow(BusinessException::notFound);
+    }
+
+    private Subscription find(final Long id) {
+        return subscriptionRepository.findById(id).orElseThrow(BusinessException::notFound);
     }
 }

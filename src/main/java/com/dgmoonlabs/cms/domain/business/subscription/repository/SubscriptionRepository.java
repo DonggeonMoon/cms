@@ -20,4 +20,6 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     Page<Subscription> findAllByOrderByIdDesc(Pageable pageable);
 
     List<Subscription> findAllByStatusAndNextBillingDateLessThanEqual(SubscriptionStatus status, LocalDate date);
+
+    List<Subscription> findAllByStatusAndResumeOnLessThanEqual(SubscriptionStatus status, LocalDate date);
 }

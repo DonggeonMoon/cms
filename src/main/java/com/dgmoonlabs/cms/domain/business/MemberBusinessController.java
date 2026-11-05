@@ -24,7 +24,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.ProductSummary;
+import com.dgmoonlabs.cms.domain.business.subscription.dto.SubscriptionRequests.PauseRequest;
+import com.dgmoonlabs.cms.domain.business.subscription.dto.SubscriptionRequests.PlanChangeRequest;
+
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -68,6 +73,34 @@ public class MemberBusinessController {
     public ResponseEntity<SubscriptionResponse> cancelSubscription(@AuthenticationPrincipal final LoginUser user,
                                                                    @PathVariable final Long id) {
         return ResponseEntity.ok(subscriptionService.cancelMine(user.id(), id));
+    }
+
+    @PostMapping("/api/subscriptions/{id}/pause")
+    public ResponseEntity<SubscriptionResponse> pauseSubscription(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id,
+                                                                  @RequestBody(required = false) final PauseRequest request) {
+        return ResponseEntity.ok(subscriptionService.pauseMine(user.id(), id, request == null ? null : request.resumeOn()));
+    }
+
+    @PostMapping("/api/subscriptions/{id}/resume")
+    public ResponseEntity<SubscriptionResponse> resumeSubscription(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id) {
+        return ResponseEntity.ok(subscriptionService.resumeMine(user.id(), id));
+    }
+
+    @GetMapping("/api/subscriptions/{id}/plans")
+    public ResponseEntity<List<ProductSummary>> subscriptionPlans(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id) {
+        return ResponseEntity.ok(subscriptionService.getPlanOptions(user.id(), id));
+    }
+
+    @PutMapping("/api/subscriptions/{id}/plan")
+    public ResponseEntity<SubscriptionResponse> changeSubscriptionPlan(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id,
+                                                                       @RequestBody @Valid final PlanChangeRequest request) {
+        return ResponseEntity.ok(subscriptionService.changePlanMine(user.id(), id, request.productId()));
+    }
+
+    @DeleteMapping("/api/subscriptions/{id}/plan")
+    public ResponseEntity<SubscriptionResponse> cancelSubscriptionPlanChange(@AuthenticationPrincipal final LoginUser user,
+                                                                             @PathVariable final Long id) {
+        return ResponseEntity.ok(subscriptionService.cancelPlanChangeMine(user.id(), id));
     }
 
     @PostMapping("/api/orders/{id}/cancel")

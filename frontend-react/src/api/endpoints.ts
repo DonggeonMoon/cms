@@ -139,6 +139,9 @@ export const adminApi = {
     subscriptions: {
         search: (query: Query) => request<Page<D.Subscription>>('/api/admin/subscriptions', {query}),
         cancel: (id: number) => request<D.Subscription>(`/api/admin/subscriptions/${id}/cancel`, {method: 'POST'}),
+        pause: (id: number, resumeOn: string | null) =>
+            request<D.Subscription>(`/api/admin/subscriptions/${id}/pause`, {method: 'POST', body: {resumeOn}}),
+        resume: (id: number) => request<D.Subscription>(`/api/admin/subscriptions/${id}/resume`, {method: 'POST'}),
         renewDue: () => request<{ renewed: number }>('/api/admin/subscriptions/renew', {method: 'POST'}),
     },
     reservations: {
@@ -277,6 +280,13 @@ export const shopApi = {
     checkoutCart: (body: Body) => request<D.Order>('/api/cart/checkout', {method: 'POST', body}),
     mySubscriptions: (page: number) => request<Page<D.Subscription>>('/api/subscriptions/me', {query: {page}}),
     cancelSubscription: (id: number) => request<D.Subscription>(`/api/subscriptions/${id}/cancel`, {method: 'POST'}),
+    pauseSubscription: (id: number, resumeOn: string | null) =>
+        request<D.Subscription>(`/api/subscriptions/${id}/pause`, {method: 'POST', body: {resumeOn}}),
+    resumeSubscription: (id: number) => request<D.Subscription>(`/api/subscriptions/${id}/resume`, {method: 'POST'}),
+    subscriptionPlans: (id: number) => request<D.ProductSummary[]>(`/api/subscriptions/${id}/plans`),
+    changeSubscriptionPlan: (id: number, productId: number) =>
+        request<D.Subscription>(`/api/subscriptions/${id}/plan`, {method: 'PUT', body: {productId}}),
+    cancelSubscriptionPlanChange: (id: number) => request<D.Subscription>(`/api/subscriptions/${id}/plan`, {method: 'DELETE'}),
     wishlist: (page: number) => request<Page<D.WishlistEntry>>('/api/wishlist', {query: {page}}),
     wishlistIds: () => request<number[]>('/api/wishlist/product-ids'),
     wish: (productId: number) => request<void>(`/api/wishlist/${productId}`, {method: 'PUT'}),

@@ -385,16 +385,32 @@ export function SubscriptionAdminPage() {
                 {label: '상품', render: (s) => s.productName},
                 {label: '회원 ID', render: (s) => s.memberId},
                 {label: '금액', render: (s) => `${BILLING_CYCLE[s.billingCycle]} ${won(s.price)}`},
-                {label: '상태', render: (s) => (s.status === 'ACTIVE' ? <span className="badge ok">구독 중</span> : <span className="badge">해지</span>)},
+                {label: '상태', render: (s) => (
+                    s.status === 'ACTIVE' ? <span className="badge ok">구독 중</span>
+                        : s.status === 'PAUSED' ? <span className="badge">일시정지{s.resumeOn ? ` (${s.resumeOn}에 재개)` : ''}</span>
+                        : <span className="badge">해지</span>
+                )},
                 {label: '다음 결제일', render: (s) => s.nextBillingDate ?? '-'},
                 {label: '시작일', render: (s) => formatDateTime(s.startedAt)},
             ]}
-            actions={(s, reload) => s.status === 'ACTIVE' && (
-                <button type="button" className="danger" onClick={() => {
-                    if (window.confirm('구독을 해지할까요? 다음 결제일부터 결제되지 않습니다.')) {
-                        void adminApi.subscriptions.cancel(s.id).then(reload);
-                    }
-                }}>해지</button>
+            actions={(s, reload) => s.status !== 'CANCELED' && (
+                <>
+                    {s.status === 'ACTIVE' ? (
+                        <button type="button" onClick={() => {
+                            const resumeOn = window.prompt('재개일을 입력하세요 (YYYY-MM-DD, 비우면 직접 재개할 때까지 정지)') ?? undefined;
+                            if (resumeOn !== undefined) {
+                                void adminApi.subscriptions.pause(s.id, resumeOn || null).then(reload);
+                            }
+                        }}>일시정지</button>
+                    ) : (
+                        <button type="button" onClick={() => void adminApi.subscriptions.resume(s.id).then(reload)}>재개</button>
+                    )}
+                    <button type="button" className="danger" onClick={() => {
+                        if (window.confirm('구독을 해지할까요? 다음 결제일부터 결제되지 않습니다.')) {
+                            void adminApi.subscriptions.cancel(s.id).then(reload);
+                        }
+                    }}>해지</button>
+                </>
             )}
         />
     );

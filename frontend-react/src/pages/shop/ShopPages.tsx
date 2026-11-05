@@ -725,23 +725,22 @@ export function MySubscriptionsPage() {
             <ErrorBanner error={error}/>
             <div className="table-wrap">
                 <table>
-                    <thead><tr><th>상품</th><th>금액</th><th>상태</th><th>다음 결제일</th><th>시작일</th><th>해지</th></tr></thead>
+                    <thead><tr><th>상품</th><th>금액</th><th>상태</th><th>다음 결제일</th><th>시작일</th><th>관리</th></tr></thead>
                     <tbody>
                     {data?.content.map((item) => (
                         <tr key={item.id}>
                             <td><Link to={`/products/${item.productId}`}>{item.productName}</Link></td>
                             <td>{BILLING_CYCLE[item.billingCycle]} {won(item.price)}</td>
-                            <td>{item.status === 'ACTIVE' ? <span className="badge ok">구독 중</span> : <span className="badge">해지</span>}</td>
+                            <td>
+                                {item.status === 'ACTIVE' && <span className="badge ok">구독 중</span>}
+                                {item.status === 'PAUSED' && <span className="badge">일시정지{item.resumeOn ? ` (${item.resumeOn}에 재개)` : ''}</span>}
+                                {item.status === 'CANCELED' && <span className="badge">해지</span>}
+                                {item.pendingProductId && <div className="muted small">다음 결제부터 {item.pendingProductName}로 변경</div>}
+                            </td>
                             <td>{item.nextBillingDate ?? '-'}</td>
                             <td>{formatDateTime(item.startedAt)}</td>
                             <td className="button-cell">
-                                {item.status === 'ACTIVE' && (
-                                    <button type="button" className="danger" onClick={() => {
-                                        if (window.confirm('구독을 해지할까요? 다음 결제일부터 결제되지 않습니다.')) {
-                                            shopApi.cancelSubscription(item.id).then(reload).catch(setError);
-                                        }
-                                    }}>해지</button>
-                                )}
+                                {item.status !== 'CANCELED' && <SubscriptionActions subscription={item} onDone={reload}/>}
                             </td>
                         </tr>
                     ))}
@@ -751,5 +750,62 @@ export function MySubscriptionsPage() {
             </div>
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
         </section>
+    );
+}
+
+function SubscriptionActions({subscription, onDone}: { subscription: Subscription; onDone: () => void }) {
+    const [resumeOn, setResumeOn] = useState('');
+    const [changing, setChanging] = useState(false);
+    const [plans, setPlans] = useState<ProductSummary[] | null>(null);
+    const [error, setError] = useState<unknown>(null);
+
+    const run = (pending: Promise<unknown>) => {
+        setError(null);
+        pending.then(onDone).catch(setError);
+    };
+
+    const openPlans = () => {
+        setChanging(true);
+        shopApi.subscriptionPlans(subscription.id).then(setPlans).catch(setError);
+    };
+
+    return (
+        <div className="review-cell">
+            {subscription.status === 'ACTIVE' ? (
+                <>
+                    <input type="date" aria-label="재개일" value={resumeOn} onChange={(e) => setResumeOn(e.target.value)}/>
+                    <button type="button" onClick={() => run(shopApi.pauseSubscription(subscription.id, resumeOn || null))}>
+                        일시정지
+                    </button>
+                </>
+            ) : (
+                <button type="button" onClick={() => run(shopApi.resumeSubscription(subscription.id))}>재개</button>
+            )}
+            {subscription.pendingProductId ? (
+                <button type="button" onClick={() => run(shopApi.cancelSubscriptionPlanChange(subscription.id))}>변경 취소</button>
+            ) : (
+                <button type="button" onClick={openPlans}>상품 변경</button>
+            )}
+            <button type="button" className="danger" onClick={() => {
+                if (window.confirm('구독을 해지할까요? 다음 결제일부터 결제되지 않습니다.')) {
+                    run(shopApi.cancelSubscription(subscription.id));
+                }
+            }}>해지</button>
+            {changing && plans && (
+                <div className="dropdown-panel">
+                    {plans.length === 0 && <p className="muted small">변경할 수 있는 다른 상품이 없습니다.</p>}
+                    {plans.map((plan) => (
+                        <button key={plan.id} type="button" className="link-button" onClick={() => {
+                            setChanging(false);
+                            run(shopApi.changeSubscriptionPlan(subscription.id, plan.id));
+                        }}>
+                            {plan.name} · {BILLING_CYCLE[plan.billingCycle ?? 'MONTHLY']} {won(plan.price)}
+                        </button>
+                    ))}
+                    <button type="button" className="link-button" onClick={() => setChanging(false)}>닫기</button>
+                </div>
+            )}
+            <ErrorBanner error={error}/>
+        </div>
     );
 }
