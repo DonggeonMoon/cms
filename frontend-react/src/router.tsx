@@ -154,8 +154,8 @@ export const routes = [
                     {
                         element: <RequireFeature feature="PROGRAM"/>,
                         children: [
-                            {path: '/programs', element: <ProgramListPage/>},
-                            {path: '/programs/:id', element: <ProgramDetailPage/>},
+                            {path: '/reservation-items', element: <ProgramListPage/>},
+                            {path: '/reservation-items/:id', element: <ProgramDetailPage/>},
                         ],
                     },
                     {
@@ -303,7 +303,7 @@ export const routes = [
                             {
                                 element: <RequireFeature feature="PROGRAM"/>,
                                 children: [
-                                    {path: 'programs', element: <ProgramAdminPage/>},
+                                    {path: 'reservation-items', element: <ProgramAdminPage/>},
                                     {path: 'reservations', element: <ReservationAdminPage/>},
                                     {path: 'customer-records', element: <CustomerRecordAdminPage/>},
                                     {path: 'check-in', element: <CheckInAdminPage/>},

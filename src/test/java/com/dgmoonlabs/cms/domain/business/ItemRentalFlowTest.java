@@ -16,13 +16,13 @@ class ItemRentalFlowTest extends ApiTestSupport {
     @Test
     void itemsAreRentedWithinStockAndDepositIsRefundedOnReturn() throws Exception {
         MockHttpSession admin = admin();
-        postJson("/api/admin/programs", admin, "{\"name\":\"텐트\",\"price\":10000,\"reservationType\":\"ITEM_RENTAL\",\"isEnabled\":true}")
+        postJson("/api/admin/reservation-items", admin, "{\"name\":\"텐트\",\"price\":10000,\"reservationType\":\"ITEM_RENTAL\",\"isEnabled\":true}")
                 .andExpect(jsonPath("$.code").value("RESERVATION_SETTINGS_REQUIRED"));
-        long tent = createdId(postJson("/api/admin/programs", admin, """
+        long tent = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"텐트","price":10000,"reservationType":"ITEM_RENTAL","maximumPerson":3,"depositAmount":50000,
                  "maxRentalDays":5,"isEnabled":true}
                 """).andExpect(status().isCreated()));
-        getJson("/api/programs/" + tent, null).andExpect(jsonPath("$.depositAmount").value(50000));
+        getJson("/api/reservation-items/" + tent, null).andExpect(jsonPath("$.depositAmount").value(50000));
 
         String rent = "{\"programId\":%d,\"quantity\":%d,\"startAt\":\"%sT00:00:00\",\"endAt\":\"%sT00:00:00\",%s}";
         MockHttpSession camper = member("camper");
@@ -33,7 +33,7 @@ class ItemRentalFlowTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.depositAmount").value(100000))
                 .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"))).get("id").asLong();
 
-        getJson("/api/programs/%d/availability?from=%sT00:00:00&to=%sT00:00:00".formatted(tent, DAY.plusDays(2), DAY.plusDays(4)), null)
+        getJson("/api/reservation-items/%d/availability?from=%sT00:00:00&to=%sT00:00:00".formatted(tent, DAY.plusDays(2), DAY.plusDays(4)), null)
                 .andExpect(jsonPath("$.remainingItems").value(1));
         MockHttpSession other = member("other");
         postJson("/api/reservations", other, rent.formatted(tent, 2, DAY.plusDays(2), DAY.plusDays(4), APPLICANT))
@@ -60,7 +60,7 @@ class ItemRentalFlowTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.code").value("ALREADY_RETURNED"));
         postJson("/api/reservations/%d/cancel".formatted(reservationId), camper, "").andExpect(jsonPath("$.code").value("ALREADY_RETURNED"));
 
-        getJson("/api/programs/%d/availability?from=%sT00:00:00&to=%sT00:00:00".formatted(tent, DAY.plusDays(1), DAY.plusDays(2)), null)
+        getJson("/api/reservation-items/%d/availability?from=%sT00:00:00&to=%sT00:00:00".formatted(tent, DAY.plusDays(1), DAY.plusDays(2)), null)
                 .andExpect(jsonPath("$.remainingItems").value(3));
     }
 }

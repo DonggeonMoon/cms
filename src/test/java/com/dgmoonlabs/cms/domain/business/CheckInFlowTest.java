@@ -13,7 +13,7 @@ class CheckInFlowTest extends ApiTestSupport {
     @Test
     void confirmedReservationCanBeCheckedInOnceByCode() throws Exception {
         MockHttpSession admin = admin();
-        long yoga = createdId(postJson("/api/admin/programs", admin, """
+        long yoga = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"요가","price":0,"reservationType":"PROGRAM","isEnabled":true}
                 """));
 

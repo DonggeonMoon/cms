@@ -217,7 +217,7 @@ export function ReservationFormPage() {
             <h1>예약 정보 입력</h1>
             <dl className="meta">
                 <dt>예약 상품</dt>
-                <dd><Link to={`/programs/${program.id}`}>{program.name}</Link></dd>
+                <dd><Link to={`/reservation-items/${program.id}`}>{program.name}</Link></dd>
                 {program.reservationType === 'PROGRAM' ? (
                     <>
                         <dt>진행 일정</dt>

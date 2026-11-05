@@ -83,29 +83,29 @@ class ShopFlowTest extends ApiTestSupport {
     @Test
     void confirmedParticipantsReviewProgramsSeparatelyFromProducts() throws Exception {
         MockHttpSession admin = admin();
-        long programId = createdId(postJson("/api/admin/programs", admin, """
+        long programId = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"요가 교실","price":0,"maximumPerson":10,"isEnabled":true}
                 """).andExpect(status().isCreated()));
         MockHttpSession member = member("yogaone");
 
-        postJson("/api/programs/" + programId + "/reviews", member, """
+        postJson("/api/reservation-items/" + programId + "/reviews", member, """
                 {"rating":5,"title":"예약 전"}
                 """).andExpect(status().isForbidden());
         postJson("/api/reservations", member, """
                 {"programId":%d,"quantity":1,"applicantName":"요가","phoneNumber":"010-1234-5678"}
                 """.formatted(programId)).andExpect(status().isCreated());
 
-        postJson("/api/programs/" + programId + "/reviews", member, """
+        postJson("/api/reservation-items/" + programId + "/reviews", member, """
                 {"rating":4,"title":"좋았어요","contentHtml":"<p>강사님 친절</p>"}
                 """).andExpect(status().isCreated());
-        postJson("/api/programs/" + programId + "/reviews", member, """
+        postJson("/api/reservation-items/" + programId + "/reviews", member, """
                 {"rating":1,"title":"두 번째"}
                 """).andExpect(jsonPath("$.code").value("ALREADY_SUBMITTED"));
 
-        getJson("/api/programs/" + programId + "/reviews", null)
+        getJson("/api/reservation-items/" + programId + "/reviews", null)
                 .andExpect(jsonPath("$.content[0].title").value("좋았어요"))
                 .andExpect(jsonPath("$.content[0].targetType").value("PROGRAM"));
-        getJson("/api/programs/" + programId, null).andExpect(jsonPath("$.averageRating").value(4.0));
+        getJson("/api/reservation-items/" + programId, null).andExpect(jsonPath("$.averageRating").value(4.0));
 
         getJson("/api/admin/reviews?targetType=PROGRAM", admin)
                 .andExpect(jsonPath("$.content[0].programId").value(programId));
@@ -115,10 +115,10 @@ class ShopFlowTest extends ApiTestSupport {
     @Test
     void reservationsRespectCapacityAndPeriod() throws Exception {
         MockHttpSession admin = admin();
-        long freeProgram = createdId(postJson("/api/admin/programs", admin, """
+        long freeProgram = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"무료 강좌","price":0,"maximumPerson":2,"isEnabled":true}
                 """).andExpect(status().isCreated()));
-        long closedProgram = createdId(postJson("/api/admin/programs", admin, """
+        long closedProgram = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"마감 강좌","price":0,"maximumPerson":10,"isEnabled":true,"applicationEndDateTime":"%s"}
                 """.formatted(LocalDateTime.now().minusDays(1))).andExpect(status().isCreated()));
 
@@ -136,7 +136,7 @@ class ShopFlowTest extends ApiTestSupport {
                 """.formatted(closedProgram)).andExpect(jsonPath("$.code").value("PROGRAM_NOT_OPEN"));
 
         postJson("/api/reservations/" + reservation.get("id").asLong() + "/cancel", member, "").andExpect(status().isNoContent());
-        getJson("/api/programs/" + freeProgram, null).andExpect(jsonPath("$.availablePerson").value(2));
+        getJson("/api/reservation-items/" + freeProgram, null).andExpect(jsonPath("$.availablePerson").value(2));
     }
 
     @Test
@@ -169,7 +169,7 @@ class ShopFlowTest extends ApiTestSupport {
     @Test
     void adminBooksOutsideTheApplicationPeriodButNotBeyondCapacity() throws Exception {
         MockHttpSession admin = admin();
-        long programId = createdId(postJson("/api/admin/programs", admin, """
+        long programId = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"마감된 유료 강좌","price":30000,"maximumPerson":2,"isEnabled":true,"applicationEndDateTime":"%s"}
                 """.formatted(LocalDateTime.now().minusDays(1))));
 

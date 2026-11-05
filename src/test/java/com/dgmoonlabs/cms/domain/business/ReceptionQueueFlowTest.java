@@ -15,7 +15,7 @@ class ReceptionQueueFlowTest extends ApiTestSupport {
     @Test
     void checkInAssignsQueueNumberAndAdminCanAdvanceIt() throws Exception {
         MockHttpSession admin = admin();
-        long clinic = createdId(postJson("/api/admin/programs", admin, """
+        long clinic = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"진료","price":0,"reservationType":"CONSULTATION","slotMinutes":30,"maximumPerson":5,
                  "openTime":"10:00","closeTime":"11:00","startDateTime":"%sT00:00:00","endDateTime":"%sT23:59:00",
                  "isEnabled":true,"supportsQueue":true}
@@ -54,7 +54,7 @@ class ReceptionQueueFlowTest extends ApiTestSupport {
     @Test
     void checkInWithoutQueueSupportLeavesQueueNumberEmpty() throws Exception {
         MockHttpSession admin = admin();
-        long yoga = createdId(postJson("/api/admin/programs", admin, """
+        long yoga = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"요가","price":0,"reservationType":"PROGRAM","isEnabled":true}
                 """));
         String code = body(postJson("/api/reservations", member("yogi"), """

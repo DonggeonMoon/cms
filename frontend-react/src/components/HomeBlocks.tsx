@@ -55,7 +55,7 @@ export function Shortcuts() {
     const shortcuts = [
         ...(isEnabled('BOARD') ? boards.map((board) => ({to: `/boards/${board.id}`, label: board.name})) : []),
         ...(isEnabled('PRODUCT') ? [{to: '/products', label: '상품'}] : []),
-        ...(isEnabled('PROGRAM') ? [{to: '/programs', label: '프로그램 신청'}] : []),
+        ...(isEnabled('PROGRAM') ? [{to: '/reservation-items', label: '프로그램 신청'}] : []),
         ...(isEnabled('QNA') ? [{to: '/qna', label: '질문답변'}] : []),
         ...(isEnabled('REPORT') ? [{to: '/reports/new', label: '신고'}] : []),
         ...(isEnabled('MAP') ? [{to: '/map', label: '오시는 길·지점 안내'}] : []),
@@ -114,12 +114,12 @@ export function OpenPrograms() {
         <section className="home-section">
             <div className="section-head">
                 <h2>모집 중인 프로그램</h2>
-                <Link to="/programs">전체 보기</Link>
+                <Link to="/reservation-items">전체 보기</Link>
             </div>
             <ul className="list home-list">
                 {programs.map((program) => (
                     <li key={program.id}>
-                        <Link to={`/programs/${program.id}`}>{program.name}</Link>
+                        <Link to={`/reservation-items/${program.id}`}>{program.name}</Link>
                         <span className="muted small">{program.startDateTime ? formatDateTime(program.startDateTime) : ''}</span>
                     </li>
                 ))}

@@ -22,7 +22,7 @@ describe('visit reservation', () => {
         vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
             if (url === '/api/auth/me') return respond(200, {id: 1, username: 'homeowner', name: '고객', userType: 'MEMBER'});
             if (url === '/api/members/me') return respond(200, {name: '고객', mobilePhoneNumber: '010-1234-5678'});
-            if (url === '/api/programs/7') return respond(200, PROGRAM);
+            if (url === '/api/reservation-items/7') return respond(200, PROGRAM);
             if (url === '/api/reservations' && init?.method === 'POST') {
                 sent.push(JSON.parse(String(init.body)));
                 return respond(201, {id: 3, status: 'CONFIRMED'});

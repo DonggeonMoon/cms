@@ -19,21 +19,21 @@ class ProgramSessionFlowTest extends ApiTestSupport {
             """;
 
     private long session(final MockHttpSession admin, final long programId, final String body) throws Exception {
-        return body(postJson("/api/admin/programs/%d/sessions".formatted(programId), admin, body)
+        return body(postJson("/api/admin/reservation-items/%d/sessions".formatted(programId), admin, body)
                 .andExpect(status().isOk())).get("id").asLong();
     }
 
     @Test
     void eachClassHasItsOwnCapacity() throws Exception {
         MockHttpSession admin = admin();
-        long yoga = createdId(postJson("/api/admin/programs", admin, """
+        long yoga = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"요가","price":20000,"reservationType":"PROGRAM","isEnabled":true}
                 """));
         long tuesday = session(admin, yoga, "{\"name\":\"화요일 저녁반\",\"startAt\":\"%sT19:00:00\",\"endAt\":\"%sT20:00:00\",\"capacity\":2}"
                 .formatted(DAY, DAY));
         long thursday = session(admin, yoga, "{\"name\":\"목요일 오전반\",\"startAt\":\"%sT10:00:00\",\"capacity\":1}".formatted(DAY.plusDays(2)));
         long past = session(admin, yoga, "{\"startAt\":\"%sT10:00:00\"}".formatted(LocalDate.now().minusDays(1)));
-        postJson("/api/admin/programs/%d/sessions".formatted(yoga), admin, "{\"startAt\":\"%sT10:00:00\",\"endAt\":\"%sT09:00:00\"}"
+        postJson("/api/admin/reservation-items/%d/sessions".formatted(yoga), admin, "{\"startAt\":\"%sT10:00:00\",\"endAt\":\"%sT09:00:00\"}"
                 .formatted(DAY, DAY)).andExpect(jsonPath("$.code").value("INVALID_PERIOD"));
 
         String book = "{\"programId\":%d,\"quantity\":%d,%s%s}";
@@ -51,27 +51,27 @@ class ProgramSessionFlowTest extends ApiTestSupport {
         postJson("/api/reservations", member("yogi3"), book.formatted(yoga, 1, APPLICANT, ",\"sessionId\":" + thursday))
                 .andExpect(status().isCreated());
 
-        getJson("/api/programs/" + yoga, null)
+        getJson("/api/reservation-items/" + yoga, null)
                 .andExpect(jsonPath("$.sessions.length()").value(3))
                 .andExpect(jsonPath("$.sessions[0].isOpen").value(false))
                 .andExpect(jsonPath("$.sessions[1].remaining").value(0))
                 .andExpect(jsonPath("$.sessions[2].remaining").value(0));
 
-        putJson("/api/admin/programs/%d/sessions/%d".formatted(yoga, tuesday), admin,
+        putJson("/api/admin/reservation-items/%d/sessions/%d".formatted(yoga, tuesday), admin,
                 "{\"startAt\":\"%sT19:00:00\",\"capacity\":1}".formatted(DAY)).andExpect(jsonPath("$.code").value("PROGRAM_FULL"));
-        deleteJson("/api/admin/programs/%d/sessions/%d".formatted(yoga, tuesday), admin, null)
+        deleteJson("/api/admin/reservation-items/%d/sessions/%d".formatted(yoga, tuesday), admin, null)
                 .andExpect(jsonPath("$.code").value("SESSION_HAS_RESERVATIONS"));
 
         postJson("/api/reservations/%d/cancel".formatted(reservationId), member, "").andExpect(status().isNoContent());
-        getJson("/api/programs/" + yoga, null).andExpect(jsonPath("$.sessions[1].remaining").value(2));
-        deleteJson("/api/admin/programs/%d/sessions/%d".formatted(yoga, tuesday), admin, null).andExpect(status().isNoContent());
-        getJson("/api/programs/" + yoga, null).andExpect(jsonPath("$.sessions.length()").value(2));
+        getJson("/api/reservation-items/" + yoga, null).andExpect(jsonPath("$.sessions[1].remaining").value(2));
+        deleteJson("/api/admin/reservation-items/%d/sessions/%d".formatted(yoga, tuesday), admin, null).andExpect(status().isNoContent());
+        getJson("/api/reservation-items/" + yoga, null).andExpect(jsonPath("$.sessions.length()").value(2));
     }
 
     @Test
     void eventSeatsAreSoldPerShowing() throws Exception {
         MockHttpSession admin = admin();
-        long show = createdId(postJson("/api/admin/programs", admin, """
+        long show = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"뮤지컬","price":50000,"reservationType":"EVENT","startDateTime":"%sT19:00:00","layout":%s,"isEnabled":true}
                 """.formatted(DAY, LAYOUT)));
         long first = session(admin, show, "{\"name\":\"1회차\",\"startAt\":\"%sT14:00:00\",\"endAt\":\"%sT16:00:00\"}".formatted(DAY, DAY));
@@ -84,15 +84,15 @@ class ProgramSessionFlowTest extends ApiTestSupport {
         postJson("/api/reservations", member("fan3"), seat.formatted(show, second, APPLICANT))
                 .andExpect(jsonPath("$.startAt").value(DAY + "T19:00:00"));
 
-        getJson("/api/programs/%d/availability?sessionId=%d".formatted(show, first), null)
+        getJson("/api/reservation-items/%d/availability?sessionId=%d".formatted(show, first), null)
                 .andExpect(jsonPath("$.takenCells[0]").value("A1"));
-        getJson("/api/programs/" + show, null).andExpect(jsonPath("$.sessions[0].reservedCount").value(1));
+        getJson("/api/reservation-items/" + show, null).andExpect(jsonPath("$.sessions[0].reservedCount").value(1));
 
-        long consultation = createdId(postJson("/api/admin/programs", admin, """
+        long consultation = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"상담","price":0,"reservationType":"CONSULTATION","slotMinutes":30,"openTime":"09:00","closeTime":"12:00",
                  "startDateTime":"%sT00:00:00","endDateTime":"%sT00:00:00","isEnabled":true}
                 """.formatted(DAY, DAY.plusDays(3))));
-        postJson("/api/admin/programs/%d/sessions".formatted(consultation), admin, "{\"startAt\":\"%sT10:00:00\"}".formatted(DAY))
+        postJson("/api/admin/reservation-items/%d/sessions".formatted(consultation), admin, "{\"startAt\":\"%sT10:00:00\"}".formatted(DAY))
                 .andExpect(jsonPath("$.code").value("SESSIONS_NOT_SUPPORTED"));
     }
 }

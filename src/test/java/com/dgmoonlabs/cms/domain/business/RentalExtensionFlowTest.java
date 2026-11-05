@@ -22,11 +22,11 @@ class RentalExtensionFlowTest extends ApiTestSupport {
     @Test
     void extensionsHoldStockAndUnpaidFeesAndLateFeesComeOutOfTheDeposit() throws Exception {
         MockHttpSession admin = admin();
-        long tent = createdId(postJson("/api/admin/programs", admin, """
+        long tent = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"텐트","price":10000,"reservationType":"ITEM_RENTAL","maximumPerson":2,"depositAmount":50000,
                  "maxRentalDays":5,"lateFeePerDay":5000,"isEnabled":true}
                 """).andExpect(status().isCreated()));
-        getJson("/api/programs/" + tent, null).andExpect(jsonPath("$.lateFeePerDay").value(5000));
+        getJson("/api/reservation-items/" + tent, null).andExpect(jsonPath("$.lateFeePerDay").value(5000));
 
         MockHttpSession camper = member("extender");
         long id = body(postJson("/api/reservations", camper, RENT.formatted(tent, 1, DAY, DAY.plusDays(2), APPLICANT))
@@ -86,7 +86,7 @@ class RentalExtensionFlowTest extends ApiTestSupport {
     @Test
     void anUnpaidExtensionCanBeWithdrawn() throws Exception {
         MockHttpSession admin = admin();
-        long bike = createdId(postJson("/api/admin/programs", admin, """
+        long bike = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"자전거","price":0,"reservationType":"ITEM_RENTAL","maximumPerson":1,"isEnabled":true}
                 """));
         MockHttpSession rider = member("rider");
@@ -98,7 +98,7 @@ class RentalExtensionFlowTest extends ApiTestSupport {
         postJson("/api/reservations/%d/extension/cancel".formatted(id), rider, "")
                 .andExpect(jsonPath("$.code").value("INVALID_STATUS_TRANSITION"));
 
-        long paidBike = createdId(postJson("/api/admin/programs", admin, """
+        long paidBike = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"전기 자전거","price":15000,"reservationType":"ITEM_RENTAL","maximumPerson":1,"isEnabled":true}
                 """));
         long paidId = body(postJson("/api/admin/reservations?paid=true", admin, RENT.formatted(paidBike, 1, DAY, DAY.plusDays(1), APPLICANT)))

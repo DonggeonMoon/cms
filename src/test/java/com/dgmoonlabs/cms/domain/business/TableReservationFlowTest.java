@@ -19,7 +19,7 @@ class TableReservationFlowTest extends ApiTestSupport {
             """;
 
     private long createProgram() throws Exception {
-        return createdId(postJson("/api/admin/programs", admin(), """
+        return createdId(postJson("/api/admin/reservation-items", admin(), """
                 {"name":"식당 예약","price":0,"reservationType":"TABLE","slotMinutes":30,"openTime":"11:00","closeTime":"21:00",
                  "startDateTime":"%sT00:00:00","endDateTime":"%sT23:59:00","layout":%s,"isEnabled":true}
                 """.formatted(DAY.minusDays(1), DAY.plusDays(1), LAYOUT)).andExpect(status().isCreated()));
@@ -46,7 +46,7 @@ class TableReservationFlowTest extends ApiTestSupport {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.partySize").value(4))
                 .andExpect(jsonPath("$.status").value("CONFIRMED"));
-        getJson("/api/programs/%d/availability?date=%s&from=%sT12:00:00&to=%sT13:00:00".formatted(id, DAY, DAY, DAY), null)
+        getJson("/api/reservation-items/%d/availability?date=%s&from=%sT12:00:00&to=%sT13:00:00".formatted(id, DAY, DAY, DAY), null)
                 .andExpect(jsonPath("$.takenCells[0]").value("T1"));
         postJson("/api/reservations", member("diner3"), """
                 {"programId":%d,"quantity":1,"cells":["T1"],"startAt":"%sT12:00:00","endAt":"%sT12:30:00","partySize":2,%s}

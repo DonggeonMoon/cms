@@ -19,7 +19,7 @@ class CustomerRecordFlowTest extends ApiTestSupport {
     @Test
     void staffKeepTreatmentHistoryPerMemberAndShareOnlyWhatTheyChoose() throws Exception {
         MockHttpSession admin = admin();
-        long programId = createdId(postJson("/api/admin/programs", admin, """
+        long programId = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"두피 관리","price":0,"reservationType":"PROGRAM","isEnabled":true}
                 """));
         MockHttpSession member = member("client");

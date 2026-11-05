@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.common.notification.controller;
 
+import com.dgmoonlabs.cms.domain.common.notification.dto.NotificationDtos.AdminNotificationResponse;
 import com.dgmoonlabs.cms.domain.common.notification.dto.NotificationDtos.NotificationResponse;
 import com.dgmoonlabs.cms.domain.common.notification.service.NotificationService;
 import com.dgmoonlabs.cms.global.security.LoginUser;
@@ -34,5 +35,10 @@ public class NotificationController {
     public ResponseEntity<Void> markRead(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long id) {
         notificationService.markRead(user.id(), id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/api/admin/notifications")
+    public ResponseEntity<PagedModel<AdminNotificationResponse>> adminList(@PageableDefault final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(notificationService.adminList(pageable)));
     }
 }

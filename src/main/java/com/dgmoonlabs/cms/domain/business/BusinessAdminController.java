@@ -334,35 +334,35 @@ public class BusinessAdminController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/programs")
+    @PostMapping("/reservation-items")
     public ResponseEntity<Void> createProgram(@RequestBody @Valid final ProgramSaveRequest request) {
-        return ResponseEntity.created(URI.create("/api/programs/" + reservationService.createProgram(request))).build();
+        return ResponseEntity.created(URI.create("/api/reservation-items/" + reservationService.createProgram(request))).build();
     }
 
-    @PutMapping("/programs/{id}")
+    @PutMapping("/reservation-items/{id}")
     public ResponseEntity<Void> updateProgram(@PathVariable final Long id, @RequestBody @Valid final ProgramSaveRequest request) {
         reservationService.updateProgram(id, request);
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/programs/{id}")
+    @DeleteMapping("/reservation-items/{id}")
     public ResponseEntity<Void> deleteProgram(@PathVariable final Long id) {
         reservationService.deleteProgram(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/programs/{id}/sessions")
+    @PostMapping("/reservation-items/{id}/sessions")
     public ResponseEntity<SessionResponse> createSession(@PathVariable final Long id, @RequestBody @Valid final SessionSaveRequest request) {
         return ResponseEntity.ok(reservationService.createSession(id, request));
     }
 
-    @PutMapping("/programs/{id}/sessions/{sessionId}")
+    @PutMapping("/reservation-items/{id}/sessions/{sessionId}")
     public ResponseEntity<SessionResponse> updateSession(@PathVariable final Long id, @PathVariable final Long sessionId,
                                                          @RequestBody @Valid final SessionSaveRequest request) {
         return ResponseEntity.ok(reservationService.updateSession(id, sessionId, request));
     }
 
-    @DeleteMapping("/programs/{id}/sessions/{sessionId}")
+    @DeleteMapping("/reservation-items/{id}/sessions/{sessionId}")
     public ResponseEntity<Void> deleteSession(@PathVariable final Long id, @PathVariable final Long sessionId) {
         reservationService.deleteSession(id, sessionId);
         return ResponseEntity.noContent().build();

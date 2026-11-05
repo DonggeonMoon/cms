@@ -1,10 +1,10 @@
 import {useEffect, useState} from 'react';
 import {request} from './client';
 
-export type AdminArea = 'STATUS' | 'SITE' | 'CONTENT' | 'BUSINESS' | 'PUBLIC' | 'MEMBER' | 'COMMON' | 'SECURITY';
+export type AdminArea = 'STATUS' | 'SITE' | 'CONTENT' | 'BUSINESS' | 'CS' | 'PUBLIC' | 'MEMBER' | 'COMMON' | 'SECURITY';
 
 export const ADMIN_AREA: Record<AdminArea, string> = {
-    STATUS: '현황', SITE: '사이트', CONTENT: '컨텐츠', BUSINESS: '비즈니스', PUBLIC: '공공', MEMBER: '회원', COMMON: '공통 설정', SECURITY: '보안',
+    STATUS: '현황', SITE: '사이트', CONTENT: '컨텐츠', BUSINESS: '비즈니스', CS: 'CS', PUBLIC: '공공', MEMBER: '회원', COMMON: '공통 설정', SECURITY: '보안',
 };
 
 export interface AdminGrade {

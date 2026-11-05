@@ -17,13 +17,13 @@ class TourFlowTest extends ApiTestSupport {
             """;
 
     private long createTour(final MockHttpSession admin, final String priceTiers) throws Exception {
-        return createdId(postJson("/api/admin/programs", admin, """
+        return createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"제주도 3박4일","price":0,"reservationType":"TOUR","isEnabled":true,"priceTiers":%s}
                 """.formatted(priceTiers)));
     }
 
     private long departure(final MockHttpSession admin, final long tourId, final int capacity) throws Exception {
-        return body(postJson("/api/admin/programs/%d/sessions".formatted(tourId), admin,
+        return body(postJson("/api/admin/reservation-items/%d/sessions".formatted(tourId), admin,
                 "{\"name\":\"1차 출발\",\"startAt\":\"%sT08:00:00\",\"capacity\":%d}".formatted(DAY, capacity))
                 .andExpect(status().isOk())).get("id").asLong();
     }
@@ -31,10 +31,10 @@ class TourFlowTest extends ApiTestSupport {
     @Test
     void priceTiersAreRequiredToCreateATour() throws Exception {
         MockHttpSession admin = admin();
-        postJson("/api/admin/programs", admin, """
+        postJson("/api/admin/reservation-items", admin, """
                 {"name":"요금 없는 투어","price":0,"reservationType":"TOUR","isEnabled":true}
                 """).andExpect(jsonPath("$.code").value("RESERVATION_SETTINGS_REQUIRED"));
-        postJson("/api/admin/programs", admin, """
+        postJson("/api/admin/reservation-items", admin, """
                 {"name":"요금 없는 투어","price":0,"reservationType":"TOUR","isEnabled":true,"priceTiers":[]}
                 """).andExpect(jsonPath("$.code").value("RESERVATION_SETTINGS_REQUIRED"));
     }
@@ -65,7 +65,7 @@ class TourFlowTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.partyBreakdown.성인").value(2))
                 .andExpect(jsonPath("$.partyBreakdown.아동").value(1));
 
-        getJson("/api/programs/" + tour, null)
+        getJson("/api/reservation-items/" + tour, null)
                 .andExpect(jsonPath("$.sessions[0].reservedCount").value(3))
                 .andExpect(jsonPath("$.sessions[0].remaining").value(7))
                 .andExpect(jsonPath("$.priceTiers[0].name").value("성인"));
@@ -87,6 +87,6 @@ class TourFlowTest extends ApiTestSupport {
                 """.formatted(tour, departure, APPLICANT)).andExpect(jsonPath("$.code").value("PROGRAM_FULL"));
 
         postJson("/api/reservations/%d/cancel".formatted(reservationId), traveler2, "").andExpect(status().isNoContent());
-        getJson("/api/programs/" + tour, null).andExpect(jsonPath("$.sessions[0].remaining").value(3));
+        getJson("/api/reservation-items/" + tour, null).andExpect(jsonPath("$.sessions[0].remaining").value(3));
     }
 }

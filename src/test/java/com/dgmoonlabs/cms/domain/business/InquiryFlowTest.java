@@ -20,7 +20,7 @@ class InquiryFlowTest extends ApiTestSupport {
                 {"name":"강남 아파트 매물","price":0,"saleType":"INQUIRY","isEnabled":true}
                 """).andExpect(jsonPath("$.code").value("INQUIRY_PROGRAM_REQUIRED"));
 
-        long consultation = createdId(postJson("/api/admin/programs", admin, """
+        long consultation = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"매물 상담","price":0,"reservationType":"CONSULTATION","slotMinutes":30,"maximumPerson":1,
                  "openTime":"10:00","closeTime":"11:00","startDateTime":"%sT00:00:00","endDateTime":"%sT23:59:00","isEnabled":true}
                 """.formatted(DAY.minusDays(5), DAY.plusDays(5))));

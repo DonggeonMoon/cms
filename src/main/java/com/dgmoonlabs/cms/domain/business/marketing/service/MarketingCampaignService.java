@@ -24,21 +24,22 @@ public class MarketingCampaignService {
     private final MemberRepository memberRepository;
     private final NotificationService notificationService;
 
+    /** 마케팅 활용 동의가 없는 회원은 발송 대상에서 제외된다. */
     @Transactional
     public CampaignResponse send(final CampaignSendRequest request) {
         LocalDateTime now = LocalDateTime.now();
-        List<Member> recipients = memberRepository.findAllByDeletedAtIsNull().stream()
+        List<Member> targets = memberRepository.findAllByDeletedAtIsNull().stream()
                 .filter(member -> request.targetGradeId() == null || request.targetGradeId().equals(member.currentGradeId(now)))
                 .toList();
-        for (Member member : recipients) {
-            notificationService.notify(member.getId(), request.title(), request.content(), null, request.channels());
-        }
+        long sentCount = targets.stream()
+                .filter(member -> notificationService.notifyMarketing(member.getId(), request.title(), request.content(), null, request.channels()))
+                .count();
         MarketingCampaign saved = campaignRepository.save(MarketingCampaign.builder()
                 .title(request.title())
                 .content(request.content())
                 .targetGradeId(request.targetGradeId())
                 .channels(List.copyOf(request.channels()))
-                .recipientCount(recipients.size())
+                .recipientCount((int) sentCount)
                 .sentAt(now)
                 .build());
         return CampaignResponse.from(saved);

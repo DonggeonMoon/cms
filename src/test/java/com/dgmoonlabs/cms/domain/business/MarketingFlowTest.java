@@ -21,14 +21,23 @@ class MarketingFlowTest extends ApiTestSupport {
     @Autowired
     private CartItemRepository cartItemRepository;
 
+    /** 마케팅성 알림(대상 발송·장바구니 리마인드)은 마케팅 활용·수신 동의가 있어야 간다. */
+    private void agreeToMarketing(final MockHttpSession session, final String username) throws Exception {
+        putJson("/api/members/me", session, """
+                {"name":"%s님","isMailReceptionAgreed":true,"isSmsReceptionAgreed":true,"isMarketingUsageAgreed":true}
+                """.formatted(username)).andExpect(status().isNoContent());
+    }
+
     @Test
     void campaignSendsToMembersInTargetGradeOnlyAndRecordsHistory() throws Exception {
         MockHttpSession admin = admin();
         long gradeId = body(postJson("/api/admin/grades", admin, """
                 {"name":"VIP","rank":10,"isDefault":false}
                 """)).get("id").asLong();
-        member("plainmember");
+        MockHttpSession plain = member("plainmember");
+        agreeToMarketing(plain, "plainmember");
         MockHttpSession vip = member("vipmember");
+        agreeToMarketing(vip, "vipmember");
         long vipMemberId = body(getJson("/api/admin/members?keyword=vipmember", admin)).get("content").get(0).get("id").asLong();
         putJson("/api/admin/members/" + vipMemberId + "/grade", admin, """
                 {"gradeId":%d}
@@ -57,6 +66,7 @@ class MarketingFlowTest extends ApiTestSupport {
                 {"name":"마케팅상품","price":10000,"isEnabled":true}
                 """));
         MockHttpSession buyer = member("abandonbuyer");
+        agreeToMarketing(buyer, "abandonbuyer");
         postJson("/api/cart", buyer, "{\"productId\":%d,\"quantity\":1}".formatted(productId)).andExpect(status().isOk());
 
         assertThat(cartAbandonmentService.remind(LocalDateTime.now())).isZero();

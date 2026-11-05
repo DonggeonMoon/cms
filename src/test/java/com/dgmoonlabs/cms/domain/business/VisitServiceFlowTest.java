@@ -16,11 +16,11 @@ class VisitServiceFlowTest extends ApiTestSupport {
     @Test
     void visitsAreBookedPerSlotWithAddressAndClosedWithAWorkReport() throws Exception {
         MockHttpSession admin = admin();
-        long programId = createdId(postJson("/api/admin/programs", admin, """
+        long programId = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"에어컨 청소","price":80000,"reservationType":"VISIT","slotMinutes":120,"maximumPerson":1,
                  "openTime":"09:00","closeTime":"13:00","startDateTime":"%sT00:00:00","endDateTime":"%sT23:59:00","isEnabled":true}
                 """.formatted(DAY.minusDays(5), DAY.plusDays(5))).andExpect(status().isCreated()));
-        getJson("/api/programs/%d/availability?date=%s".formatted(programId, DAY), null).andExpect(jsonPath("$.slots.length()").value(2));
+        getJson("/api/reservation-items/%d/availability?date=%s".formatted(programId, DAY), null).andExpect(jsonPath("$.slots.length()").value(2));
 
         MockHttpSession customer = member("homeowner");
         String booking = "{\"programId\":%d,\"quantity\":1,\"startAt\":\"%sT09:00:00\",%s%s}";

@@ -11,6 +11,8 @@ import java.util.Optional;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     Page<Notification> findAllByMemberIdOrderByIdDesc(Long memberId, Pageable pageable);
 
+    Page<Notification> findAllByOrderByIdDesc(Pageable pageable);
+
     Optional<Notification> findByIdAndMemberId(Long id, Long memberId);
 
     long countByMemberIdAndChannelAndReadFalse(Long memberId, NotificationChannel channel);

@@ -42,7 +42,7 @@ public class CartAbandonmentService {
                 now.minusHours(abandonmentHours));
         Map<Long, List<CartItem>> byMember = abandoned.stream().collect(Collectors.groupingBy(CartItem::getMemberId));
         for (Map.Entry<Long, List<CartItem>> entry : byMember.entrySet()) {
-            notificationService.notify(entry.getKey(), "장바구니에 담긴 상품이 있어요",
+            notificationService.notifyMarketing(entry.getKey(), "장바구니에 담긴 상품이 있어요",
                     "담아두신 상품이 아직 그대로예요. 지금 확인해 보세요.", "/cart", EnumSet.of(NotificationChannel.IN_APP, NotificationChannel.EMAIL));
             entry.getValue().forEach(item -> item.markReminded(now));
         }

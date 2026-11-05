@@ -1,5 +1,5 @@
 import {type FormEvent, useCallback, useEffect, useState} from 'react';
-import type {MarketingCampaign, NotificationChannel} from '../../api/domain';
+import type {AdminNotification, MarketingCampaign, NotificationChannel} from '../../api/domain';
 import {adminApi} from '../../api/endpoints';
 import {gradeNameOf, useGrades} from '../../api/grades';
 import type {Page} from '../../api/types';
@@ -22,10 +22,19 @@ export function MarketingAdminPage() {
     const [busy, setBusy] = useState(false);
     const [sent, setSent] = useState<MarketingCampaign | null>(null);
 
+    const [logPage, setLogPage] = useState(0);
+    const [log, setLog] = useState<Page<AdminNotification> | null>(null);
+    const [logError, setLogError] = useState<unknown>(null);
+
     const reload = useCallback(() => {
         adminApi.marketing.history(page).then(setData).catch(setError);
     }, [page]);
     useEffect(reload, [reload]);
+
+    const reloadLog = useCallback(() => {
+        adminApi.notifications.list(logPage).then(setLog).catch(setLogError);
+    }, [logPage]);
+    useEffect(reloadLog, [reloadLog]);
 
     const toggleChannel = (channel: NotificationChannel) => setChannels((current) => {
         const next = new Set(current);
@@ -54,6 +63,8 @@ export function MarketingAdminPage() {
             setTargetGradeId('');
             setPage(0);
             reload();
+            setLogPage(0);
+            reloadLog();
         } catch (err) {
             setError(err);
         } finally {
@@ -63,8 +74,10 @@ export function MarketingAdminPage() {
 
     return (
         <section className="card">
-            <h1>대상 발송</h1>
-            <p className="muted">등급으로 대상을 좁혀 회원에게 바로 알림을 보냅니다. 예약 발송은 없고, 등록하면 즉시 보냅니다.</p>
+            <h1>알림</h1>
+            <p className="muted">결제완료·환불·가입환영 같은 거래 알림은 이벤트가 생기면 자동으로 간다. 아래 발송은 등급으로 대상을 좁혀 바로 보내는 마케팅성 알림이고,
+                마케팅 활용 동의가 없는 회원에게는 가지 않는다.</p>
+            <h2>대상 발송</h2>
             <ErrorBanner error={error}/>
             <form onSubmit={send} className="inline-form">
                 <div className="field">
@@ -92,9 +105,9 @@ export function MarketingAdminPage() {
                     ))}
                 </div>
                 <button type="submit" className="primary" disabled={busy}>발송하기</button>
-                {sent && <p className="ok">{sent.recipientCount}명에게 발송했습니다.</p>}
+                {sent && <p className="ok">{sent.recipientCount}명에게 발송했습니다. (마케팅 활용 동의한 대상자만 집계)</p>}
             </form>
-            <h2>발송 이력</h2>
+            <h3>발송 이력</h3>
             <div className="table-wrap">
                 <table>
                     <thead><tr><th>제목</th><th>대상</th><th>채널</th><th>발송 수</th><th>발송일</th></tr></thead>
@@ -113,6 +126,29 @@ export function MarketingAdminPage() {
                 </table>
             </div>
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
+
+            <h2>전체 알림 로그</h2>
+            <p className="muted">거래 알림(결제완료·환불·가입환영 등)과 마케팅성 알림을 모두 포함한 발송 기록이다.</p>
+            <ErrorBanner error={logError}/>
+            <div className="table-wrap">
+                <table>
+                    <thead><tr><th>회원</th><th>채널</th><th>제목</th><th>내용</th><th>읽음</th><th>발송일</th></tr></thead>
+                    <tbody>
+                    {log?.content.map((n) => (
+                        <tr key={n.id}>
+                            <td>{n.memberName ?? `#${n.memberId}`}</td>
+                            <td>{CHANNEL_LABEL[n.channel]}</td>
+                            <td>{n.title}</td>
+                            <td>{n.content}</td>
+                            <td>{n.channel === 'IN_APP' ? (n.read ? '읽음' : '안 읽음') : '-'}</td>
+                            <td>{formatDateTime(n.createdAt)}</td>
+                        </tr>
+                    ))}
+                    {log?.content.length === 0 && <tr><td colSpan={6} className="muted">알림 기록이 없습니다.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+            {log && <Pagination page={logPage} totalPages={log.page.totalPages} onChange={setLogPage}/>}
         </section>
     );
 }

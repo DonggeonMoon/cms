@@ -47,7 +47,7 @@ public class SitemapService {
         if (siteService.isEnabled(SiteFeature.PROGRAM)) {
             programRepository.findAllByIsEnabledTrueAndDeletedAtIsNullOrderByIdAsc().stream()
                     .filter(program -> program.getAccessGradeId() == null)
-                    .forEach(program -> entries.add(new Entry("/programs/" + program.getId(), program.getModifiedAt())));
+                    .forEach(program -> entries.add(new Entry("/reservation-items/" + program.getId(), program.getModifiedAt())));
         }
         if (siteService.isEnabled(SiteFeature.MEDIA)) {
             courseRepository.findAllByIsUsingTrueAndDeletedAtIsNullOrderByIdAsc().stream()

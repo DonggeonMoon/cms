@@ -43,7 +43,7 @@ export function ProductCard({product}: { product: ProductSummary }) {
 
 export function ProgramCard({program}: { program: Program }) {
     return (
-        <Link to={`/programs/${program.id}`} className="product-card">
+        <Link to={`/reservation-items/${program.id}`} className="product-card">
             <Thumbnail src={program.imageUrl} name={program.name}/>
             <strong className="product-name">{program.name}</strong>
             <span className="badge">{RESERVATION_TYPE[program.reservationType]}</span>
@@ -421,7 +421,7 @@ function escapeHtml(text: string) {
 }
 
 export function ProgramListPage() {
-    const programTitle = useFeatureMenuName('PROGRAM', '예약');
+    const programTitle = useFeatureMenuName('PROGRAM', '예약 상품');
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
     const keyword = params.get('keyword') ?? '';
@@ -587,7 +587,7 @@ export function ProgramDetailPage() {
                         </div>
                     </form>
                 ) : (
-                    <p className="muted"><Link to="/login" state={{from: `/programs/${id}`}}>로그인</Link> 후 신청할 수 있습니다.</p>
+                    <p className="muted"><Link to="/login" state={{from: `/reservation-items/${id}`}}>로그인</Link> 후 신청할 수 있습니다.</p>
                 )}
                 </div>
             </section>
@@ -867,7 +867,7 @@ export function MyReservationsPage() {
                     {data?.content.map((reservation) => (
                         <tr key={reservation.id}>
                             <td><code>{reservation.reservationNumber}</code></td>
-                            <td><Link to={`/programs/${reservation.programId}`}>{reservation.programName}</Link></td>
+                            <td><Link to={`/reservation-items/${reservation.programId}`}>{reservation.programName}</Link></td>
                             <td>{reservationUsage(reservation)}</td>
                             <td>{reservation.quantity}</td>
                             <td>{won(reservation.totalPrice)}

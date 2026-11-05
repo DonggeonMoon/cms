@@ -28,7 +28,7 @@ export const SITE_FEATURES: { value: SiteFeature; label: string }[] = [
     {value: 'MAP', label: '지도'},
     {value: 'PRODUCT', label: '상품'},
     {value: 'MEDIA', label: '스트리밍'},
-    {value: 'PROGRAM', label: '예약'},
+    {value: 'PROGRAM', label: '예약 상품'},
     {value: 'APPLICATION', label: '신청·지원'},
     {value: 'REPORT', label: '신고'},
     {value: 'SATISFACTION', label: '만족도 조사'},
@@ -585,6 +585,18 @@ export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'SMS';
 
 export interface AppNotification {
     id: number;
+    channel: NotificationChannel;
+    title: string;
+    content: string;
+    link: string | null;
+    read: boolean;
+    createdAt: string;
+}
+
+export interface AdminNotification {
+    id: number;
+    memberId: number;
+    memberName: string | null;
     channel: NotificationChannel;
     title: string;
     content: string;

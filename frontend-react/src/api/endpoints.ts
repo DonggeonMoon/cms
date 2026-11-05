@@ -83,8 +83,8 @@ export const adminApi = {
         saveGradePrices: (id: number, gradePrices: D.GradePrice[]) =>
             request<D.GradePrice[]>(`/api/admin/products/${id}/grade-prices`, {method: 'PUT', body: gradePrices}),
     },
-    programs: resource<D.Program>('/api/programs', (id) => `/api/programs/${id}`, '/api/admin/programs',
-        (id) => `/api/admin/programs/${id}`),
+    programs: resource<D.Program>('/api/reservation-items', (id) => `/api/reservation-items/${id}`, '/api/admin/reservation-items',
+        (id) => `/api/admin/reservation-items/${id}`),
     menus: {
         tree: () => request<D.Menu[]>('/api/admin/menus'),
         create: (body: Body) => request<void>('/api/admin/menus', {method: 'POST', body}),
@@ -165,6 +165,9 @@ export const adminApi = {
             request<D.MarketingCampaign>('/api/admin/marketing/campaigns', {method: 'POST', body: {title, content, targetGradeId, channels}}),
         history: (page: number) => request<Page<D.MarketingCampaign>>('/api/admin/marketing/campaigns', {query: {page}}),
     },
+    notifications: {
+        list: (page: number) => request<Page<D.AdminNotification>>('/api/admin/notifications', {query: {page}}),
+    },
     votes: {
         search: (query: Query) => request<Page<D.Vote>>('/api/admin/votes', {query}),
         create: (body: Body) => request<D.Vote>('/api/admin/votes', {method: 'POST', body}),
@@ -227,11 +230,11 @@ export const adminApi = {
     },
     sessions: {
         create: (programId: number, body: Body) =>
-            request<D.ProgramSession>(`/api/admin/programs/${programId}/sessions`, {method: 'POST', body}),
+            request<D.ProgramSession>(`/api/admin/reservation-items/${programId}/sessions`, {method: 'POST', body}),
         update: (programId: number, id: number, body: Body) =>
-            request<D.ProgramSession>(`/api/admin/programs/${programId}/sessions/${id}`, {method: 'PUT', body}),
+            request<D.ProgramSession>(`/api/admin/reservation-items/${programId}/sessions/${id}`, {method: 'PUT', body}),
         remove: (programId: number, id: number) =>
-            request<void>(`/api/admin/programs/${programId}/sessions/${id}`, {method: 'DELETE'}),
+            request<void>(`/api/admin/reservation-items/${programId}/sessions/${id}`, {method: 'DELETE'}),
     },
     customerRecords: {
         search: (query: Query) => request<Page<D.CustomerRecord>>('/api/admin/customer-records', {query}),
@@ -446,12 +449,12 @@ export const shopApi = {
     wish: (productId: number) => request<void>(`/api/wishlist/${productId}`, {method: 'PUT'}),
     unwish: (productId: number) => request<void>(`/api/wishlist/${productId}`, {method: 'DELETE'}),
     programs: (keyword: string, page: number) =>
-        request<Page<D.Program>>('/api/programs', {query: {keyword, page}}),
-    program: (id: number) => request<D.Program>(`/api/programs/${id}`),
+        request<Page<D.Program>>('/api/reservation-items', {query: {keyword, page}}),
+    program: (id: number) => request<D.Program>(`/api/reservation-items/${id}`),
     availability: (id: number, query: { date?: string; from?: string; to?: string; sessionId?: number }) =>
-        request<D.Availability>(`/api/programs/${id}/availability`, {query}),
-    programReviews: (id: number, page: number) => request<Page<D.Review>>(`/api/programs/${id}/reviews`, {query: {page}}),
-    addProgramReview: (id: number, body: Body) => request<void>(`/api/programs/${id}/reviews`, {method: 'POST', body}),
+        request<D.Availability>(`/api/reservation-items/${id}/availability`, {query}),
+    programReviews: (id: number, page: number) => request<Page<D.Review>>(`/api/reservation-items/${id}/reviews`, {query: {page}}),
+    addProgramReview: (id: number, body: Body) => request<void>(`/api/reservation-items/${id}/reviews`, {method: 'POST', body}),
     reserve: (body: Body) => request<D.Reservation>('/api/reservations', {method: 'POST', body}),
     myReservations: (page: number) => request<Page<D.Reservation>>('/api/reservations/me', {query: {page}}),
     cancelReservation: (id: number) => request<void>(`/api/reservations/${id}/cancel`, {method: 'POST'}),

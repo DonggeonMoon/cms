@@ -48,18 +48,18 @@ public class ShopController {
         return ResponseEntity.ok(new PagedModel<>(reviewService.getReviews(id, pageable)));
     }
 
-    @GetMapping("/api/programs")
+    @GetMapping("/api/reservation-items")
     public ResponseEntity<PagedModel<ProgramResponse>> programs(@RequestParam(required = false) final String keyword,
                                                                 @PageableDefault(size = 12) final Pageable pageable) {
         return ResponseEntity.ok(new PagedModel<>(reservationService.getPrograms(keyword, pageable)));
     }
 
-    @GetMapping("/api/programs/{id}")
+    @GetMapping("/api/reservation-items/{id}")
     public ResponseEntity<ProgramResponse> program(@PathVariable final Long id) {
         return ResponseEntity.ok(reservationService.getProgram(id));
     }
 
-    @GetMapping("/api/programs/{id}/availability")
+    @GetMapping("/api/reservation-items/{id}/availability")
     public ResponseEntity<Availability> availability(
             @PathVariable final Long id,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate date,
@@ -69,7 +69,7 @@ public class ShopController {
         return ResponseEntity.ok(reservationService.availability(id, date, from, to, sessionId));
     }
 
-    @GetMapping("/api/programs/{id}/reviews")
+    @GetMapping("/api/reservation-items/{id}/reviews")
     public ResponseEntity<PagedModel<ReviewResponse>> programReviews(@PathVariable final Long id,
                                                                      @PageableDefault final Pageable pageable) {
         return ResponseEntity.ok(new PagedModel<>(reviewService.getProgramReviews(id, pageable)));

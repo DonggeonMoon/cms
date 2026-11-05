@@ -16,4 +16,12 @@ public final class NotificationDtos {
                     notification.getContent(), notification.getLink(), notification.isRead(), notification.getCreatedAt());
         }
     }
+
+    public record AdminNotificationResponse(Long id, Long memberId, String memberName, NotificationChannel channel, String title,
+                                             String content, String link, boolean read, LocalDateTime createdAt) {
+        public static AdminNotificationResponse from(final Notification notification, final String memberName) {
+            return new AdminNotificationResponse(notification.getId(), notification.getMemberId(), memberName, notification.getChannel(),
+                    notification.getTitle(), notification.getContent(), notification.getLink(), notification.isRead(), notification.getCreatedAt());
+        }
+    }
 }

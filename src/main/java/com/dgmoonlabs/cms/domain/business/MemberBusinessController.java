@@ -181,12 +181,12 @@ public class MemberBusinessController {
         return ResponseEntity.created(URI.create("/api/products/" + productId + "/reviews/" + id)).build();
     }
 
-    @PostMapping("/api/programs/{programId}/reviews")
+    @PostMapping("/api/reservation-items/{programId}/reviews")
     public ResponseEntity<Void> programReview(@AuthenticationPrincipal final LoginUser user, @PathVariable final Long programId,
                                               @RequestBody @Valid final ReviewSaveRequest request,
                                               final HttpServletRequest httpRequest) {
         Long id = reviewService.createProgramReview(user, programId, request, httpRequest.getRemoteAddr());
-        return ResponseEntity.created(URI.create("/api/programs/" + programId + "/reviews/" + id)).build();
+        return ResponseEntity.created(URI.create("/api/reservation-items/" + programId + "/reviews/" + id)).build();
     }
 
     @DeleteMapping("/api/reviews/{id}")

@@ -36,7 +36,7 @@ public class SecurityConfig {
                         "/api/class-attendance/**", "/api/class-attendance", "/api/votes/**", "/api/votes").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/coupons/*/download").hasRole("MEMBER")
                 .requestMatchers("/api/digital/**").hasRole("MEMBER")
-                .requestMatchers(HttpMethod.POST, "/api/products/*/reviews", "/api/programs/*/reviews").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.POST, "/api/products/*/reviews", "/api/reservation-items/*/reviews").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.DELETE, "/api/reviews/*").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/satisfactions").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.GET, "/api/reports/me").hasRole("MEMBER")

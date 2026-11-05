@@ -22,14 +22,14 @@ class ReservationTypeFlowTest extends ApiTestSupport {
     @Test
     void consultationSlotsFillUpByCapacity() throws Exception {
         MockHttpSession admin = admin();
-        postJson("/api/admin/programs", admin, """
+        postJson("/api/admin/reservation-items", admin, """
                 {"name":"진로 상담","price":0,"reservationType":"CONSULTATION","isEnabled":true}
                 """).andExpect(jsonPath("$.code").value("RESERVATION_SETTINGS_REQUIRED"));
-        long programId = createdId(postJson("/api/admin/programs", admin, """
+        long programId = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"진로 상담","price":0,"reservationType":"CONSULTATION","slotMinutes":30,"maximumPerson":1,
                  "openTime":"10:00","closeTime":"11:00","startDateTime":"%sT00:00:00","endDateTime":"%sT23:59:00","isEnabled":true}
                 """.formatted(DAY.minusDays(5), DAY.plusDays(5))).andExpect(status().isCreated()));
-        getJson("/api/programs/" + programId + "/availability?date=" + DAY, null)
+        getJson("/api/reservation-items/" + programId + "/availability?date=" + DAY, null)
                 .andExpect(jsonPath("$.slots.length()").value(2))
                 .andExpect(jsonPath("$.slots[0].remaining").value(1));
 
@@ -50,11 +50,11 @@ class ReservationTypeFlowTest extends ApiTestSupport {
     @Test
     void eventSeatsAreBookedOnceAndPricedPerSeat() throws Exception {
         MockHttpSession admin = admin();
-        long programId = createdId(postJson("/api/admin/programs", admin, """
+        long programId = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"재즈 공연","price":10000,"reservationType":"EVENT","startDateTime":"%sT19:00:00",
                  "layout":%s,"isEnabled":true}
                 """.formatted(DAY, LAYOUT.formatted("SEAT", "SEAT"))).andExpect(status().isCreated()));
-        getJson("/api/programs/" + programId, null).andExpect(jsonPath("$.layout.cells[1].price").value(20000));
+        getJson("/api/reservation-items/" + programId, null).andExpect(jsonPath("$.layout.cells[1].price").value(20000));
 
         MockHttpSession member = member("jazz1");
         postJson("/api/reservations", member, """
@@ -65,7 +65,7 @@ class ReservationTypeFlowTest extends ApiTestSupport {
                 """.formatted(programId, APPLICANT))
                 .andExpect(jsonPath("$.totalPrice").value(30000))
                 .andExpect(jsonPath("$.quantity").value(2));
-        getJson("/api/programs/" + programId + "/availability", null).andExpect(jsonPath("$.takenCells.length()").value(2));
+        getJson("/api/reservation-items/" + programId + "/availability", null).andExpect(jsonPath("$.takenCells.length()").value(2));
         postJson("/api/reservations", member("jazz2"), """
                 {"programId":%d,"quantity":1,"cells":["A2"],%s}
                 """.formatted(programId, APPLICANT)).andExpect(jsonPath("$.code").value("CELL_ALREADY_RESERVED"));
@@ -74,7 +74,7 @@ class ReservationTypeFlowTest extends ApiTestSupport {
     @Test
     void lodgingRoomsCanBeRebookedOnlyForOtherNights() throws Exception {
         MockHttpSession admin = admin();
-        long id = createdId(postJson("/api/admin/programs", admin, """
+        long id = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"게스트하우스","price":50000,"reservationType":"LODGING","startDateTime":"%sT00:00:00",
                  "endDateTime":"%sT00:00:00","layout":%s,"isEnabled":true}
                 """.formatted(DAY.minusDays(10), DAY.plusDays(30), LAYOUT.formatted("ROOM", "ROOM"))).andExpect(status().isCreated()));
@@ -93,14 +93,14 @@ class ReservationTypeFlowTest extends ApiTestSupport {
     @Test
     void rentalChargesPerTimeUnit() throws Exception {
         MockHttpSession admin = admin();
-        long id = createdId(postJson("/api/admin/programs", admin, """
+        long id = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"세미나실","price":10000,"reservationType":"RENTAL","slotMinutes":60,"openTime":"09:00","closeTime":"18:00",
                  "startDateTime":"%sT00:00:00","endDateTime":"%sT23:59:00","layout":%s,"isEnabled":true}
                 """.formatted(DAY.minusDays(1), DAY.plusDays(1), LAYOUT.formatted("SPACE", "SPACE"))));
         postJson("/api/reservations", member("rent1"), """
                 {"programId":%d,"quantity":1,"cells":["A1"],"startAt":"%sT10:00:00","endAt":"%sT13:00:00",%s}
                 """.formatted(id, DAY, DAY, APPLICANT)).andExpect(jsonPath("$.totalPrice").value(30000));
-        getJson("/api/programs/%d/availability?date=%s&from=%sT12:00:00&to=%sT14:00:00".formatted(id, DAY, DAY, DAY), null)
+        getJson("/api/reservation-items/%d/availability?date=%s&from=%sT12:00:00&to=%sT14:00:00".formatted(id, DAY, DAY, DAY), null)
                 .andExpect(jsonPath("$.takenCells[0]").value("A1"))
                 .andExpect(jsonPath("$.slots.length()").value(9));
     }

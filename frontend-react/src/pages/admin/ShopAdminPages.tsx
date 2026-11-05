@@ -686,7 +686,7 @@ export function ProgramAdminPage() {
             columns={[
                 {label: 'ID', render: (p) => p.id},
                 {label: '유형', render: (p) => <span className="badge">{RESERVATION_TYPE[p.reservationType]}</span>},
-                {label: '이름', render: (p) => <Link to={`/programs/${p.id}`}>{p.name}</Link>},
+                {label: '이름', render: (p) => <Link to={`/reservation-items/${p.id}`}>{p.name}</Link>},
                 {label: '기본 가격', render: (p) => won(p.price)},
                 {label: '잔여/정원', render: (p) => (p.reservationType !== 'PROGRAM' ? '-' : p.maximumPerson ? `${p.availablePerson}/${p.maximumPerson}` : '제한 없음')},
                 {label: '신청 기간', render: (p) => `${formatDateTime(p.applicationStartDateTime)} ~ ${formatDateTime(p.applicationEndDateTime)}`},
@@ -1054,7 +1054,7 @@ export function ReviewAdminPage() {
                 columns={[
                     isProduct
                         ? {label: '상품', render: (r) => <Link to={`/products/${r.productId}`}>#{r.productId}</Link>}
-                        : {label: '프로그램', render: (r) => <Link to={`/programs/${r.programId}`}>#{r.programId}</Link>},
+                        : {label: '프로그램', render: (r) => <Link to={`/reservation-items/${r.programId}`}>#{r.programId}</Link>},
                     {label: '평점', render: (r) => '★'.repeat(r.rating)},
                     {label: '제목', render: (r) => r.title},
                     {label: '작성자', render: (r) => r.authorName},

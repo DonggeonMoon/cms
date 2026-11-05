@@ -52,7 +52,7 @@ export function ClassAttendanceAdminPage() {
 
     return (
         <section className="card">
-            <h1>학원 출결</h1>
+            <h1>출결</h1>
             <p className="muted">구독(수강료)으로 등록된 학생의 출결을 날짜별로 매깁니다.</p>
             <div className="toolbar">
                 <select aria-label="수강료 상품" value={productId} onChange={(e) => setProductId(e.target.value)}>

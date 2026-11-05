@@ -318,7 +318,7 @@ describe('site features', () => {
 
         await userEvent.click(screen.getByRole('tab', {name: '예약 상품 리뷰'}));
         expect(await screen.findByText('강좌 좋아요')).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: '#9'})).toHaveAttribute('href', '/programs/9');
+        expect(screen.getByRole('link', {name: '#9'})).toHaveAttribute('href', '/reservation-items/9');
         expect(requested.some((url) => url.includes('targetType=PROGRAM'))).toBe(true);
     });
 
@@ -355,7 +355,7 @@ describe('site features', () => {
                 return respond(200, page([{id: 4, name: '닌텐도 스위치 OLED', description: '박스 풀구성', price: 290000,
                     availableQuantity: 5, isEnabled: true, imageUrl: null, createdAt: '2026-11-02T10:00:00'}]));
             }
-            return respond(200, url.startsWith('/api/programs') ? page([]) : []);
+            return respond(200, url.startsWith('/api/reservation-items') ? page([]) : []);
         }));
         renderAt('/');
 
@@ -412,7 +412,7 @@ describe('site features', () => {
         renderAt('/');
 
         const nav = await screen.findByRole('navigation', {name: '주 메뉴'});
-        expect(await within(nav).findByRole('link', {name: '클래스 신청'})).toHaveAttribute('href', '/programs');
+        expect(await within(nav).findByRole('link', {name: '클래스 신청'})).toHaveAttribute('href', '/reservation-items');
         expect(within(nav).queryByRole('link', {name: '프로그램'})).not.toBeInTheDocument();
         expect(within(nav).queryByRole('link', {name: '신고'})).not.toBeInTheDocument();
         expect(within(nav).getByRole('link', {name: '지도'})).toBeInTheDocument();

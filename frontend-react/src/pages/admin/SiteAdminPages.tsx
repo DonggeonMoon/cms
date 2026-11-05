@@ -257,7 +257,7 @@ const MENU_KINDS: MenuKind[] = [
     featureKind('MAP', '지도'),
     featureKind('PRODUCT', '상품'),
     featureKind('MEDIA', '스트리밍'),
-    featureKind('PROGRAM', '예약'),
+    featureKind('PROGRAM', '예약 상품'),
     featureKind('APPLICATION', '신청·지원'),
     featureKind('REPORT', '신고'),
     {value: 'LINK', label: '링크', type: 'LINK'},

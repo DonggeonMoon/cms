@@ -24,10 +24,10 @@ class PassFlowTest extends ApiTestSupport {
     @Test
     void countPassIsDeductedOnReservationAndRestoredOnCancel() throws Exception {
         MockHttpSession admin = admin();
-        long yoga = createdId(postJson("/api/admin/programs", admin, """
+        long yoga = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"요가","price":20000,"reservationType":"PROGRAM","isEnabled":true}
                 """));
-        long pilates = createdId(postJson("/api/admin/programs", admin, """
+        long pilates = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"필라테스","price":25000,"reservationType":"PROGRAM","isEnabled":true}
                 """));
         postJson("/api/admin/products", admin, """
@@ -63,7 +63,7 @@ class PassFlowTest extends ApiTestSupport {
     @Test
     void periodPassStaysUsableUntilItExpires() throws Exception {
         MockHttpSession admin = admin();
-        long yoga = createdId(postJson("/api/admin/programs", admin, """
+        long yoga = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"요가","price":20000,"reservationType":"PROGRAM","isEnabled":true}
                 """));
         long passMonth = createdId(postJson("/api/admin/products", admin, """

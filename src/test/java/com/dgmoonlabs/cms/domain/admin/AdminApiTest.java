@@ -47,7 +47,7 @@ class AdminApiTest extends ApiTestSupport {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("FEATURE_DISABLED"));
         getJson("/api/questions", member("visitor")).andExpect(jsonPath("$.code").value("FEATURE_DISABLED"));
-        getJson("/api/programs", null).andExpect(status().isOk());
+        getJson("/api/reservation-items", null).andExpect(status().isOk());
         getJson("/api/products", admin).andExpect(status().isOk());
 
         long contentId = createdId(postJson("/api/admin/contents", admin, """
