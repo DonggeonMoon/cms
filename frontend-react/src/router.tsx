@@ -4,6 +4,7 @@ import {RequireRole} from './auth/RequireRole';
 import {AdminLayout} from './components/AdminLayout';
 import {RequireFeature} from './components/SiteContext';
 import {SiteLayout} from './components/SiteLayout';
+import {MyNotificationsPage} from './pages/shop/NotificationPages';
 import {CodePage} from './pages/admin/CodePage';
 import {ApiKeyPage} from './pages/admin/ApiKeyPage';
 import {AllowedIpPage} from './pages/admin/AllowedIpPage';
@@ -164,6 +165,7 @@ export const routes = [
                         element: <RequireRole role="MEMBER"/>,
                         children: [
                             {path: '/mypage', element: <MyPage/>},
+                            {path: '/mypage/notifications', element: <MyNotificationsPage/>},
                             {path: '/mypage/password', element: <PasswordChangePage/>},
                             {path: '/mypage/quit', element: <QuitPage/>},
                             {

@@ -1,8 +1,8 @@
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {ColorModeToggle, useColorMode} from './ColorMode';
 import {Link, NavLink, Outlet, useLocation, useNavigate} from 'react-router';
 import type {Menu, SiteFeature} from '../api/domain';
-import {siteApi} from '../api/endpoints';
+import {shopApi, siteApi} from '../api/endpoints';
 import {useAuth} from '../auth/AuthContext';
 import {FEATURE_PATHS, menuHref, SiteProvider, useSite} from './SiteContext';
 import {I18nProvider, LANGUAGE_NAMES, useI18n} from '../api/i18n';
@@ -30,6 +30,14 @@ function SiteFrame() {
         siteApi.trackVisit(location.pathname + location.search, document.referrer).catch(() => undefined);
     }, [location.pathname, location.search]);
 
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
+    useEffect(() => {
+        if (user?.userType !== 'MEMBER') {
+            return;
+        }
+        shopApi.unreadNotificationCount().then(setUnreadNotifications).catch(() => undefined);
+    }, [user, location.pathname]);
+
     const handleLogout = async () => {
         await logout();
         navigate('/');
@@ -50,6 +58,9 @@ function SiteFrame() {
                         <>
                             <span className="muted">{t('nav.greeting', '{name}님', {name: user.name})}</span>
                             {isEnabled('PRODUCT') && <NavLink to="/cart">{t('nav.cart', '장바구니')}</NavLink>}
+                            <NavLink to="/mypage/notifications">
+                                {t('nav.notifications', '알림')}{unreadNotifications > 0 && ` (${unreadNotifications})`}
+                            </NavLink>
                             <NavLink to="/mypage">{t('nav.mypage', '마이페이지')}</NavLink>
                             <button type="button" className="link-button" onClick={handleLogout}>{t('nav.logout', '로그아웃')}</button>
                         </>
@@ -67,6 +78,7 @@ function SiteFrame() {
             {user?.userType === 'MEMBER' && location.pathname.startsWith('/mypage') && (
                 <nav className="sub-nav" aria-label="마이페이지">
                     <NavLink to="/mypage" end>{t('mypage.profile', '회원정보')}</NavLink>
+                    <NavLink to="/mypage/notifications">{t('mypage.notifications', '알림')}</NavLink>
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/orders">{t('mypage.orders', '주문 내역')}</NavLink>}
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/wishlist">{t('mypage.wishlist', '찜한 상품')}</NavLink>}
                     {isEnabled('PRODUCT') && <NavLink to="/mypage/subscriptions">{t('mypage.subscriptions', '구독')}</NavLink>}

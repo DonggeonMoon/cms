@@ -910,3 +910,15 @@ export interface StatusDefinition {
     system: boolean;
     sequence: number;
 }
+
+export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'SMS';
+
+export interface AppNotification {
+    id: number;
+    channel: NotificationChannel;
+    title: string;
+    content: string;
+    link: string | null;
+    read: boolean;
+    createdAt: string;
+}

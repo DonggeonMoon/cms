@@ -194,6 +194,11 @@ h2 {
     margin-bottom: 16px;
 }
 
+.card.unread {
+    border-color: var(--primary);
+    cursor: pointer;
+}
+
 .card.narrow {
     max-width: 420px;
     margin: 0 auto;

@@ -303,6 +303,9 @@ export const shopApi = {
     cancelReservation: (id: number) => request<void>(`/api/reservations/${id}/cancel`, {method: 'POST'}),
     pay: (targetType: D.PaymentTargetType, targetId: number, amount: number, method: D.PaymentMethod) =>
         request<D.Payment>('/api/payments', {method: 'POST', body: {targetType, targetId, amount, method}}),
+    myNotifications: (page: number) => request<Page<D.AppNotification>>('/api/members/me/notifications', {query: {page}}),
+    unreadNotificationCount: () => request<number>('/api/members/me/notifications/unread-count'),
+    markNotificationRead: (id: number) => request<void>(`/api/members/me/notifications/${id}/read`, {method: 'POST'}),
 };
 
 export const govApi = {
