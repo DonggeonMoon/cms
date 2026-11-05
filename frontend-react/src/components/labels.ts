@@ -1,4 +1,4 @@
-import type {BillingCycle, CellKind, ContentStatus, FormFieldType, LedgerType, QueueStatus, ReservationType, SelectionMethod, SubmissionStatus, EnrollmentStatus, OrderReturnStatus, OrderReturnType, OrderStatus, PassUnit, ProductSaleType, PublishStatus, ReportStatus, ReservationStatus} from '../api/domain';
+import type {BillingCycle, CellKind, ContentStatus, FormFieldType, LedgerType, PaymentMethod, QueueStatus, ReservationType, SelectionMethod, SubmissionStatus, EnrollmentStatus, OrderReturnStatus, OrderReturnType, OrderStatus, PassUnit, ProductSaleType, PublishStatus, ReportStatus, ReservationStatus, StockMovementType} from '../api/domain';
 
 export const ORDER_STATUS: Record<OrderStatus, string> = {
     QUOTE_REQUESTED: '견적 요청',
@@ -73,6 +73,20 @@ export const LEDGER_TYPE: Record<LedgerType, string> = {
     PAYMENT: '결제',
     REFUND: '환불',
     ADMIN: '관리자 조정',
+};
+
+export const PAYMENT_METHOD: Record<PaymentMethod, string> = {
+    CARD: '카드',
+    BANK_TRANSFER: '계좌이체',
+    VIRTUAL_ACCOUNT: '가상계좌',
+    MOBILE: '휴대폰',
+    PREPAID: '지갑(적립금)',
+};
+
+export const STOCK_MOVEMENT_TYPE: Record<StockMovementType, string> = {
+    OUT: '출고',
+    IN: '입고·복원',
+    ADJUST: '수동 조정',
 };
 
 export const RETURN_TYPE: Record<OrderReturnType, string> = {

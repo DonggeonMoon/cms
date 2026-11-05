@@ -85,6 +85,7 @@ export interface MemberJoinRequest extends MemberProfile {
     password: string;
     passwordCheck: string;
     isPrivacyConsentAgreed: boolean;
+    referredBy?: number | null;
 }
 
 export interface MemberResponse extends MemberProfile {

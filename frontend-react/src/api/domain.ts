@@ -445,6 +445,7 @@ export interface ProductOption {
 }
 
 export interface ProductDetail extends ProductSummary {
+    yourPrice: number;
     imageFileId: number | null;
     contentHtml: string;
     optionGroups: OptionGroup[];
@@ -499,6 +500,59 @@ export interface MyLicenseKey {
     code: string;
     orderId: number | null;
     assignedAt: string | null;
+}
+
+export type StockMovementType = 'OUT' | 'IN' | 'ADJUST';
+
+export interface StockMovement {
+    id: number;
+    productId: number;
+    productOptionId: number | null;
+    type: StockMovementType;
+    quantity: number;
+    orderId: number | null;
+    quantityAfter: number | null;
+    note: string | null;
+    createdAt: string;
+}
+
+export interface GradePrice {
+    gradeId: number;
+    price: number;
+}
+
+export interface Receivable {
+    id: number;
+    memberId: number;
+    orderId: number | null;
+    totalAmount: number;
+    collectedAmount: number;
+    remaining: number;
+    settled: boolean;
+    note: string | null;
+    createdAt: string;
+}
+
+export interface SalesReportRow {
+    date: string;
+    count: number;
+    amount: number;
+}
+
+export interface SettlementRow {
+    method: PaymentMethod;
+    count: number;
+    amount: number;
+}
+
+export interface MarketingCampaign {
+    id: number;
+    title: string;
+    content: string;
+    targetGradeId: number | null;
+    channels: NotificationChannel[];
+    recipientCount: number;
+    sentAt: string;
 }
 
 export interface Vote {
@@ -696,6 +750,7 @@ export interface Order {
     postalCode: string | null;
     address: string | null;
     detailAddress: string | null;
+    country: string | null;
     createdAt: string;
     items: OrderItem[];
     itemsAmount: number | null;
@@ -776,11 +831,30 @@ export interface RegionFee {
     fee: number;
 }
 
+export interface CountryFee {
+    country: string;
+    fee: number;
+}
+
 export interface ShippingPolicy {
     baseFee: number;
     freeThreshold: number | null;
     regionFees: RegionFee[];
     defaultCourier: string | null;
+    internationalFees: CountryFee[];
+}
+
+export interface TaxSetting {
+    vatRate: number;
+    priceIncludesVat: boolean;
+    customsNotice: string | null;
+}
+
+export interface ExchangeRate {
+    id: number;
+    currencyCode: string;
+    rate: number;
+    enabled: boolean;
 }
 
 export type ReservationType = 'PROGRAM' | 'CONSULTATION' | 'RENTAL' | 'LODGING' | 'EVENT' | 'ITEM_RENTAL' | 'VISIT' | 'TABLE' | 'TOUR';

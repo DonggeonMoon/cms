@@ -41,7 +41,7 @@ export function OrderFormPage() {
     const [rewards, setRewards] = useState<DiscountChoice>(NO_DISCOUNT);
     const [storeChoice, setStoreChoice] = useState<StoreChoice>(EMPTY_STORE_CHOICE);
     const [storeOpen, setStoreOpen] = useState(true);
-    const [receiver, setReceiver] = useState({receiverName: '', phoneNumber: '', postalCode: '', address: '', detailAddress: ''});
+    const [receiver, setReceiver] = useState({receiverName: '', phoneNumber: '', postalCode: '', address: '', detailAddress: '', country: ''});
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
 
@@ -53,6 +53,7 @@ export function OrderFormPage() {
             postalCode: current.postalCode || me.postalCode || '',
             address: current.address || me.address || '',
             detailAddress: current.detailAddress || me.detailAddress || '',
+            country: current.country,
         }))).catch(() => undefined);
     }, [productId]);
 
@@ -138,6 +139,8 @@ export function OrderFormPage() {
                                    onChange={(e) => setReceiver({...receiver, address: e.target.value})}/>
                             <Field label="상세 주소" name="detailAddress" value={receiver.detailAddress}
                                    onChange={(e) => setReceiver({...receiver, detailAddress: e.target.value})}/>
+                            <Field label="해외 배송 국가 코드 (국내는 비움, 예: US, JP)" name="country" value={receiver.country}
+                                   onChange={(e) => setReceiver({...receiver, country: e.target.value.toUpperCase()})}/>
                         </>
                     )}
                 </fieldset>

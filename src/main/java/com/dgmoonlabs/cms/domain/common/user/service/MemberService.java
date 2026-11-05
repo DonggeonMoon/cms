@@ -56,9 +56,11 @@ public class MemberService {
         MemberJoinSetting setting = joinSettingService.current();
         MemberName memberName = MemberName.resolve(setting, request.name(), request.lastName(), request.firstName());
         String nickname = resolveNickname(setting, request.nickname(), null);
+        Long validReferredBy = request.referredBy() == null ? null
+                : memberRepository.findByIdAndDeletedAtIsNull(request.referredBy()).map(Member::getId).orElse(null);
 
         Long memberId = memberRepository.save(
-                request.toEntity(passwordEncoder.encode(request.password()), memberName, nickname, setting)).getId();
+                request.toEntity(passwordEncoder.encode(request.password()), memberName, nickname, setting, validReferredBy)).getId();
         memberAddressRepository.save(request.toAddress(memberId, setting));
         memberAgreementRepository.save(request.toAgreement(memberId, policyService::isUsing));
         memberOrganizationRepository.save(request.toOrganization(memberId, setting));

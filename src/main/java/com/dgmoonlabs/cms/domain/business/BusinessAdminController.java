@@ -14,10 +14,27 @@ import com.dgmoonlabs.cms.domain.business.license.dto.LicenseKeyDtos.BulkAddRequ
 import com.dgmoonlabs.cms.domain.business.license.dto.LicenseKeyDtos.BulkAddResult;
 import com.dgmoonlabs.cms.domain.business.license.dto.LicenseKeyDtos.LicenseKeyResponse;
 import com.dgmoonlabs.cms.domain.business.license.service.LicenseKeyService;
+import com.dgmoonlabs.cms.domain.business.stock.dto.StockMovementDtos.AdjustRequest;
+import com.dgmoonlabs.cms.domain.business.stock.dto.StockMovementDtos.StockMovementResponse;
+import com.dgmoonlabs.cms.domain.business.stock.service.StockMovementService;
+import com.dgmoonlabs.cms.domain.business.accounting.dto.AccountingDtos.CollectRequest;
+import com.dgmoonlabs.cms.domain.business.accounting.dto.AccountingDtos.ReceivableCreateRequest;
+import com.dgmoonlabs.cms.domain.business.accounting.dto.AccountingDtos.ReceivableResponse;
+import com.dgmoonlabs.cms.domain.business.accounting.dto.AccountingDtos.SalesReportRow;
+import com.dgmoonlabs.cms.domain.business.accounting.dto.AccountingDtos.SettlementRow;
+import com.dgmoonlabs.cms.domain.business.accounting.service.AccountingService;
+import com.dgmoonlabs.cms.domain.business.currency.dto.ExchangeRateDtos.ExchangeRateRequest;
+import com.dgmoonlabs.cms.domain.business.currency.dto.ExchangeRateDtos.ExchangeRateResponse;
+import com.dgmoonlabs.cms.domain.business.currency.service.ExchangeRateService;
+import com.dgmoonlabs.cms.domain.business.marketing.dto.MarketingDtos.CampaignResponse;
+import com.dgmoonlabs.cms.domain.business.marketing.dto.MarketingDtos.CampaignSendRequest;
+import com.dgmoonlabs.cms.domain.business.marketing.service.MarketingCampaignService;
 import com.dgmoonlabs.cms.domain.business.vote.dto.VoteDtos.VoteResponse;
 import com.dgmoonlabs.cms.domain.business.vote.dto.VoteDtos.VoteSaveRequest;
 import com.dgmoonlabs.cms.domain.business.vote.service.VoteService;
 import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.ProductSaveRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.GradePriceRequest;
+import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.GradePriceResponse;
 import com.dgmoonlabs.cms.domain.business.order.service.FundingService;
 import com.dgmoonlabs.cms.domain.business.order.service.OrderService;
 import com.dgmoonlabs.cms.domain.business.order.service.ProductService;
@@ -68,6 +85,10 @@ public class BusinessAdminController {
     private final DiscountService discountService;
     private final OrderService orderService;
     private final LicenseKeyService licenseKeyService;
+    private final StockMovementService stockMovementService;
+    private final AccountingService accountingService;
+    private final ExchangeRateService exchangeRateService;
+    private final MarketingCampaignService marketingCampaignService;
     private final VoteService voteService;
     private final SubscriptionService subscriptionService;
     private final FundingService fundingService;
@@ -90,6 +111,17 @@ public class BusinessAdminController {
     public ResponseEntity<Void> deleteProduct(@PathVariable final Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/products/{id}/grade-prices")
+    public ResponseEntity<List<GradePriceResponse>> gradePrices(@PathVariable final Long id) {
+        return ResponseEntity.ok(productService.getGradePrices(id));
+    }
+
+    @PutMapping("/products/{id}/grade-prices")
+    public ResponseEntity<List<GradePriceResponse>> updateGradePrices(@PathVariable final Long id,
+                                                                       @RequestBody @Valid final List<@Valid GradePriceRequest> requests) {
+        return ResponseEntity.ok(productService.updateGradePrices(id, requests));
     }
 
     @GetMapping("/discounts")
@@ -214,6 +246,70 @@ public class BusinessAdminController {
     public ResponseEntity<Void> removeLicenseKey(@PathVariable final Long id) {
         licenseKeyService.remove(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/stock-movements")
+    public ResponseEntity<PagedModel<StockMovementResponse>> stockMovements(@RequestParam final Long productId,
+                                                                             @PageableDefault(size = 50) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(stockMovementService.search(productId, pageable)));
+    }
+
+    @PostMapping("/stock-movements/adjust")
+    public ResponseEntity<StockMovementResponse> adjustStock(@RequestBody @Valid final AdjustRequest request) {
+        return ResponseEntity.ok(stockMovementService.adjust(request));
+    }
+
+    @PostMapping("/receivables")
+    public ResponseEntity<ReceivableResponse> createReceivable(@RequestBody @Valid final ReceivableCreateRequest request) {
+        return ResponseEntity.ok(accountingService.createReceivable(request));
+    }
+
+    @GetMapping("/receivables")
+    public ResponseEntity<PagedModel<ReceivableResponse>> receivables(@RequestParam(required = false) final Long memberId,
+                                                                       @PageableDefault(size = 50) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(accountingService.search(memberId, pageable)));
+    }
+
+    @PostMapping("/receivables/{id}/collect")
+    public ResponseEntity<ReceivableResponse> collectReceivable(@PathVariable final Long id,
+                                                                 @RequestBody @Valid final CollectRequest request) {
+        return ResponseEntity.ok(accountingService.collect(id, request));
+    }
+
+    @GetMapping("/sales-report")
+    public ResponseEntity<List<SalesReportRow>> salesReport(@RequestParam final LocalDate from, @RequestParam final LocalDate to) {
+        return ResponseEntity.ok(accountingService.salesReport(from, to));
+    }
+
+    @GetMapping("/settlements")
+    public ResponseEntity<List<SettlementRow>> settlements(@RequestParam final LocalDate from, @RequestParam final LocalDate to) {
+        return ResponseEntity.ok(accountingService.settlementSummary(from, to));
+    }
+
+    @GetMapping("/exchange-rates")
+    public ResponseEntity<List<ExchangeRateResponse>> exchangeRates() {
+        return ResponseEntity.ok(exchangeRateService.search());
+    }
+
+    @PutMapping("/exchange-rates")
+    public ResponseEntity<ExchangeRateResponse> saveExchangeRate(@RequestBody @Valid final ExchangeRateRequest request) {
+        return ResponseEntity.ok(exchangeRateService.upsert(request));
+    }
+
+    @DeleteMapping("/exchange-rates/{id}")
+    public ResponseEntity<Void> removeExchangeRate(@PathVariable final Long id) {
+        exchangeRateService.remove(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/marketing/campaigns")
+    public ResponseEntity<CampaignResponse> sendCampaign(@RequestBody @Valid final CampaignSendRequest request) {
+        return ResponseEntity.ok(marketingCampaignService.send(request));
+    }
+
+    @GetMapping("/marketing/campaigns")
+    public ResponseEntity<PagedModel<CampaignResponse>> campaignHistory(@PageableDefault(size = 20) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(marketingCampaignService.history(pageable)));
     }
 
     @PostMapping("/votes")

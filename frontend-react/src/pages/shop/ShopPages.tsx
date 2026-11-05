@@ -221,6 +221,9 @@ export function ProductDetailPage() {
                     <WishButton productId={product.id}/>
                     {product.description && <p className="muted">{product.description}</p>}
                     <p className="price">{priceLabel(product)}</p>
+                    {product.yourPrice !== product.price && (
+                        <p className="notice-box">거래처 가격: <strong>{won(product.yourPrice)}</strong></p>
+                    )}
                     {product.donation && <DonationProgressBar product={product}/>}
                     {product.funding && <FundingProgressBar product={product}/>}
                     {product.saleType === 'SUBSCRIPTION' && product.commitmentMonths && (

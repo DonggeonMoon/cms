@@ -12,6 +12,11 @@ import com.dgmoonlabs.cms.domain.business.order.service.OrderService;
 import com.dgmoonlabs.cms.domain.business.shipping.dto.ShippingDtos.ShippingPolicyRequest;
 import com.dgmoonlabs.cms.domain.business.shipping.dto.ShippingDtos.ShippingPolicyResponse;
 import com.dgmoonlabs.cms.domain.business.shipping.service.ShippingService;
+import com.dgmoonlabs.cms.domain.business.tax.dto.TaxDtos.TaxSettingRequest;
+import com.dgmoonlabs.cms.domain.business.tax.dto.TaxDtos.TaxSettingResponse;
+import com.dgmoonlabs.cms.domain.business.tax.service.TaxService;
+import com.dgmoonlabs.cms.domain.business.currency.dto.ExchangeRateDtos.ExchangeRateResponse;
+import com.dgmoonlabs.cms.domain.business.currency.service.ExchangeRateService;
 import com.dgmoonlabs.cms.domain.business.order.dto.OrderDtos.ShipmentRequest;
 import com.dgmoonlabs.cms.global.security.LoginUser;
 import jakarta.validation.Valid;
@@ -21,6 +26,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -28,11 +34,14 @@ public class CartController {
     private final CartService cartService;
     private final OrderService orderService;
     private final ShippingService shippingService;
+    private final TaxService taxService;
+    private final ExchangeRateService exchangeRateService;
 
     @GetMapping("/api/cart")
     public ResponseEntity<CartResponse> cart(@AuthenticationPrincipal final LoginUser user,
-                                             @RequestParam(required = false) final String postalCode) {
-        return ResponseEntity.ok(cartService.get(user.id(), postalCode));
+                                             @RequestParam(required = false) final String postalCode,
+                                             @RequestParam(required = false) final String country) {
+        return ResponseEntity.ok(cartService.get(user.id(), postalCode, country));
     }
 
     @PostMapping("/api/cart")
@@ -89,5 +98,20 @@ public class CartController {
     @PutMapping("/api/admin/shipping-policy")
     public ResponseEntity<ShippingPolicyResponse> updateShippingPolicy(@RequestBody @Valid final ShippingPolicyRequest request) {
         return ResponseEntity.ok(shippingService.update(request));
+    }
+
+    @GetMapping("/api/tax-setting")
+    public ResponseEntity<TaxSettingResponse> taxSetting() {
+        return ResponseEntity.ok(taxService.getSetting());
+    }
+
+    @PutMapping("/api/admin/tax-setting")
+    public ResponseEntity<TaxSettingResponse> updateTaxSetting(@RequestBody @Valid final TaxSettingRequest request) {
+        return ResponseEntity.ok(taxService.update(request));
+    }
+
+    @GetMapping("/api/exchange-rates")
+    public ResponseEntity<List<ExchangeRateResponse>> exchangeRates() {
+        return ResponseEntity.ok(exchangeRateService.publicList());
     }
 }

@@ -104,6 +104,18 @@ public class Member extends BaseEntity {
     @Comment("등급 만료 후 돌아갈 등급 ID (없으면 기본 등급)")
     private Long baseGradeId;
 
+    @Comment("추천인(가입 시 입력한 추천인 회원) ID")
+    private Long referredByMemberId;
+
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    @Comment("추천인 보상 지급 여부 (피추천인 첫 결제 때 한 번만 지급)")
+    private boolean referralRewardGranted;
+
+    public void markReferralRewardGranted() {
+        this.referralRewardGranted = true;
+    }
+
     public String displayName() {
         return Stream.of(nickname, username, name)
                 .filter(value -> value != null && !value.isBlank())

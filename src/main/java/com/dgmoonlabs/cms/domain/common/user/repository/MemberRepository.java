@@ -23,4 +23,6 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberCus
     List<Member> findAllByGradeExpiresAtLessThanEqualAndDeletedAtIsNull(LocalDateTime now);
 
     boolean existsByGradeIdOrBaseGradeId(Long gradeId, Long baseGradeId);
+
+    List<Member> findAllByDeletedAtIsNull();
 }

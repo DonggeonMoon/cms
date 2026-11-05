@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.business.shipping.service;
 
+import com.dgmoonlabs.cms.domain.business.shipping.dto.ShippingDtos.CountryFeeRequest;
 import com.dgmoonlabs.cms.domain.business.shipping.dto.ShippingDtos.RegionFeeRequest;
 import com.dgmoonlabs.cms.domain.business.shipping.dto.ShippingDtos.ShippingPolicyRequest;
 import com.dgmoonlabs.cms.domain.business.shipping.dto.ShippingDtos.ShippingPolicyResponse;
@@ -28,17 +29,21 @@ public class ShippingService {
                 .orElseGet(() -> policyRepository.save(ShippingPolicy.builder().build()));
         List<ShippingPolicy.RegionFee> regions = request.regionFees() == null ? List.of()
                 : request.regionFees().stream().map(RegionFeeRequest::toRegionFee).toList();
+        List<ShippingPolicy.CountryFee> countries = request.internationalFees() == null ? List.of()
+                : request.internationalFees().stream().map(CountryFeeRequest::toCountryFee).toList();
         policy.update(request.baseFee(), request.freeThreshold(), regions,
-                request.defaultCourier() == null || request.defaultCourier().isBlank() ? null : request.defaultCourier().trim());
+                request.defaultCourier() == null || request.defaultCourier().isBlank() ? null : request.defaultCourier().trim(),
+                countries);
         return ShippingPolicyResponse.from(policy);
     }
 
     @Transactional(readOnly = true)
-    public ShippingPolicy.Quote quote(final boolean hasShippable, final BigDecimal shippableSubtotal, final String postalCode) {
+    public ShippingPolicy.Quote quote(final boolean hasShippable, final BigDecimal shippableSubtotal, final String postalCode,
+                                      final String country) {
         if (!hasShippable) {
             return new ShippingPolicy.Quote(BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO);
         }
-        return policy().quote(shippableSubtotal, postalCode);
+        return policy().quote(shippableSubtotal, postalCode, country);
     }
 
     private ShippingPolicy policy() {

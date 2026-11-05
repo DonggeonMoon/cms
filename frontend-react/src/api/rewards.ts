@@ -1,10 +1,11 @@
 import {request} from './client';
 import type {Page} from './types';
 
-export type PointType = 'EARN' | 'SIGNUP' | 'ADMIN' | 'USE' | 'RESTORE' | 'REVOKE' | 'EXPIRE';
+export type PointType = 'EARN' | 'SIGNUP' | 'REFERRAL' | 'ADMIN' | 'USE' | 'RESTORE' | 'REVOKE' | 'EXPIRE';
 
 export const POINT_TYPE: Record<PointType, string> = {
-    EARN: '구매 적립', SIGNUP: '가입 적립', ADMIN: '관리자 조정', USE: '사용', RESTORE: '사용 취소', REVOKE: '적립 취소', EXPIRE: '소멸',
+    EARN: '구매 적립', SIGNUP: '가입 적립', REFERRAL: '추천인 적립', ADMIN: '관리자 조정', USE: '사용', RESTORE: '사용 취소',
+    REVOKE: '적립 취소', EXPIRE: '소멸',
 };
 
 export interface PointPolicy {
@@ -14,6 +15,7 @@ export interface PointPolicy {
     minUsePoints: number;
     maxUseRate: number;
     signupPoints: number;
+    referralPoints: number;
 }
 
 export interface PointSummary {

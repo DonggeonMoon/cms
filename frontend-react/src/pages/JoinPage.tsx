@@ -1,5 +1,5 @@
 import {type FormEvent, useEffect, useState} from 'react';
-import {useNavigate} from 'react-router';
+import {useNavigate, useSearchParams} from 'react-router';
 import {ApiError} from '../api/client';
 import type {Policy} from '../api/domain';
 import {siteApi} from '../api/endpoints';
@@ -51,12 +51,15 @@ export function ConsentStep({onAgree, social = true}: { onAgree: () => void; soc
 
 function JoinForm() {
     const navigate = useNavigate();
+    const [params] = useSearchParams();
+    const referredBy = Number(params.get('ref')) || null;
     const [form, setForm] = useState<MemberJoinRequest>({
         ...EMPTY_PROFILE,
         username: '',
         password: '',
         passwordCheck: '',
         isPrivacyConsentAgreed: true,
+        referredBy,
     });
     const [settings, setSettings] = useState<JoinSettings | null>(null);
     const [usernameStatus, setUsernameStatus] = useState<'unknown' | 'available' | 'taken' | 'invalid'>('unknown');

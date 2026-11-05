@@ -54,13 +54,20 @@ public class PointPolicy extends BaseEntity {
     @Comment("가입 적립 포인트")
     private long signupPoints = 0;
 
+    @Builder.Default
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    @Comment("추천인 적립 포인트 (추천받은 회원이 첫 결제를 마치면 추천인에게 지급)")
+    private long referralPoints = 0;
+
     public void update(final boolean isEnabled, final BigDecimal earnRate, final int expireDays, final long minUsePoints,
-                       final int maxUseRate, final long signupPoints) {
+                       final int maxUseRate, final long signupPoints, final long referralPoints) {
         this.isEnabled = isEnabled;
         this.earnRate = earnRate;
         this.expireDays = expireDays;
         this.minUsePoints = minUsePoints;
         this.maxUseRate = maxUseRate;
         this.signupPoints = signupPoints;
+        this.referralPoints = referralPoints;
     }
 }

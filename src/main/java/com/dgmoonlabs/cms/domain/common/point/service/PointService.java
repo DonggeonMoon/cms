@@ -42,7 +42,7 @@ public class PointService {
         PointPolicy policy = policyRepository.findFirstByOrderByIdAsc()
                 .orElseGet(() -> policyRepository.save(PointPolicy.builder().build()));
         policy.update(request.isEnabled(), request.earnRate(), request.expireDays(), request.minUsePoints(),
-                request.maxUseRate(), request.signupPoints());
+                request.maxUseRate(), request.signupPoints(), request.referralPoints());
         return PointPolicyResponse.from(policy);
     }
 
@@ -150,6 +150,15 @@ public class PointService {
         PointPolicy policy = policy();
         if (policy.isEnabled() && policy.getSignupPoints() > 0) {
             credit(memberId, PointType.SIGNUP, policy.getSignupPoints(), null, null);
+        }
+    }
+
+    /** 추천받은 회원이 첫 결제를 마치면 추천인에게 지급한다. */
+    @Transactional
+    public void grantReferral(final Long referrerMemberId, final String memo) {
+        PointPolicy policy = policy();
+        if (policy.isEnabled() && policy.getReferralPoints() > 0) {
+            credit(referrerMemberId, PointType.REFERRAL, policy.getReferralPoints(), null, memo);
         }
     }
 

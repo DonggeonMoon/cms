@@ -1,6 +1,8 @@
 package com.dgmoonlabs.cms.domain.business.shipping.entity;
 
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
+import com.dgmoonlabs.cms.global.error.BusinessException;
+import com.dgmoonlabs.cms.global.error.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -39,22 +41,36 @@ public class ShippingPolicy extends BaseEntity {
     @Comment("기본 택배사")
     private String defaultCourier;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Comment("해외 배송 나라별 배송비 (등록되지 않은 나라는 주문 불가)")
+    private List<CountryFee> internationalFees;
+
     public record RegionFee(String name, String postalCodeFrom, String postalCodeTo, BigDecimal fee) {
         public boolean covers(final String postalCode) {
             return postalCode.compareTo(postalCodeFrom) >= 0 && postalCode.compareTo(postalCodeTo) <= 0;
         }
     }
 
+    public record CountryFee(String country, BigDecimal fee) {
+    }
+
     public void update(final BigDecimal baseFee, final BigDecimal freeThreshold, final List<RegionFee> regionFees,
-                       final String defaultCourier) {
+                       final String defaultCourier, final List<CountryFee> internationalFees) {
         this.baseFee = baseFee;
         this.freeThreshold = freeThreshold;
         this.regionFees = regionFees;
         this.defaultCourier = defaultCourier;
+        this.internationalFees = internationalFees;
     }
 
-    /** 무료 배송 기준은 기본 배송비에만 적용하고, 제주·도서산간 같은 지역 추가 배송비는 늘 받는다. */
-    public Quote quote(final BigDecimal subtotal, final String postalCode) {
+    /** 무료 배송 기준은 기본 배송비에만 적용하고, 제주·도서산간 같은 지역 추가 배송비는 늘 받는다. 해외는 국내 규칙과 무관하게 나라별 고정 배송비만 받는다. */
+    public Quote quote(final BigDecimal subtotal, final String postalCode, final String country) {
+        if (country != null && !country.isBlank() && !country.equalsIgnoreCase("KR")) {
+            CountryFee match = internationalFees == null ? null
+                    : internationalFees.stream().filter(fee -> fee.country().equalsIgnoreCase(country.trim())).findFirst()
+                            .orElseThrow(() -> new BusinessException(ErrorCode.COUNTRY_NOT_SUPPORTED));
+            return new Quote(match.fee(), BigDecimal.ZERO, null, match.fee());
+        }
         BigDecimal base = freeThreshold != null && subtotal.compareTo(freeThreshold) >= 0 ? BigDecimal.ZERO : baseFee;
         String code = postalCode == null ? "" : postalCode.replaceAll("\\D", "");
         RegionFee region = code.length() != 5 || regionFees == null ? null

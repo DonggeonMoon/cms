@@ -110,6 +110,20 @@ public class GradeService {
         }
     }
 
+    /** 로그인한 회원이면 지금 적용되는 등급 ID, 아니면(비로그인·관리자) null. 거래처(등급)별 가격 표시에 쓴다. */
+    @Transactional(readOnly = true)
+    public Long currentGradeIdOrNull() {
+        return currentMember().map(member -> member.currentGradeId(LocalDateTime.now())).orElse(null);
+    }
+
+    /** 주문 시점에 그 회원에게 적용되는 등급 ID (회원이 아니면 null). 거래처(등급)별 가격 계산에 쓴다. */
+    @Transactional(readOnly = true)
+    public Long effectiveGradeIdOf(final Long memberId) {
+        return memberId == null ? null
+                : memberRepository.findByIdAndDeletedAtIsNull(memberId).map(member -> member.currentGradeId(LocalDateTime.now()))
+                        .orElse(null);
+    }
+
     @Transactional(readOnly = true)
     public MyGradeResponse getMine() {
         Member member = currentMember().orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED));

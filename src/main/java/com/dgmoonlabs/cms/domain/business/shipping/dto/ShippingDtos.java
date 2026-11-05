@@ -1,6 +1,7 @@
 package com.dgmoonlabs.cms.domain.business.shipping.dto;
 
 import com.dgmoonlabs.cms.domain.business.shipping.entity.ShippingPolicy;
+import com.dgmoonlabs.cms.domain.business.shipping.entity.ShippingPolicy.CountryFee;
 import com.dgmoonlabs.cms.domain.business.shipping.entity.ShippingPolicy.RegionFee;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -23,17 +24,25 @@ public final class ShippingDtos {
         }
     }
 
+    public record CountryFeeRequest(@NotBlank @Size(max = 40) String country, @NotNull @PositiveOrZero BigDecimal fee) {
+        public CountryFee toCountryFee() {
+            return new CountryFee(country.trim(), fee);
+        }
+    }
+
     public record ShippingPolicyRequest(@NotNull @PositiveOrZero BigDecimal baseFee,
                                         @PositiveOrZero BigDecimal freeThreshold,
                                         @Valid @Size(max = 50) List<RegionFeeRequest> regionFees,
-                                        @Size(max = 50) String defaultCourier) {
+                                        @Size(max = 50) String defaultCourier,
+                                        @Valid @Size(max = 100) List<CountryFeeRequest> internationalFees) {
     }
 
     public record ShippingPolicyResponse(BigDecimal baseFee, BigDecimal freeThreshold, List<RegionFee> regionFees,
-                                         String defaultCourier) {
+                                         String defaultCourier, List<CountryFee> internationalFees) {
         public static ShippingPolicyResponse from(final ShippingPolicy policy) {
             return new ShippingPolicyResponse(policy.getBaseFee(), policy.getFreeThreshold(),
-                    policy.getRegionFees() == null ? List.of() : policy.getRegionFees(), policy.getDefaultCourier());
+                    policy.getRegionFees() == null ? List.of() : policy.getRegionFees(), policy.getDefaultCourier(),
+                    policy.getInternationalFees() == null ? List.of() : policy.getInternationalFees());
         }
     }
 }

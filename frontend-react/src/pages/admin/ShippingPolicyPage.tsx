@@ -1,5 +1,5 @@
 import {type FormEvent, useEffect, useState} from 'react';
-import type {RegionFee, ShippingPolicy} from '../../api/domain';
+import type {CountryFee, RegionFee, ShippingPolicy} from '../../api/domain';
 import {adminApi, shopApi} from '../../api/endpoints';
 import {ErrorBanner} from '../../components/ErrorBanner';
 
@@ -19,6 +19,8 @@ export function ShippingPolicyPage() {
     }
     const setRegion = (index: number, patch: Partial<RegionFee>) =>
         setPolicy({...policy, regionFees: policy.regionFees.map((r, i) => (i === index ? {...r, ...patch} : r))});
+    const setCountry = (index: number, patch: Partial<CountryFee>) =>
+        setPolicy({...policy, internationalFees: policy.internationalFees.map((c, i) => (i === index ? {...c, ...patch} : c))});
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
@@ -74,6 +76,24 @@ export function ShippingPolicyPage() {
                     <button type="button" onClick={() => setPolicy({...policy, regionFees: [...policy.regionFees,
                             policy.regionFees.length === 0 ? JEJU : {name: '', postalCodeFrom: '', postalCodeTo: '', fee: 0}]})}>
                         지역 추가
+                    </button>
+                </div>
+                <h2>해외 배송</h2>
+                <p className="muted">여기 등록된 나라로만 해외 배송 주문을 받을 수 있습니다. 나라 코드는 체크아웃 화면에서 구매자가 입력하는 값과 같아야 합니다(예: US, JP).</p>
+                {policy.internationalFees.map((country, index) => (
+                    <div key={index} className="form-field-row">
+                        <input aria-label={`${index + 1}번 나라 코드`} placeholder="나라 코드 (예: US)" required value={country.country}
+                               onChange={(e) => setCountry(index, {country: e.target.value.toUpperCase()})}/>
+                        <input aria-label={`${index + 1}번 해외 배송비`} type="number" min={0} required value={country.fee}
+                               onChange={(e) => setCountry(index, {fee: Number(e.target.value)})}/>
+                        <button type="button" className="danger"
+                                onClick={() => setPolicy({...policy, internationalFees: policy.internationalFees.filter((_, i) => i !== index)})}>삭제</button>
+                    </div>
+                ))}
+                <div className="toolbar">
+                    <button type="button" onClick={() => setPolicy({...policy,
+                            internationalFees: [...policy.internationalFees, {country: '', fee: 0}]})}>
+                        나라 추가
                     </button>
                 </div>
                 <ErrorBanner error={error}/>

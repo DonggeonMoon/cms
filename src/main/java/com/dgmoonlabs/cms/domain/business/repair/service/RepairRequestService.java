@@ -62,7 +62,7 @@ public class RepairRequestService {
         RepairRequest repair = repairRequestRepository.findById(repairId).orElseThrow(BusinessException::notFound);
         Member member = memberRepository.findByIdAndDeletedAtIsNull(repair.getMemberId()).orElseThrow(BusinessException::notFound);
         OrderResponse order = orderService.createForMember(repair.getMemberId(), new OrderCreateRequest(request.productId(), null, 1,
-                null, member.getName(), phoneOf(member), null, null, null, null, repair.getTitle(), null, null, null, null, null));
+                null, member.getName(), phoneOf(member), null, null, null, null, null, repair.getTitle(), null, null, null, null, null));
         repair.linkQuoteOrder(order.id());
         return order;
     }

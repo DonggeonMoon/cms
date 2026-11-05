@@ -42,10 +42,11 @@ public record MemberJoinRequest(
         String officePosition,
         String officeAddress,
         String officeDetailAddress,
-        boolean isPrivacyConsentAgreed
+        boolean isPrivacyConsentAgreed,
+        Long referredBy
 ) {
     public Member toEntity(final String encodedPassword, final MemberName memberName, final String nickname,
-                           final MemberJoinSetting setting) {
+                           final MemberJoinSetting setting, final Long validReferredBy) {
         return Member.builder()
                 .username(username)
                 .password(encodedPassword)
@@ -59,6 +60,7 @@ public record MemberJoinRequest(
                 .telephoneNumber(setting.keep(PersonalInfoItem.TELEPHONE, telephoneNumber))
                 .mobilePhoneNumber(setting.keep(PersonalInfoItem.MOBILE_PHONE, mobilePhoneNumber))
                 .termConfirmationDate(LocalDate.now())
+                .referredByMemberId(validReferredBy)
                 .build();
     }
 

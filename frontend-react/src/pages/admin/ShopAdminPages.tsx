@@ -18,7 +18,8 @@ import {CustomStatusSelect, StatusManager} from '../../components/StatusManager'
 import {BILLING_CYCLE, ORDER_STATUS, PASS_UNIT, RESERVATION_STATUS, RESERVATION_TYPE, RESERVATION_TYPE_GROUPS, RETURN_STATUS, RETURN_TYPE, SALE_TYPE, toOptions} from '../../components/labels';
 import {EMPTY_LAYOUT} from '../../components/LayoutEditor';
 import type {FieldSpec, FormValues} from '../../components/SchemaForm';
-import {type Grade, gradeSelectField, useWithGradeFields} from '../../api/grades';
+import {type Grade, gradeSelectField, useGrades, useWithGradeFields} from '../../api/grades';
+import type {GradePrice} from '../../api/domain';
 import {EMPTY_OPTION_SET, type OptionSet, optionSetBody, toOptionSet} from '../../components/ProductOptionsEditor';
 import {OrderAmount, OrderItemsTable} from '../shop/OrderItems';
 
@@ -103,10 +104,65 @@ const toProductBody = (form: FormValues) => {
 
 const loadProducts = (query: Query) => adminApi.products.search(query);
 
+function GradePriceEditor({productId, onClose}: { productId: number; onClose: () => void }) {
+    const grades = useGrades();
+    const [prices, setPrices] = useState<GradePrice[] | null>(null);
+    const [error, setError] = useState<unknown>(null);
+    const [busy, setBusy] = useState(false);
+
+    useEffect(() => {
+        adminApi.products.gradePrices(productId).then(setPrices).catch(setError);
+    }, [productId]);
+
+    if (!prices) {
+        return error ? <ErrorBanner error={error}/> : <p className="muted">불러오는 중…</p>;
+    }
+    const setRow = (index: number, patch: Partial<GradePrice>) =>
+        setPrices(prices.map((row, i) => (i === index ? {...row, ...patch} : row)));
+    const save = async () => {
+        setBusy(true);
+        setError(null);
+        try {
+            setPrices(await adminApi.products.saveGradePrices(productId, prices));
+        } catch (e) {
+            setError(e);
+        } finally {
+            setBusy(false);
+        }
+    };
+    return (
+        <section className="card">
+            <h2>거래처(등급)별 가격</h2>
+            <p className="muted">등록한 등급의 회원은 결제 때 기본가 대신 여기 가격을 적용받습니다. 등록 안 한 등급은 기본가 그대로입니다.</p>
+            <ErrorBanner error={error}/>
+            {prices.map((row, index) => (
+                <div key={index} className="form-field-row">
+                    <select aria-label={`${index + 1}번 등급`} value={row.gradeId}
+                            onChange={(e) => setRow(index, {gradeId: Number(e.target.value)})}>
+                        {grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}
+                    </select>
+                    <input aria-label={`${index + 1}번 가격`} type="number" min={0} required value={row.price}
+                           onChange={(e) => setRow(index, {price: Number(e.target.value)})}/>
+                    <button type="button" className="danger" onClick={() => setPrices(prices.filter((_, i) => i !== index))}>삭제</button>
+                </div>
+            ))}
+            <div className="toolbar">
+                <button type="button" onClick={() => setPrices([...prices, {gradeId: grades[0]?.id ?? 0, price: 0}])}
+                        disabled={grades.length === 0}>등급 추가</button>
+            </div>
+            <div className="toolbar form-actions">
+                <button type="button" className="primary" onClick={save} disabled={busy}>저장</button>
+                <button type="button" onClick={onClose}>닫기</button>
+            </div>
+        </section>
+    );
+}
+
 export function ProductAdminPage() {
     const categories = useCategories();
     const [programChoices, setProgramChoices] = useState<{ value: string; label: string }[]>([]);
     const [fundingNotice, setFundingNotice] = useState<string | null>(null);
+    const [gradePricing, setGradePricing] = useState<number | null>(null);
     useEffect(() => {
         adminApi.programs.search({size: 100}).then((page) => setProgramChoices(page.content.map((p) => ({value: String(p.id), label: p.name}))))
             .catch(() => setProgramChoices([]));
@@ -140,6 +196,9 @@ export function ProductAdminPage() {
                 {label: '가격', render: (p) => priceLabel(p)},
                 {label: '재고', render: (p) => p.availableQuantity ?? '무제한'},
                 {label: '판매 중', render: (p) => <YesNo value={p.isEnabled}/>},
+                {label: '거래처 가격', render: (p) => (
+                    <button type="button" onClick={() => setGradePricing(gradePricing === p.id ? null : p.id)}>설정</button>
+                )},
             ]}
             toForm={(p) => adminApi.products.get(p.id).then((full) => ({
                 ...full,
@@ -161,6 +220,8 @@ export function ProductAdminPage() {
             create={(v) => adminApi.products.create(toProductBody(v))}
             update={(p, v) => adminApi.products.update(p.id, toProductBody(v))}
             remove={(p) => adminApi.products.remove(p.id)}
+            expandedRow={(p) => gradePricing === p.id
+                ? <GradePriceEditor productId={p.id} onClose={() => setGradePricing(null)}/> : null}
         />
     );
 }

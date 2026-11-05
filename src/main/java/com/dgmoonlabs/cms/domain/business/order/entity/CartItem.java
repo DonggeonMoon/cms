@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(indexes = @Index(name = "idx_cart_item_member", columnList = "memberId"))
 @Builder
@@ -31,7 +33,14 @@ public class CartItem extends BaseEntity {
     @Comment("수량")
     private int quantity;
 
+    @Comment("장바구니 이탈 알림을 보낸 일시 (중복 발송 방지용)")
+    private LocalDateTime remindedAt;
+
     public void changeQuantity(final int quantity) {
         this.quantity = quantity;
+    }
+
+    public void markReminded(final LocalDateTime now) {
+        this.remindedAt = now;
     }
 }

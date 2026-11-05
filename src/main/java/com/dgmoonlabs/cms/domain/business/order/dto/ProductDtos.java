@@ -157,7 +157,8 @@ public final class ProductDtos {
                               boolean resolved, boolean succeeded) {
     }
 
-    public record ProductDetail(Long id, String name, String description, BigDecimal price, ProductSaleType saleType,
+    public record ProductDetail(Long id, String name, String description, BigDecimal price, BigDecimal yourPrice,
+                                ProductSaleType saleType,
                                 BillingCycle billingCycle, Integer commitmentMonths, Integer earlyTerminationFeeRate,
                                 List<Integer> donationPresets, BigDecimal goalAmount,
                                 PassInfo pass, InquiryInfo inquiry, PreorderInfo preorder, DonationProgress donation, FundingInfo funding,
@@ -168,13 +169,14 @@ public final class ProductDtos {
                                 boolean requiresShipping, int digitalFileCount, Integer downloadLimit, Integer downloadDays,
                                 List<FileResponse> digitalFiles, Long categoryId, Map<String, Object> attributes,
                                 List<Spec> specs, boolean storeOrder) {
+        /** yourPrice: 지금 보는 사람(로그인한 회원)의 등급별 가격. 기본가와 같으면 그대로지만 화면에서는 다를 때만 보여주면 된다. */
         public static ProductDetail of(final Product product, final List<OptionResponse> options,
                                        final List<DiscountResponse> discounts, final Double averageRating,
                                        final DonationProgress donation, final FundingInfo funding, final List<FileResponse> digitalFiles,
-                                       final Map<String, Object> attributes, final List<Spec> specs) {
+                                       final Map<String, Object> attributes, final List<Spec> specs, final BigDecimal yourPrice) {
             List<Integer> presets = product.getDonationPresets() == null || product.getDonationPresets().isBlank() ? List.of()
                     : Arrays.stream(product.getDonationPresets().split(",")).map(String::trim).map(Integer::valueOf).toList();
-            return new ProductDetail(product.getId(), product.getName(), product.getDescription(), product.getPrice(),
+            return new ProductDetail(product.getId(), product.getName(), product.getDescription(), product.getPrice(), yourPrice,
                     product.getSaleType(), product.getBillingCycle(), product.getCommitmentMonths(), product.getEarlyTerminationFeeRate(),
                     presets, product.getGoalAmount(), PassInfo.of(product), InquiryInfo.of(product),
                     PreorderInfo.of(product), donation, funding, product.getAvailableQuantity(), product.isEnabled(), product.getImageFileId(),
@@ -188,5 +190,17 @@ public final class ProductDtos {
 
     static String toImageUrl(final Long fileId) {
         return fileId == null ? null : "/api/files/" + fileId + "/view";
+    }
+
+    public record GradePriceRequest(@NotNull Long gradeId, @NotNull @PositiveOrZero BigDecimal price) {
+        public Product.GradePrice toGradePrice() {
+            return new Product.GradePrice(gradeId, price);
+        }
+    }
+
+    public record GradePriceResponse(Long gradeId, BigDecimal price) {
+        public static GradePriceResponse from(final Product.GradePrice entry) {
+            return new GradePriceResponse(entry.gradeId(), entry.price());
+        }
     }
 }

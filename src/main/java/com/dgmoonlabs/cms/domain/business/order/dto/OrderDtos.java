@@ -33,6 +33,7 @@ public final class OrderDtos {
             @Size(max = 10) @MatchesRegex(RegexTarget.POSTAL_CODE) String postalCode,
             @Size(max = 255) String address,
             @Size(max = 255) String detailAddress,
+            @Size(max = 40) String country,
             @Positive BigDecimal amount,
             @Size(max = 2000) String requestMessage,
             Long couponIssueId,
@@ -48,7 +49,8 @@ public final class OrderDtos {
     }
 
     public record OrderPreviewRequest(@NotEmpty @Size(max = 100) List<@Valid PreviewLine> lines, Long couponIssueId,
-                                      @PositiveOrZero Long usePoints, @Size(max = 10) String postalCode) {
+                                      @PositiveOrZero Long usePoints, @Size(max = 10) String postalCode,
+                                      @Size(max = 40) String country) {
     }
 
     public record OrderPreviewResponse(BigDecimal itemsAmount, BigDecimal shippingFee, BigDecimal couponDiscount, long pointsUsed,
@@ -69,6 +71,7 @@ public final class OrderDtos {
             @Size(max = 10) @MatchesRegex(RegexTarget.POSTAL_CODE) String postalCode,
             @Size(max = 255) String address,
             @Size(max = 255) String detailAddress,
+            @Size(max = 40) String country,
             Long couponIssueId,
             @PositiveOrZero Long usePoints,
             FulfillmentType fulfillmentType,
@@ -96,7 +99,7 @@ public final class OrderDtos {
     public record OrderResponse(Long id, String orderNumber, Long userId, Long productId, String productName,
                                 ProductSaleType saleType, Long subscriptionId, Long productOptionId, int quantity,
                                 Long discountId, BigDecimal totalPrice, OrderStatus status, String customStatus, String receiverName,
-                                String phoneNumber, String postalCode, String address, String detailAddress,
+                                String phoneNumber, String postalCode, String address, String detailAddress, String country,
                                 String requestMessage, String quoteMessage, LocalDateTime quotedAt, LocalDateTime createdAt,
                                 List<OrderItemResponse> items, BigDecimal itemsAmount, BigDecimal shippingFee,
                                 BigDecimal refundedAmount, String courier, String trackingNumber, LocalDateTime shippedAt,
@@ -108,7 +111,7 @@ public final class OrderDtos {
                     order.getProductName(), order.getSaleType(), order.getSubscriptionId(), order.getProductOptionId(),
                     order.getQuantity(), order.getDiscountId(), order.getTotalPrice(), order.getStatus(), order.getCustomStatus(),
                     order.getReceiverName(), order.getPhoneNumber(), order.getPostalCode(), order.getAddress(),
-                    order.getDetailAddress(), order.getRequestMessage(), order.getQuoteMessage(), order.getQuotedAt(),
+                    order.getDetailAddress(), order.getCountry(), order.getRequestMessage(), order.getQuoteMessage(), order.getQuotedAt(),
                     order.getCreatedAt(), items.stream().map(OrderItemResponse::from).toList(), order.getItemsAmount(),
                     order.getShippingFee(), order.getRefundedAmount(), order.getCourier(), order.getTrackingNumber(),
                     order.getShippedAt(), order.getCouponIssueId(), order.getCouponDiscount(), order.getPointsUsed(),

@@ -286,7 +286,7 @@ public class ApplicationService {
         }
         Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(BusinessException::notFound);
         OrderResponse order = orderService.createOrder(memberId, new OrderCreateRequest(form.getAdmissionFeeProductId(), null, 1,
-                null, member.getName(), phoneOf(member), null, null, null, null, form.getTitle(), null, null, null, null, null));
+                null, member.getName(), phoneOf(member), null, null, null, null, null, form.getTitle(), null, null, null, null, null));
         submission.linkAdmissionOrder(order.id());
         return order;
     }

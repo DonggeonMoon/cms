@@ -39,8 +39,8 @@ public class CartService {
     private final OrderService orderService;
 
     @Transactional(readOnly = true)
-    public CartResponse get(final Long memberId, final String postalCode) {
-        return toResponse(cartRepository.findAllByMemberIdOrderByIdAsc(memberId), postalCode);
+    public CartResponse get(final Long memberId, final String postalCode, final String country) {
+        return toResponse(cartRepository.findAllByMemberIdOrderByIdAsc(memberId), postalCode, country);
     }
 
     @Transactional
@@ -70,19 +70,19 @@ public class CartService {
                         .productOptionId(request.productOptionId())
                         .quantity(request.quantity())
                         .build()));
-        return get(memberId, null);
+        return get(memberId, null, null);
     }
 
     @Transactional
     public CartResponse changeQuantity(final Long memberId, final Long itemId, final int quantity) {
         cartRepository.findByIdAndMemberId(itemId, memberId).orElseThrow(BusinessException::notFound).changeQuantity(quantity);
-        return get(memberId, null);
+        return get(memberId, null, null);
     }
 
     @Transactional
     public CartResponse remove(final Long memberId, final Long itemId) {
         cartRepository.findByIdAndMemberId(itemId, memberId).ifPresent(cartRepository::delete);
-        return get(memberId, null);
+        return get(memberId, null, null);
     }
 
     @Transactional
@@ -95,7 +95,7 @@ public class CartService {
                 items.stream().map(item -> new OrderService.Line(item.getProductId(), item.getProductOptionId(),
                         item.getQuantity(), null)).toList(),
                 new OrderService.Receiver(request.receiverName(), request.phoneNumber(), request.postalCode(),
-                        request.address(), request.detailAddress()),
+                        request.address(), request.detailAddress(), request.country()),
                 new OrderService.Discounts(request.couponIssueId(), request.usePoints() == null ? 0 : request.usePoints()),
                 OrderService.Fulfillment.of(request.fulfillmentType(), request.tableName(), request.requestMessage(),
                         request.deliverySlotAt()), false);
@@ -103,7 +103,7 @@ public class CartService {
         return order;
     }
 
-    private CartResponse toResponse(final List<CartItem> items, final String postalCode) {
+    private CartResponse toResponse(final List<CartItem> items, final String postalCode, final String country) {
         Map<Long, Product> products = productRepository.findAllById(items.stream().map(CartItem::getProductId).toList())
                 .stream().collect(Collectors.toMap(Product::getId, Function.identity()));
         Map<Long, ProductOption> options = optionRepository.findAllByIdIn(
@@ -115,7 +115,7 @@ public class CartService {
         BigDecimal itemsAmount = orderable.stream().map(CartItemResponse::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
         List<CartItemResponse> shippable = orderable.stream().filter(CartItemResponse::requiresShipping).toList();
         ShippingPolicy.Quote quote = shippingService.quote(!shippable.isEmpty(),
-                shippable.stream().map(CartItemResponse::amount).reduce(BigDecimal.ZERO, BigDecimal::add), postalCode);
+                shippable.stream().map(CartItemResponse::amount).reduce(BigDecimal.ZERO, BigDecimal::add), postalCode, country);
         return new CartResponse(lines, itemsAmount, quote.total(), quote.regionName(),
                 shippingService.getPolicy().freeThreshold(), itemsAmount.add(quote.total()));
     }

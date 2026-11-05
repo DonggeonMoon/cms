@@ -55,6 +55,7 @@ export function PointPolicyPage() {
                     {number('minUsePoints', '최소 사용 포인트', '0 이면 제한 없음')}
                     {number('maxUseRate', '최대 사용 비율(%)', '쿠폰을 뺀 상품 금액 중 포인트로 낼 수 있는 비율')}
                     {number('signupPoints', '가입 적립 포인트', '0 이면 주지 않습니다.')}
+                    {number('referralPoints', '추천인 적립 포인트', '추천받아 가입한 회원이 첫 결제를 마치면 추천인에게 지급합니다. 0 이면 주지 않습니다.')}
                 </div>
                 <ErrorBanner error={error}/>
                 {saved && <p className="ok">저장했습니다.</p>}

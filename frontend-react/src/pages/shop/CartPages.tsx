@@ -1,6 +1,6 @@
 import {type FormEvent, useCallback, useEffect, useMemo, useState} from 'react';
 import {Link, useNavigate, useSearchParams} from 'react-router';
-import type {Cart, CartItem, ShippingPolicy} from '../../api/domain';
+import type {Cart, CartItem, ShippingPolicy, TaxSetting} from '../../api/domain';
 import {shopApi} from '../../api/endpoints';
 import {memberApi} from '../../api/members';
 import {won} from '../../components/AdminCrudPage';
@@ -11,11 +11,23 @@ import {Thumbnail} from '../../components/Thumbnail';
 import {type DiscountChoice, DiscountSelector, NO_DISCOUNT} from './DiscountSelector';
 import {EMPTY_STORE_CHOICE, type StoreChoice, StoreOrderFields} from './StoreOrderFields';
 
-function ShippingLine({policy, items, postalCode}: { policy: ShippingPolicy | null; items: CartItem[]; postalCode?: string | null }) {
+function vatAmountOf(amount: number, tax: TaxSetting | null): number {
+    if (!tax || amount <= 0) {
+        return 0;
+    }
+    const rate = tax.vatRate / 100;
+    const base = tax.priceIncludesVat ? amount / (1 + rate) : amount;
+    return Math.round(base * rate);
+}
+
+function ShippingLine({policy, tax, items, postalCode}: {
+    policy: ShippingPolicy | null; tax: TaxSetting | null; items: CartItem[]; postalCode?: string | null;
+}) {
     const shippable = items.filter((item) => item.requiresShipping);
     const subtotal = shippable.reduce((sum, item) => sum + Number(item.amount), 0);
     const shipping = estimateShipping(policy, shippable.length > 0, subtotal, postalCode);
     const itemsAmount = items.reduce((sum, item) => sum + Number(item.amount), 0);
+    const vat = vatAmountOf(itemsAmount, tax);
     return (
         <dl className="meta summary">
             <dt>상품 금액</dt>
@@ -29,6 +41,11 @@ function ShippingLine({policy, items, postalCode}: { policy: ShippingPolicy | nu
             </dd>
             <dt>결제 예정 금액</dt>
             <dd className="price">{won(itemsAmount + shipping.fee)}</dd>
+            {tax && (
+                <div className="muted small">
+                    (부가세 {tax.priceIncludesVat ? '포함' : '별도'} {tax.vatRate}%, {won(vat)})
+                </div>
+            )}
         </dl>
     );
 }
@@ -37,6 +54,7 @@ export function CartPage() {
     const navigate = useNavigate();
     const [cart, setCart] = useState<Cart | null>(null);
     const [policy, setPolicy] = useState<ShippingPolicy | null>(null);
+    const [tax, setTax] = useState<TaxSetting | null>(null);
     const [postalCode, setPostalCode] = useState<string | null>(null);
     const [unselected, setUnselected] = useState<Set<number>>(new Set());
     const [error, setError] = useState<unknown>(null);
@@ -48,6 +66,7 @@ export function CartPage() {
     useEffect(() => {
         apply(shopApi.cart());
         shopApi.shippingPolicy().then(setPolicy).catch(() => setPolicy(null));
+        shopApi.taxSetting().then(setTax).catch(() => setTax(null));
         memberApi.me().then((me) => setPostalCode(me.postalCode ?? null)).catch(() => undefined);
     }, [apply]);
 
@@ -93,7 +112,7 @@ export function CartPage() {
                             </li>
                         ))}
                     </ul>
-                    <ShippingLine policy={policy} items={selected} postalCode={postalCode}/>
+                    <ShippingLine policy={policy} tax={tax} items={selected} postalCode={postalCode}/>
                     <div className="toolbar form-actions">
                         <button type="button" className="primary" disabled={selected.length === 0}
                                 onClick={() => navigate(`/orders/cart?items=${selected.map((item) => item.id).join(',')}`)}>
@@ -111,7 +130,7 @@ export function CartOrderPage() {
     const navigate = useNavigate();
     const ids = useMemo(() => (params.get('items') ?? '').split(',').map(Number).filter(Boolean), [params]);
     const [items, setItems] = useState<CartItem[] | null>(null);
-    const [receiver, setReceiver] = useState({receiverName: '', phoneNumber: '', postalCode: '', address: '', detailAddress: ''});
+    const [receiver, setReceiver] = useState({receiverName: '', phoneNumber: '', postalCode: '', address: '', detailAddress: '', country: ''});
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
     const [discount, setDiscount] = useState<DiscountChoice>(NO_DISCOUNT);
@@ -126,6 +145,7 @@ export function CartOrderPage() {
             postalCode: current.postalCode || me.postalCode || '',
             address: current.address || me.address || '',
             detailAddress: current.detailAddress || me.detailAddress || '',
+            country: current.country,
         }))).catch(() => undefined);
     }, [ids]);
 
@@ -183,6 +203,8 @@ export function CartOrderPage() {
                                onChange={(e) => setReceiver({...receiver, address: e.target.value})}/>
                         <Field label="상세 주소" name="detailAddress" value={receiver.detailAddress}
                                onChange={(e) => setReceiver({...receiver, detailAddress: e.target.value})}/>
+                        {!store && <Field label="해외 배송 국가 코드 (국내는 비움, 예: US, JP)" name="country" value={receiver.country}
+                               onChange={(e) => setReceiver({...receiver, country: e.target.value.toUpperCase()})}/>}
                         </>}
                     </fieldset>
                     <DiscountSelector lines={previewLines} postalCode={!store || delivering ? receiver.postalCode : null} value={discount} onChange={setDiscount}/>

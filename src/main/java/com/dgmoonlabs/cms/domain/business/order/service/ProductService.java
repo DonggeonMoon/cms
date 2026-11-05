@@ -72,8 +72,25 @@ public class ProductService {
                 fundingInfoOf(product),
                 CurrentUser.isAdmin() && product.hasDigitalFiles() ? fileService.getFiles(product.getDigitalFileIds()) : null,
                 attributeService.values(id),
-                attributeService.specs(product)
+                attributeService.specs(product),
+                product.priceFor(gradeService.currentGradeIdOrNull())
         );
+    }
+
+    /** 거래처(등급)별 가격은 민감 정보라 일반 상품 조회(ProductDetail)에는 안 들어간다. 관리자 전용으로 따로 조회·수정한다. */
+    @Transactional(readOnly = true)
+    public List<GradePriceResponse> getGradePrices(final Long id) {
+        Product product = findProduct(id);
+        return product.getGradePrices() == null ? List.of()
+                : product.getGradePrices().stream().map(GradePriceResponse::from).toList();
+    }
+
+    @Transactional
+    public List<GradePriceResponse> updateGradePrices(final Long id, final List<GradePriceRequest> requests) {
+        Product product = findProduct(id);
+        requests.forEach(request -> gradeService.validGradeId(request.gradeId()));
+        product.changeGradePrices(requests.stream().map(GradePriceRequest::toGradePrice).toList());
+        return getGradePrices(id);
     }
 
     @Transactional

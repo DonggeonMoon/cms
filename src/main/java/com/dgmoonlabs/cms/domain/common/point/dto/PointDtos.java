@@ -17,14 +17,15 @@ public final class PointDtos {
                                      @Min(1) @Max(3650) int expireDays,
                                      @Min(0) long minUsePoints,
                                      @Min(0) @Max(100) int maxUseRate,
-                                     @Min(0) long signupPoints) {
+                                     @Min(0) long signupPoints,
+                                     @Min(0) long referralPoints) {
     }
 
     public record PointPolicyResponse(boolean isEnabled, BigDecimal earnRate, int expireDays, long minUsePoints, int maxUseRate,
-                                      long signupPoints) {
+                                      long signupPoints, long referralPoints) {
         public static PointPolicyResponse from(final PointPolicy policy) {
             return new PointPolicyResponse(policy.isEnabled(), policy.getEarnRate(), policy.getExpireDays(),
-                    policy.getMinUsePoints(), policy.getMaxUseRate(), policy.getSignupPoints());
+                    policy.getMinUsePoints(), policy.getMaxUseRate(), policy.getSignupPoints(), policy.getReferralPoints());
         }
     }
 

@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum PointType {
     EARN("구매 적립"),
     SIGNUP("가입 적립"),
+    REFERRAL("추천인 적립"),
     ADMIN("관리자 조정"),
     USE("사용"),
     RESTORE("사용 취소"),

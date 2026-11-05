@@ -78,6 +78,9 @@ function ProfileSection({member, settings, onSaved}: {
                             <span className="muted"> · {formatDateTime(grade.expiresAt)}까지 (이후 {grade.baseGradeName ?? '기본 등급'})</span>)}</dd>
                     </>
                 )}
+                <dt>추천 링크</dt>
+                <dd><code>{`${window.location.origin}/join?ref=${member.id}`}</code>
+                    <p className="muted small">이 링크로 가입한 분이 첫 결제를 마치면 추천 포인트를 받을 수 있습니다.</p></dd>
             </dl>
             <form onSubmit={handleSubmit}>
                 <ProfileFields value={form} onChange={setForm} settings={settings}

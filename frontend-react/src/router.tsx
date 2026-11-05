@@ -42,7 +42,12 @@ import {PolicyAdminPage} from './pages/admin/PolicyAdminPage';
 import {RegexAdminPage} from './pages/admin/RegexAdminPage';
 import {GradeAdminPage} from './pages/admin/GradeAdminPage';
 import {ShippingPolicyPage} from './pages/admin/ShippingPolicyPage';
+import {TaxSettingPage} from './pages/admin/TaxSettingPage';
+import {ExchangeRateAdminPage} from './pages/admin/ExchangeRateAdminPage';
+import {MarketingAdminPage} from './pages/admin/MarketingAdminPage';
 import {LicenseKeyAdminPage} from './pages/admin/LicenseKeyAdminPage';
+import {StockMovementAdminPage} from './pages/admin/StockMovementAdminPage';
+import {AccountingAdminPage} from './pages/admin/AccountingAdminPage';
 import {
     DiscountAdminPage,
     OrderAdminPage,
@@ -281,11 +286,16 @@ export const routes = [
                                     {path: 'product-categories', element: <CategoryAdminPage/>},
                                     {path: 'discounts', element: <DiscountAdminPage/>},
                                     {path: 'shipping', element: <ShippingPolicyPage/>},
+                                    {path: 'tax', element: <TaxSettingPage/>},
+                                    {path: 'exchange-rates', element: <ExchangeRateAdminPage/>},
+                                    {path: 'marketing', element: <MarketingAdminPage/>},
                                     {path: 'store', element: <StoreSettingPage/>},
                                     {path: 'store-orders', element: <StoreOrderQueuePage/>},
                                     {path: 'orders', element: <OrderAdminPage/>},
                                     {path: 'order-returns', element: <OrderReturnAdminPage/>},
                                     {path: 'license-keys', element: <LicenseKeyAdminPage/>},
+                                    {path: 'stock-movements', element: <StockMovementAdminPage/>},
+                                    {path: 'accounting', element: <AccountingAdminPage/>},
                                     {path: 'subscriptions', element: <SubscriptionAdminPage/>},
                                     {path: 'passes', element: <PassAdminPage/>},
                                 ],

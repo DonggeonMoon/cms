@@ -79,6 +79,9 @@ export const adminApi = {
         ...resource<D.ProductDetail>('/api/products', (id) => `/api/products/${id}`, '/api/admin/products',
             (id) => `/api/admin/products/${id}`),
         resolveFunding: () => request<{ failed: number }>('/api/admin/products/funding/resolve', {method: 'POST'}),
+        gradePrices: (id: number) => request<D.GradePrice[]>(`/api/admin/products/${id}/grade-prices`),
+        saveGradePrices: (id: number, gradePrices: D.GradePrice[]) =>
+            request<D.GradePrice[]>(`/api/admin/products/${id}/grade-prices`, {method: 'PUT', body: gradePrices}),
     },
     programs: resource<D.Program>('/api/programs', (id) => `/api/programs/${id}`, '/api/admin/programs',
         (id) => `/api/admin/programs/${id}`),
@@ -141,6 +144,27 @@ export const adminApi = {
         availableCount: (productId: number) => request<number>('/api/admin/license-keys/available-count', {query: {productId}}),
         remove: (id: number) => request<void>(`/api/admin/license-keys/${id}`, {method: 'DELETE'}),
     },
+    stockMovements: {
+        search: (productId: number, page: number) =>
+            request<Page<D.StockMovement>>('/api/admin/stock-movements', {query: {productId, page}}),
+        adjust: (productId: number, productOptionId: number | null, delta: number, note: string) =>
+            request<D.StockMovement>('/api/admin/stock-movements/adjust', {method: 'POST', body: {productId, productOptionId, delta, note}}),
+    },
+    receivables: {
+        search: (memberId: number | null, page: number) =>
+            request<Page<D.Receivable>>('/api/admin/receivables', {query: {memberId: memberId ?? undefined, page}}),
+        create: (memberId: number, orderId: number | null, totalAmount: number, note: string) =>
+            request<D.Receivable>('/api/admin/receivables', {method: 'POST', body: {memberId, orderId, totalAmount, note}}),
+        collect: (id: number, amount: number) =>
+            request<D.Receivable>(`/api/admin/receivables/${id}/collect`, {method: 'POST', body: {amount}}),
+    },
+    salesReport: (from: string, to: string) => request<D.SalesReportRow[]>('/api/admin/sales-report', {query: {from, to}}),
+    settlements: (from: string, to: string) => request<D.SettlementRow[]>('/api/admin/settlements', {query: {from, to}}),
+    marketing: {
+        send: (title: string, content: string, targetGradeId: number | null, channels: D.NotificationChannel[]) =>
+            request<D.MarketingCampaign>('/api/admin/marketing/campaigns', {method: 'POST', body: {title, content, targetGradeId, channels}}),
+        history: (page: number) => request<Page<D.MarketingCampaign>>('/api/admin/marketing/campaigns', {query: {page}}),
+    },
     votes: {
         search: (query: Query) => request<Page<D.Vote>>('/api/admin/votes', {query}),
         create: (body: Body) => request<D.Vote>('/api/admin/votes', {method: 'POST', body}),
@@ -149,6 +173,15 @@ export const adminApi = {
     },
     shippingPolicy: {
         save: (body: Body) => request<D.ShippingPolicy>('/api/admin/shipping-policy', {method: 'PUT', body}),
+    },
+    taxSetting: {
+        save: (body: Body) => request<D.TaxSetting>('/api/admin/tax-setting', {method: 'PUT', body}),
+    },
+    exchangeRates: {
+        search: () => request<D.ExchangeRate[]>('/api/admin/exchange-rates'),
+        save: (currencyCode: string, rate: number, enabled: boolean) =>
+            request<D.ExchangeRate>('/api/admin/exchange-rates', {method: 'PUT', body: {currencyCode, rate, enabled}}),
+        remove: (id: number) => request<void>(`/api/admin/exchange-rates/${id}`, {method: 'DELETE'}),
     },
     applications: {
         ...resource<D.ApplicationForm>('/api/admin/applications'),
@@ -360,7 +393,10 @@ export const shopApi = {
     castBallot: (id: number, optionIndex: number) =>
         request<D.MyVote>(`/api/votes/${id}/ballots`, {method: 'POST', body: {optionIndex}}),
     shippingPolicy: () => request<D.ShippingPolicy>('/api/shipping-policy'),
-    cart: (postalCode?: string) => request<D.Cart>('/api/cart', {query: postalCode ? {postalCode} : {}}),
+    taxSetting: () => request<D.TaxSetting>('/api/tax-setting'),
+    exchangeRates: () => request<D.ExchangeRate[]>('/api/exchange-rates'),
+    cart: (postalCode?: string, country?: string) =>
+        request<D.Cart>('/api/cart', {query: {postalCode: postalCode || undefined, country: country || undefined}}),
     addToCart: (body: { productId: number; productOptionId: number | null; quantity: number }) =>
         request<D.Cart>('/api/cart', {method: 'POST', body}),
     changeCartQuantity: (id: number, quantity: number) => request<D.Cart>(`/api/cart/${id}`, {method: 'PUT', body: {quantity}}),

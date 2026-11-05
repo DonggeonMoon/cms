@@ -12,7 +12,7 @@ function respond(status: number, body?: unknown) {
 }
 
 const POLICY = {baseFee: 3000, freeThreshold: 30000, defaultCourier: null,
-    regionFees: [{name: '제주', postalCodeFrom: '63000', postalCodeTo: '63644', fee: 4000}]};
+    regionFees: [{name: '제주', postalCodeFrom: '63000', postalCodeTo: '63644', fee: 4000}], internationalFees: []};
 
 const item = (id: number, name: string, amount: number, extra: object = {}) => ({
     id, productId: id * 10, productOptionId: null, productName: name, optionName: null, imageUrl: null, unitPrice: amount,

@@ -186,6 +186,10 @@ public class Order extends BaseEntity {
     @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String detailAddress;
 
+    @Column(length = 40)
+    @Comment("배송 국가 (해외배송정책에 등록된 나라 이름. 비우면 국내)")
+    private String country;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Comment("추가 필드")
     private String fields;

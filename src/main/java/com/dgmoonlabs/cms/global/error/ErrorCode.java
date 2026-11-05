@@ -179,6 +179,8 @@ public enum ErrorCode {
     INVALID_VOTE_OPTION(HttpStatus.BAD_REQUEST, "존재하지 않는 선택지입니다."),
     ALREADY_VOTED(HttpStatus.CONFLICT, "이미 투표했습니다."),
     VOTE_HAS_BALLOTS(HttpStatus.CONFLICT, "투표가 진행된 안건은 삭제할 수 없습니다."),
+    RECEIVABLE_OVERPAID(HttpStatus.BAD_REQUEST, "남은 외상 금액보다 많이 수금할 수 없습니다."),
+    COUNTRY_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "해외 배송이 지원되지 않는 나라입니다."),
 
     EMPTY_FILE(HttpStatus.BAD_REQUEST, "업로드할 파일이 비어 있습니다."),
     FILE_EXTENSION_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "허용되지 않는 파일 형식입니다."),

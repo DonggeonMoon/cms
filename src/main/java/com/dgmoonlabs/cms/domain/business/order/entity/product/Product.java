@@ -139,6 +139,10 @@ public class Product extends BaseEntity {
     @Comment("부여한 등급 유지 일수 (구매 상품, 없으면 무기한)")
     private Integer grantGradeDays;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Comment("거래처(등급)별 가격 (등록 안 된 등급은 기본가)")
+    private List<GradePrice> gradePrices;
+
     @Comment("재고 수량 (null: 무제한)")
     private Integer availableQuantity;
 
@@ -249,6 +253,22 @@ public class Product extends BaseEntity {
         this.accessGradeId = accessGradeId;
         this.grantGradeId = grantGradeId;
         this.grantGradeDays = grantGradeId == null || saleType == ProductSaleType.SUBSCRIPTION ? null : grantGradeDays;
+    }
+
+    public record GradePrice(Long gradeId, BigDecimal price) {
+    }
+
+    public void changeGradePrices(final List<GradePrice> gradePrices) {
+        this.gradePrices = gradePrices == null || gradePrices.isEmpty() ? null : gradePrices;
+    }
+
+    /** 거래처(등급)별 가격이 등록돼 있으면 그 가격을, 없으면 기본가를 쓴다. */
+    public BigDecimal priceFor(final Long gradeId) {
+        if (gradeId == null || gradePrices == null) {
+            return price;
+        }
+        return gradePrices.stream().filter(entry -> entry.gradeId().equals(gradeId)).findFirst()
+                .map(GradePrice::price).orElse(price);
     }
 
     public void decreaseStock(final int quantity) {
