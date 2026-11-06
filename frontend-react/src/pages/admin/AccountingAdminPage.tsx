@@ -83,11 +83,11 @@ export function AccountingAdminPage() {
             <ErrorBanner error={error}/>
 
             <h2>매출 리포트 · 정산</h2>
-            <div className="field">
+            <div className="toolbar date-range">
                 <label htmlFor="acc-from">기간</label>
-                <input id="acc-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)}/>
-                <span>~</span>
-                <input type="date" value={to} onChange={(e) => setTo(e.target.value)}/>
+                <input id="acc-from" type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)}/>
+                <span aria-hidden="true">~</span>
+                <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)}/>
             </div>
             <p>기간 매출 합계: <strong>{won(totalSales)}</strong></p>
             <div className="table-wrap">

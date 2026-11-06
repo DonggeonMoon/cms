@@ -1,4 +1,5 @@
 import {createBrowserRouter} from 'react-router';
+import {setApiSiteCode} from './api/client';
 import {AuthZone} from './auth/AuthZone';
 import {RequireRole} from './auth/RequireRole';
 import {AdminLayout} from './components/AdminLayout';
@@ -361,4 +362,8 @@ export const routes = [
     },
 ];
 
-export const router = createBrowserRouter(routes);
+const siteCodeMatch = /^\/s\/([a-z0-9-]+)(?=\/|$)/.exec(window.location.pathname);
+const siteCode = siteCodeMatch?.[1] ?? null;
+setApiSiteCode(siteCode);
+
+export const router = createBrowserRouter(routes, siteCode ? {basename: `/s/${siteCode}`} : undefined);

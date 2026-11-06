@@ -35,7 +35,7 @@ public class SitemapService {
         List<Entry> entries = new ArrayList<>();
         entries.add(new Entry("/", null));
         if (siteService.isEnabled(SiteFeature.CONTENT)) {
-            contentRepository.findAllByStatusAndDeletedAtIsNullOrderByIdAsc(ContentStatus.PUBLISHED).stream()
+            contentRepository.findAllByStatusAndSiteIdAndDeletedAtIsNullOrderByIdAsc(ContentStatus.PUBLISHED, siteService.currentSiteId()).stream()
                     .filter(content -> content.getAccessGradeId() == null)
                     .forEach(content -> entries.add(new Entry("/contents/" + content.getId(), content.getModifiedAt())));
         }
@@ -45,12 +45,12 @@ public class SitemapService {
                     .forEach(product -> entries.add(new Entry("/products/" + product.getId(), product.getModifiedAt())));
         }
         if (siteService.isEnabled(SiteFeature.PROGRAM)) {
-            reservationItemRepository.findAllByIsEnabledTrueAndDeletedAtIsNullOrderByIdAsc().stream()
+            reservationItemRepository.findAllByIsEnabledTrueAndSiteIdAndDeletedAtIsNullOrderByIdAsc(siteService.currentSiteId()).stream()
                     .filter(item -> item.getAccessGradeId() == null)
                     .forEach(item -> entries.add(new Entry("/reservation-items/" + item.getId(), item.getModifiedAt())));
         }
         if (siteService.isEnabled(SiteFeature.MEDIA)) {
-            courseRepository.findAllByIsUsingTrueAndDeletedAtIsNullOrderByIdAsc().stream()
+            courseRepository.findAllByIsUsingTrueAndSiteIdAndDeletedAtIsNullOrderByIdAsc(siteService.currentSiteId()).stream()
                     .filter(course -> course.getAccessGradeId() == null)
                     .forEach(course -> entries.add(new Entry("/courses/" + course.getId(), course.getModifiedAt())));
         }

@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface BannerRepository extends JpaRepository<Banner, Long>, BannerCustomRepository {
-    Optional<Banner> findByIdAndDeletedAtIsNull(Long id);
+    Optional<Banner> findByIdAndSiteIdAndDeletedAtIsNull(Long id, Long siteId);
 }

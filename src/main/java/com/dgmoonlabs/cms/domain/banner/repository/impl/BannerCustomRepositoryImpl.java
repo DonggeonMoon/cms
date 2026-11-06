@@ -3,6 +3,7 @@ package com.dgmoonlabs.cms.domain.banner.repository.impl;
 import com.dgmoonlabs.cms.domain.banner.constant.BannerType;
 import com.dgmoonlabs.cms.domain.banner.entity.Banner;
 import com.dgmoonlabs.cms.domain.banner.repository.BannerCustomRepository;
+import com.dgmoonlabs.cms.global.site.SiteContextHolder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class BannerCustomRepositoryImpl implements BannerCustomRepository {
     @Override
     public Page<Banner> search(final String keyword, final BannerType type, final Pageable pageable) {
         List<Banner> content = queryFactory.selectFrom(banner)
-                .where(banner.deletedAt.isNull(), nameContains(keyword), typeEquals(type))
+                .where(banner.deletedAt.isNull(), currentSite(), nameContains(keyword), typeEquals(type))
                 .orderBy(banner.order.asc(), banner.id.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -32,7 +33,7 @@ public class BannerCustomRepositoryImpl implements BannerCustomRepository {
 
         return PageableExecutionUtils.getPage(content, pageable, () -> queryFactory.select(banner.count())
                 .from(banner)
-                .where(banner.deletedAt.isNull(), nameContains(keyword), typeEquals(type))
+                .where(banner.deletedAt.isNull(), currentSite(), nameContains(keyword), typeEquals(type))
                 .fetchOne());
     }
 
@@ -41,6 +42,7 @@ public class BannerCustomRepositoryImpl implements BannerCustomRepository {
         return queryFactory.selectFrom(banner)
                 .where(
                         banner.deletedAt.isNull(),
+                        currentSite(),
                         banner.isUsing.isTrue(),
                         typeEquals(type),
                         banner.startDateTime.isNull().or(banner.startDateTime.loe(now)),
@@ -48,6 +50,11 @@ public class BannerCustomRepositoryImpl implements BannerCustomRepository {
                 )
                 .orderBy(banner.order.asc(), banner.id.desc())
                 .fetch();
+    }
+
+    private BooleanExpression currentSite() {
+        Long siteId = SiteContextHolder.currentSiteId();
+        return siteId == null ? banner.siteId.isNull() : banner.siteId.eq(siteId);
     }
 
     private BooleanExpression nameContains(final String keyword) {

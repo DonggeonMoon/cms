@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BoardRepository extends JpaRepository<Board, Long> {
-    Optional<Board> findByIdAndDeletedAtIsNull(Long id);
+    Optional<Board> findByIdAndSiteIdAndDeletedAtIsNull(Long id, Long siteId);
 
-    List<Board> findAllByDeletedAtIsNullOrderByIdAsc();
+    List<Board> findAllBySiteIdAndDeletedAtIsNullOrderByIdAsc(Long siteId);
 
-    boolean existsByName(String name);
+    boolean existsByNameAndSiteId(String name, Long siteId);
 
-    boolean existsByNameAndIdNot(String name, Long id);
+    boolean existsByNameAndSiteIdAndIdNot(String name, Long siteId, Long id);
 }

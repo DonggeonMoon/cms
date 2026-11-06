@@ -10,8 +10,8 @@ import type {FieldSpec} from '../../components/SchemaForm';
 const API_KEY_FIELDS: FieldSpec[] = [
     {name: 'name', label: '키 이름', required: true, placeholder: '카카오맵 JavaScript 키',
         help: '지도 설정처럼 API 키가 필요한 곳에서 이 이름으로 고릅니다.'},
-    {name: 'value', label: '키 값', required: true, wide: true},
     {name: 'description', label: '설명', wide: true, placeholder: '발급처, 등록한 도메인 등'},
+    {name: 'value', label: '키 값', required: true, wide: true},
 ];
 
 const maskApiKey = (value: string) => (value.length <= 4 ? '••••' : `${value.slice(0, 4)}${'•'.repeat(8)}`);

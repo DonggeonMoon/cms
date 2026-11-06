@@ -13,6 +13,7 @@ import {type Grade, gradeSelectField, useWithGradeFields} from '../../api/grades
 
 const FIELDS: FieldSpec[] = [
     {name: 'title', label: '제목', required: true, wide: true},
+    {name: 'description', label: '설명', type: 'textarea'},
     {name: 'media', label: '동영상/음악 파일', type: 'media', required: true,
         help: 'mp4, webm, mov 동영상 또는 mp3, m4a, wav, ogg 음악. 올리면 재생 시간을 자동으로 읽고, 파일에 맞춰 동영상/음악으로 분류합니다. 동영상은 한 장면을 썸네일로 만들며, 다른 이미지로 바꿀 수 있습니다.'},
     {name: 'trackProgress', label: '진도 체크 사용', type: 'checkbox', wide: true, group: '교육',
@@ -26,7 +27,6 @@ const FIELDS: FieldSpec[] = [
     {name: 'price', label: '가격(원)', type: 'number', min: 1, required: true, visibleWhen: (v) => Boolean(v.paid)},
     {name: 'accessDays', label: '시청 가능 기간(일)', type: 'number', min: 1, visibleWhen: (v) => Boolean(v.paid),
         help: '결제일부터 셉니다. 비워두면 무기한입니다.'},
-    {name: 'description', label: '설명', type: 'textarea'},
 ];
 
 const streamingGradeFields = (grades: Grade[]) => [

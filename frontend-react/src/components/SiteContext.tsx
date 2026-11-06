@@ -2,6 +2,7 @@ import {createContext, type ReactNode, useCallback, useContext, useEffect, useMe
 import {Outlet} from 'react-router';
 import type {Archive, Board, Menu, Site, SiteFeature} from '../api/domain';
 import {archiveApi, boardApi, siteApi} from '../api/endpoints';
+import {getApiSiteCode} from '../api/client';
 import {NotFoundPage} from '../pages/HomePage';
 import {useI18n} from '../api/i18n';
 
@@ -82,6 +83,9 @@ export function SiteProvider({children}: { children: ReactNode }) {
         };
     }, [site, siteLoaded, name, menus, boards, archives, configs, reload, t]);
 
+    if (siteLoaded && !site && getApiSiteCode()) {
+        return <NotFoundPage/>;
+    }
     return <SiteContext.Provider value={value}>{children}</SiteContext.Provider>;
 }
 

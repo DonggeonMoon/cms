@@ -31,6 +31,10 @@ public class Site extends BaseEntity {
     @Comment("사이트 도메인")
     private String domain;
 
+    @Column(length = 50, unique = true)
+    @Comment("경로 접속용 사이트 코드 (/s/{code}/ 로 접속). 기본 사이트는 null")
+    private String code;
+
     @Comment("사이트 테마")
     private String theme;
 
@@ -95,11 +99,12 @@ public class Site extends BaseEntity {
     @Column(name = "feature", columnDefinition = "varchar(50)")
     private Set<SiteFeature> disabledFeatures = new HashSet<>();
 
-    public void update(String name, String description, String domain, String theme, MenuType type, String locale,
+    public void update(String name, String description, String domain, String code, String theme, MenuType type, String locale,
                        boolean isDefault, Long homeContentId, Set<SiteFeature> disabledFeatures) {
         this.name = name;
         this.description = description;
         this.domain = domain;
+        this.code = code;
         this.theme = theme;
         this.type = type;
         this.locale = locale;

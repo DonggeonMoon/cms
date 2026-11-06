@@ -10,6 +10,7 @@ import com.dgmoonlabs.cms.domain.admin.site.constant.SiteFeature;
 import com.dgmoonlabs.cms.domain.admin.site.service.SiteService;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
+import com.dgmoonlabs.cms.global.site.SiteContextHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,12 +30,12 @@ public class MenuService {
 
     @Transactional(readOnly = true)
     public List<MenuResponse> getMenuTree() {
-        return MenuResponse.tree(menuRepository.findAllByDeletedAtIsNull());
+        return MenuResponse.tree(menuRepository.findAllBySiteIdAndDeletedAtIsNull(SiteContextHolder.currentSiteId()));
     }
 
     @Transactional(readOnly = true)
     public List<MenuResponse> getPublicMenuTree() {
-        List<Menu> menus = menuRepository.findAllByDeletedAtIsNull();
+        List<Menu> menus = menuRepository.findAllBySiteIdAndDeletedAtIsNull(SiteContextHolder.currentSiteId());
         Map<Long, Menu> byId = menus.stream().collect(Collectors.toMap(Menu::getId, Function.identity()));
         return MenuResponse.tree(menus.stream().filter(menu -> isVisible(menu, byId)).toList());
     }
@@ -62,6 +63,7 @@ public class MenuService {
         }
         int depth = parent == null ? 0 : parent.getDepth() + 1;
         Menu menu = Menu.builder()
+                .siteId(SiteContextHolder.currentSiteId())
                 .parentId(request.parentId())
                 .depth(depth)
                 .name(request.name())
@@ -79,7 +81,7 @@ public class MenuService {
     public void updateMenu(final Long id, final MenuSaveRequest request) {
         Menu menu = findMenu(id);
         requireFeatureEnabled(request);
-        if (request.type() == MenuType.FEATURE && menuRepository.existsByParentIdAndDeletedAtIsNull(id)) {
+        if (request.type() == MenuType.FEATURE && menuRepository.existsByParentIdAndSiteIdAndDeletedAtIsNull(id, SiteContextHolder.currentSiteId())) {
             throw new BusinessException(ErrorCode.MENU_BUILT_IN);
         }
         menu.update(request);
@@ -87,7 +89,7 @@ public class MenuService {
 
     @Transactional
     public void reorderMenus(final MenuOrderRequest request) {
-        Map<Long, Menu> siblings = menuRepository.findAllByDeletedAtIsNull().stream()
+        Map<Long, Menu> siblings = menuRepository.findAllBySiteIdAndDeletedAtIsNull(SiteContextHolder.currentSiteId()).stream()
                 .filter(menu -> Objects.equals(menu.getParentId(), request.parentId()))
                 .collect(Collectors.toMap(Menu::getId, Function.identity()));
         if (request.ids().size() != siblings.size() || !siblings.keySet().equals(Set.copyOf(request.ids()))) {
@@ -108,13 +110,13 @@ public class MenuService {
     @Transactional
     public void deleteMenu(final Long id) {
         Menu menu = findMenu(id);
-        if (menuRepository.existsByParentIdAndDeletedAtIsNull(id)) {
+        if (menuRepository.existsByParentIdAndSiteIdAndDeletedAtIsNull(id, SiteContextHolder.currentSiteId())) {
             throw new BusinessException(ErrorCode.MENU_HAS_CHILDREN);
         }
         menu.delete();
     }
 
     private Menu findMenu(final Long id) {
-        return menuRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(BusinessException::notFound);
+        return menuRepository.findByIdAndSiteIdAndDeletedAtIsNull(id, SiteContextHolder.currentSiteId()).orElseThrow(BusinessException::notFound);
     }
 }

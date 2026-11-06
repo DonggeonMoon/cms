@@ -4,13 +4,24 @@ const XSRF_COOKIE = 'XSRF-TOKEN';
 const XSRF_HEADER = 'X-XSRF-TOKEN';
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 const ZONE_HEADER = 'X-CMS-Zone';
+const SITE_HEADER = 'X-CMS-Site';
 
 export type ApiZone = 'site' | 'admin';
 
 let currentZone: ApiZone = 'site';
+let currentSiteCode: string | null = null;
 
 export function setApiZone(zone: ApiZone) {
     currentZone = zone;
+}
+
+/** 공개 사이트는 URL의 /s/{code} 프리픽스로, 관리자는 선택한 사이트로 지정한다. 비워 두면 기본 사이트. */
+export function setApiSiteCode(code: string | null) {
+    currentSiteCode = code;
+}
+
+export function getApiSiteCode(): string | null {
+    return currentSiteCode;
 }
 
 export class ApiError extends Error {
@@ -105,6 +116,9 @@ export async function request<T>(path: string, {method = 'GET', body, query}: Re
     const headers = new Headers({Accept: 'application/json'});
     if (currentZone === 'admin') {
         headers.set(ZONE_HEADER, 'admin');
+    }
+    if (currentSiteCode) {
+        headers.set(SITE_HEADER, currentSiteCode);
     }
     const isForm = body instanceof FormData;
     if (body !== undefined && !isForm) {

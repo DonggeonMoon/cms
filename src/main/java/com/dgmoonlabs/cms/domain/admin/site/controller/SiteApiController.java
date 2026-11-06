@@ -19,8 +19,8 @@ public class SiteApiController {
     private final SiteService siteService;
 
     @GetMapping("/api/site")
-    public ResponseEntity<SiteResponse> defaultSite() {
-        return ResponseEntity.ok(siteService.getDefaultSite());
+    public ResponseEntity<SiteResponse> currentSite() {
+        return ResponseEntity.ok(siteService.getCurrentSite());
     }
 
     @GetMapping("/api/admin/sites")

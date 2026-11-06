@@ -16,6 +16,7 @@ public record SiteSaveRequest(
         @NotBlank @Size(max = 100) String name,
         @Size(max = 255) String description,
         @Size(max = 255) String domain,
+        @Size(max = 50) @Pattern(regexp = "^[a-z0-9-]*$") String code,
         @Size(max = 50) String theme,
         MenuType type,
         @Size(max = 20) String locale,
@@ -44,11 +45,16 @@ public record SiteSaveRequest(
         return disabledFeatures == null ? Set.of() : disabledFeatures;
     }
 
+    public String codeOrNull() {
+        return code == null || code.isBlank() ? null : code;
+    }
+
     public Site toEntity() {
         return Site.builder()
                 .name(name)
                 .description(description)
                 .domain(domain)
+                .code(codeOrNull())
                 .theme(theme)
                 .type(type)
                 .locale(locale)

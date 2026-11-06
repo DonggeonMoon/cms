@@ -16,6 +16,9 @@ public class Course extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Comment("소속 사이트 ID")
+    private Long siteId;
+
     @Column(nullable = false, length = 200)
     @Comment("과정 이름")
     private String title;

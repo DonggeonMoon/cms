@@ -12,4 +12,10 @@ public interface SiteRepository extends JpaRepository<Site, Long>, SiteCustomRep
     Optional<Site> findFirstByIsDefaultTrueAndDeletedAtIsNullOrderByIdAsc();
 
     List<Site> findAllByIsDefaultTrueAndDeletedAtIsNull();
+
+    Optional<Site> findByCodeAndDeletedAtIsNull(String code);
+
+    boolean existsByCodeAndDeletedAtIsNullAndIdNot(String code, Long id);
+
+    boolean existsByCodeAndDeletedAtIsNull(String code);
 }

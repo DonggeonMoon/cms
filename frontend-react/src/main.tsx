@@ -12,6 +12,13 @@ document.addEventListener('wheel', () => {
     }
 }, {passive: true});
 
+document.addEventListener('keydown', (e) => {
+    const active = document.activeElement;
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && active instanceof HTMLInputElement && active.type === 'number') {
+        e.preventDefault();
+    }
+});
+
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <RouterProvider router={router}/>

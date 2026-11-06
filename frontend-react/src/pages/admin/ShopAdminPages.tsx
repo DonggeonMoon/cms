@@ -26,6 +26,7 @@ import {LicenseKeyAdminPage} from './LicenseKeyAdminPage';
 
 const PRODUCT_FIELDS: FieldSpec[] = [
     {name: 'name', label: '상품명', required: true, wide: true},
+    {name: 'description', label: '요약 설명', wide: true},
     {name: 'saleType', label: '판매 방식', type: 'select', required: true, wide: true, options: toOptions(SALE_TYPE),
         help: '구매: 한 번 결제 / 구독: 주기마다 결제 / 후원: 금액을 정해 후원 / 견적 문의: 요청을 받고 관리자가 금액을 회신 / 이용권: 예약에서 결제 대신 차감 / 상품권: 결제하면 가격만큼 지갑에 충전 / 예약 판매: 판매 기간에만 주문받고 정해둔 날짜에 출고 / 펀딩: 마감일까지 목표 금액을 못 채우면 전부 환불 / 문의만: 결제 없이 상담 예약으로만 연결(매물 게시 등)'},
     {name: 'preorderSaleStartAt', label: '판매 시작', type: 'datetime', wide: true, help: '비워두면 지금부터 바로 받습니다.',
@@ -74,7 +75,6 @@ const PRODUCT_FIELDS: FieldSpec[] = [
         visibleWhen: (v) => ((v.digitalFiles as FileInfo[] | undefined) ?? []).length > 0},
     {name: 'downloadDays', label: '내려받기 기간(일)', type: 'number', min: 1, help: '결제일부터 셉니다. 비워두면 무기한입니다.',
         visibleWhen: (v) => ((v.digitalFiles as FileInfo[] | undefined) ?? []).length > 0},
-    {name: 'description', label: '요약 설명', wide: true},
     {name: 'imageFileId', label: '대표 이미지', type: 'image', wide: true},
     {name: 'optionSet', label: '옵션', type: 'productOptions',
         help: '옵션 그룹(색상, 사이즈 등)을 정하면 모든 조합이 만들어지고 조합마다 추가 금액·재고·판매 여부를 정할 수 있습니다. 그룹 없이 단일 옵션만 둘 수도 있습니다.'},
@@ -230,10 +230,10 @@ export function ProductAdminPage() {
 const discountFields = (products: { value: string; label: string }[]): FieldSpec[] => [
     {name: 'isUsing', label: '사용', type: 'checkbox', wide: true},
     {name: 'name', label: '할인명', required: true, wide: true},
+    {name: 'description', label: '설명', wide: true},
     {name: 'rate', label: '할인율(%)', type: 'number', min: 0, required: true, wide: true},
     {name: 'productId', label: '대상 상품', type: 'select', options: products, wide: true, emptyOptionLabel: '전체',
         help: '선택 안 함이면 모든 상품에 적용됩니다.'},
-    {name: 'description', label: '설명', wide: true},
 ];
 
 const toDiscountBody = (values: FormValues) => ({...values, productId: values.productId ? Number(values.productId) : null});
@@ -657,6 +657,7 @@ const RESERVATION_ITEM_FIELDS: FieldSpec[] = [
         options: RESERVATION_TYPE_GROUPS.flatMap((group) => group.types.map((type) => ({value: type, label: `${group.label} · ${RESERVATION_TYPE[type]}`}))),
         help: '시간 예약은 회차나 시간대를, 공간 예약은 배치표의 좌석·객실·공간을 골라 예약합니다.'},
     {name: 'name', label: '이름', required: true, wide: true},
+    {name: 'description', label: '요약 설명', wide: true},
     {name: 'price', label: '기본 가격(원)', type: 'number', min: 0, required: true, wide: true,
         help: '프로그램은 1인, 상담은 1회, 대관·식당 테이블은 칸·예약 단위당, 숙박은 칸·1박당, 공연은 좌석당, 물품 대여는 1개·1일당 가격입니다. 배치표에서 칸별 가격을 따로 줄 수 있습니다. 식당 테이블은 보통 0원으로 둡니다. 여행·투어는 아래 인원 유형별 요금을 쓰므로 이 값은 사용하지 않습니다(0으로 둡니다).'},
     {name: 'priceTiersText', label: '인원 유형별 요금', wide: true, required: true, placeholder: '성인:100000, 아동:50000',
@@ -683,7 +684,6 @@ const RESERVATION_ITEM_FIELDS: FieldSpec[] = [
         help: '좌석·객실·공간을 칠해 두면 사용자가 그 칸을 골라 예약합니다. 식당 테이블은 칸별로 인원(좌석 수)을 함께 정해 두면 예약할 때 인원을 넘지 못하게 막습니다.'},
     {name: 'applicationStartDateTime', label: '신청 시작', type: 'datetime', wide: true},
     {name: 'applicationEndDateTime', label: '신청 마감', type: 'datetime', wide: true},
-    {name: 'description', label: '요약 설명', wide: true},
     {name: 'imageFileId', label: '대표 이미지', type: 'image', wide: true},
     {name: 'contentHtml', label: '상세 설명', type: 'html'},
 ];

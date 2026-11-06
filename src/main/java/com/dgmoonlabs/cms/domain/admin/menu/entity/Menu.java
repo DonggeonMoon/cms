@@ -19,6 +19,9 @@ public class Menu extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Comment("소속 사이트 ID")
+    private Long siteId;
+
     @Comment("메뉴 이름")
     private String name;
 

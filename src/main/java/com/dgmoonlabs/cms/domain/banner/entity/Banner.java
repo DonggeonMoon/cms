@@ -20,6 +20,9 @@ public class Banner extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Comment("소속 사이트 ID")
+    private Long siteId;
+
     @Column(columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     @Comment("배너 타입")
@@ -87,6 +90,10 @@ public class Banner extends BaseEntity {
     @ColumnDefault("1")
     @Comment("보지 않기로 닫았을 때 다시 보이지 않는 일수 (0: 보지 않기 버튼 없음)")
     private int dismissDays;
+
+    public void assignSite(final Long siteId) {
+        this.siteId = siteId;
+    }
 
     public void update(final BannerSaveRequest request) {
         this.type = request.type();

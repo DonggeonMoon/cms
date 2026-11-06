@@ -125,6 +125,8 @@ public enum ErrorCode {
     API_KEY_NOT_FOUND(HttpStatus.BAD_REQUEST, "선택한 API 키를 찾을 수 없습니다. API 키 관리에서 등록한 키를 선택하세요."),
     INVALID_PERIOD(HttpStatus.BAD_REQUEST, "종료 일시는 시작 일시보다 뒤여야 합니다."),
     FEATURE_DISABLED(HttpStatus.NOT_FOUND, "현재 사용할 수 없는 기능입니다."),
+    DUPLICATE_SITE_CODE(HttpStatus.CONFLICT, "이미 사용 중인 사이트 코드입니다."),
+    SITE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사이트입니다."),
     MAP_LOCATION_REQUIRED(HttpStatus.BAD_REQUEST, "오시는 길을 사용하려면 본점 주소와 좌표(위도·경도)를 입력해야 합니다."),
     BRANCHES_DISABLED(HttpStatus.CONFLICT, "지점 안내가 사용 중지되어 있습니다. 지점 안내를 켠 뒤 등록해 주세요."),
     MENU_FEATURE_DISABLED(HttpStatus.CONFLICT, "사용 중지된 기능은 메뉴로 설정할 수 없습니다. 먼저 기능을 켜 주세요."),

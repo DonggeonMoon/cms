@@ -1,13 +1,15 @@
 import {useEffect, useState} from 'react';
 import {ColorModeToggle, useColorMode} from './ColorMode';
 import {Link, NavLink, Outlet, useLocation, useNavigate} from 'react-router';
-import type {Menu, SiteFeature} from '../api/domain';
+import type {Menu, PolicyType, SiteFeature} from '../api/domain';
 import {shopApi, siteApi} from '../api/endpoints';
 import {useAuth} from '../auth/AuthContext';
 import {FEATURE_PATHS, menuHref, SiteProvider, useSite} from './SiteContext';
 import {I18nProvider, LANGUAGE_NAMES, useI18n} from '../api/i18n';
 import {ChatbotWidget} from './ChatbotWidget';
 import {TopBar} from './TopBar';
+
+const FOOTER_POLICY_TYPES: PolicyType[] = ['TERMS_OF_SERVICE', 'OPERATION_POLICY', 'YOUTH_PROTECTION_POLICY'];
 
 export function SiteLayout() {
     return (
@@ -29,6 +31,13 @@ function SiteFrame() {
     useEffect(() => {
         siteApi.trackVisit(location.pathname + location.search, document.referrer).catch(() => undefined);
     }, [location.pathname, location.search]);
+
+    const [footerPolicyUsing, setFooterPolicyUsing] = useState<Partial<Record<PolicyType, boolean>>>({});
+    useEffect(() => {
+        Promise.all(FOOTER_POLICY_TYPES.map((type) => siteApi.policy(type).catch(() => null)))
+            .then((results) => setFooterPolicyUsing(Object.fromEntries(
+                results.flatMap((policy, i) => (policy ? [[FOOTER_POLICY_TYPES[i], policy.isUsing]] : [])))));
+    }, []);
 
     const [unreadNotifications, setUnreadNotifications] = useState(0);
     useEffect(() => {
@@ -105,10 +114,10 @@ function SiteFrame() {
             </main>
             <footer className="site-footer">
                 <nav className="footer-links" aria-label="사이트 정보">
-                    <Link to="/terms">{t('footer.terms', '이용약관')}</Link>
+                    {footerPolicyUsing.TERMS_OF_SERVICE !== false && <Link to="/terms">{t('footer.terms', '이용약관')}</Link>}
                     <Link to="/privacy"><strong>{t('footer.privacy', '개인정보처리방침')}</strong></Link>
-                    <Link to="/operation-policy">{t('footer.operationPolicy', '운영정책')}</Link>
-                    <Link to="/youth-protection">{t('footer.youthProtection', '청소년보호정책')}</Link>
+                    {footerPolicyUsing.OPERATION_POLICY !== false && <Link to="/operation-policy">{t('footer.operationPolicy', '운영정책')}</Link>}
+                    {footerPolicyUsing.YOUTH_PROTECTION_POLICY !== false && <Link to="/youth-protection">{t('footer.youthProtection', '청소년보호정책')}</Link>}
                 </nav>
                 <div>{configs['site.footer'] ?? `ⓒ ${new Date().getFullYear()}. dgmoonlabs All Rights Reserved`}</div>
             </footer>

@@ -1,9 +1,28 @@
+import {useEffect, useState} from 'react';
 import {Link, NavLink, Outlet, useNavigate} from 'react-router';
 import {type AdminArea, useMyPermissions} from '../api/admins';
+import {getApiSiteCode, setApiSiteCode} from '../api/client';
 import {ColorModeToggle, useColorMode} from './ColorMode';
-import type {SiteFeature} from '../api/domain';
+import {adminApi} from '../api/endpoints';
+import type {Site, SiteFeature} from '../api/domain';
 import {useAuth} from '../auth/AuthContext';
 import {SiteProvider, useSite} from './SiteContext';
+
+const ADMIN_SITE_CODE_KEY = 'cms.admin.siteCode';
+
+function readSavedSiteCode(): string | null {
+    try {
+        return localStorage.getItem(ADMIN_SITE_CODE_KEY);
+    } catch {
+        return null;
+    }
+}
+
+// 라우터가 /admin 경로에서 setApiSiteCode(null)로 초기화하므로, 관리자가 고른 사이트를 모듈 로드 시점에 복원한다.
+const savedAdminSiteCode = readSavedSiteCode();
+if (savedAdminSiteCode) {
+    setApiSiteCode(savedAdminSiteCode);
+}
 
 interface MenuItem {
     to: string;
@@ -137,6 +156,35 @@ export function AdminLayout() {
     );
 }
 
+/** 핵심 콘텐츠(메뉴·배너·컨텐츠·게시판·강의·예약상품)를 관리할 사이트를 고른다. 바꾸면 그 사이트 기준으로 다시 불러오려고 새로고침한다. */
+function SiteSwitcher() {
+    const [sites, setSites] = useState<Site[]>([]);
+    useEffect(() => {
+        adminApi.sites.search({size: 200}).then((page) => setSites(page?.content ?? [])).catch(() => setSites([]));
+    }, []);
+    if (sites.length <= 1) {
+        return null;
+    }
+    const current = getApiSiteCode() ?? '';
+    const handleChange = (code: string) => {
+        try {
+            if (code) {
+                localStorage.setItem(ADMIN_SITE_CODE_KEY, code);
+            } else {
+                localStorage.removeItem(ADMIN_SITE_CODE_KEY);
+            }
+        } catch {
+            // 브라우저 저장소를 못 쓰면 이 새로고침 동안만 적용된다.
+        }
+        window.location.reload();
+    };
+    return (
+        <select className="admin-site-switcher" value={current} onChange={(e) => handleChange(e.target.value)} aria-label="작업 사이트">
+            {sites.map((site) => <option key={site.id} value={site.code ?? ''}>{site.name}</option>)}
+        </select>
+    );
+}
+
 function AdminFrame() {
     const {user, logout} = useAuth();
     const {name, isEnabled} = useSite();
@@ -168,9 +216,10 @@ function AdminFrame() {
             <header className="admin-header">
                 <Link to="/admin" className="brand">{name} 관리자</Link>
                 <div className="admin-account">
+                    <SiteSwitcher/>
                     <ColorModeToggle mode={colorMode} onChange={setColorMode}/>
                     <span className="muted">{user?.name}</span>
-                    <Link to="/">사이트로 이동</Link>
+                    <a href={getApiSiteCode() ? `/s/${getApiSiteCode()}/` : '/'}>사이트로 이동</a>
                     <button type="button" onClick={handleLogout}>로그아웃</button>
                 </div>
             </header>

@@ -99,6 +99,7 @@ export interface Site {
     name: string;
     description: string | null;
     domain: string | null;
+    code: string | null;
     theme: string | null;
     type: MenuType | null;
     locale: string | null;

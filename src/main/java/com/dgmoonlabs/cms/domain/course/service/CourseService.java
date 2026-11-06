@@ -18,6 +18,7 @@ import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
 import com.dgmoonlabs.cms.global.security.LoginUser;
+import com.dgmoonlabs.cms.global.site.SiteContextHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -48,9 +49,10 @@ public class CourseService {
     @Transactional(readOnly = true)
     public Page<CourseResponse> getCourses(final String keyword, final Pageable pageable) {
         String term = keyword == null ? "" : keyword;
+        Long siteId = SiteContextHolder.currentSiteId();
         Page<Course> courses = CurrentUser.isAdmin()
-                ? courseRepository.findAllByDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdDesc(term, pageable)
-                : courseRepository.findAllByIsUsingTrueAndDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdDesc(term, pageable);
+                ? courseRepository.findAllBySiteIdAndDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdDesc(siteId, term, pageable)
+                : courseRepository.findAllByIsUsingTrueAndSiteIdAndDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdDesc(siteId, term, pageable);
         Map<Long, Long> counts = lessonRepository.findAllByCourseIdInAndDeletedAtIsNullOrderBySequenceAsc(
                         courses.map(Course::getId).toList()).stream()
                 .collect(Collectors.groupingBy(CourseLesson::getCourseId, Collectors.counting()));
@@ -76,6 +78,7 @@ public class CourseService {
     public Long createCourse(final CourseSaveRequest request) {
         validate(request);
         Course course = courseRepository.save(Course.builder()
+                .siteId(SiteContextHolder.currentSiteId())
                 .title(request.title().trim())
                 .description(request.description())
                 .thumbnailFileId(request.thumbnailFileId())
@@ -290,10 +293,10 @@ public class CourseService {
     }
 
     private Course findCourse(final Long id) {
-        return courseRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(BusinessException::notFound);
+        return courseRepository.findByIdAndSiteIdAndDeletedAtIsNull(id, SiteContextHolder.currentSiteId()).orElseThrow(BusinessException::notFound);
     }
 
     private Course findPublic(final Long id) {
-        return courseRepository.findByIdAndDeletedAtIsNull(id).filter(Course::isPublic).orElseThrow(BusinessException::notFound);
+        return courseRepository.findByIdAndSiteIdAndDeletedAtIsNull(id, SiteContextHolder.currentSiteId()).filter(Course::isPublic).orElseThrow(BusinessException::notFound);
     }
 }

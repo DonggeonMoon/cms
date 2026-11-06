@@ -18,7 +18,10 @@ public class Board extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Comment("소속 사이트 ID")
+    private Long siteId;
+
+    @Column(nullable = false)
     @Comment("게시판 이름")
     private String name;
 

@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MenuRepository extends JpaRepository<Menu, Long> {
-    Optional<Menu> findByIdAndDeletedAtIsNull(Long id);
+    Optional<Menu> findByIdAndSiteIdAndDeletedAtIsNull(Long id, Long siteId);
 
-    List<Menu> findAllByDeletedAtIsNull();
+    List<Menu> findAllBySiteIdAndDeletedAtIsNull(Long siteId);
 
-    boolean existsByParentIdAndDeletedAtIsNull(Long parentId);
+    boolean existsByParentIdAndSiteIdAndDeletedAtIsNull(Long parentId, Long siteId);
 }

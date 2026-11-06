@@ -14,6 +14,7 @@ import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.html.HtmlSanitizer;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
 import com.dgmoonlabs.cms.global.security.LoginUser;
+import com.dgmoonlabs.cms.global.site.SiteContextHolder;
 import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -35,8 +36,8 @@ public class ContentService {
 
     @Transactional(readOnly = true)
     public Page<ContentResponse> searchContents(final String keyword, final Pageable pageable) {
-        return contentRepository.findAllByDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdAsc(
-                keyword == null ? "" : keyword, pageable).map(ContentResponse::from);
+        return contentRepository.findAllBySiteIdAndDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdAsc(
+                SiteContextHolder.currentSiteId(), keyword == null ? "" : keyword, pageable).map(ContentResponse::from);
     }
 
     @Transactional(readOnly = true)
@@ -46,14 +47,14 @@ public class ContentService {
 
     @Transactional(readOnly = true)
     public List<ContentSummaryResponse> listPublishedContents() {
-        return contentRepository.findAllByStatusAndDeletedAtIsNullOrderByIdAsc(ContentStatus.PUBLISHED).stream()
+        return contentRepository.findAllByStatusAndSiteIdAndDeletedAtIsNullOrderByIdAsc(ContentStatus.PUBLISHED, SiteContextHolder.currentSiteId()).stream()
                 .map(ContentSummaryResponse::from)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public ContentResponse getPublishedContent(final Long id) {
-        Content content = contentRepository.findByIdAndStatusAndDeletedAtIsNull(id, ContentStatus.PUBLISHED)
+        Content content = contentRepository.findByIdAndStatusAndSiteIdAndDeletedAtIsNull(id, ContentStatus.PUBLISHED, SiteContextHolder.currentSiteId())
                 .orElseThrow(BusinessException::notFound);
         gradeService.require(content.getAccessGradeId());
         return ContentResponse.from(content);
@@ -64,6 +65,7 @@ public class ContentService {
         requireDirectPublishAllowed(request.status(), null);
         String html = htmlSanitizer.sanitize(request.contentHtml());
         Content content = Content.builder()
+                .siteId(SiteContextHolder.currentSiteId())
                 .title(request.title())
                 .contentHtml(html)
                 .contentText(htmlSanitizer.toPlainText(html))
@@ -89,8 +91,8 @@ public class ContentService {
 
     @Transactional(readOnly = true)
     public Page<ContentResponse> reviewQueue(final Pageable pageable) {
-        return contentRepository.findAllByStatusAndDeletedAtIsNullOrderByReviewRequestedAtAsc(ContentStatus.IN_REVIEW, pageable)
-                .map(ContentResponse::from);
+        return contentRepository.findAllByStatusAndSiteIdAndDeletedAtIsNullOrderByReviewRequestedAtAsc(
+                ContentStatus.IN_REVIEW, SiteContextHolder.currentSiteId(), pageable).map(ContentResponse::from);
     }
 
     @Transactional
@@ -166,6 +168,6 @@ public class ContentService {
     }
 
     private Content findContent(final Long id) {
-        return contentRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(BusinessException::notFound);
+        return contentRepository.findByIdAndSiteIdAndDeletedAtIsNull(id, SiteContextHolder.currentSiteId()).orElseThrow(BusinessException::notFound);
     }
 }

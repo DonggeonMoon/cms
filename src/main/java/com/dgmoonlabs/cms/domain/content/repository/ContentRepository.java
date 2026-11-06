@@ -11,15 +11,16 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ContentRepository extends JpaRepository<Content, Long> {
-    Optional<Content> findByIdAndDeletedAtIsNull(Long id);
+    Optional<Content> findByIdAndSiteIdAndDeletedAtIsNull(Long id, Long siteId);
 
+    /** 사이트 구분 없이 전체 사이트의 예약 발행을 처리하는 배치용 — siteId 필터를 두지 않는다. */
     List<Content> findAllByStatusAndPublishAtLessThanEqualAndDeletedAtIsNull(ContentStatus status, LocalDateTime now);
 
-    Page<Content> findAllByStatusAndDeletedAtIsNullOrderByReviewRequestedAtAsc(ContentStatus status, Pageable pageable);
+    Page<Content> findAllByStatusAndSiteIdAndDeletedAtIsNullOrderByReviewRequestedAtAsc(ContentStatus status, Long siteId, Pageable pageable);
 
-    Optional<Content> findByIdAndStatusAndDeletedAtIsNull(Long id, ContentStatus status);
+    Optional<Content> findByIdAndStatusAndSiteIdAndDeletedAtIsNull(Long id, ContentStatus status, Long siteId);
 
-    List<Content> findAllByStatusAndDeletedAtIsNullOrderByIdAsc(ContentStatus status);
+    List<Content> findAllByStatusAndSiteIdAndDeletedAtIsNullOrderByIdAsc(ContentStatus status, Long siteId);
 
-    Page<Content> findAllByDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdAsc(String keyword, Pageable pageable);
+    Page<Content> findAllBySiteIdAndDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdAsc(Long siteId, String keyword, Pageable pageable);
 }

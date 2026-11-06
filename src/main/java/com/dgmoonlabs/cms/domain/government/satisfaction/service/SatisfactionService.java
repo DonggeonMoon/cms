@@ -2,6 +2,7 @@ package com.dgmoonlabs.cms.domain.government.satisfaction.service;
 
 import com.dgmoonlabs.cms.domain.admin.menu.entity.Menu;
 import com.dgmoonlabs.cms.domain.admin.menu.repository.MenuRepository;
+import com.dgmoonlabs.cms.global.site.SiteContextHolder;
 import com.dgmoonlabs.cms.domain.government.satisfaction.dto.SatisfactionDtos.OpinionResponse;
 import com.dgmoonlabs.cms.domain.government.satisfaction.dto.SatisfactionDtos.SatisfactionResponse;
 import com.dgmoonlabs.cms.domain.government.satisfaction.dto.SatisfactionDtos.VoteRequest;
@@ -63,7 +64,7 @@ public class SatisfactionService {
     public List<SatisfactionResponse> getAll() {
         Map<Long, Satisfaction> tallies = satisfactionRepository.findAllByOrderByMenuIdAsc().stream()
                 .collect(Collectors.toMap(Satisfaction::getMenuId, Function.identity()));
-        return menuRepository.findAllByDeletedAtIsNull().stream()
+        return menuRepository.findAllBySiteIdAndDeletedAtIsNull(SiteContextHolder.currentSiteId()).stream()
                 .filter(menu -> tallies.containsKey(menu.getId()))
                 .map(menu -> SatisfactionResponse.of(menu.getId(), menu.getName(), tallies.get(menu.getId()), null))
                 .toList();
@@ -81,6 +82,6 @@ public class SatisfactionService {
     }
 
     private Menu findMenu(final Long menuId) {
-        return menuRepository.findByIdAndDeletedAtIsNull(menuId).orElseThrow(BusinessException::notFound);
+        return menuRepository.findByIdAndSiteIdAndDeletedAtIsNull(menuId, SiteContextHolder.currentSiteId()).orElseThrow(BusinessException::notFound);
     }
 }

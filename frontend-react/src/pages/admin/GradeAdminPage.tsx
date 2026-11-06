@@ -4,11 +4,11 @@ import type {FieldSpec} from '../../components/SchemaForm';
 
 const FIELDS: FieldSpec[] = [
     {name: 'name', label: '등급 이름', required: true, wide: true},
+    {name: 'description', label: '설명', wide: true},
     {name: 'rank', label: '순위', type: 'number', required: true, min: 0, wide: true,
         help: '숫자가 클수록 높은 등급입니다. "○○ 등급 이상"은 이 순위로 비교합니다.'},
     {name: 'isDefault', label: '기본 등급', type: 'checkbox', wide: true,
         help: '등급을 받지 않은 회원은 기본 등급으로 봅니다. 하나만 고를 수 있습니다.'},
-    {name: 'description', label: '설명', wide: true},
 ];
 
 const loadGrades = () => gradeApi.list();

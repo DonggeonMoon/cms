@@ -55,8 +55,11 @@ function AutoNotificationSettings() {
     );
 }
 
+type LogTab = 'history' | 'log';
+
 export function MarketingAdminPage() {
     const grades = useGrades();
+    const [logTab, setLogTab] = useState<LogTab>('history');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [targetGradeId, setTargetGradeId] = useState('');
@@ -127,6 +130,15 @@ export function MarketingAdminPage() {
             <ErrorBanner error={error}/>
             <form onSubmit={send} className="inline-form">
                 <div className="field">
+                    <span>발송 채널</span>
+                    {CHANNELS.map((channel) => (
+                        <label key={channel} className="checkbox">
+                            <input type="checkbox" checked={channels.has(channel)} onChange={() => toggleChannel(channel)}/>
+                            {CHANNEL_LABEL[channel]}
+                        </label>
+                    ))}
+                </div>
+                <div className="field">
                     <label htmlFor="campaign-title">제목</label>
                     <input id="campaign-title" value={title} onChange={(e) => setTitle(e.target.value)} required/>
                 </div>
@@ -141,60 +153,67 @@ export function MarketingAdminPage() {
                         {grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}
                     </select>
                 </div>
-                <div className="field">
-                    <span>발송 채널</span>
-                    {CHANNELS.map((channel) => (
-                        <label key={channel} className="checkbox">
-                            <input type="checkbox" checked={channels.has(channel)} onChange={() => toggleChannel(channel)}/>
-                            {CHANNEL_LABEL[channel]}
-                        </label>
-                    ))}
-                </div>
                 <button type="submit" className="primary" disabled={busy}>발송하기</button>
                 {sent && <p className="ok">{sent.recipientCount}명에게 발송했습니다. (마케팅 활용 동의한 대상자만 집계)</p>}
             </form>
-            <h3>발송 이력</h3>
-            <div className="table-wrap">
-                <table>
-                    <thead><tr><th>제목</th><th>대상</th><th>채널</th><th>발송 수</th><th>발송일</th></tr></thead>
-                    <tbody>
-                    {data?.content.map((campaign) => (
-                        <tr key={campaign.id}>
-                            <td>{campaign.title}</td>
-                            <td>{campaign.targetGradeId ? `${gradeNameOf(grades, campaign.targetGradeId) ?? ''} 등급` : '전체 회원'}</td>
-                            <td>{campaign.channels.map((c) => CHANNEL_LABEL[c]).join(', ')}</td>
-                            <td>{campaign.recipientCount}명</td>
-                            <td>{formatDateTime(campaign.sentAt)}</td>
-                        </tr>
-                    ))}
-                    {data?.content.length === 0 && <tr><td colSpan={5} className="muted">발송 이력이 없습니다.</td></tr>}
-                    </tbody>
-                </table>
-            </div>
-            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
 
-            <h2>전체 알림 로그</h2>
-            <p className="muted">거래 알림(결제완료·환불·가입환영 등)과 마케팅성 알림을 모두 포함한 발송 기록이다.</p>
-            <ErrorBanner error={logError}/>
-            <div className="table-wrap">
-                <table>
-                    <thead><tr><th>회원</th><th>채널</th><th>제목</th><th>내용</th><th>읽음</th><th>발송일</th></tr></thead>
-                    <tbody>
-                    {log?.content.map((n) => (
-                        <tr key={n.id}>
-                            <td>{n.memberName ?? `#${n.memberId}`}</td>
-                            <td>{CHANNEL_LABEL[n.channel]}</td>
-                            <td>{n.title}</td>
-                            <td>{n.content}</td>
-                            <td>{n.channel === 'IN_APP' ? (n.read ? '읽음' : '안 읽음') : '-'}</td>
-                            <td>{formatDateTime(n.createdAt)}</td>
-                        </tr>
-                    ))}
-                    {log?.content.length === 0 && <tr><td colSpan={6} className="muted">알림 기록이 없습니다.</td></tr>}
-                    </tbody>
-                </table>
+            <div className="tabs" role="tablist" aria-label="알림 기록">
+                {([['history', '발송 이력'], ['log', '전체 알림 로그']] as const).map(([value, label]) => (
+                    <button key={value} type="button" role="tab" aria-selected={logTab === value}
+                            className={logTab === value ? 'tab active' : 'tab'} onClick={() => setLogTab(value)}>
+                        {label}
+                    </button>
+                ))}
             </div>
-            {log && <Pagination page={logPage} totalPages={log.page.totalPages} onChange={setLogPage}/>}
+
+            {logTab === 'history' && (
+                <>
+                    <div className="table-wrap">
+                        <table>
+                            <thead><tr><th>제목</th><th>대상</th><th>채널</th><th>발송 수</th><th>발송일</th></tr></thead>
+                            <tbody>
+                            {data?.content.map((campaign) => (
+                                <tr key={campaign.id}>
+                                    <td>{campaign.title}</td>
+                                    <td>{campaign.targetGradeId ? `${gradeNameOf(grades, campaign.targetGradeId) ?? ''} 등급` : '전체 회원'}</td>
+                                    <td>{campaign.channels.map((c) => CHANNEL_LABEL[c]).join(', ')}</td>
+                                    <td>{campaign.recipientCount}명</td>
+                                    <td>{formatDateTime(campaign.sentAt)}</td>
+                                </tr>
+                            ))}
+                            {data?.content.length === 0 && <tr><td colSpan={5} className="muted">발송 이력이 없습니다.</td></tr>}
+                            </tbody>
+                        </table>
+                    </div>
+                    {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
+                </>
+            )}
+
+            {logTab === 'log' && (
+                <>
+                    <p className="muted">거래 알림(결제완료·환불·가입환영 등)과 마케팅성 알림을 모두 포함한 발송 기록이다.</p>
+                    <ErrorBanner error={logError}/>
+                    <div className="table-wrap">
+                        <table>
+                            <thead><tr><th>회원</th><th>채널</th><th>제목</th><th>내용</th><th>읽음</th><th>발송일</th></tr></thead>
+                            <tbody>
+                            {log?.content.map((n) => (
+                                <tr key={n.id}>
+                                    <td>{n.memberName ?? `#${n.memberId}`}</td>
+                                    <td>{CHANNEL_LABEL[n.channel]}</td>
+                                    <td>{n.title}</td>
+                                    <td>{n.content}</td>
+                                    <td>{n.channel === 'IN_APP' ? (n.read ? '읽음' : '안 읽음') : '-'}</td>
+                                    <td>{formatDateTime(n.createdAt)}</td>
+                                </tr>
+                            ))}
+                            {log?.content.length === 0 && <tr><td colSpan={6} className="muted">알림 기록이 없습니다.</td></tr>}
+                            </tbody>
+                        </table>
+                    </div>
+                    {log && <Pagination page={logPage} totalPages={log.page.totalPages} onChange={setLogPage}/>}
+                </>
+            )}
         </section>
     );
 }

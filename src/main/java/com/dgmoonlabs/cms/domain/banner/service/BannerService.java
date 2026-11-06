@@ -7,6 +7,7 @@ import com.dgmoonlabs.cms.domain.banner.entity.Banner;
 import com.dgmoonlabs.cms.domain.banner.repository.BannerRepository;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
+import com.dgmoonlabs.cms.global.site.SiteContextHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,7 +40,9 @@ public class BannerService {
     @Transactional
     public Long createBanner(final BannerSaveRequest request) {
         validatePeriod(request);
-        return bannerRepository.save(request.toEntity()).getId();
+        Banner banner = request.toEntity();
+        banner.assignSite(SiteContextHolder.currentSiteId());
+        return bannerRepository.save(banner).getId();
     }
 
     @Transactional
@@ -60,6 +63,6 @@ public class BannerService {
     }
 
     private Banner findBanner(final Long id) {
-        return bannerRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(BusinessException::notFound);
+        return bannerRepository.findByIdAndSiteIdAndDeletedAtIsNull(id, SiteContextHolder.currentSiteId()).orElseThrow(BusinessException::notFound);
     }
 }

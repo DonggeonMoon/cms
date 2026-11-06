@@ -25,6 +25,9 @@ public class ReservationItem extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Comment("소속 사이트 ID")
+    private Long siteId;
+
     @Comment("예약 상품명")
     private String name;
 

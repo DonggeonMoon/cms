@@ -23,6 +23,7 @@ import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.html.HtmlSanitizer;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
+import com.dgmoonlabs.cms.global.site.SiteContextHolder;
 import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
 import com.dgmoonlabs.cms.domain.common.regex.service.RegexService;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationType;
@@ -64,9 +65,10 @@ public class ReservationService {
     public Page<ReservationItemResponse> getReservationItems(final String keyword, final Pageable pageable) {
         String term = keyword == null ? "" : keyword;
         LocalDateTime now = LocalDateTime.now();
+        Long siteId = SiteContextHolder.currentSiteId();
         Page<ReservationItem> items = CurrentUser.isAdmin()
-                ? reservationItemRepository.findAllByDeletedAtIsNullAndNameContainingIgnoreCaseOrderByIdDesc(term, pageable)
-                : reservationItemRepository.findAllByIsEnabledTrueAndDeletedAtIsNullAndNameContainingIgnoreCaseOrderByIdDesc(term, pageable);
+                ? reservationItemRepository.findAllBySiteIdAndDeletedAtIsNullAndNameContainingIgnoreCaseOrderByIdDesc(siteId, term, pageable)
+                : reservationItemRepository.findAllByIsEnabledTrueAndSiteIdAndDeletedAtIsNullAndNameContainingIgnoreCaseOrderByIdDesc(siteId, term, pageable);
         return items.map(item -> ReservationItemResponse.of(item, null, item.isOpenAt(now), null));
     }
 
@@ -151,6 +153,7 @@ public class ReservationService {
         validate(request);
         String html = htmlSanitizer.sanitize(request.contentHtml());
         ReservationItem item = reservationItemRepository.save(ReservationItem.builder()
+                .siteId(SiteContextHolder.currentSiteId())
                 .name(request.name())
                 .description(request.description())
                 .imageFileId(request.imageFileId())
@@ -175,7 +178,7 @@ public class ReservationService {
         validate(request);
         String html = htmlSanitizer.sanitize(request.contentHtml());
         ReservationItem item = reservationItemRepository.findForUpdate(id)
-                .filter(found -> found.getDeletedAt() == null)
+                .filter(found -> found.getDeletedAt() == null && Objects.equals(found.getSiteId(), SiteContextHolder.currentSiteId()))
                 .orElseThrow(BusinessException::notFound);
         item.update(request.name(), request.description(), request.imageFileId(), request.price(),
                         request.maximumPerson(), request.startDateTime(), request.endDateTime(),
@@ -193,7 +196,7 @@ public class ReservationService {
     @Transactional
     public ReservationResponse reserve(final Long memberId, final ReservationCreateRequest request) {
         ReservationItem item = reservationItemRepository.findForUpdate(request.reservationItemId())
-                .filter(found -> found.isOpenAt(LocalDateTime.now()))
+                .filter(found -> found.isOpenAt(LocalDateTime.now()) && Objects.equals(found.getSiteId(), SiteContextHolder.currentSiteId()))
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_ITEM_NOT_OPEN));
         gradeService.require(item.getAccessGradeId());
         return create(UserType.MEMBER, memberId, item, request, false);
@@ -202,7 +205,7 @@ public class ReservationService {
     @Transactional
     public ReservationResponse reserveAsAdmin(final Long adminId, final ReservationCreateRequest request, final boolean paid) {
         ReservationItem item = reservationItemRepository.findForUpdate(request.reservationItemId())
-                .filter(found -> found.getDeletedAt() == null)
+                .filter(found -> found.getDeletedAt() == null && Objects.equals(found.getSiteId(), SiteContextHolder.currentSiteId()))
                 .orElseThrow(BusinessException::notFound);
         return create(UserType.ADMIN, adminId, item, request, paid);
     }
@@ -751,6 +754,6 @@ public class ReservationService {
     }
 
     private ReservationItem findReservationItem(final Long id) {
-        return reservationItemRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(BusinessException::notFound);
+        return reservationItemRepository.findByIdAndSiteIdAndDeletedAtIsNull(id, SiteContextHolder.currentSiteId()).orElseThrow(BusinessException::notFound);
     }
 }

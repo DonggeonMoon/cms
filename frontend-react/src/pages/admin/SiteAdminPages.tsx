@@ -13,9 +13,11 @@ const featureField = (feature: SiteFeature) => `feature_${feature}`;
 const SITE_FIELDS: FieldSpec[] = [
     {name: 'isDefault', label: '기본 사이트', type: 'checkbox', wide: true, spaced: true},
     {name: 'name', label: '사이트 이름', required: true, help: '사용자 화면의 헤더와 홈에 표시됩니다.'},
-    {name: 'domain', label: '도메인', placeholder: 'www.example.com', newRow: true},
-    {name: 'locale', label: '로케일', placeholder: 'ko'},
     {name: 'description', label: '설명', wide: true, help: '홈 화면에 소개 문구로 표시됩니다.'},
+    {name: 'domain', label: '도메인', placeholder: 'www.example.com', newRow: true},
+    {name: 'code', label: '사이트 코드', placeholder: 'branch2',
+        help: '영문 소문자·숫자·하이픈만. 지정하면 /s/{코드}/ 주소로 접속합니다. 기본 사이트는 비워 두면 됩니다.'},
+    {name: 'locale', label: '로케일', placeholder: 'ko'},
     {name: 'theme', label: '테마', type: 'select', newRow: true, options: [{value: 'market', label: '마켓 (중고거래·쇼핑몰)'}],
         help: '선택 안 함이면 기본 테마를 씁니다.'},
     {name: 'darkModeEnabled', label: '다크 모드 사용', type: 'checkbox',
@@ -83,6 +85,7 @@ export function SiteAdminPage() {
             columns={[
                 {label: '이름', render: (s) => s.name},
                 {label: '도메인', render: (s) => s.domain ?? '-'},
+                {label: '접속 주소', render: (s) => s.code ? `/s/${s.code}/` : '/'},
                 {label: '기본', render: (s) => <YesNo value={s.isDefault}/>},
                 {label: '켜진 기능', render: (s) => {
                     const on = SITE_FEATURES.filter((feature) => s.features[feature.value] !== false);
@@ -141,8 +144,8 @@ const PERIOD_FIELDS: FieldSpec[] = [
 const TOP_BAR_FIELDS: FieldSpec[] = [
     {name: 'isUsing', label: '사용', type: 'checkbox', wide: true, spaced: true},
     {name: 'name', label: '관리용 이름', required: true},
-    {name: 'order', label: '순서', type: 'number', required: true, min: 1, help: '여러 개가 게시 중이면 순서가 가장 앞선 배너가 표시됩니다.'},
     {name: 'description', label: '표시 문구', required: true, wide: true, placeholder: '11월 3일 02:00~04:00 서비스 점검이 있습니다.'},
+    {name: 'order', label: '순서', type: 'number', required: true, min: 1, help: '여러 개가 게시 중이면 순서가 가장 앞선 배너가 표시됩니다.'},
     {name: 'backgroundColor', label: '배경색', type: 'color', newRow: true},
     {name: 'textColor', label: '글자색', type: 'color'},
     {name: 'link', label: '링크', placeholder: 'https:// 또는 /boards/1', newRow: true},
@@ -155,13 +158,13 @@ const POPUP_FIELDS: FieldSpec[] = [
     {name: 'isUsing', label: '사용', type: 'checkbox', wide: true},
     {name: 'opensNewWindow', label: '새 창으로 열기', type: 'checkbox', wide: true, spaced: true},
     {name: 'name', label: '제목', required: true},
+    {name: 'description', label: '내용 (이미지가 없을 때 표시)', type: 'textarea'},
     {name: 'popupMode', label: '표시 방식', type: 'select', required: true, options: [
             {value: 'MODELESS', label: '모달리스 (배경 클릭 가능)'},
             {value: 'MODAL', label: '모달 (배경 클릭 불가)'}],
         help: '모달은 화면 가운데에 어두운 배경과 함께 뜨고, 닫기 전에는 뒤 화면을 사용할 수 없습니다.'},
     {name: 'order', label: '순서', type: 'number', required: true, min: 1},
     {name: 'fileId', label: '이미지', type: 'image'},
-    {name: 'description', label: '내용 (이미지가 없을 때 표시)', type: 'textarea'},
     {name: 'link', label: '클릭 시 이동할 링크', placeholder: 'https://'},
     {name: 'width', label: '가로(px)', type: 'number', min: 0},
     {name: 'height', label: '세로(px)', type: 'number', min: 0},

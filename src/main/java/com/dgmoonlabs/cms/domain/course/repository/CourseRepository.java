@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CourseRepository extends JpaRepository<Course, Long> {
-    Optional<Course> findByIdAndDeletedAtIsNull(Long id);
+    Optional<Course> findByIdAndSiteIdAndDeletedAtIsNull(Long id, Long siteId);
 
-    List<Course> findAllByIsUsingTrueAndDeletedAtIsNullOrderByIdAsc();
+    List<Course> findAllByIsUsingTrueAndSiteIdAndDeletedAtIsNullOrderByIdAsc(Long siteId);
 
-    Page<Course> findAllByDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdDesc(String keyword, Pageable pageable);
+    Page<Course> findAllBySiteIdAndDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdDesc(Long siteId, String keyword, Pageable pageable);
 
-    Page<Course> findAllByIsUsingTrueAndDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdDesc(String keyword, Pageable pageable);
+    Page<Course> findAllByIsUsingTrueAndSiteIdAndDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdDesc(Long siteId, String keyword, Pageable pageable);
 }

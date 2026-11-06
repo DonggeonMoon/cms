@@ -319,6 +319,15 @@ button.danger {
     border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
 }
 
+/* 완전히 둥근(pill/circle) 버튼은 나란히 놓여도 서로 붙지 않도록 전역으로 여백을 준다 */
+.hero-search button,
+.chatbot-toggle,
+.site-nav a,
+.site-nav .link-button,
+.pagination button {
+    margin: 2px;
+}
+
 .link-button {
     padding: 0;
     border: none;

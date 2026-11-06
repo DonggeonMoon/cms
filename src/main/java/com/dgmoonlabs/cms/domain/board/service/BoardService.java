@@ -10,6 +10,7 @@ import com.dgmoonlabs.cms.domain.board.repository.BoardRepository;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
+import com.dgmoonlabs.cms.global.site.SiteContextHolder;
 import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class BoardService {
 
     @Transactional(readOnly = true)
     public List<BoardResponse> getBoards() {
-        return boardRepository.findAllByDeletedAtIsNullOrderByIdAsc().stream()
+        return boardRepository.findAllBySiteIdAndDeletedAtIsNullOrderByIdAsc(SiteContextHolder.currentSiteId()).stream()
                 .map(board -> toResponse(board, findConfig(board.getId())))
                 .toList();
     }
@@ -40,10 +41,11 @@ public class BoardService {
     @Transactional
     public Long createBoard(final BoardSaveRequest request) {
         validateGrades(request);
-        if (boardRepository.existsByName(request.name())) {
+        if (boardRepository.existsByNameAndSiteId(request.name(), SiteContextHolder.currentSiteId())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         Board board = boardRepository.save(Board.builder()
+                .siteId(SiteContextHolder.currentSiteId())
                 .name(request.name())
                 .description(request.description())
                 .type(request.type())
@@ -55,7 +57,7 @@ public class BoardService {
     @Transactional
     public void updateBoard(final Long id, final BoardSaveRequest request) {
         validateGrades(request);
-        if (boardRepository.existsByNameAndIdNot(request.name(), id)) {
+        if (boardRepository.existsByNameAndSiteIdAndIdNot(request.name(), SiteContextHolder.currentSiteId(), id)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         findBoard(id).update(request.name(), request.description(), request.type());
@@ -85,7 +87,7 @@ public class BoardService {
     }
 
     Board findBoard(final Long id) {
-        return boardRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(BusinessException::notFound);
+        return boardRepository.findByIdAndSiteIdAndDeletedAtIsNull(id, SiteContextHolder.currentSiteId()).orElseThrow(BusinessException::notFound);
     }
 
     BoardConfig findConfig(final Long boardId) {

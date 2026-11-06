@@ -5,6 +5,7 @@ import com.dgmoonlabs.cms.domain.admin.ipaccess.service.AdminIpInterceptor;
 import com.dgmoonlabs.cms.global.web.SeoIndexRenderer;
 import com.dgmoonlabs.cms.domain.admin.logging.AdminAuditInterceptor;
 import com.dgmoonlabs.cms.domain.admin.site.SiteFeatureInterceptor;
+import com.dgmoonlabs.cms.domain.admin.site.SiteResolvingInterceptor;
 import com.dgmoonlabs.cms.global.security.ReauthenticationInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 public class WebMvcConfig implements WebMvcConfigurer {
     private final LocaleChangeInterceptor localeChangeInterceptor;
     private final AdminAuditInterceptor adminAuditInterceptor;
+    private final SiteResolvingInterceptor siteResolvingInterceptor;
     private final SiteFeatureInterceptor siteFeatureInterceptor;
     private final ReauthenticationInterceptor reauthenticationInterceptor;
     private final AdminAreaInterceptor adminAreaInterceptor;
@@ -36,6 +38,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(localeChangeInterceptor);
         registry.addInterceptor(adminIpInterceptor).addPathPatterns("/api/admin/**");
         registry.addInterceptor(adminAuditInterceptor).addPathPatterns("/api/admin/**");
+        registry.addInterceptor(siteResolvingInterceptor).addPathPatterns("/api/**");
         registry.addInterceptor(siteFeatureInterceptor).addPathPatterns("/api/**");
         registry.addInterceptor(adminAreaInterceptor).addPathPatterns("/api/admin/**");
         registry.addInterceptor(reauthenticationInterceptor).addPathPatterns("/api/admin/**");

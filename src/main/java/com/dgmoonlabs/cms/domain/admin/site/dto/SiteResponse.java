@@ -15,6 +15,7 @@ public record SiteResponse(
         String name,
         String description,
         String domain,
+        String code,
         String theme,
         MenuType type,
         String locale,
@@ -42,6 +43,7 @@ public record SiteResponse(
                 site.getName(),
                 site.getDescription(),
                 site.getDomain(),
+                site.getCode(),
                 site.getTheme(),
                 site.getType(),
                 site.getLocale(),
@@ -64,7 +66,7 @@ public record SiteResponse(
     }
 
     public static SiteResponse fallback() {
-        return new SiteResponse(null, FALLBACK_NAME, null, null, null, null, null, true, null, features(Set.of()), true,
+        return new SiteResponse(null, FALLBACK_NAME, null, null, null, null, null, null, true, null, features(Set.of()), true,
                 null, null, null, null, null, null, null, true, null, null, null);
     }
 
