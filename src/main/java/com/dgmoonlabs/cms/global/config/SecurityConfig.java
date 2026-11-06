@@ -40,12 +40,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/reviews/*").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/satisfactions").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.GET, "/api/reports/me").hasRole("MEMBER")
-                .requestMatchers(HttpMethod.GET, "/api/media/me", "/api/applications/me", "/api/courses/me",
+                .requestMatchers(HttpMethod.GET, "/api/streaming/me", "/api/applications/me", "/api/courses/me",
                         "/api/applications/*/judging").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/courses/*/enroll", "/api/courses/*/lessons/*/quiz").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/applications/*/submissions", "/api/applications/submissions/*/withdraw",
                         "/api/applications/submissions/*/admission-payment", "/api/applications/submissions/*/score").hasRole("MEMBER")
-                .requestMatchers(HttpMethod.POST, "/api/media/*/start", "/api/media/*/progress").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.POST, "/api/streaming/*/start", "/api/streaming/*/progress").hasRole("MEMBER")
                 .requestMatchers(API).permitAll()
                 .anyRequest().permitAll()
         );

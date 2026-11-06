@@ -155,7 +155,7 @@ public class ProductService {
         if (saleType == ProductSaleType.SUBSCRIPTION && request.billingCycle() == null) {
             throw new BusinessException(ErrorCode.BILLING_CYCLE_REQUIRED);
         }
-        if (saleType == ProductSaleType.PASS && (request.passUnit() == null || request.passProgramId() == null
+        if (saleType == ProductSaleType.PASS && (request.passUnit() == null || request.passReservationItemId() == null
                 || (request.passUnit() == PassUnit.PERIOD && request.passDays() == null)
                 || (request.passUnit() == PassUnit.COUNT && request.passCount() == null))) {
             throw new BusinessException(ErrorCode.PASS_CONFIG_REQUIRED);
@@ -174,12 +174,12 @@ public class ProductService {
                 || request.fundingDeadline() == null)) {
             throw new BusinessException(ErrorCode.FUNDING_GOAL_REQUIRED);
         }
-        if (saleType == ProductSaleType.INQUIRY && request.inquiryProgramId() == null) {
-            throw new BusinessException(ErrorCode.INQUIRY_PROGRAM_REQUIRED);
+        if (saleType == ProductSaleType.INQUIRY && request.inquiryReservationItemId() == null) {
+            throw new BusinessException(ErrorCode.INQUIRY_RESERVATION_ITEM_REQUIRED);
         }
         product.changeSaleType(saleType, request.billingCycle(), request.donationPresetsText(), request.goalAmount());
-        product.changePass(request.passUnit(), request.passDays(), request.passCount(), request.passProgramId());
-        product.changeInquiry(request.inquiryProgramId());
+        product.changePass(request.passUnit(), request.passDays(), request.passCount(), request.passReservationItemId());
+        product.changeInquiry(request.inquiryReservationItemId());
         product.changePreorder(request.preorderSaleStartAt(), request.preorderSaleEndAt(), request.preorderShipDate());
         product.changeCommitment(request.commitmentMonths(), request.earlyTerminationFeeRate());
         product.changeFunding(request.fundingDeadline());

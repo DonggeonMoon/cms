@@ -1,7 +1,7 @@
 package com.dgmoonlabs.cms.domain.course.dto;
 
 import com.dgmoonlabs.cms.domain.course.entity.QuizQuestion;
-import com.dgmoonlabs.cms.domain.media.constant.EnrollmentStatus;
+import com.dgmoonlabs.cms.domain.streaming.constant.EnrollmentStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
@@ -15,7 +15,7 @@ public final class CourseDtos {
     public record LessonRequest(
             Long id,
             @NotBlank @Size(max = 200) String title,
-            Long mediaId,
+            Long streamingId,
             @Size(max = 30) List<@Valid QuizQuestion> quiz,
             @Min(1) @Max(100) Integer passScore
     ) {
@@ -41,8 +41,8 @@ public final class CourseDtos {
         }
     }
 
-    public record LessonResponse(Long id, int sequence, String title, Long mediaId, String mediaTitle, Integer durationSeconds,
-                                 List<?> quiz, Integer passScore, boolean mediaCompleted, boolean quizPassed,
+    public record LessonResponse(Long id, int sequence, String title, Long streamingId, String streamingTitle, Integer durationSeconds,
+                                 List<?> quiz, Integer passScore, boolean streamingCompleted, boolean quizPassed,
                                  boolean completed, boolean locked) {
     }
 

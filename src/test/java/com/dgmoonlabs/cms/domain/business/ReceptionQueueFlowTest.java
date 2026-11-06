@@ -22,25 +22,25 @@ class ReceptionQueueFlowTest extends ApiTestSupport {
                 """.formatted(DAY.minusDays(1), DAY.plusDays(1))));
 
         String code1 = body(postJson("/api/reservations", member("patient1"), """
-                {"programId":%d,"quantity":1,"startAt":"%sT10:00:00",%s}
+                {"reservationItemId":%d,"quantity":1,"startAt":"%sT10:00:00",%s}
                 """.formatted(clinic, DAY, APPLICANT)).andExpect(jsonPath("$.status").value("CONFIRMED")))
                 .get("checkInCode").asText();
         String code2 = body(postJson("/api/reservations", member("patient2"), """
-                {"programId":%d,"quantity":1,"startAt":"%sT10:00:00",%s}
+                {"reservationItemId":%d,"quantity":1,"startAt":"%sT10:00:00",%s}
                 """.formatted(clinic, DAY, APPLICANT))).get("checkInCode").asText();
 
         long id1 = body(postJson("/api/admin/reservations/check-in", admin, "{\"code\":\"%s\"}".formatted(code1))
                 .andExpect(jsonPath("$.queueNumber").value(1))
                 .andExpect(jsonPath("$.queueStatus").value("WAITING"))).get("id").asLong();
 
-        getJson("/api/admin/reservations/queue?programId=" + clinic, admin)
+        getJson("/api/admin/reservations/queue?reservationItemId=" + clinic, admin)
                 .andExpect(jsonPath("$.length()").value(1));
 
         postJson("/api/admin/reservations/check-in", admin, "{\"code\":\"%s\"}".formatted(code2))
                 .andExpect(jsonPath("$.queueNumber").value(2))
                 .andExpect(jsonPath("$.queueStatus").value("WAITING"));
 
-        getJson("/api/admin/reservations/queue?programId=" + clinic, admin)
+        getJson("/api/admin/reservations/queue?reservationItemId=" + clinic, admin)
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].queueNumber").value(1))
                 .andExpect(jsonPath("$[1].queueNumber").value(2));
@@ -58,7 +58,7 @@ class ReceptionQueueFlowTest extends ApiTestSupport {
                 {"name":"요가","price":0,"reservationType":"PROGRAM","isEnabled":true}
                 """));
         String code = body(postJson("/api/reservations", member("yogi"), """
-                {"programId":%d,"quantity":1,%s}
+                {"reservationItemId":%d,"quantity":1,%s}
                 """.formatted(yoga, APPLICANT))).get("checkInCode").asText();
 
         long id = body(postJson("/api/admin/reservations/check-in", admin, "{\"code\":\"%s\"}".formatted(code))

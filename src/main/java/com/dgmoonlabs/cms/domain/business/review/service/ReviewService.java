@@ -4,7 +4,7 @@ import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
 import com.dgmoonlabs.cms.domain.business.order.repository.OrderRepository;
 import com.dgmoonlabs.cms.domain.business.order.service.ProductService;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
-import com.dgmoonlabs.cms.domain.business.reservation.repository.ProgramRepository;
+import com.dgmoonlabs.cms.domain.business.reservation.repository.ReservationItemRepository;
 import com.dgmoonlabs.cms.domain.business.reservation.repository.ReservationRepository;
 import com.dgmoonlabs.cms.domain.business.review.constant.ReviewTargetType;
 import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewResponse;
@@ -35,7 +35,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final OrderRepository orderRepository;
     private final ReservationRepository reservationRepository;
-    private final ProgramRepository programRepository;
+    private final ReservationItemRepository reservationItemRepository;
     private final ProductService productService;
     private final HtmlSanitizer htmlSanitizer;
 
@@ -46,8 +46,8 @@ public class ReviewService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ReviewResponse> getProgramReviews(final Long programId, final Pageable pageable) {
-        return reviewRepository.findAllByProgramIdAndDeletedAtIsNullOrderByIdDesc(programId, pageable)
+    public Page<ReviewResponse> getReservationItemReviews(final Long reservationItemId, final Pageable pageable) {
+        return reviewRepository.findAllByReservationItemIdAndDeletedAtIsNullOrderByIdDesc(reservationItemId, pageable)
                 .map(review -> ReviewResponse.of(review, canDelete(review)));
     }
 
@@ -71,21 +71,21 @@ public class ReviewService {
     }
 
     @Transactional
-    public Long createProgramReview(final LoginUser member, final Long programId, final ReviewSaveRequest request,
-                                    final String ipAddress) {
-        programRepository.findByIdAndDeletedAtIsNull(programId).orElseThrow(BusinessException::notFound);
-        if (!reservationRepository.existsByUserTypeAndUserIdAndProgramIdAndStatus(UserType.MEMBER, member.id(), programId, ReservationStatus.CONFIRMED)) {
+    public Long createReservationItemReview(final LoginUser member, final Long reservationItemId, final ReviewSaveRequest request,
+                                            final String ipAddress) {
+        reservationItemRepository.findByIdAndDeletedAtIsNull(reservationItemId).orElseThrow(BusinessException::notFound);
+        if (!reservationRepository.existsByUserTypeAndUserIdAndReservationItemIdAndStatus(UserType.MEMBER, member.id(), reservationItemId, ReservationStatus.CONFIRMED)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
-        if (reviewRepository.existsByProgramIdAndUserIdAndDeletedAtIsNull(programId, member.id())) {
+        if (reviewRepository.existsByReservationItemIdAndUserIdAndDeletedAtIsNull(reservationItemId, member.id())) {
             throw new BusinessException(ErrorCode.ALREADY_SUBMITTED);
         }
-        return save(member, request, ipAddress, Review.builder().targetType(ReviewTargetType.PROGRAM).programId(programId));
+        return save(member, request, ipAddress, Review.builder().targetType(ReviewTargetType.RESERVATION_ITEM).reservationItemId(reservationItemId));
     }
 
     @Transactional(readOnly = true)
-    public Double averageProgramRating(final Long programId) {
-        return reviewRepository.averageProgramRating(programId);
+    public Double averageReservationItemRating(final Long reservationItemId) {
+        return reviewRepository.averageReservationItemRating(reservationItemId);
     }
 
     @Transactional

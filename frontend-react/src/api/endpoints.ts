@@ -50,10 +50,10 @@ export const adminApi = {
     },
     reauthenticate: (password: string) => request<void>('/api/admin/reauthenticate', {method: 'POST', body: {password}}),
     configs: resource<D.Config>('/api/admin/configs'),
-    media: {
-        ...resource<D.MediaItem>('/api/admin/media'),
+    streaming: {
+        ...resource<D.StreamingItem>('/api/admin/streaming'),
         learners: (id: number, page: number) =>
-            request<Page<D.Learner>>(`/api/admin/media/${id}/learners`, {query: {page}}),
+            request<Page<D.Learner>>(`/api/admin/streaming/${id}/learners`, {query: {page}}),
     },
     chatbot: {
         get: () => request<D.ChatbotSetting>('/api/admin/chatbot'),
@@ -83,7 +83,7 @@ export const adminApi = {
         saveGradePrices: (id: number, gradePrices: D.GradePrice[]) =>
             request<D.GradePrice[]>(`/api/admin/products/${id}/grade-prices`, {method: 'PUT', body: gradePrices}),
     },
-    programs: resource<D.Program>('/api/reservation-items', (id) => `/api/reservation-items/${id}`, '/api/admin/reservation-items',
+    reservationItems: resource<D.ReservationItem>('/api/reservation-items', (id) => `/api/reservation-items/${id}`, '/api/admin/reservation-items',
         (id) => `/api/admin/reservation-items/${id}`),
     menus: {
         tree: () => request<D.Menu[]>('/api/admin/menus'),
@@ -168,6 +168,11 @@ export const adminApi = {
     notifications: {
         list: (page: number) => request<Page<D.AdminNotification>>('/api/admin/notifications', {query: {page}}),
     },
+    notificationSettings: {
+        list: () => request<D.NotificationTypeSetting[]>('/api/admin/notification-settings'),
+        save: (body: Partial<Record<D.NotificationType, boolean>>) =>
+            request<D.NotificationTypeSetting[]>('/api/admin/notification-settings', {method: 'PUT', body}),
+    },
     votes: {
         search: (query: Query) => request<Page<D.Vote>>('/api/admin/votes', {query}),
         create: (body: Body) => request<D.Vote>('/api/admin/votes', {method: 'POST', body}),
@@ -223,18 +228,18 @@ export const adminApi = {
         cancelExtension: (id: number) => request<D.Reservation>(`/api/admin/reservations/${id}/extension/cancel`, {method: 'POST'}),
         extensions: (id: number) => request<D.ReservationExtension[]>(`/api/admin/reservations/${id}/extensions`),
         checkIn: (code: string) => request<D.Reservation>('/api/admin/reservations/check-in', {method: 'POST', body: {code}}),
-        queue: (programId: number, date?: string) =>
-            request<D.Reservation[]>('/api/admin/reservations/queue', {query: {programId, date}}),
+        queue: (reservationItemId: number, date?: string) =>
+            request<D.Reservation[]>('/api/admin/reservations/queue', {query: {reservationItemId, date}}),
         changeQueueStatus: (id: number, status: D.QueueStatus) =>
             request<D.Reservation>(`/api/admin/reservations/${id}/queue-status`, {method: 'POST', body: {status}}),
     },
     sessions: {
-        create: (programId: number, body: Body) =>
-            request<D.ProgramSession>(`/api/admin/reservation-items/${programId}/sessions`, {method: 'POST', body}),
-        update: (programId: number, id: number, body: Body) =>
-            request<D.ProgramSession>(`/api/admin/reservation-items/${programId}/sessions/${id}`, {method: 'PUT', body}),
-        remove: (programId: number, id: number) =>
-            request<void>(`/api/admin/reservation-items/${programId}/sessions/${id}`, {method: 'DELETE'}),
+        create: (reservationItemId: number, body: Body) =>
+            request<D.ReservationItemSession>(`/api/admin/reservation-items/${reservationItemId}/sessions`, {method: 'POST', body}),
+        update: (reservationItemId: number, id: number, body: Body) =>
+            request<D.ReservationItemSession>(`/api/admin/reservation-items/${reservationItemId}/sessions/${id}`, {method: 'PUT', body}),
+        remove: (reservationItemId: number, id: number) =>
+            request<void>(`/api/admin/reservation-items/${reservationItemId}/sessions/${id}`, {method: 'DELETE'}),
     },
     customerRecords: {
         search: (query: Query) => request<Page<D.CustomerRecord>>('/api/admin/customer-records', {query}),
@@ -417,7 +422,7 @@ export const shopApi = {
     myAttendance: (subscriptionId: number, page: number) =>
         request<Page<D.MyAttendance>>('/api/class-attendance/me', {query: {subscriptionId, page}}),
     myPasses: (page: number) => request<Page<D.MemberPass>>('/api/passes/me', {query: {page}}),
-    usablePasses: (programId: number) => request<D.MemberPass[]>('/api/passes/usable', {query: {programId}}),
+    usablePasses: (reservationItemId: number) => request<D.MemberPass[]>('/api/passes/usable', {query: {reservationItemId}}),
     wallet: {
         balance: () => request<number>('/api/wallet/balance'),
         ledger: (page: number) => request<Page<D.WalletLedgerEntry>>('/api/wallet/ledger', {query: {page}}),
@@ -448,13 +453,13 @@ export const shopApi = {
     wishlistIds: () => request<number[]>('/api/wishlist/product-ids'),
     wish: (productId: number) => request<void>(`/api/wishlist/${productId}`, {method: 'PUT'}),
     unwish: (productId: number) => request<void>(`/api/wishlist/${productId}`, {method: 'DELETE'}),
-    programs: (keyword: string, page: number) =>
-        request<Page<D.Program>>('/api/reservation-items', {query: {keyword, page}}),
-    program: (id: number) => request<D.Program>(`/api/reservation-items/${id}`),
+    reservationItems: (keyword: string, page: number) =>
+        request<Page<D.ReservationItem>>('/api/reservation-items', {query: {keyword, page}}),
+    reservationItem: (id: number) => request<D.ReservationItem>(`/api/reservation-items/${id}`),
     availability: (id: number, query: { date?: string; from?: string; to?: string; sessionId?: number }) =>
         request<D.Availability>(`/api/reservation-items/${id}/availability`, {query}),
-    programReviews: (id: number, page: number) => request<Page<D.Review>>(`/api/reservation-items/${id}/reviews`, {query: {page}}),
-    addProgramReview: (id: number, body: Body) => request<void>(`/api/reservation-items/${id}/reviews`, {method: 'POST', body}),
+    reservationItemReviews: (id: number, page: number) => request<Page<D.Review>>(`/api/reservation-items/${id}/reviews`, {query: {page}}),
+    addReservationItemReview: (id: number, body: Body) => request<void>(`/api/reservation-items/${id}/reviews`, {method: 'POST', body}),
     reserve: (body: Body) => request<D.Reservation>('/api/reservations', {method: 'POST', body}),
     myReservations: (page: number) => request<Page<D.Reservation>>('/api/reservations/me', {query: {page}}),
     cancelReservation: (id: number) => request<void>(`/api/reservations/${id}/cancel`, {method: 'POST'}),
@@ -474,14 +479,14 @@ export const govApi = {
         request<D.Satisfaction>('/api/satisfactions', {method: 'POST', body: {menuId, score, opinion}}),
 };
 
-export const mediaApi = {
+export const streamingApi = {
     list: (keyword: string, mediaType: MediaType | '', page: number) =>
-        request<Page<D.MediaItem>>('/api/media', {query: {keyword, mediaType, page}}),
-    get: (id: number) => request<D.MediaItem>(`/api/media/${id}`),
-    start: (id: number) => request<D.MediaProgress>(`/api/media/${id}/start`, {method: 'POST'}),
+        request<Page<D.StreamingItem>>('/api/streaming', {query: {keyword, mediaType, page}}),
+    get: (id: number) => request<D.StreamingItem>(`/api/streaming/${id}`),
+    start: (id: number) => request<D.StreamingProgress>(`/api/streaming/${id}/start`, {method: 'POST'}),
     record: (id: number, ranges: { start: number; end: number }[], position: number) =>
-        request<D.MediaProgress>(`/api/media/${id}/progress`, {method: 'POST', body: {ranges, position}}),
-    mine: (page: number) => request<Page<D.MyMedia>>('/api/media/me', {query: {page}}),
+        request<D.StreamingProgress>(`/api/streaming/${id}/progress`, {method: 'POST', body: {ranges, position}}),
+    mine: (page: number) => request<Page<D.MyStreaming>>('/api/streaming/me', {query: {page}}),
 };
 
 export const applicationApi = {

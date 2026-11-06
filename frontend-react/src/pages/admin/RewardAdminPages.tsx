@@ -68,23 +68,24 @@ export function PointPolicyPage() {
 }
 
 const couponFields = (products: { value: string; label: string }[], grades: { value: string; label: string }[]): FieldSpec[] => [
+    {name: 'isEnabled', label: '사용', type: 'checkbox', wide: true},
     {name: 'name', label: '쿠폰 이름', required: true, wide: true},
     {name: 'description', label: '설명', wide: true},
+    {name: 'productId', label: '적용 상품', type: 'select', wide: true, options: products, emptyOptionLabel: '전체',
+        help: '선택 안 함이면 모든 상품에 쓸 수 있습니다.'},
     {name: 'discountType', label: '할인 방식', type: 'select', required: true, wide: true,
         options: [{value: 'AMOUNT', label: '정액 (원)'}, {value: 'RATE', label: '정률 (%)'}]},
-    {name: 'discountValue', label: '할인 금액·할인율', type: 'number', required: true, wide: true},
-    {name: 'maxDiscountAmount', label: '최대 할인 금액(원)', type: 'number', wide: true, visibleWhen: (v) => v.discountType === 'RATE'},
-    {name: 'minOrderAmount', label: '최소 주문 금액(원)', type: 'number', wide: true, help: '적용 상품 금액 합계 기준입니다.'},
-    {name: 'productId', label: '적용 상품', type: 'select', wide: true, options: products, help: '선택 안 함이면 모든 상품에 쓸 수 있습니다.'},
+    {name: 'discountValue', label: '할인 금액·할인율', type: 'number', min: 0, required: true, wide: true},
+    {name: 'maxDiscountAmount', label: '최대 할인 금액(원)', type: 'number', min: 0, wide: true, visibleWhen: (v) => v.discountType === 'RATE'},
+    {name: 'minOrderAmount', label: '최소 주문 금액(원)', type: 'number', min: 0, wide: true, help: '적용 상품 금액 합계 기준입니다.'},
     {name: 'issueType', label: '발급 방식', type: 'select', required: true, wide: true, options: toOptions(COUPON_ISSUE_TYPE)},
     {name: 'targetGradeId', label: '지급할 등급', type: 'select', required: true, wide: true, options: grades,
         visibleWhen: (v) => v.issueType === 'GRADE', help: '이 등급이 되면 한 번 지급합니다.'},
     {name: 'issueStartAt', label: '발급 시작', type: 'datetime', wide: true},
     {name: 'issueEndAt', label: '발급 종료', type: 'datetime', wide: true},
-    {name: 'validDays', label: '받은 뒤 사용 가능 일수', type: 'number', wide: true, help: '비우면 사용 종료 일시까지 쓸 수 있습니다.'},
+    {name: 'validDays', label: '받은 뒤 사용 가능 일수', type: 'number', min: 0, wide: true, help: '비우면 사용 종료 일시까지 쓸 수 있습니다.'},
     {name: 'validUntil', label: '사용 종료 일시', type: 'datetime', wide: true},
-    {name: 'totalQuantity', label: '총 발급 수량', type: 'number', wide: true, help: '비우면 무제한'},
-    {name: 'isEnabled', label: '사용', type: 'checkbox', wide: true},
+    {name: 'totalQuantity', label: '총 발급 수량', type: 'number', min: 0, wide: true, help: '비우면 무제한'},
 ];
 
 const loadCoupons = () => couponApi.list();

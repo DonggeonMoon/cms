@@ -13,12 +13,12 @@ export interface CourseLesson {
     id: number;
     sequence: number;
     title: string;
-    mediaId: number | null;
-    mediaTitle: string | null;
+    streamingId: number | null;
+    streamingTitle: string | null;
     durationSeconds: number | null;
     quiz: QuizQuestion[];
     passScore: number | null;
-    mediaCompleted: boolean;
+    streamingCompleted: boolean;
     quizPassed: boolean;
     completed: boolean;
     locked: boolean;
@@ -68,7 +68,7 @@ export interface CourseLearner {
 export interface LessonDraft {
     id: number | null;
     title: string;
-    mediaId: number | null;
+    streamingId: number | null;
     passScore: number | null;
     quiz: { question: string; optionsText: string; answerIndex: number }[];
 }
@@ -94,7 +94,7 @@ export const courseAdminApi = {
 export const toLessonDrafts = (lessons: CourseLesson[]): LessonDraft[] => lessons.map((lesson) => ({
     id: lesson.id,
     title: lesson.title,
-    mediaId: lesson.mediaId,
+    streamingId: lesson.streamingId,
     passScore: lesson.passScore,
     quiz: lesson.quiz.map((q) => ({question: q.question, optionsText: q.options.join(', '), answerIndex: q.answerIndex ?? 0})),
 }));
@@ -102,7 +102,7 @@ export const toLessonDrafts = (lessons: CourseLesson[]): LessonDraft[] => lesson
 export const lessonBody = (drafts: LessonDraft[]) => drafts.map((draft) => ({
     id: draft.id,
     title: draft.title,
-    mediaId: draft.mediaId,
+    streamingId: draft.streamingId,
     passScore: draft.quiz.length ? draft.passScore : null,
     quiz: draft.quiz.map((q) => ({
         question: q.question,

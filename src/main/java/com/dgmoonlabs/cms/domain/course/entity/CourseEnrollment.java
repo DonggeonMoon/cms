@@ -1,6 +1,6 @@
 package com.dgmoonlabs.cms.domain.course.entity;
 
-import com.dgmoonlabs.cms.domain.media.constant.EnrollmentStatus;
+import com.dgmoonlabs.cms.domain.streaming.constant.EnrollmentStatus;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;

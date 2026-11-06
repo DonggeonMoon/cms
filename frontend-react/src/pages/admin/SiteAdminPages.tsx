@@ -13,13 +13,13 @@ const featureField = (feature: SiteFeature) => `feature_${feature}`;
 const SITE_FIELDS: FieldSpec[] = [
     {name: 'isDefault', label: '기본 사이트', type: 'checkbox', wide: true, spaced: true},
     {name: 'name', label: '사이트 이름', required: true, help: '사용자 화면의 헤더와 홈에 표시됩니다.'},
-    {name: 'domain', label: '도메인', placeholder: 'www.example.com'},
+    {name: 'domain', label: '도메인', placeholder: 'www.example.com', newRow: true},
+    {name: 'locale', label: '로케일', placeholder: 'ko'},
     {name: 'description', label: '설명', wide: true, help: '홈 화면에 소개 문구로 표시됩니다.'},
-    {name: 'theme', label: '테마', type: 'select', options: [{value: 'market', label: '마켓 (중고거래·쇼핑몰)'}],
+    {name: 'theme', label: '테마', type: 'select', newRow: true, options: [{value: 'market', label: '마켓 (중고거래·쇼핑몰)'}],
         help: '선택 안 함이면 기본 테마를 씁니다.'},
     {name: 'darkModeEnabled', label: '다크 모드 사용', type: 'checkbox',
         help: '켜면 방문자가 시스템·라이트·다크 중에서 고를 수 있고, 끄면 항상 라이트 모드로 보입니다.'},
-    {name: 'locale', label: '로케일', placeholder: 'ko'},
     ...SITE_FEATURES.map((feature): FieldSpec => ({name: featureField(feature.value), label: feature.label, type: 'checkbox', group: '기능'})),
     {name: 'faviconFileId', label: '파비콘', type: 'image', wide: true, group: '검색·공유 (SEO)',
         help: '브라우저 탭에 보이는 아이콘입니다. 정사각형 PNG(32×32 이상)나 ICO 파일을 권장합니다.'},
@@ -130,7 +130,7 @@ export function ConfigAdminPage() {
 }
 
 const DISMISS_FIELD: FieldSpec = {
-    name: 'dismissDays', label: '보지 않기 기간(일)', type: 'number', required: true,
+    name: 'dismissDays', label: '보지 않기 기간(일)', type: 'number', min: 0, required: true,
     help: '방문자가 "보지 않기"로 닫으면 이 기간 동안 다시 보이지 않습니다. 1이면 "오늘 하루 보지 않기", 0이면 버튼을 표시하지 않습니다.',
 };
 const PERIOD_FIELDS: FieldSpec[] = [
@@ -163,8 +163,8 @@ const POPUP_FIELDS: FieldSpec[] = [
     {name: 'fileId', label: '이미지', type: 'image'},
     {name: 'description', label: '내용 (이미지가 없을 때 표시)', type: 'textarea'},
     {name: 'link', label: '클릭 시 이동할 링크', placeholder: 'https://'},
-    {name: 'width', label: '가로(px)', type: 'number'},
-    {name: 'height', label: '세로(px)', type: 'number'},
+    {name: 'width', label: '가로(px)', type: 'number', min: 0},
+    {name: 'height', label: '세로(px)', type: 'number', min: 0},
     {name: 'top', label: '위치 top(px)', type: 'number', help: '모달리스일 때만 사용합니다.'},
     {name: 'left', label: '위치 left(px)', type: 'number', help: '모달리스일 때만 사용합니다.'},
     DISMISS_FIELD,
@@ -271,7 +271,7 @@ const menuFields = (allowedKinds: MenuKind[]): FieldSpec[] => [
     {name: 'name', label: '메뉴 이름', required: true},
     {name: 'kind', label: '종류', type: 'select', required: true, options: allowedKinds.map(({value, label}) => ({value, label})),
         help: allowedKinds.length < MENU_KINDS.length ? '사용 중지된 기능은 메뉴 종류로 선택할 수 없습니다.' : undefined},
-    {name: 'targetId', label: '연결 대상 ID', type: 'number', help: '컨텐츠는 컨텐츠 ID, 게시판·아카이브 (하나 지정)는 게시판·아카이브 ID'},
+    {name: 'targetId', label: '연결 대상 ID', type: 'number', min: 0, help: '컨텐츠는 컨텐츠 ID, 게시판·아카이브 (하나 지정)는 게시판·아카이브 ID'},
     {name: 'link', label: '링크', help: '링크 메뉴일 때 이동할 주소'},
     {name: 'sequence', label: '순서', type: 'number', required: true, min: 1},
 ];

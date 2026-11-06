@@ -10,8 +10,8 @@ function respond(status: number, body?: unknown) {
 }
 
 const lesson = (id: number, extra: object) => ({
-    id, sequence: id, title: `차시 ${id}`, mediaId: null, mediaTitle: null, durationSeconds: null, quiz: [], passScore: null,
-    mediaCompleted: false, quizPassed: false, completed: false, locked: false, ...extra,
+    id, sequence: id, title: `차시 ${id}`, streamingId: null, streamingTitle: null, durationSeconds: null, quiz: [], passScore: null,
+    streamingCompleted: false, quizPassed: false, completed: false, locked: false, ...extra,
 });
 
 const COURSE = {
@@ -19,7 +19,7 @@ const COURSE = {
     isUsing: true, lessonCount: 2, createdAt: '2026-11-01T00:00:00',
     myProgress: {status: 'IN_PROGRESS', completedLessons: 1, enrolledAt: '2026-11-01T00:00:00', completedAt: null},
     lessons: [
-        lesson(1, {mediaId: 9, mediaTitle: '1강 영상', durationSeconds: 600, mediaCompleted: true, completed: true}),
+        lesson(1, {streamingId: 9, streamingTitle: '1강 영상', durationSeconds: 600, streamingCompleted: true, completed: true}),
         lesson(2, {quiz: [{question: '1+1은?', options: ['1', '2']}, {question: '하늘 색은?', options: ['파랑', '빨강']}], passScore: 100}),
     ],
 };
@@ -43,7 +43,7 @@ describe('course pages', () => {
         }));
         render(<AuthProvider><RouterProvider router={createMemoryRouter(routes, {initialEntries: ['/courses/5']})}/></AuthProvider>);
 
-        expect(await screen.findByRole('link', {name: '1강 영상'})).toHaveAttribute('href', '/media/9');
+        expect(await screen.findByRole('link', {name: '1강 영상'})).toHaveAttribute('href', '/streaming/9');
         expect(screen.getByText(/1 \/ 2차시 완료/)).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: '퀴즈 풀기'}));
         expect(screen.getByRole('button', {name: '제출'})).toBeDisabled();

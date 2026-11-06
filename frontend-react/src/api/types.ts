@@ -39,6 +39,7 @@ export interface MemberProfile {
     email?: string | null;
     telephoneNumber?: string | null;
     mobilePhoneNumber?: string | null;
+    mobilePhoneCountryCode?: string | null;
     postalCode?: string | null;
     address?: string | null;
     detailAddress?: string | null;
@@ -74,6 +75,7 @@ export interface JoinSettings {
     collectNickname: boolean;
     birthDateInput: BirthDateInput;
     collectedItems: PersonalInfoItem[];
+    useMobilePhoneCountryCode: boolean;
 }
 
 export interface AdminJoinSettings extends JoinSettings {

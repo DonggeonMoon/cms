@@ -35,7 +35,7 @@ public class Product extends BaseEntity {
     private String description;
 
     @Comment("판매하는 스트리밍 ID (스트리밍 설정에서 자동 관리, 상품 목록에는 나오지 않음)")
-    private Long mediaId;
+    private Long streamingId;
 
     @Comment("판매하는 유료 게시글 ID (게시글 설정에서 자동 관리, 상품 목록에는 나오지 않음)")
     private Long articleId;
@@ -91,10 +91,10 @@ public class Product extends BaseEntity {
     private Integer passCount;
 
     @Comment("이 이용권으로 예약할 수 있는 예약 상품 ID")
-    private Long passProgramId;
+    private Long passReservationItemId;
 
     @Comment("문의만 상품에서 상담 예약으로 연결할 예약 상품 ID")
-    private Long inquiryProgramId;
+    private Long inquiryReservationItemId;
 
     @Comment("선주문 판매 시작 일시 (없으면 지금부터)")
     private LocalDateTime preorderSaleStartAt;
@@ -190,16 +190,16 @@ public class Product extends BaseEntity {
         this.fundingDeadline = saleType == ProductSaleType.FUNDING ? deadline : null;
     }
 
-    public void changePass(final PassUnit passUnit, final Integer passDays, final Integer passCount, final Long passProgramId) {
+    public void changePass(final PassUnit passUnit, final Integer passDays, final Integer passCount, final Long passReservationItemId) {
         boolean isPass = saleType == ProductSaleType.PASS;
         this.passUnit = isPass ? passUnit : null;
         this.passDays = isPass && passUnit == PassUnit.PERIOD ? passDays : null;
         this.passCount = isPass && passUnit == PassUnit.COUNT ? passCount : null;
-        this.passProgramId = isPass ? passProgramId : null;
+        this.passReservationItemId = isPass ? passReservationItemId : null;
     }
 
-    public void changeInquiry(final Long inquiryProgramId) {
-        this.inquiryProgramId = saleType == ProductSaleType.INQUIRY ? inquiryProgramId : null;
+    public void changeInquiry(final Long inquiryReservationItemId) {
+        this.inquiryReservationItemId = saleType == ProductSaleType.INQUIRY ? inquiryReservationItemId : null;
     }
 
     public void changeCommitment(final Integer commitmentMonths, final Integer earlyTerminationFeeRate) {

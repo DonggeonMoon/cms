@@ -1,6 +1,6 @@
 import {type FormEvent, type ReactNode, useEffect, useState} from 'react';
 import {Link, useNavigate} from 'react-router';
-import type {Archive, Board, ProductSummary, Program} from '../api/domain';
+import type {Archive, Board, ProductSummary, ReservationItem} from '../api/domain';
 import {archiveApi, boardApi, shopApi} from '../api/endpoints';
 import {useAuth} from '../auth/AuthContext';
 import {ProductCard} from '../pages/shop/ShopPages';
@@ -12,7 +12,7 @@ export const HOME_BLOCKS: Record<string, { label: string; render: () => ReactNod
     'greeting': {label: '로그인 안내·환영 문구', render: () => <Greeting/>},
     'shortcuts': {label: '바로가기 버튼', render: () => <Shortcuts/>},
     'new-products': {label: '새로 들어온 상품 8개', render: () => <NewProducts/>},
-    'open-programs': {label: '모집 중인 프로그램', render: () => <OpenPrograms/>},
+    'open-programs': {label: '모집 중인 프로그램', render: () => <OpenReservationItems/>},
     'latest-posts': {label: '첫 번째 아카이브(없으면 게시판)의 최근 글', render: () => <LatestPosts/>},
 };
 
@@ -96,18 +96,18 @@ export function NewProducts() {
     );
 }
 
-export function OpenPrograms() {
+export function OpenReservationItems() {
     const {isEnabled} = useSite();
     const enabled = isEnabled('PROGRAM');
-    const [programs, setPrograms] = useState<Program[]>([]);
+    const [items, setItems] = useState<ReservationItem[]>([]);
     useEffect(() => {
         if (enabled) {
-            shopApi.programs('', 0).then((page) => setPrograms(page?.content?.filter((p) => p.isOpen).slice(0, 3) ?? []))
-                .catch(() => setPrograms([]));
+            shopApi.reservationItems('', 0).then((page) => setItems(page?.content?.filter((p) => p.isOpen).slice(0, 3) ?? []))
+                .catch(() => setItems([]));
         }
     }, [enabled]);
 
-    if (!enabled || programs.length === 0) {
+    if (!enabled || items.length === 0) {
         return null;
     }
     return (
@@ -117,10 +117,10 @@ export function OpenPrograms() {
                 <Link to="/reservation-items">전체 보기</Link>
             </div>
             <ul className="list home-list">
-                {programs.map((program) => (
-                    <li key={program.id}>
-                        <Link to={`/reservation-items/${program.id}`}>{program.name}</Link>
-                        <span className="muted small">{program.startDateTime ? formatDateTime(program.startDateTime) : ''}</span>
+                {items.map((item) => (
+                    <li key={item.id}>
+                        <Link to={`/reservation-items/${item.id}`}>{item.name}</Link>
+                        <span className="muted small">{item.startDateTime ? formatDateTime(item.startDateTime) : ''}</span>
                     </li>
                 ))}
             </ul>

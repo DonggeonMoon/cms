@@ -18,7 +18,7 @@ class TableReservationFlowTest extends ApiTestSupport {
               {"key":"T2","row":0,"col":1,"kind":"ROOM","label":"2번 테이블","capacity":2}]}
             """;
 
-    private long createProgram() throws Exception {
+    private long createReservationItem() throws Exception {
         return createdId(postJson("/api/admin/reservation-items", admin(), """
                 {"name":"식당 예약","price":0,"reservationType":"TABLE","slotMinutes":30,"openTime":"11:00","closeTime":"21:00",
                  "startDateTime":"%sT00:00:00","endDateTime":"%sT23:59:00","layout":%s,"isEnabled":true}
@@ -27,21 +27,21 @@ class TableReservationFlowTest extends ApiTestSupport {
 
     @Test
     void partySizeIsRequiredAndCheckedAgainstTableCapacity() throws Exception {
-        long id = createProgram();
+        long id = createReservationItem();
         MockHttpSession member = member("diner1");
         postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,"cells":["T2"],"startAt":"%sT12:00:00","endAt":"%sT12:30:00",%s}
+                {"reservationItemId":%d,"quantity":1,"cells":["T2"],"startAt":"%sT12:00:00","endAt":"%sT12:30:00",%s}
                 """.formatted(id, DAY, DAY, APPLICANT)).andExpect(jsonPath("$.code").value("PARTY_SIZE_REQUIRED"));
         postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,"cells":["T2"],"startAt":"%sT12:00:00","endAt":"%sT12:30:00","partySize":3,%s}
+                {"reservationItemId":%d,"quantity":1,"cells":["T2"],"startAt":"%sT12:00:00","endAt":"%sT12:30:00","partySize":3,%s}
                 """.formatted(id, DAY, DAY, APPLICANT)).andExpect(jsonPath("$.code").value("TABLE_CAPACITY_EXCEEDED"));
     }
 
     @Test
     void successfulBookingStoresPartySizeAndTableIsTakenForThatSlot() throws Exception {
-        long id = createProgram();
+        long id = createReservationItem();
         postJson("/api/reservations", member("diner2"), """
-                {"programId":%d,"quantity":1,"cells":["T1"],"startAt":"%sT12:00:00","endAt":"%sT13:00:00","partySize":4,%s}
+                {"reservationItemId":%d,"quantity":1,"cells":["T1"],"startAt":"%sT12:00:00","endAt":"%sT13:00:00","partySize":4,%s}
                 """.formatted(id, DAY, DAY, APPLICANT))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.partySize").value(4))
@@ -49,15 +49,15 @@ class TableReservationFlowTest extends ApiTestSupport {
         getJson("/api/reservation-items/%d/availability?date=%s&from=%sT12:00:00&to=%sT13:00:00".formatted(id, DAY, DAY, DAY), null)
                 .andExpect(jsonPath("$.takenCells[0]").value("T1"));
         postJson("/api/reservations", member("diner3"), """
-                {"programId":%d,"quantity":1,"cells":["T1"],"startAt":"%sT12:00:00","endAt":"%sT12:30:00","partySize":2,%s}
+                {"reservationItemId":%d,"quantity":1,"cells":["T1"],"startAt":"%sT12:00:00","endAt":"%sT12:30:00","partySize":2,%s}
                 """.formatted(id, DAY, DAY, APPLICANT)).andExpect(jsonPath("$.code").value("CELL_ALREADY_RESERVED"));
     }
 
     @Test
     void combiningTwoTablesAddsUpTheirCapacity() throws Exception {
-        long id = createProgram();
+        long id = createReservationItem();
         postJson("/api/reservations", member("diner4"), """
-                {"programId":%d,"quantity":1,"cells":["T1","T2"],"startAt":"%sT18:00:00","endAt":"%sT19:00:00","partySize":6,%s}
+                {"reservationItemId":%d,"quantity":1,"cells":["T1","T2"],"startAt":"%sT18:00:00","endAt":"%sT19:00:00","partySize":6,%s}
                 """.formatted(id, DAY, DAY, APPLICANT))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.quantity").value(2));

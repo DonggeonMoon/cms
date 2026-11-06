@@ -37,7 +37,7 @@ export function CourseAdminPage() {
             description={<p>스트리밍 강의를 차시로 묶어 과정을 만들고, 차시별 퀴즈로 이해도를 확인합니다.</p>}
             load={loadCourses}
             fields={fields}
-            emptyForm={{isUsing: true, sequential: true, lessons: [{id: null, title: '', mediaId: null, passScore: 60, quiz: []}]}}
+            emptyForm={{isUsing: true, sequential: true, lessons: [{id: null, title: '', streamingId: null, passScore: 60, quiz: []}]}}
             toForm={(course) => courseAdminApi.get(course.id).then((full) => ({...full, lessons: toLessonDrafts(full.lessons ?? [])}))}
             create={(values) => courseAdminApi.create(toBody(values))}
             update={(course, values) => courseAdminApi.update(course.id, toBody(values))}

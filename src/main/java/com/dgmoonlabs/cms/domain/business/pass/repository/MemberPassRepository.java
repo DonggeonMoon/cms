@@ -17,7 +17,7 @@ public interface MemberPassRepository extends JpaRepository<MemberPass, Long> {
 
     Optional<MemberPass> findByIdAndMemberId(Long id, Long memberId);
 
-    List<MemberPass> findAllByMemberIdAndProgramIdAndStatusOrderByIdAsc(Long memberId, Long programId, PassStatus status);
+    List<MemberPass> findAllByMemberIdAndReservationItemIdAndStatusOrderByIdAsc(Long memberId, Long reservationItemId, PassStatus status);
 
     Page<MemberPass> findAllByMemberIdOrderByIdDesc(Long memberId, Pageable pageable);
 

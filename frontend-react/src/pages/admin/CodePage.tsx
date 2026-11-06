@@ -58,6 +58,11 @@ export function CodePage() {
     return (
         <section className="card">
             <h1>공통 코드</h1>
+            <div className="muted page-description">
+                <p>분류·목록용 코드를 직접 만들어 여러 단계(최상위 → 하위)로 묶어 관리합니다. 이름을 누르면 그 코드의 하위 코드로 들어갑니다.
+                    사용 중인 코드만 공개 API(<code>GET /api/codes?parentId=</code>)로 내려가므로, 웹사이트나 외부 연동에서
+                    고정되지 않은 선택 목록(지역, 분류 등)이 필요할 때 여기서 코드를 만들어 가져다 쓸 수 있습니다.</p>
+            </div>
             <div className="toolbar list-toolbar">
                 {trail.length > 0 && (
                     <nav className="breadcrumb" aria-label="코드 경로">

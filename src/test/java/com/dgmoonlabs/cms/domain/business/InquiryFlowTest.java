@@ -18,7 +18,7 @@ class InquiryFlowTest extends ApiTestSupport {
         MockHttpSession admin = admin();
         postJson("/api/admin/products", admin, """
                 {"name":"강남 아파트 매물","price":0,"saleType":"INQUIRY","isEnabled":true}
-                """).andExpect(jsonPath("$.code").value("INQUIRY_PROGRAM_REQUIRED"));
+                """).andExpect(jsonPath("$.code").value("INQUIRY_RESERVATION_ITEM_REQUIRED"));
 
         long consultation = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"매물 상담","price":0,"reservationType":"CONSULTATION","slotMinutes":30,"maximumPerson":1,
@@ -26,12 +26,12 @@ class InquiryFlowTest extends ApiTestSupport {
                 """.formatted(DAY.minusDays(5), DAY.plusDays(5))));
 
         long listing = createdId(postJson("/api/admin/products", admin, """
-                {"name":"강남 아파트 매물","price":0,"saleType":"INQUIRY","isEnabled":true,"inquiryProgramId":%d}
+                {"name":"강남 아파트 매물","price":0,"saleType":"INQUIRY","isEnabled":true,"inquiryReservationItemId":%d}
                 """.formatted(consultation)));
 
         getJson("/api/products/%d".formatted(listing), null)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.inquiry.programId").value(consultation));
+                .andExpect(jsonPath("$.inquiry.reservationItemId").value(consultation));
 
         MockHttpSession member = member("inquirer");
         postJson("/api/orders", member, """
@@ -39,7 +39,7 @@ class InquiryFlowTest extends ApiTestSupport {
                 """.formatted(listing)).andExpect(jsonPath("$.code").value("INQUIRY_ONLY_PRODUCT"));
 
         postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,"startAt":"%sT10:00:00",%s}
+                {"reservationItemId":%d,"quantity":1,"startAt":"%sT10:00:00",%s}
                 """.formatted(consultation, DAY, APPLICANT)).andExpect(status().isCreated());
     }
 }

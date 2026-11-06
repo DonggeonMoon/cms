@@ -39,7 +39,7 @@ public class MemberJoinSettingService {
         MemberJoinSetting setting = repository.findFirstByOrderByIdAsc()
                 .orElseGet(() -> repository.save(MemberJoinSetting.defaults()));
         setting.update(request.collectNameOrDefault(), request.nameFormat(), request.collectNicknameOrDefault(),
-                request.birthDateInputOrDefault(), request.collectedItems());
+                request.birthDateInputOrDefault(), request.collectedItems(), request.useMobilePhoneCountryCodeOrDefault());
         if (request.regexes() != null) {
             request.regexes().forEach((target, regexId) -> {
                 if (target.getGroup() != RegexTarget.Group.MEMBER) {

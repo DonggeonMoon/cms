@@ -48,11 +48,11 @@ public class Reservation extends BaseEntity {
     private Long userId;
 
     @Column(name = "product_id")
-    @Comment("프로그램 ID")
-    private Long programId;
+    @Comment("예약 상품 ID")
+    private Long reservationItemId;
 
-    @Comment("예약 당시 프로그램명")
-    private String programName;
+    @Comment("예약 당시 예약 상품명")
+    private String reservationItemName;
 
     @Builder.Default
     @Column(nullable = false, columnDefinition = "varchar(20)")

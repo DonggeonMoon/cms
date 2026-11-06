@@ -18,7 +18,7 @@ public final class MemberJoinSettingDtos {
     // regexes: 값이 null 이면 검사 안 함, 빠진 키는 그대로 둔다.
     public record MemberJoinSettingRequest(Boolean collectName, @NotNull NameFormat nameFormat, Boolean collectNickname,
                                            BirthDateInput birthDateInput, @NotNull Set<PersonalInfoItem> collectedItems,
-                                           Map<RegexTarget, Long> regexes) {
+                                           Boolean useMobilePhoneCountryCode, Map<RegexTarget, Long> regexes) {
         public boolean collectNameOrDefault() {
             return collectName == null || collectName;
         }
@@ -30,23 +30,29 @@ public final class MemberJoinSettingDtos {
         public BirthDateInput birthDateInputOrDefault() {
             return birthDateInput == null ? BirthDateInput.SELECT : birthDateInput;
         }
+
+        public boolean useMobilePhoneCountryCodeOrDefault() {
+            return Boolean.TRUE.equals(useMobilePhoneCountryCode);
+        }
     }
 
     public record MemberJoinSettingResponse(boolean collectName, NameFormat nameFormat, boolean collectNickname,
-                                            BirthDateInput birthDateInput, Set<PersonalInfoItem> collectedItems) {
+                                            BirthDateInput birthDateInput, Set<PersonalInfoItem> collectedItems,
+                                            boolean useMobilePhoneCountryCode) {
         public static MemberJoinSettingResponse from(final MemberJoinSetting setting) {
             return new MemberJoinSettingResponse(setting.isCollectName(), setting.getNameFormat(),
                     setting.isCollectNickname(), setting.getBirthDateInput(),
-                    new TreeSet<>(setting.getCollectedItems()));
+                    new TreeSet<>(setting.getCollectedItems()), setting.isUseMobilePhoneCountryCode());
         }
     }
 
     public record AdminMemberJoinSettingResponse(boolean collectName, NameFormat nameFormat, boolean collectNickname,
                                                  BirthDateInput birthDateInput, Set<PersonalInfoItem> collectedItems,
-                                                 Map<RegexTarget, Long> regexes) {
+                                                 boolean useMobilePhoneCountryCode, Map<RegexTarget, Long> regexes) {
         public static AdminMemberJoinSettingResponse of(final MemberJoinSetting setting, final Map<RegexTarget, Long> regexes) {
             return new AdminMemberJoinSettingResponse(setting.isCollectName(), setting.getNameFormat(),
-                    setting.isCollectNickname(), setting.getBirthDateInput(), new TreeSet<>(setting.getCollectedItems()), regexes);
+                    setting.isCollectNickname(), setting.getBirthDateInput(), new TreeSet<>(setting.getCollectedItems()),
+                    setting.isUseMobilePhoneCountryCode(), regexes);
         }
     }
 }

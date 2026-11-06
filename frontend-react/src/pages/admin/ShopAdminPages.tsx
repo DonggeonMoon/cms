@@ -4,7 +4,7 @@ import type {FileInfo} from '../../api/types';
 import {type FormEvent, useCallback, useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router';
 import type {Query} from '../../api/client';
-import type {Discount, MemberPass, Order, OrderReturn, OrderReturnStatus, OrderStatus, Payment, ProductSummary, Program, ProgramSession, Reservation, ReservationType, Review, ReviewTargetType, Subscription} from '../../api/domain';
+import type {Discount, MemberPass, Order, OrderReturn, OrderReturnStatus, OrderStatus, Payment, ProductSummary, ReservationItem, ReservationItemSession, Reservation, ReservationType, Review, ReviewTargetType, Subscription} from '../../api/domain';
 import {adminApi, shopApi} from '../../api/endpoints';
 import {statusApi, useStatusLabels} from '../../api/statuses';
 import {AdminCrudPage, won, YesNo} from '../../components/AdminCrudPage';
@@ -22,6 +22,7 @@ import {type Grade, gradeSelectField, useGrades, useWithGradeFields} from '../..
 import type {GradePrice} from '../../api/domain';
 import {EMPTY_OPTION_SET, type OptionSet, optionSetBody, toOptionSet} from '../../components/ProductOptionsEditor';
 import {OrderAmount, OrderItemsTable} from '../shop/OrderItems';
+import {LicenseKeyAdminPage} from './LicenseKeyAdminPage';
 
 const PRODUCT_FIELDS: FieldSpec[] = [
     {name: 'name', label: '상품명', required: true, wide: true},
@@ -35,33 +36,33 @@ const PRODUCT_FIELDS: FieldSpec[] = [
         help: '주문한 회원에게 이 날짜를 안내합니다.', visibleWhen: (v) => v.saleType === 'PREORDER'},
     {name: 'billingCycle', label: '결제 주기', type: 'select', required: true, wide: true, options: toOptions(BILLING_CYCLE),
         visibleWhen: (v) => v.saleType === 'SUBSCRIPTION'},
-    {name: 'commitmentMonths', label: '약정 기간(개월)', type: 'number', wide: true, help: '비워두면 약정 없이 언제든 해지할 수 있습니다.',
+    {name: 'commitmentMonths', label: '약정 기간(개월)', type: 'number', min: 0, wide: true, help: '비워두면 약정 없이 언제든 해지할 수 있습니다.',
         visibleWhen: (v) => v.saleType === 'SUBSCRIPTION'},
-    {name: 'earlyTerminationFeeRate', label: '약정 중 해지 위약금(%)', type: 'number', wide: true,
+    {name: 'earlyTerminationFeeRate', label: '약정 중 해지 위약금(%)', type: 'number', min: 0, wide: true,
         help: '남은 약정 회차 금액의 이 비율만큼 해지할 때 바로 청구합니다.',
         visibleWhen: (v) => v.saleType === 'SUBSCRIPTION' && Boolean(v.commitmentMonths)},
     {name: 'passUnit', label: '이용권 단위', type: 'select', required: true, wide: true, options: toOptions(PASS_UNIT),
         visibleWhen: (v) => v.saleType === 'PASS'},
-    {name: 'passDays', label: '사용 기간(일)', type: 'number', wide: true, help: '결제일부터 셉니다.',
+    {name: 'passDays', label: '사용 기간(일)', type: 'number', min: 0, wide: true, help: '결제일부터 셉니다.',
         visibleWhen: (v) => v.saleType === 'PASS' && v.passUnit === 'PERIOD'},
-    {name: 'passCount', label: '횟수', type: 'number', wide: true, help: '주문 수량만큼 곱해 발급합니다.',
+    {name: 'passCount', label: '횟수', type: 'number', min: 0, wide: true, help: '주문 수량만큼 곱해 발급합니다.',
         visibleWhen: (v) => v.saleType === 'PASS' && v.passUnit === 'COUNT'},
-    {name: 'passProgramId', label: '쓸 수 있는 예약 상품', type: 'select', required: true, wide: true,
+    {name: 'passReservationItemId', label: '쓸 수 있는 예약 상품', type: 'select', required: true, wide: true,
         help: '이 이용권으로 예약할 수 있는 예약 상품 하나를 고릅니다.', visibleWhen: (v) => v.saleType === 'PASS'},
-    {name: 'inquiryProgramId', label: '연결할 상담 예약 상품', type: 'select', required: true, wide: true,
+    {name: 'inquiryReservationItemId', label: '연결할 상담 예약 상품', type: 'select', required: true, wide: true,
         help: '매물 등 문의만 받는 상품에서 "상담 예약하기"를 누르면 이 예약 상품의 예약 화면으로 이동합니다.',
         visibleWhen: (v) => v.saleType === 'INQUIRY'},
-    {name: 'price', label: '가격(원)', type: 'number', required: true, wide: true,
+    {name: 'price', label: '가격(원)', type: 'number', min: 0, required: true, wide: true,
         help: '구독은 회차별 금액, 후원은 최소 후원 금액입니다. 견적 문의·문의만은 0으로 두면 됩니다.'},
     {name: 'donationPresetsText', label: '추천 후원 금액', wide: true, placeholder: '5000, 10000, 30000',
         help: '쉼표로 구분합니다. 후원하는 사람이 버튼으로 고를 수 있습니다.', visibleWhen: (v) => v.saleType === 'DONATION'},
-    {name: 'goalAmount', label: '목표 금액(원)', type: 'number', wide: true,
+    {name: 'goalAmount', label: '목표 금액(원)', type: 'number', min: 0, wide: true,
         help: '후원은 비워두면 달성률을 표시하지 않습니다. 펀딩은 꼭 정해야 합니다.',
         visibleWhen: (v) => v.saleType === 'DONATION' || v.saleType === 'FUNDING'},
     {name: 'fundingDeadline', label: '펀딩 마감일시', type: 'datetime', required: true, wide: true,
         help: '마감일까지 목표 금액을 못 채우면 결제된 주문을 모두 취소하고 환불합니다.',
         visibleWhen: (v) => v.saleType === 'FUNDING'},
-    {name: 'availableQuantity', label: '재고', type: 'number', help: '상품 전체 재고입니다. 비워두면 무제한이고, 옵션 조합별 재고는 아래에서 따로 정합니다.', wide: true},
+    {name: 'availableQuantity', label: '재고', type: 'number', min: 0, help: '상품 전체 재고입니다. 비워두면 무제한이고, 옵션 조합별 재고는 아래에서 따로 정합니다.', wide: true},
     {name: 'storeOrder', label: '매장 주문 전용 (포장·매장 식사)', type: 'checkbox', wide: true,
         help: '켜면 배송 주문은 받지 않고, 매장 주문 설정에 따라 포장이나 매장 식사로만 주문받습니다.'},
     {name: 'requiresShipping', label: '배송 상품', type: 'checkbox', wide: true, visibleWhen: (v) => !v.storeOrder,
@@ -160,20 +161,20 @@ function GradePriceEditor({productId, onClose}: { productId: number; onClose: ()
 
 export function ProductAdminPage() {
     const categories = useCategories();
-    const [programChoices, setProgramChoices] = useState<{ value: string; label: string }[]>([]);
+    const [reservationItemChoices, setReservationItemChoices] = useState<{ value: string; label: string }[]>([]);
     const [fundingNotice, setFundingNotice] = useState<string | null>(null);
     const [gradePricing, setGradePricing] = useState<number | null>(null);
     useEffect(() => {
-        adminApi.programs.search({size: 100}).then((page) => setProgramChoices(page.content.map((p) => ({value: String(p.id), label: p.name}))))
-            .catch(() => setProgramChoices([]));
+        adminApi.reservationItems.search({size: 100}).then((page) => setReservationItemChoices(page.content.map((p) => ({value: String(p.id), label: p.name}))))
+            .catch(() => setReservationItemChoices([]));
     }, []);
     const base = useMemo(() => {
-        let fields = PRODUCT_FIELDS.map((field) => field.name === 'passProgramId' || field.name === 'inquiryProgramId'
-            ? {...field, options: programChoices} : field);
+        let fields = PRODUCT_FIELDS.map((field) => field.name === 'passReservationItemId' || field.name === 'inquiryReservationItemId'
+            ? {...field, options: reservationItemChoices} : field);
         const at = fields.findIndex((field) => field.name === 'requiresShipping');
         fields = [...fields.slice(0, at), ...productCategoryFields(categories), ...fields.slice(at)];
         return fields;
-    }, [categories, programChoices]);
+    }, [categories, reservationItemChoices]);
     const fields = useWithGradeFields(base, productGradeFields);
     return (
         <AdminCrudPage<ProductSummary>
@@ -209,8 +210,8 @@ export function ProductAdminPage() {
                 passUnit: full.pass?.unit ?? '',
                 passDays: full.pass?.days ?? '',
                 passCount: full.pass?.count ?? '',
-                passProgramId: full.pass?.programId == null ? '' : String(full.pass.programId),
-                inquiryProgramId: full.inquiry?.programId == null ? '' : String(full.inquiry.programId),
+                passReservationItemId: full.pass?.reservationItemId == null ? '' : String(full.pass.reservationItemId),
+                inquiryReservationItemId: full.inquiry?.reservationItemId == null ? '' : String(full.inquiry.reservationItemId),
                 preorderSaleStartAt: full.preorder?.saleStartAt ?? '',
                 preorderSaleEndAt: full.preorder?.saleEndAt ?? '',
                 preorderShipDate: full.preorder?.shipDate ?? '',
@@ -227,11 +228,11 @@ export function ProductAdminPage() {
 }
 
 const discountFields = (products: { value: string; label: string }[]): FieldSpec[] => [
-    {name: 'name', label: '할인명', required: true, wide: true},
-    {name: 'rate', label: '할인율(%)', type: 'number', required: true, wide: true},
-    {name: 'productId', label: '대상 상품', type: 'select', options: products, wide: true,
-        help: '선택 안 함이면 모든 상품에 적용됩니다.'},
     {name: 'isUsing', label: '사용', type: 'checkbox', wide: true},
+    {name: 'name', label: '할인명', required: true, wide: true},
+    {name: 'rate', label: '할인율(%)', type: 'number', min: 0, required: true, wide: true},
+    {name: 'productId', label: '대상 상품', type: 'select', options: products, wide: true, emptyOptionLabel: '전체',
+        help: '선택 안 함이면 모든 상품에 적용됩니다.'},
     {name: 'description', label: '설명', wide: true},
 ];
 
@@ -285,7 +286,7 @@ async function loadProductChoices() {
 
 const orderFields = (productChoices: { value: string; label: string }[]): FieldSpec[] => [
     {name: 'product', label: '상품', type: 'select', required: true, options: [PLEASE_CHOOSE, ...productChoices], wide: true},
-    {name: 'quantity', label: '수량', type: 'number', required: true, wide: true},
+    {name: 'quantity', label: '수량', type: 'number', min: 0, required: true, wide: true},
     {name: 'receiverName', label: '수령인', required: true, wide: true},
     {name: 'phoneNumber', label: '연락처', required: true, wide: true},
     {name: 'postalCode', label: '우편번호', wide: true},
@@ -620,24 +621,53 @@ export function PassAdminPage() {
     );
 }
 
+type OrdersTab = 'orders' | 'subscriptions' | 'passes' | 'license-keys';
+
+const ORDERS_TABS: { value: OrdersTab; label: string }[] = [
+    {value: 'orders', label: '주문'},
+    {value: 'subscriptions', label: '구독'},
+    {value: 'passes', label: '이용권'},
+    {value: 'license-keys', label: '라이선스 키'},
+];
+
+export function OrdersAdminPage() {
+    const [tab, setTab] = useState<OrdersTab>('orders');
+    return (
+        <>
+            <div className="tabs" role="tablist" aria-label="주문 관리">
+                {ORDERS_TABS.map((t) => (
+                    <button key={t.value} type="button" role="tab" aria-selected={tab === t.value}
+                            className={tab === t.value ? 'tab active' : 'tab'} onClick={() => setTab(t.value)}>
+                        {t.label}
+                    </button>
+                ))}
+            </div>
+            {tab === 'orders' && <OrderAdminPage/>}
+            {tab === 'subscriptions' && <SubscriptionAdminPage/>}
+            {tab === 'passes' && <PassAdminPage/>}
+            {tab === 'license-keys' && <LicenseKeyAdminPage/>}
+        </>
+    );
+}
+
 const isType = (...types: ReservationType[]) => (values: FormValues) => types.includes(values.reservationType as ReservationType);
 
-const PROGRAM_FIELDS: FieldSpec[] = [
+const RESERVATION_ITEM_FIELDS: FieldSpec[] = [
     {name: 'reservationType', label: '예약 유형', type: 'select', required: true, wide: true,
         options: RESERVATION_TYPE_GROUPS.flatMap((group) => group.types.map((type) => ({value: type, label: `${group.label} · ${RESERVATION_TYPE[type]}`}))),
         help: '시간 예약은 회차나 시간대를, 공간 예약은 배치표의 좌석·객실·공간을 골라 예약합니다.'},
     {name: 'name', label: '이름', required: true, wide: true},
-    {name: 'price', label: '기본 가격(원)', type: 'number', required: true, wide: true,
+    {name: 'price', label: '기본 가격(원)', type: 'number', min: 0, required: true, wide: true,
         help: '프로그램은 1인, 상담은 1회, 대관·식당 테이블은 칸·예약 단위당, 숙박은 칸·1박당, 공연은 좌석당, 물품 대여는 1개·1일당 가격입니다. 배치표에서 칸별 가격을 따로 줄 수 있습니다. 식당 테이블은 보통 0원으로 둡니다. 여행·투어는 아래 인원 유형별 요금을 쓰므로 이 값은 사용하지 않습니다(0으로 둡니다).'},
     {name: 'priceTiersText', label: '인원 유형별 요금', wide: true, required: true, placeholder: '성인:100000, 아동:50000',
         help: '이름:가격 형태로 쉼표로 구분해 적습니다. 예약할 때 유형별 인원을 입력받아 합산합니다.', visibleWhen: isType('TOUR')},
-    {name: 'maximumPerson', label: '정원·수량', type: 'number', wide: true, visibleWhen: isType('PROGRAM', 'CONSULTATION', 'VISIT', 'ITEM_RENTAL'),
+    {name: 'maximumPerson', label: '정원·수량', type: 'number', min: 0, wide: true, visibleWhen: isType('PROGRAM', 'CONSULTATION', 'VISIT', 'ITEM_RENTAL'),
         help: '프로그램은 전체 인원, 상담·방문은 시간대별 동시 예약 수(비우면 프로그램은 제한 없음, 상담·방문은 1건), 물품 대여는 보유 수량(필수)입니다.'},
-    {name: 'depositAmount', label: '보증금(원, 1개당)', type: 'number', wide: true, visibleWhen: isType('ITEM_RENTAL'),
+    {name: 'depositAmount', label: '보증금(원, 1개당)', type: 'number', min: 0, wide: true, visibleWhen: isType('ITEM_RENTAL'),
         help: '결제 금액에 더해 받고, 반납 처리할 때 차감액을 뺀 만큼 돌려줍니다.'},
     {name: 'maxRentalDays', label: '최대 대여 일수', type: 'number', min: 1, wide: true, visibleWhen: isType('ITEM_RENTAL'),
         help: '비워두면 제한이 없습니다.'},
-    {name: 'lateFeePerDay', label: '연체료(원, 1일당)', type: 'number', wide: true, visibleWhen: isType('ITEM_RENTAL'),
+    {name: 'lateFeePerDay', label: '연체료(원, 1일당)', type: 'number', min: 0, wide: true, visibleWhen: isType('ITEM_RENTAL'),
         help: '반납일을 넘기면 하루당 이 금액을 보증금에서 뗍니다. 비워두면 연체료를 받지 않습니다.'},
     {name: 'supportsQueue', label: '접수·대기 사용', type: 'checkbox', wide: true, visibleWhen: isType('CONSULTATION'),
         help: '체크인할 때 대기 순번을 매기고, 관리자 "접수·대기" 메뉴에서 호출·완료를 관리합니다. (진료 접수 등)'},
@@ -645,7 +675,7 @@ const PROGRAM_FIELDS: FieldSpec[] = [
     {name: 'startDateTime', label: '시작 일시', type: 'datetime', wide: true,
         help: '프로그램은 진행 시작, 상담·방문·대관·숙박은 예약을 받는 기간의 시작, 공연은 공연 일시입니다.'},
     {name: 'endDateTime', label: '종료 일시', type: 'datetime', wide: true},
-    {name: 'slotMinutes', label: '예약 단위(분)', type: 'number', wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL', 'TABLE'),
+    {name: 'slotMinutes', label: '예약 단위(분)', type: 'number', min: 0, wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL', 'TABLE'),
         help: '상담·방문 1회 길이, 대관·식당 테이블 최소 단위입니다.'},
     {name: 'openTime', label: '운영 시작 시각', type: 'time', wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL', 'TABLE')},
     {name: 'closeTime', label: '운영 종료 시각', type: 'time', wide: true, visibleWhen: isType('CONSULTATION', 'VISIT', 'RENTAL', 'TABLE')},
@@ -658,11 +688,11 @@ const PROGRAM_FIELDS: FieldSpec[] = [
     {name: 'contentHtml', label: '상세 설명', type: 'html'},
 ];
 
-const programGradeFields = (grades: Grade[]) => [
+const reservationItemGradeFields = (grades: Grade[]) => [
     gradeSelectField('accessGradeId', '예약 가능 등급', grades, '이 등급 이상 회원만 예약할 수 있습니다.'),
 ];
 
-const toProgramBody = ({priceTiersText, ...values}: FormValues) => ({
+const toReservationItemBody = ({priceTiersText, ...values}: FormValues) => ({
     ...values,
     priceTiers: values.reservationType === 'TOUR'
         ? String(priceTiersText ?? '').split(',').map((part) => part.trim()).filter(Boolean).map((part) => {
@@ -672,15 +702,15 @@ const toProgramBody = ({priceTiersText, ...values}: FormValues) => ({
         : null,
 });
 
-const loadPrograms = (query: Query) => adminApi.programs.search(query);
+const loadReservationItems = (query: Query) => adminApi.reservationItems.search(query);
 
-export function ProgramAdminPage() {
-    const fields = useWithGradeFields(PROGRAM_FIELDS, programGradeFields);
+export function ReservationItemAdminPage() {
+    const fields = useWithGradeFields(RESERVATION_ITEM_FIELDS, reservationItemGradeFields);
     return (
-        <AdminCrudPage<Program>
+        <AdminCrudPage<ReservationItem>
             title="예약"
-            description="시간 예약(프로그램·상담), 공간 예약(대관·숙박·공연·식당 테이블), 물품 대여, 패키지 예약(여행·투어)을 등록합니다. 예약 내역은 하위 메뉴에서 확인합니다."
-            load={loadPrograms}
+            description="시간 예약(프로그램·상담·출장·방문·여행·투어), 공간 예약(대관·숙박·공연·식당 테이블), 물품 대여를 등록합니다. 예약 내역은 하위 메뉴에서 확인합니다."
+            load={loadReservationItems}
             fields={fields}
             emptyForm={{reservationType: 'PROGRAM', isEnabled: true, price: 0, contentHtml: '', layout: EMPTY_LAYOUT}}
             columns={[
@@ -692,29 +722,29 @@ export function ProgramAdminPage() {
                 {label: '신청 기간', render: (p) => `${formatDateTime(p.applicationStartDateTime)} ~ ${formatDateTime(p.applicationEndDateTime)}`},
                 {label: '접수 중', render: (p) => <YesNo value={p.isOpen}/>},
             ]}
-            toForm={(p) => adminApi.programs.get(p.id).then((full) => ({...full, layout: full.layout ?? EMPTY_LAYOUT,
+            toForm={(p) => adminApi.reservationItems.get(p.id).then((full) => ({...full, layout: full.layout ?? EMPTY_LAYOUT,
                 priceTiersText: (full.priceTiers ?? []).map((t) => `${t.name}:${t.price}`).join(', ')}))}
-            create={(v) => adminApi.programs.create(toProgramBody(v))}
-            update={(p, v) => adminApi.programs.update(p.id, toProgramBody(v))}
-            remove={(p) => adminApi.programs.remove(p.id)}
+            create={(v) => adminApi.reservationItems.create(toReservationItemBody(v))}
+            update={(p, v) => adminApi.reservationItems.update(p.id, toReservationItemBody(v))}
+            remove={(p) => adminApi.reservationItems.remove(p.id)}
             expandedRow={(p) => (p.reservationType === 'PROGRAM' || p.reservationType === 'EVENT' || p.reservationType === 'TOUR')
-                ? <SessionManager program={p}/> : undefined}
+                ? <SessionManager item={p}/> : undefined}
         />
     );
 }
 
-function SessionManager({program}: { program: Program }) {
-    const [sessions, setSessions] = useState<ProgramSession[] | null>(null);
+function SessionManager({item}: { item: ReservationItem }) {
+    const [sessions, setSessions] = useState<ReservationItemSession[] | null>(null);
     const [error, setError] = useState<unknown>(null);
     const [editing, setEditing] = useState<{ id: number | null; name: string; startAt: string; endAt: string; capacity: string } | null>(null);
 
     const reload = useCallback(() => {
-        adminApi.programs.get(program.id).then((full) => setSessions(full.sessions)).catch(setError);
-    }, [program.id]);
+        adminApi.reservationItems.get(item.id).then((full) => setSessions(full.sessions)).catch(setError);
+    }, [item.id]);
     useEffect(reload, [reload]);
 
     const startNew = () => setEditing({id: null, name: '', startAt: '', endAt: '', capacity: ''});
-    const startEdit = (session: ProgramSession) => setEditing({
+    const startEdit = (session: ReservationItemSession) => setEditing({
         id: session.id, name: session.name ?? '', startAt: session.startAt.slice(0, 16),
         endAt: session.endAt?.slice(0, 16) ?? '', capacity: session.capacity != null ? String(session.capacity) : '',
     });
@@ -729,9 +759,9 @@ function SessionManager({program}: { program: Program }) {
         };
         try {
             if (editing.id) {
-                await adminApi.sessions.update(program.id, editing.id, body);
+                await adminApi.sessions.update(item.id, editing.id, body);
             } else {
-                await adminApi.sessions.create(program.id, body);
+                await adminApi.sessions.create(item.id, body);
             }
             setEditing(null);
             reload();
@@ -740,12 +770,12 @@ function SessionManager({program}: { program: Program }) {
         }
     };
 
-    const remove = async (session: ProgramSession) => {
+    const remove = async (session: ReservationItemSession) => {
         if (!window.confirm('이 회차를 지울까요?')) {
             return;
         }
         try {
-            await adminApi.sessions.remove(program.id, session.id);
+            await adminApi.sessions.remove(item.id, session.id);
             reload();
         } catch (e) {
             setError(e);
@@ -754,7 +784,7 @@ function SessionManager({program}: { program: Program }) {
 
     return (
         <div>
-            <h3>{program.reservationType === 'TOUR' ? '출발일' : '회차'}</h3>
+            <h3>{item.reservationType === 'TOUR' ? '출발일' : '회차'}</h3>
             <ErrorBanner error={error}/>
             <table className="compact">
                 <thead><tr><th>이름</th><th>시작</th><th>종료</th><th>정원/예약</th><th/></tr></thead>
@@ -793,30 +823,30 @@ function SessionManager({program}: { program: Program }) {
 
 const loadReservations = (query: Query) => adminApi.reservations.search(query);
 
-const reservationFields = (programChoices: { value: string; label: string }[]): FieldSpec[] => [
-    {name: 'programId', label: '프로그램', type: 'select', required: true, options: [PLEASE_CHOOSE, ...programChoices],
-        help: '신청 기간이 지났거나 비공개인 프로그램도 예약할 수 있습니다. 정원은 넘길 수 없습니다.', wide: true},
-    {name: 'quantity', label: '인원', type: 'number', required: true, wide: true},
+const reservationFields = (reservationItemChoices: { value: string; label: string }[]): FieldSpec[] => [
+    {name: 'reservationItemId', label: '예약 상품', type: 'select', required: true, options: [PLEASE_CHOOSE, ...reservationItemChoices],
+        help: '신청 기간이 지났거나 비공개인 예약 상품도 예약할 수 있습니다. 정원은 넘길 수 없습니다.', wide: true},
+    {name: 'quantity', label: '인원', type: 'number', min: 0, required: true, wide: true},
     {name: 'applicantName', label: '신청자', required: true, wide: true},
     {name: 'phoneNumber', label: '연락처', required: true, wide: true},
-    {...PAID_FIELD, help: '무료 프로그램은 체크하지 않아도 바로 확정됩니다. 체크하지 않은 유료 예약은 결제 대기로 등록되고, 목록에서 확정 처리할 수 있습니다.'},
+    {...PAID_FIELD, help: '무료 예약 상품은 체크하지 않아도 바로 확정됩니다. 체크하지 않은 유료 예약은 결제 대기로 등록되고, 목록에서 확정 처리할 수 있습니다.'},
 ];
 
-function createReservation({programId, paid, ...rest}: FormValues) {
-    return adminApi.reservations.create({...rest, programId: Number(programId)}, Boolean(paid)).then(() => undefined);
+function createReservation({reservationItemId, paid, ...rest}: FormValues) {
+    return adminApi.reservations.create({...rest, reservationItemId: Number(reservationItemId)}, Boolean(paid)).then(() => undefined);
 }
 
 export function ReservationAdminPage() {
     const {statuses, label: statusLabel, reload: reloadStatuses} = useStatusLabels('RESERVATION', RESERVATION_STATUS);
     const [status, setStatus] = useState('');
-    const [programChoices, setProgramChoices] = useState<{ value: string; label: string }[]>([]);
+    const [reservationItemChoices, setReservationItemChoices] = useState<{ value: string; label: string }[]>([]);
     useEffect(() => {
-        adminApi.programs.search({size: 100})
-            .then((page) => setProgramChoices(page.content.map((p) => ({
+        adminApi.reservationItems.search({size: 100})
+            .then((page) => setReservationItemChoices(page.content.map((p) => ({
                 value: String(p.id),
                 label: `${p.name} · ${won(p.price)}${p.maximumPerson ? ` · 잔여 ${p.availablePerson}/${p.maximumPerson}` : ''}`,
             }))))
-            .catch(() => setProgramChoices([]));
+            .catch(() => setReservationItemChoices([]));
     }, []);
     return (
         <AdminCrudPage<Reservation>
@@ -827,8 +857,8 @@ export function ReservationAdminPage() {
                 <StatusManager domain="RESERVATION" statuses={statuses} onChange={reloadStatuses}/>
             </>}
             load={loadReservations}
-            fields={reservationFields(programChoices)}
-            emptyForm={{programId: '', quantity: 1, paid: false}}
+            fields={reservationFields(reservationItemChoices)}
+            emptyForm={{reservationItemId: '', quantity: 1, paid: false}}
             create={createReservation}
             extraQuery={{status}}
             filters={
@@ -839,7 +869,7 @@ export function ReservationAdminPage() {
             }
             columns={[
                 {label: '예약번호', render: (r) => <code>{r.reservationNumber}</code>},
-                {label: '예약 상품', render: (r) => <>{r.programName} <span className="badge">{RESERVATION_TYPE[r.reservationType]}</span></>},
+                {label: '예약 상품', render: (r) => <>{r.reservationItemName} <span className="badge">{RESERVATION_TYPE[r.reservationType]}</span></>},
                 {label: '이용', render: (r) => reservationUsage(r)},
                 {label: '수량', render: (r) => r.quantity},
                 {label: '금액', render: (r) => won(r.totalPrice)},
@@ -1028,7 +1058,7 @@ const loadReviews = (query: Query) => adminApi.reviews(query);
 
 const REVIEW_TABS: { value: ReviewTargetType; label: string }[] = [
     {value: 'PRODUCT', label: '상품 리뷰'},
-    {value: 'PROGRAM', label: '예약 상품 리뷰'},
+    {value: 'RESERVATION_ITEM', label: '예약 상품 리뷰'},
 ];
 
 export function ReviewAdminPage() {
@@ -1054,7 +1084,7 @@ export function ReviewAdminPage() {
                 columns={[
                     isProduct
                         ? {label: '상품', render: (r) => <Link to={`/products/${r.productId}`}>#{r.productId}</Link>}
-                        : {label: '프로그램', render: (r) => <Link to={`/reservation-items/${r.programId}`}>#{r.programId}</Link>},
+                        : {label: '예약 상품', render: (r) => <Link to={`/reservation-items/${r.reservationItemId}`}>#{r.reservationItemId}</Link>},
                     {label: '평점', render: (r) => '★'.repeat(r.rating)},
                     {label: '제목', render: (r) => r.title},
                     {label: '작성자', render: (r) => r.authorName},

@@ -47,15 +47,15 @@ class TourFlowTest extends ApiTestSupport {
         MockHttpSession member = member("traveler1");
 
         postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,"sessionId":%d,%s}
+                {"reservationItemId":%d,"quantity":1,"sessionId":%d,%s}
                 """.formatted(tour, departure, APPLICANT)).andExpect(jsonPath("$.code").value("PARTY_BREAKDOWN_REQUIRED"));
 
         postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,"sessionId":%d,"partyCounts":{"대학생":1},%s}
+                {"reservationItemId":%d,"quantity":1,"sessionId":%d,"partyCounts":{"대학생":1},%s}
                 """.formatted(tour, departure, APPLICANT)).andExpect(jsonPath("$.code").value("INVALID_PARTY_BREAKDOWN"));
 
         postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,"sessionId":%d,"partyCounts":{"성인":2,"아동":1},%s}
+                {"reservationItemId":%d,"quantity":1,"sessionId":%d,"partyCounts":{"성인":2,"아동":1},%s}
                 """.formatted(tour, departure, APPLICANT))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.quantity").value(3))
@@ -79,12 +79,12 @@ class TourFlowTest extends ApiTestSupport {
 
         MockHttpSession traveler2 = member("traveler2");
         long reservationId = createdId(postJson("/api/reservations", traveler2, """
-                {"programId":%d,"quantity":1,"sessionId":%d,"partyCounts":{"성인":2,"아동":1},%s}
+                {"reservationItemId":%d,"quantity":1,"sessionId":%d,"partyCounts":{"성인":2,"아동":1},%s}
                 """.formatted(tour, departure, APPLICANT)));
 
         postJson("/api/reservations", member("traveler3"), """
-                {"programId":%d,"quantity":1,"sessionId":%d,"partyCounts":{"성인":1},%s}
-                """.formatted(tour, departure, APPLICANT)).andExpect(jsonPath("$.code").value("PROGRAM_FULL"));
+                {"reservationItemId":%d,"quantity":1,"sessionId":%d,"partyCounts":{"성인":1},%s}
+                """.formatted(tour, departure, APPLICANT)).andExpect(jsonPath("$.code").value("RESERVATION_ITEM_FULL"));
 
         postJson("/api/reservations/%d/cancel".formatted(reservationId), traveler2, "").andExpect(status().isNoContent());
         getJson("/api/reservation-items/" + tour, null).andExpect(jsonPath("$.sessions[0].remaining").value(3));

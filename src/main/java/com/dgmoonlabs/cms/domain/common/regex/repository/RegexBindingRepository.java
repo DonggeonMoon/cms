@@ -8,4 +8,6 @@ import java.util.Optional;
 
 public interface RegexBindingRepository extends JpaRepository<RegexBinding, Long> {
     Optional<RegexBinding> findByTarget(RegexTarget target);
+
+    boolean existsByRegexRuleId(Long regexRuleId);
 }

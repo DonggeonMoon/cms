@@ -10,10 +10,10 @@ import com.dgmoonlabs.cms.domain.course.repository.CourseEnrollmentRepository;
 import com.dgmoonlabs.cms.domain.course.repository.CourseLessonRepository;
 import com.dgmoonlabs.cms.domain.course.repository.CourseRepository;
 import com.dgmoonlabs.cms.domain.course.repository.QuizAttemptRepository;
-import com.dgmoonlabs.cms.domain.media.entity.Media;
-import com.dgmoonlabs.cms.domain.media.entity.MediaEnrollment;
-import com.dgmoonlabs.cms.domain.media.repository.MediaEnrollmentRepository;
-import com.dgmoonlabs.cms.domain.media.repository.MediaRepository;
+import com.dgmoonlabs.cms.domain.streaming.entity.Streaming;
+import com.dgmoonlabs.cms.domain.streaming.entity.StreamingEnrollment;
+import com.dgmoonlabs.cms.domain.streaming.repository.StreamingEnrollmentRepository;
+import com.dgmoonlabs.cms.domain.streaming.repository.StreamingRepository;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.security.CurrentUser;
@@ -39,8 +39,8 @@ public class CourseService {
     private final CourseLessonRepository lessonRepository;
     private final CourseEnrollmentRepository enrollmentRepository;
     private final QuizAttemptRepository attemptRepository;
-    private final MediaRepository mediaRepository;
-    private final MediaEnrollmentRepository mediaEnrollmentRepository;
+    private final StreamingRepository streamingRepository;
+    private final StreamingEnrollmentRepository streamingEnrollmentRepository;
     private final MemberRepository memberRepository;
     private final FileService fileService;
     private final GradeService gradeService;
@@ -168,11 +168,11 @@ public class CourseService {
                 enrollment.getCreatedAt(), enrollment.getCompletedAt()));
     }
 
-    private record Progress(Set<Long> completedMedia, Set<Long> passedLessons) {
+    private record Progress(Set<Long> completedStreaming, Set<Long> passedLessons) {
         static final Progress EMPTY = new Progress(Set.of(), Set.of());
 
-        boolean mediaDone(final CourseLesson lesson) {
-            return lesson.getMediaId() == null || completedMedia.contains(lesson.getMediaId());
+        boolean streamingDone(final CourseLesson lesson) {
+            return lesson.getStreamingId() == null || completedStreaming.contains(lesson.getStreamingId());
         }
 
         boolean quizDone(final CourseLesson lesson) {
@@ -180,7 +180,7 @@ public class CourseService {
         }
 
         boolean completed(final CourseLesson lesson) {
-            return mediaDone(lesson) && quizDone(lesson);
+            return streamingDone(lesson) && quizDone(lesson);
         }
 
         int completedCount(final List<CourseLesson> lessons) {
@@ -189,13 +189,13 @@ public class CourseService {
     }
 
     private Progress progressOf(final Long memberId, final List<CourseLesson> lessons) {
-        List<Long> mediaIds = lessons.stream().map(CourseLesson::getMediaId).filter(Objects::nonNull).distinct().toList();
-        Set<Long> completedMedia = mediaIds.isEmpty() ? Set.of()
-                : mediaEnrollmentRepository.findAllByMemberIdAndMediaIdIn(memberId, mediaIds).stream()
-                .filter(MediaEnrollment::isCompleted).map(MediaEnrollment::getMediaId).collect(Collectors.toSet());
+        List<Long> streamingIds = lessons.stream().map(CourseLesson::getStreamingId).filter(Objects::nonNull).distinct().toList();
+        Set<Long> completedStreaming = streamingIds.isEmpty() ? Set.of()
+                : streamingEnrollmentRepository.findAllByMemberIdAndStreamingIdIn(memberId, streamingIds).stream()
+                .filter(StreamingEnrollment::isCompleted).map(StreamingEnrollment::getStreamingId).collect(Collectors.toSet());
         List<Long> quizLessons = lessons.stream().filter(CourseLesson::hasQuiz).map(CourseLesson::getId).toList();
         Set<Long> passed = quizLessons.isEmpty() ? Set.of() : new HashSet<>(attemptRepository.findPassedLessonIds(memberId, quizLessons));
-        return new Progress(completedMedia, passed);
+        return new Progress(completedStreaming, passed);
     }
 
     private MyCourseProgress syncEnrollment(final Course course, final Long memberId, final List<CourseLesson> lessons,
@@ -226,16 +226,16 @@ public class CourseService {
 
     private CourseResponse detail(final Course course, final List<CourseLesson> lessons, final Progress progress,
                                   final MyCourseProgress mine, final boolean admin) {
-        Map<Long, Media> media = mediaRepository.findAllById(lessons.stream().map(CourseLesson::getMediaId).filter(Objects::nonNull)
-                .toList()).stream().collect(Collectors.toMap(Media::getId, Function.identity()));
+        Map<Long, Streaming> streamingItems = streamingRepository.findAllById(lessons.stream().map(CourseLesson::getStreamingId)
+                .filter(Objects::nonNull).toList()).stream().collect(Collectors.toMap(Streaming::getId, Function.identity()));
         List<LessonResponse> responses = lessons.stream().map(lesson -> {
-            Media lecture = lesson.getMediaId() == null ? null : media.get(lesson.getMediaId());
+            Streaming lecture = lesson.getStreamingId() == null ? null : streamingItems.get(lesson.getStreamingId());
             List<?> quiz = !lesson.hasQuiz() ? List.of()
                     : admin ? lesson.getQuiz() : lesson.getQuiz().stream().map(PublicQuestion::of).toList();
             boolean tracked = mine != null;
-            return new LessonResponse(lesson.getId(), lesson.getSequence(), lesson.getTitle(), lesson.getMediaId(),
+            return new LessonResponse(lesson.getId(), lesson.getSequence(), lesson.getTitle(), lesson.getStreamingId(),
                     lecture == null ? null : lecture.getTitle(), lecture == null ? null : lecture.getDurationSeconds(),
-                    quiz, lesson.getPassScore(), tracked && lesson.getMediaId() != null && progress.mediaDone(lesson),
+                    quiz, lesson.getPassScore(), tracked && lesson.getStreamingId() != null && progress.streamingDone(lesson),
                     tracked && lesson.hasQuiz() && progress.quizDone(lesson), tracked && progress.completed(lesson),
                     !admin && isLocked(course, lessons, lesson, progress));
         }).toList();
@@ -255,9 +255,9 @@ public class CourseService {
             CourseLesson lesson = request.id() == null ? null : existing.remove(request.id());
             if (lesson == null) {
                 lessonRepository.save(CourseLesson.builder().courseId(courseId).sequence(i + 1).title(request.title().trim())
-                        .mediaId(request.mediaId()).quiz(quiz.isEmpty() ? null : quiz).passScore(passScore).build());
+                        .streamingId(request.streamingId()).quiz(quiz.isEmpty() ? null : quiz).passScore(passScore).build());
             } else {
-                lesson.update(i + 1, request.title().trim(), request.mediaId(), quiz, passScore);
+                lesson.update(i + 1, request.title().trim(), request.streamingId(), quiz, passScore);
             }
         }
         existing.values().forEach(CourseLesson::delete);
@@ -265,10 +265,11 @@ public class CourseService {
 
     private void validate(final CourseSaveRequest request) {
         for (LessonRequest lesson : request.lessons()) {
-            if (lesson.mediaId() == null && lesson.quizOrEmpty().isEmpty()) {
+            if (lesson.streamingId() == null && lesson.quizOrEmpty().isEmpty()) {
                 throw new BusinessException(ErrorCode.INVALID_LESSON);
             }
-            if (lesson.mediaId() != null && mediaRepository.findById(lesson.mediaId()).filter(media -> media.getDeletedAt() == null).isEmpty()) {
+            if (lesson.streamingId() != null
+                    && streamingRepository.findById(lesson.streamingId()).filter(streaming -> streaming.getDeletedAt() == null).isEmpty()) {
                 throw BusinessException.notFound();
             }
             if (lesson.quizOrEmpty().stream().anyMatch(question -> question.answerIndex() >= question.options().size())) {

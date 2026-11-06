@@ -1,6 +1,6 @@
 import {type FormEvent, useCallback, useEffect, useMemo, useState} from 'react';
 import {Link, useNavigate, useParams, useSearchParams} from 'react-router';
-import type {GiftCard, MemberPass, MyLicenseKey, Order, OrderReturn, OrderReturnType, PaymentMethod, ProductDetail, ProductSaleType, ProductSummary, Program, Reservation, ReservationType, Review, ReviewTargetType, Subscription, WalletLedgerEntry} from '../../api/domain';
+import type {GiftCard, MemberPass, MyLicenseKey, Order, OrderReturn, OrderReturnType, PaymentMethod, ProductDetail, ProductSaleType, ProductSummary, ReservationItem, Reservation, ReservationType, Review, ReviewTargetType, Subscription, WalletLedgerEntry} from '../../api/domain';
 import {shopApi} from '../../api/endpoints';
 import {useStatusLabels} from '../../api/statuses';
 import type {Page} from '../../api/types';
@@ -41,16 +41,16 @@ export function ProductCard({product}: { product: ProductSummary }) {
     );
 }
 
-export function ProgramCard({program}: { program: Program }) {
+export function ReservationItemCard({item}: { item: ReservationItem }) {
     return (
-        <Link to={`/reservation-items/${program.id}`} className="product-card">
-            <Thumbnail src={program.imageUrl} name={program.name}/>
-            <strong className="product-name">{program.name}</strong>
-            <span className="badge">{RESERVATION_TYPE[program.reservationType]}</span>
-            {program.startDateTime && <span className="muted small">{formatDateTime(program.startDateTime)}</span>}
-            <span className="product-price">{Number(program.price) === 0 ? '무료' : won(program.price)}</span>
-            {program.isOpen ? <span className="badge ok">접수 중</span> : <span className="badge">접수 마감</span>}
-            <GradeBadge gradeId={program.accessGradeId}/>
+        <Link to={`/reservation-items/${item.id}`} className="product-card">
+            <Thumbnail src={item.imageUrl} name={item.name}/>
+            <strong className="product-name">{item.name}</strong>
+            <span className="badge">{RESERVATION_TYPE[item.reservationType]}</span>
+            {item.startDateTime && <span className="muted small">{formatDateTime(item.startDateTime)}</span>}
+            <span className="product-price">{Number(item.price) === 0 ? '무료' : won(item.price)}</span>
+            {item.isOpen ? <span className="badge ok">접수 중</span> : <span className="badge">접수 마감</span>}
+            <GradeBadge gradeId={item.accessGradeId}/>
         </Link>
     );
 }
@@ -265,7 +265,7 @@ export function ProductDetailPage() {
                     )}
                     {product.saleType === 'INQUIRY' ? (
                         user?.userType === 'MEMBER' ? (
-                            <Link className="button primary" to={`/reservations/new?programId=${product.inquiry?.programId}`}>
+                            <Link className="button primary" to={`/reservations/new?reservationItemId=${product.inquiry?.reservationItemId}`}>
                                 {ACTION_LABEL.INQUIRY}
                             </Link>
                         ) : (
@@ -343,9 +343,9 @@ const REVIEW_TARGETS = {
         add: shopApi.addReview,
         hint: '구매한 상품에만 리뷰를 남길 수 있습니다.',
     },
-    PROGRAM: {
-        load: shopApi.programReviews,
-        add: shopApi.addProgramReview,
+    RESERVATION_ITEM: {
+        load: shopApi.reservationItemReviews,
+        add: shopApi.addReservationItemReview,
         hint: '예약이 확정된 예약 상품에만 리뷰를 남길 수 있습니다.',
     },
 };
@@ -420,25 +420,25 @@ function escapeHtml(text: string) {
     return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
 }
 
-export function ProgramListPage() {
-    const programTitle = useFeatureMenuName('PROGRAM', '예약 상품');
+export function ReservationItemListPage() {
+    const title = useFeatureMenuName('PROGRAM', '예약 상품');
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
     const keyword = params.get('keyword') ?? '';
-    const [data, setData] = useState<Page<Program> | null>(null);
+    const [data, setData] = useState<Page<ReservationItem> | null>(null);
     const [error, setError] = useState<unknown>(null);
 
     useEffect(() => {
-        shopApi.programs(keyword, page).then(setData).catch(setError);
+        shopApi.reservationItems(keyword, page).then(setData).catch(setError);
     }, [keyword, page]);
 
     return (
         <section className="card">
-            <h1>{programTitle}</h1>
+            <h1>{title}</h1>
             <ListSearch label="예약 상품 검색" placeholder="예약 상품명 검색"/>
             <ErrorBanner error={error}/>
             <div className="product-grid">
-                {data?.content.map((program) => <ProgramCard key={program.id} program={program}/>)}
+                {data?.content.map((item) => <ReservationItemCard key={item.id} item={item}/>)}
             </div>
             {data?.content.length === 0 && <p className="muted">{keyword ? '검색 결과가 없습니다.' : '신청 가능한 예약 상품이 없습니다.'}</p>}
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={(next) => setParams(pageParams(keyword, next))}/>}
@@ -458,11 +458,11 @@ const PRICE_UNIT: Record<ReservationType, string> = {
     TOUR: '인원 유형별',
 };
 
-export function ProgramDetailPage() {
+export function ReservationItemDetailPage() {
     const id = Number(useParams().id);
     const navigate = useNavigate();
     const {user} = useAuth();
-    const [program, setProgram] = useState<Program | null>(null);
+    const [item, setItem] = useState<ReservationItem | null>(null);
     const [quantity, setQuantity] = useState(1);
     const [sessionId, setSessionId] = useState('');
     const [passes, setPasses] = useState<MemberPass[]>([]);
@@ -470,7 +470,7 @@ export function ProgramDetailPage() {
     const [error, setError] = useState<unknown>(null);
 
     useEffect(() => {
-        shopApi.program(id).then(setProgram).catch(setError);
+        shopApi.reservationItem(id).then(setItem).catch(setError);
     }, [id]);
 
     useEffect(() => {
@@ -479,13 +479,13 @@ export function ProgramDetailPage() {
         }
     }, [id, user?.userType]);
 
-    const sessions = (program?.sessions ?? []).filter((s) => s.isOpen);
+    const sessions = (item?.sessions ?? []).filter((s) => s.isOpen);
     const chosenSession = sessions.find((s) => String(s.id) === sessionId) ?? null;
     const remaining = chosenSession?.remaining ?? null;
 
     const reserve = (event: FormEvent) => {
         event.preventDefault();
-        const query = new URLSearchParams({programId: String(id), quantity: String(quantity)});
+        const query = new URLSearchParams({reservationItemId: String(id), quantity: String(quantity)});
         if (sessionId) {
             query.set('sessionId', sessionId);
         }
@@ -495,53 +495,53 @@ export function ProgramDetailPage() {
         navigate(`/reservations/new?${query}`);
     };
 
-    if (error && !program) {
+    if (error && !item) {
         return <ErrorBanner error={error}/>;
     }
-    if (!program) {
+    if (!item) {
         return <p className="muted">불러오는 중…</p>;
     }
     return (
         <>
             <section className="card product-detail">
                 <div className="product-media">
-                    <Thumbnail src={program.imageUrl} name={program.name}/>
+                    <Thumbnail src={item.imageUrl} name={item.name}/>
                 </div>
                 <div>
-                <h1>{program.name} <GradeBadge gradeId={program.accessGradeId}/></h1>
-                {program.description && <p className="muted">{program.description}</p>}
+                <h1>{item.name} <GradeBadge gradeId={item.accessGradeId}/></h1>
+                {item.description && <p className="muted">{item.description}</p>}
                 <dl className="meta">
                     <dt>유형</dt>
-                    <dd>{RESERVATION_TYPE[program.reservationType]}</dd>
+                    <dd>{RESERVATION_TYPE[item.reservationType]}</dd>
                     <dt>가격</dt>
-                    <dd>{program.reservationType === 'TOUR'
-                        ? (program.priceTiers ?? []).map((t) => `${t.name} ${won(t.price)}`).join(' · ')
-                        : Number(program.price) === 0 ? '무료' : `${won(program.price)} / ${PRICE_UNIT[program.reservationType]}`}</dd>
-                    {program.reservationType !== 'TOUR' && (
+                    <dd>{item.reservationType === 'TOUR'
+                        ? (item.priceTiers ?? []).map((t) => `${t.name} ${won(t.price)}`).join(' · ')
+                        : Number(item.price) === 0 ? '무료' : `${won(item.price)} / ${PRICE_UNIT[item.reservationType]}`}</dd>
+                    {item.reservationType !== 'TOUR' && (
                         <>
-                            <dt>{program.reservationType === 'EVENT' ? '공연 일시' : program.reservationType === 'PROGRAM' ? '진행 일정' : '예약 가능 기간'}</dt>
-                            <dd>{formatDateTime(program.startDateTime)}{program.endDateTime && ` ~ ${formatDateTime(program.endDateTime)}`}</dd>
+                            <dt>{item.reservationType === 'EVENT' ? '공연 일시' : item.reservationType === 'PROGRAM' ? '진행 일정' : '예약 가능 기간'}</dt>
+                            <dd>{formatDateTime(item.startDateTime)}{item.endDateTime && ` ~ ${formatDateTime(item.endDateTime)}`}</dd>
                         </>
                     )}
                     <dt>신청 기간</dt>
-                    <dd>{formatDateTime(program.applicationStartDateTime)} ~ {formatDateTime(program.applicationEndDateTime)}</dd>
-                    {program.averageRating != null && (
+                    <dd>{formatDateTime(item.applicationStartDateTime)} ~ {formatDateTime(item.applicationEndDateTime)}</dd>
+                    {item.averageRating != null && (
                         <>
                             <dt>평점</dt>
-                            <dd>{'★'.repeat(Math.round(program.averageRating))} {program.averageRating.toFixed(1)}</dd>
+                            <dd>{'★'.repeat(Math.round(item.averageRating))} {item.averageRating.toFixed(1)}</dd>
                         </>
                     )}
-                    {program.reservationType === 'PROGRAM' && (
+                    {item.reservationType === 'PROGRAM' && (
                         <>
                             <dt>잔여 인원</dt>
-                            <dd>{program.maximumPerson ? `${program.availablePerson} / ${program.maximumPerson}명` : '제한 없음'}</dd>
+                            <dd>{item.maximumPerson ? `${item.availablePerson} / ${item.maximumPerson}명` : '제한 없음'}</dd>
                         </>
                     )}
                 </dl>
-                {!program.isOpen ? (
+                {!item.isOpen ? (
                     <p className="badge">지금은 신청할 수 없습니다.</p>
-                ) : user?.userType === 'MEMBER' && program.reservationType !== 'PROGRAM' ? (
-                    <ReservationPicker program={program}/>
+                ) : user?.userType === 'MEMBER' && item.reservationType !== 'PROGRAM' ? (
+                    <ReservationPicker item={item}/>
                 ) : user?.userType === 'MEMBER' ? (
                     <form onSubmit={reserve}>
                         {sessions.length > 0 && (
@@ -577,7 +577,7 @@ export function ProgramDetailPage() {
                             </div>
                         )}
                         <p className="price align-right">
-                            결제 금액 {passId ? '이용권 사용 (0원)' : won(Number(program.price) * quantity)}
+                            결제 금액 {passId ? '이용권 사용 (0원)' : won(Number(item.price) * quantity)}
                         </p>
                         <ErrorBanner error={error}/>
                         <div className="toolbar form-actions">
@@ -592,9 +592,9 @@ export function ProgramDetailPage() {
                 </div>
             </section>
             <section className="card">
-                <HtmlView html={program.contentHtml}/>
+                <HtmlView html={item.contentHtml}/>
             </section>
-            <Reviews target="PROGRAM" targetId={id}/>
+            <Reviews target="RESERVATION_ITEM" targetId={id}/>
         </>
     );
 }
@@ -629,7 +629,7 @@ export function CheckoutPage() {
                 const reservation = page.content.find((r) => r.pendingExtensionId === id);
                 if (reservation) {
                     setTarget({
-                        title: `${reservation.programName} 연장료 (${reservation.reservationNumber})`,
+                        title: `${reservation.reservationItemName} 연장료 (${reservation.reservationNumber})`,
                         amount: Number(reservation.pendingExtensionFee ?? 0),
                         payable: true,
                     });
@@ -640,7 +640,7 @@ export function CheckoutPage() {
                 const reservation = page.content.find((r) => r.id === id);
                 if (reservation) {
                     setTarget({
-                        title: `${reservation.programName} ${reservation.quantity}명 (${reservation.reservationNumber})`,
+                        title: `${reservation.reservationItemName} ${reservation.quantity}명 (${reservation.reservationNumber})`,
                         amount: Number(reservation.totalPrice),
                         payable: reservation.status === 'PENDING_PAYMENT',
                     });
@@ -867,7 +867,7 @@ export function MyReservationsPage() {
                     {data?.content.map((reservation) => (
                         <tr key={reservation.id}>
                             <td><code>{reservation.reservationNumber}</code></td>
-                            <td><Link to={`/reservation-items/${reservation.programId}`}>{reservation.programName}</Link></td>
+                            <td><Link to={`/reservation-items/${reservation.reservationItemId}`}>{reservation.reservationItemName}</Link></td>
                             <td>{reservationUsage(reservation)}</td>
                             <td>{reservation.quantity}</td>
                             <td>{won(reservation.totalPrice)}

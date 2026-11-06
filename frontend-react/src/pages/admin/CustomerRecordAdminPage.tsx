@@ -7,9 +7,9 @@ import type {FieldSpec, FormValues} from '../../components/SchemaForm';
 import type {FileInfo} from '../../api/types';
 
 const RECORD_FIELDS: FieldSpec[] = [
-    {name: 'memberId', label: '회원 ID', type: 'number', required: true,
+    {name: 'memberId', label: '회원 ID', type: 'number', min: 0, required: true,
         help: '회원 상세나 예약 내역에서 들어오면 자동으로 채워집니다.'},
-    {name: 'reservationId', label: '관련 예약 번호', type: 'number', help: '선택 사항입니다.'},
+    {name: 'reservationId', label: '관련 예약 번호', type: 'number', min: 0, help: '선택 사항입니다.'},
     {name: 'recordedOn', label: '기록한 날', type: 'date', required: true},
     {name: 'category', label: '분류', placeholder: '시술, 상담, 진단 등'},
     {name: 'title', label: '제목', required: true, wide: true},

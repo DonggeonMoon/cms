@@ -21,6 +21,13 @@ export function ProfileFields<T extends MemberProfile>({value, onChange, errorOf
         onChange: (e: { target: { value: string } }) => onChange({...value, [field]: e.target.value}),
     });
 
+    useEffect(() => {
+        if (settings.useMobilePhoneCountryCode && collects('MOBILE_PHONE') && !value.mobilePhoneCountryCode) {
+            onChange({...value, mobilePhoneCountryCode: COUNTRY_CALLING_CODES[0].code});
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [settings.useMobilePhoneCountryCode, settings.collectedItems]);
+
     return (
         <>
             <fieldset>
@@ -55,7 +62,24 @@ export function ProfileFields<T extends MemberProfile>({value, onChange, errorOf
                 )}
                 {collects('EMAIL') && <Field label="이메일" type="email" autoComplete="email" {...text('email')}/>}
                 {collects('TELEPHONE') && <Field label="전화번호" type="tel" {...text('telephoneNumber')}/>}
-                {collects('MOBILE_PHONE') && <Field label="휴대폰 번호" type="tel" autoComplete="tel" {...text('mobilePhoneNumber')}/>}
+                {collects('MOBILE_PHONE') && (
+                    <>
+                        {settings.useMobilePhoneCountryCode && (
+                            <div className="field">
+                                <label htmlFor="mobilePhoneCountryCode">국가 코드</label>
+                                <select id="mobilePhoneCountryCode" name="mobilePhoneCountryCode"
+                                        value={value.mobilePhoneCountryCode ?? COUNTRY_CALLING_CODES[0].code}
+                                        onChange={(e) => onChange({...value, mobilePhoneCountryCode: e.target.value})}>
+                                    {COUNTRY_CALLING_CODES.map((c) => (
+                                        <option key={c.code} value={c.code}>{c.code} {c.label}</option>
+                                    ))}
+                                </select>
+                                {errorOf('mobilePhoneCountryCode') && <p className="field-error">{errorOf('mobilePhoneCountryCode')}</p>}
+                            </div>
+                        )}
+                        <Field label="휴대폰 번호" type="tel" autoComplete="tel" {...text('mobilePhoneNumber')}/>
+                    </>
+                )}
             </fieldset>
             {collects('ADDRESS') && (
                 <fieldset>
@@ -79,6 +103,25 @@ export function ProfileFields<T extends MemberProfile>({value, onChange, errorOf
         </>
     );
 }
+
+export const COUNTRY_CALLING_CODES: { code: string; label: string }[] = [
+    {code: '+82', label: '대한민국'},
+    {code: '+1', label: '미국/캐나다'},
+    {code: '+81', label: '일본'},
+    {code: '+86', label: '중국'},
+    {code: '+852', label: '홍콩'},
+    {code: '+886', label: '대만'},
+    {code: '+65', label: '싱가포르'},
+    {code: '+84', label: '베트남'},
+    {code: '+66', label: '태국'},
+    {code: '+63', label: '필리핀'},
+    {code: '+62', label: '인도네시아'},
+    {code: '+91', label: '인도'},
+    {code: '+44', label: '영국'},
+    {code: '+49', label: '독일'},
+    {code: '+33', label: '프랑스'},
+    {code: '+61', label: '호주'},
+];
 
 const OPTIONAL_CONSENTS: { type: PolicyType; field: 'isMailReceptionAgreed' | 'isSmsReceptionAgreed' | 'isMarketingUsageAgreed'; label: string }[] = [
     {type: 'MAIL_RECEPTION', field: 'isMailReceptionAgreed', label: '이메일 수신 동의 (선택)'},

@@ -25,8 +25,8 @@ public class PassController {
 
     @GetMapping("/api/passes/usable")
     public ResponseEntity<List<PassResponse>> usable(@AuthenticationPrincipal final LoginUser user,
-                                                      @RequestParam final Long programId) {
-        return ResponseEntity.ok(passService.usableFor(user.id(), programId));
+                                                      @RequestParam final Long reservationItemId) {
+        return ResponseEntity.ok(passService.usableFor(user.id(), reservationItemId));
     }
 
     @GetMapping("/api/admin/passes")

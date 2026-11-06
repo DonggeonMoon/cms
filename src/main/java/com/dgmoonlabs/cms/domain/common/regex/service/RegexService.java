@@ -127,6 +127,15 @@ public class RegexService {
         invalidateCache();
     }
 
+    @Transactional
+    public void delete(final Long id) {
+        RegexRule rule = findRule(id);
+        if (bindingRepository.existsByRegexRuleId(id)) {
+            throw new BusinessException(ErrorCode.REGEX_IN_USE);
+        }
+        rule.delete();
+    }
+
     @Transactional(readOnly = true)
     public Long selected(final RegexTarget target) {
         return bindingRepository.findByTarget(target).map(RegexBinding::getRegexRuleId).orElse(null);

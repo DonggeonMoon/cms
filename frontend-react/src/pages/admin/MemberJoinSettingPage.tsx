@@ -133,12 +133,21 @@ function MemberJoinSettingForm({guard}: { guard: ReauthGuard }) {
                         <legend>수집할 개인정보 항목</legend>
                         {PERSONAL_INFO_ITEMS.map((item) => {
                             const target = ITEM_REGEX[item.value];
+                            const checked = form.collectedItems.includes(item.value);
                             return (
-                                <div key={item.value} className="collect-row">
-                                    <Checkbox label={item.label} name={item.value} checked={form.collectedItems.includes(item.value)}
-                                              onChange={(e) => toggle(item.value, e.target.checked)}/>
-                                    {target && form.collectedItems.includes(item.value)
-                                        && regexSelect(target.target, target.label)}
+                                <div key={item.value}>
+                                    <div className="collect-row">
+                                        <Checkbox label={item.label} name={item.value} checked={checked}
+                                                  onChange={(e) => toggle(item.value, e.target.checked)}/>
+                                        {target && checked && regexSelect(target.target, target.label)}
+                                    </div>
+                                    {item.value === 'MOBILE_PHONE' && checked && (
+                                        <div className="indented">
+                                            <Checkbox label="국가 코드 입력란 추가 (예: +82)" name="useMobilePhoneCountryCode"
+                                                      checked={form.useMobilePhoneCountryCode}
+                                                      onChange={(e) => setForm({...form, useMobilePhoneCountryCode: e.target.checked})}/>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}

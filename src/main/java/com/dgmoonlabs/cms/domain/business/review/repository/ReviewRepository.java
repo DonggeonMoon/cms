@@ -14,17 +14,17 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     Page<Review> findAllByProductIdAndDeletedAtIsNullOrderByIdDesc(Long productId, Pageable pageable);
 
-    Page<Review> findAllByProgramIdAndDeletedAtIsNullOrderByIdDesc(Long programId, Pageable pageable);
+    Page<Review> findAllByReservationItemIdAndDeletedAtIsNullOrderByIdDesc(Long reservationItemId, Pageable pageable);
 
     Page<Review> findAllByTargetTypeAndDeletedAtIsNullOrderByIdDesc(ReviewTargetType targetType, Pageable pageable);
 
     boolean existsByProductIdAndUserIdAndDeletedAtIsNull(Long productId, Long userId);
 
-    boolean existsByProgramIdAndUserIdAndDeletedAtIsNull(Long programId, Long userId);
+    boolean existsByReservationItemIdAndUserIdAndDeletedAtIsNull(Long reservationItemId, Long userId);
 
     @Query("select avg(r.rating) from Review r where r.productId = :productId and r.deletedAt is null")
     Double averageRating(Long productId);
 
-    @Query("select avg(r.rating) from Review r where r.programId = :programId and r.deletedAt is null")
-    Double averageProgramRating(Long programId);
+    @Query("select avg(r.rating) from Review r where r.reservationItemId = :reservationItemId and r.deletedAt is null")
+    Double averageReservationItemRating(Long reservationItemId);
 }

@@ -21,7 +21,7 @@ public enum SiteFeature {
                     "/api/admin/class-attendance")),
     APPLICATION("신청·지원", List.of("/api/applications", "/api/repairs", "/api/progress", "/api/messages", "/api/votes"),
             List.of("/api/admin/applications", "/api/admin/repairs", "/api/admin/progress", "/api/admin/messages", "/api/admin/votes")),
-    MEDIA("스트리밍", List.of("/api/media", "/api/courses"), List.of("/api/admin/media", "/api/admin/courses")),
+    MEDIA("스트리밍", List.of("/api/streaming", "/api/courses"), List.of("/api/admin/streaming", "/api/admin/courses")),
     REPORT("신고", List.of("/api/reports"), List.of("/api/admin/reports")),
     SATISFACTION("만족도 조사", List.of("/api/satisfactions"), List.of("/api/admin/satisfactions")),
     CHATBOT("챗봇", List.of("/api/chatbot"), List.of("/api/admin/chatbot"));

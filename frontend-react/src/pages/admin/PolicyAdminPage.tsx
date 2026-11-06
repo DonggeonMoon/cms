@@ -9,6 +9,9 @@ import {SchemaForm} from '../../components/SchemaForm';
 const WHERE_SHOWN: Record<PolicyType, string> = {
     PRIVACY_CONSENT: '회원가입 첫 단계의 동의 화면에 표시되며, 동의해야 가입할 수 있습니다.',
     PRIVACY_POLICY: '사용자 화면 하단(푸터)의 "개인정보처리방침" 링크에서 표시됩니다.',
+    TERMS_OF_SERVICE: '사용자 화면 하단(푸터)의 "이용약관" 링크에서 표시됩니다.',
+    OPERATION_POLICY: '사용자 화면 하단(푸터)의 "운영정책" 링크에서 표시됩니다.',
+    YOUTH_PROTECTION_POLICY: '사용자 화면 하단(푸터)의 "청소년보호정책" 링크에서 표시됩니다.',
     MAIL_RECEPTION: '회원가입·마이페이지의 "이메일 수신 동의" 선택 항목에서 표시됩니다. 사용하지 않으면 항목이 숨겨지고 동의를 받지 않습니다.',
     SMS_RECEPTION: '회원가입·마이페이지의 "SMS 수신 동의" 선택 항목에서 표시됩니다. 사용하지 않으면 항목이 숨겨지고 동의를 받지 않습니다.',
     MARKETING_USAGE: '회원가입·마이페이지의 "마케팅 활용 동의" 선택 항목에서 표시됩니다. 사용하지 않으면 항목이 숨겨지고 동의를 받지 않습니다.',
@@ -17,6 +20,9 @@ const WHERE_SHOWN: Record<PolicyType, string> = {
 const TYPES: Record<string, PolicyType> = {
     'privacy-consent': 'PRIVACY_CONSENT',
     'privacy-policy': 'PRIVACY_POLICY',
+    'terms-of-service': 'TERMS_OF_SERVICE',
+    'operation-policy': 'OPERATION_POLICY',
+    'youth-protection-policy': 'YOUTH_PROTECTION_POLICY',
     'mail-reception': 'MAIL_RECEPTION',
     'sms-reception': 'SMS_RECEPTION',
     'marketing-usage': 'MARKETING_USAGE',

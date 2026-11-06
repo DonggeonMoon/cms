@@ -41,10 +41,12 @@ export function ProgressTemplateManager({targetType}: { targetType: ProgressTarg
             {open && (
                 <>
                     <p className="muted small">주문마다 거칠 수 있는 진행 단계를 정합니다(예: 시안 확인, 제작 중, 출고 완료).</p>
-                    <ul className="plain-list">
+                    <ul className="stage-template-list">
                         {templates.map((t) => (
                             <li key={t.id}>
-                                {t.sequence}. {t.label} <code className="small">{t.code}</code>
+                                <span className="stage-template-sequence">{t.sequence}</span>
+                                <span className="stage-template-label">{t.label}</span>
+                                <code className="small">{t.code}</code>
                                 <button type="button" className="link-button" onClick={() => {
                                     if (window.confirm(`'${t.label}' 단계를 지울까요?`)) {
                                         void adminApi.progress.removeTemplate(t.id).then(reload);

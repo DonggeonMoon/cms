@@ -18,11 +18,11 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     Page<Reservation> findAllByUserTypeAndUserIdOrderByIdDesc(UserType userType, Long userId, Pageable pageable);
 
-    @Query("select r from Reservation r where (:programId is null or r.programId = :programId) "
+    @Query("select r from Reservation r where (:reservationItemId is null or r.reservationItemId = :reservationItemId) "
             + "and (:status is null or r.status = :status) "
             + "and (:keyword = '' or r.reservationNumber like concat('%', :keyword, '%') "
-            + "     or lower(r.programName) like lower(concat('%', :keyword, '%'))) order by r.id desc")
-    Page<Reservation> search(Long programId, ReservationStatus status, String keyword, Pageable pageable);
+            + "     or lower(r.reservationItemName) like lower(concat('%', :keyword, '%'))) order by r.id desc")
+    Page<Reservation> search(Long reservationItemId, ReservationStatus status, String keyword, Pageable pageable);
 
     Page<Reservation> findByReservationNumber(String reservationNumber, Pageable pageable);
 
@@ -32,22 +32,22 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     Optional<Reservation> findByCheckInCode(String checkInCode);
 
-    List<Reservation> findAllByProgramIdAndStatusNot(Long programId, ReservationStatus status);
+    List<Reservation> findAllByReservationItemIdAndStatusNot(Long reservationItemId, ReservationStatus status);
 
     List<Reservation> findAllBySessionIdAndStatusNot(Long sessionId, ReservationStatus status);
 
     boolean existsBySessionIdAndStatusNot(Long sessionId, ReservationStatus status);
-    boolean existsByUserTypeAndUserIdAndProgramIdAndStatus(UserType userType, Long userId, Long programId, ReservationStatus status);
+    boolean existsByUserTypeAndUserIdAndReservationItemIdAndStatus(UserType userType, Long userId, Long reservationItemId, ReservationStatus status);
 
     long countByStatus(ReservationStatus status);
 
-    @Query("select r from Reservation r where r.programId = :programId and r.queueNumber is not null "
+    @Query("select r from Reservation r where r.reservationItemId = :reservationItemId and r.queueNumber is not null "
             + "and r.checkedInAt >= :since and r.checkedInAt < :until order by r.queueNumber asc")
-    List<Reservation> findQueue(Long programId, LocalDateTime since, LocalDateTime until);
+    List<Reservation> findQueue(Long reservationItemId, LocalDateTime since, LocalDateTime until);
 
-    @Query("select coalesce(max(r.queueNumber), 0) from Reservation r where r.programId = :programId "
+    @Query("select coalesce(max(r.queueNumber), 0) from Reservation r where r.reservationItemId = :reservationItemId "
             + "and r.checkedInAt >= :since and r.checkedInAt < :until")
-    int maxQueueNumber(Long programId, LocalDateTime since, LocalDateTime until);
+    int maxQueueNumber(Long reservationItemId, LocalDateTime since, LocalDateTime until);
 
     @Modifying
     @Query("update Reservation x set x.customStatus = null where x.customStatus = :code")

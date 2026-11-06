@@ -33,7 +33,7 @@ public class CourseLesson extends BaseEntity {
     private String title;
 
     @Comment("강의 스트리밍 ID (없으면 퀴즈만 있는 차시)")
-    private Long mediaId;
+    private Long streamingId;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Comment("퀴즈 문항 (없으면 강의만 있는 차시)")
@@ -42,11 +42,11 @@ public class CourseLesson extends BaseEntity {
     @Comment("퀴즈 통과 점수(%)")
     private Integer passScore;
 
-    public void update(final int sequence, final String title, final Long mediaId, final List<QuizQuestion> quiz,
+    public void update(final int sequence, final String title, final Long streamingId, final List<QuizQuestion> quiz,
                        final Integer passScore) {
         this.sequence = sequence;
         this.title = title;
-        this.mediaId = mediaId;
+        this.streamingId = streamingId;
         this.quiz = quiz == null || quiz.isEmpty() ? null : quiz;
         this.passScore = this.quiz == null ? null : passScore;
     }

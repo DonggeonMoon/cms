@@ -29,6 +29,18 @@ export function RegexAdminPage() {
     }, []);
     useEffect(reload, [reload]);
 
+    const handleRemove = async (rule: RegexRule) => {
+        if (!window.confirm(`'${rule.name}' 정규식을 삭제할까요?`)) {
+            return;
+        }
+        try {
+            await regexAdminApi.remove(rule.id);
+            reload();
+        } catch (e) {
+            setError(e);
+        }
+    };
+
     const form = (rule: RegexRule | null) => (
         <SchemaForm
             key={rule?.id ?? 'new'}
@@ -75,7 +87,8 @@ export function RegexAdminPage() {
                                       editing={editing?.rule?.id === rule.id ? form(rule) : null}
                                       testing={testingId === rule.id}
                                       onEdit={() => setEditing({rule})}
-                                      onTest={() => setTestingId(testingId === rule.id ? null : rule.id)}/>
+                                      onTest={() => setTestingId(testingId === rule.id ? null : rule.id)}
+                                      onRemove={() => handleRemove(rule)}/>
                         ))}
                         {rules.length === 0 && (
                             <tr>
@@ -90,9 +103,10 @@ export function RegexAdminPage() {
     );
 }
 
-function RegexRow({rule, editing, testing, onEdit, onTest}: {
-    rule: RegexRule; editing: ReactNode; testing: boolean; onEdit: () => void; onTest: () => void;
+function RegexRow({rule, editing, testing, onEdit, onTest, onRemove}: {
+    rule: RegexRule; editing: ReactNode; testing: boolean; onEdit: () => void; onTest: () => void; onRemove: () => void;
 }) {
+    const inUse = rule.usedBy.length > 0;
     return (
         <>
             <tr>
@@ -113,6 +127,8 @@ function RegexRow({rule, editing, testing, onEdit, onTest}: {
                 <td className="actions">
                     <button type="button" onClick={onTest}>{testing ? '테스트 닫기' : '테스트'}</button>
                     <button type="button" onClick={onEdit}>수정</button>
+                    <button type="button" className="danger" disabled={inUse} title={inUse ? '사용 중인 정규식은 삭제할 수 없습니다.' : undefined}
+                            onClick={onRemove}>삭제</button>
                 </td>
             </tr>
             {(editing || testing) && (

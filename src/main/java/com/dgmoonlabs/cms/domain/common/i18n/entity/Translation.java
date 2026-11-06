@@ -27,4 +27,9 @@ public class Translation extends BaseEntity {
     @Column(nullable = false, columnDefinition = "text")
     @Comment("번역문")
     private String message;
+
+    public void update(final String messageKey, final String message) {
+        this.messageKey = messageKey;
+        this.message = message;
+    }
 }

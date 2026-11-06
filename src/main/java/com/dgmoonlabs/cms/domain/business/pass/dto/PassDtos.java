@@ -10,12 +10,12 @@ public final class PassDtos {
     private PassDtos() {
     }
 
-    public record PassResponse(Long id, Long memberId, Long productId, String productName, PassUnit unit, Long programId,
+    public record PassResponse(Long id, Long memberId, Long productId, String productName, PassUnit unit, Long reservationItemId,
                                Integer totalCount, Integer remainingCount, LocalDateTime expiresAt, PassStatus status,
                                LocalDateTime createdAt) {
         public static PassResponse from(final MemberPass pass) {
             return new PassResponse(pass.getId(), pass.getMemberId(), pass.getProductId(), pass.getProductName(),
-                    pass.getUnit(), pass.getProgramId(), pass.getTotalCount(), pass.getRemainingCount(),
+                    pass.getUnit(), pass.getReservationItemId(), pass.getTotalCount(), pass.getRemainingCount(),
                     pass.getExpiresAt(), pass.getStatus(), pass.getCreatedAt());
         }
     }

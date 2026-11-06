@@ -22,11 +22,11 @@ public final class ReviewDtos {
     ) {
     }
 
-    public record ReviewResponse(Long id, ReviewTargetType targetType, Long productId, Long programId, int rating,
+    public record ReviewResponse(Long id, ReviewTargetType targetType, Long productId, Long reservationItemId, int rating,
                                  String title, String contentHtml, String authorName, boolean canDelete,
                                  LocalDateTime createdAt) {
         public static ReviewResponse of(final Review review, final boolean canDelete) {
-            return new ReviewResponse(review.getId(), review.getTargetType(), review.getProductId(), review.getProgramId(),
+            return new ReviewResponse(review.getId(), review.getTargetType(), review.getProductId(), review.getReservationItemId(),
                     review.getRating(), review.getTitle(), review.getContentHtml(), review.getAuthorName(), canDelete,
                     review.getCreatedAt());
         }

@@ -293,7 +293,7 @@ describe('site features', () => {
         const requested: string[] = [];
         const review = (targetType: string) => ({
             id: targetType === 'PRODUCT' ? 1 : 2, targetType, productId: targetType === 'PRODUCT' ? 7 : null,
-            programId: targetType === 'PROGRAM' ? 9 : null, rating: 4,
+            reservationItemId: targetType === 'RESERVATION_ITEM' ? 9 : null, rating: 4,
             title: targetType === 'PRODUCT' ? '상품 좋아요' : '강좌 좋아요', contentHtml: '', authorName: '회원',
             canDelete: true, createdAt: '2026-11-02T10:00:00',
         });
@@ -306,7 +306,7 @@ describe('site features', () => {
             }
             if (url.startsWith('/api/admin/reviews')) {
                 requested.push(url);
-                const type = url.includes('targetType=PROGRAM') ? 'PROGRAM' : 'PRODUCT';
+                const type = url.includes('targetType=RESERVATION_ITEM') ? 'RESERVATION_ITEM' : 'PRODUCT';
                 return respond(200, {content: [review(type)], page: {size: 20, number: 0, totalElements: 1, totalPages: 1}});
             }
             return respond(200, []);
@@ -319,7 +319,7 @@ describe('site features', () => {
         await userEvent.click(screen.getByRole('tab', {name: '예약 상품 리뷰'}));
         expect(await screen.findByText('강좌 좋아요')).toBeInTheDocument();
         expect(screen.getByRole('link', {name: '#9'})).toHaveAttribute('href', '/reservation-items/9');
-        expect(requested.some((url) => url.includes('targetType=PROGRAM'))).toBe(true);
+        expect(requested.some((url) => url.includes('targetType=RESERVATION_ITEM'))).toBe(true);
     });
 
     it('does not offer switched-off features as menu types', async () => {

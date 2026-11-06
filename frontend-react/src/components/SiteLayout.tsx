@@ -94,7 +94,7 @@ function SiteFrame() {
                     {isEnabled('APPLICATION') && <NavLink to="/mypage/repairs">{t('mypage.repairs', '수리·AS 접수')}</NavLink>}
                     {isEnabled('APPLICATION') && <NavLink to="/mypage/votes">{t('mypage.votes', '투표')}</NavLink>}
                     {isEnabled('REPORT') && <NavLink to="/mypage/reports">{t('mypage.reports', '신고')}</NavLink>}
-                    {isEnabled('MEDIA') && <NavLink to="/mypage/media">{t('mypage.media', '수강 내역')}</NavLink>}
+                    {isEnabled('MEDIA') && <NavLink to="/mypage/streaming">{t('mypage.streaming', '수강 내역')}</NavLink>}
                     {isEnabled('MEDIA') && <NavLink to="/mypage/courses">{t('mypage.courses', '교육 과정')}</NavLink>}
                     <NavLink to="/mypage/password">{t('mypage.password', '비밀번호 변경')}</NavLink>
                     <NavLink to="/mypage/quit">{t('mypage.quit', '회원 탈퇴')}</NavLink>
@@ -105,7 +105,10 @@ function SiteFrame() {
             </main>
             <footer className="site-footer">
                 <nav className="footer-links" aria-label="사이트 정보">
+                    <Link to="/terms">{t('footer.terms', '이용약관')}</Link>
                     <Link to="/privacy"><strong>{t('footer.privacy', '개인정보처리방침')}</strong></Link>
+                    <Link to="/operation-policy">{t('footer.operationPolicy', '운영정책')}</Link>
+                    <Link to="/youth-protection">{t('footer.youthProtection', '청소년보호정책')}</Link>
                 </nav>
                 <div>{configs['site.footer'] ?? `ⓒ ${new Date().getFullYear()}. dgmoonlabs All Rights Reserved`}</div>
             </footer>

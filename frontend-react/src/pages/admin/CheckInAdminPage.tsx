@@ -42,7 +42,7 @@ export function CheckInAdminPage() {
                 <div className="card">
                     <p className="price">체크인 완료 · {formatDateTime(result.checkedInAt)}</p>
                     <p>{result.applicantName} ({result.phoneNumber})</p>
-                    <p className="muted">{result.programName} · {reservationUsage(result)}</p>
+                    <p className="muted">{result.reservationItemName} · {reservationUsage(result)}</p>
                 </div>
             )}
         </section>

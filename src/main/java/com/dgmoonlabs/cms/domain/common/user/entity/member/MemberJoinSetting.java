@@ -55,17 +55,24 @@ public class MemberJoinSetting extends BaseEntity {
     @Comment("수집할 개인정보 항목 (이름은 항상 수집)")
     private Set<PersonalInfoItem> collectedItems = EnumSet.copyOf(PersonalInfoItem.DEFAULTS);
 
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    @Comment("휴대폰 번호에 국가 코드 입력란을 둘지 여부 (휴대폰 번호를 수집할 때만 적용)")
+    private boolean useMobilePhoneCountryCode;
+
     public static MemberJoinSetting defaults() {
         return MemberJoinSetting.builder().build();
     }
 
     public void update(final boolean collectName, final NameFormat nameFormat, final boolean collectNickname,
-                       final BirthDateInput birthDateInput, final Set<PersonalInfoItem> collectedItems) {
+                       final BirthDateInput birthDateInput, final Set<PersonalInfoItem> collectedItems,
+                       final boolean useMobilePhoneCountryCode) {
         this.collectName = collectName;
         this.collectNickname = collectNickname;
         this.nameFormat = nameFormat;
         this.birthDateInput = birthDateInput;
         this.collectedItems = collectedItems.isEmpty() ? EnumSet.noneOf(PersonalInfoItem.class) : EnumSet.copyOf(collectedItems);
+        this.useMobilePhoneCountryCode = useMobilePhoneCountryCode;
     }
 
     public boolean collects(final PersonalInfoItem item) {
@@ -74,6 +81,11 @@ public class MemberJoinSetting extends BaseEntity {
 
     public String keep(final PersonalInfoItem item, final String value) {
         return collects(item) && value != null && !value.isBlank() ? value : null;
+    }
+
+    public String keepMobilePhoneCountryCode(final String value) {
+        return collects(PersonalInfoItem.MOBILE_PHONE) && useMobilePhoneCountryCode && value != null && !value.isBlank()
+                ? value : null;
     }
 
     public LocalDate keep(final PersonalInfoItem item, final LocalDate value) {

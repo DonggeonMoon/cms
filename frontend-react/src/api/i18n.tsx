@@ -6,21 +6,27 @@ export const LANGUAGE_NAMES: Record<string, string> = {
     es: 'Español', fr: 'Français', de: 'Deutsch', ru: 'Русский',
 };
 
-export type BundleFormat = 'PROPERTIES' | 'YAML';
-
 export interface I18nSetting {
     languages: string[];
     defaultLanguage: string;
+}
+
+export interface Translation {
+    id: number;
+    key: string;
+    message: string;
 }
 
 export const i18nApi = {
     setting: () => request<I18nSetting>('/api/i18n'),
     messages: (language: string) => request<Record<string, string>>(`/api/i18n/messages/${language}`),
     updateSetting: (body: I18nSetting) => request<I18nSetting>('/api/admin/i18n', {method: 'PUT', body: {...body}}),
-    bundle: (language: string, format: BundleFormat) =>
-        request<{ language: string; format: BundleFormat; text: string; count: number }>(`/api/admin/i18n/bundles/${language}`, {query: {format}}),
-    saveBundle: (language: string, format: BundleFormat, text: string) =>
-        request<{ count: number; text: string }>(`/api/admin/i18n/bundles/${language}`, {method: 'PUT', body: {format, text}}),
+    translations: (language: string) => request<Translation[]>(`/api/admin/i18n/translations/${language}`),
+    createTranslation: (language: string, key: string, message: string) =>
+        request<Translation>(`/api/admin/i18n/translations/${language}`, {method: 'POST', body: {key, message}}),
+    updateTranslation: (id: number, key: string, message: string) =>
+        request<Translation>(`/api/admin/i18n/translations/${id}`, {method: 'PUT', body: {key, message}}),
+    removeTranslation: (id: number) => request<void>(`/api/admin/i18n/translations/${id}`, {method: 'DELETE'}),
 };
 
 export const DEFAULT_MESSAGES: Record<string, string> = {
@@ -43,10 +49,13 @@ export const DEFAULT_MESSAGES: Record<string, string> = {
     'mypage.applications': '신청 내역',
     'mypage.repairs': '수리·AS 접수',
     'mypage.reports': '신고',
-    'mypage.media': '수강 내역',
+    'mypage.streaming': '수강 내역',
     'mypage.password': '비밀번호 변경',
     'mypage.quit': '회원 탈퇴',
+    'footer.terms': '이용약관',
     'footer.privacy': '개인정보처리방침',
+    'footer.operationPolicy': '운영정책',
+    'footer.youthProtection': '청소년보호정책',
     'language.label': '언어',
 };
 

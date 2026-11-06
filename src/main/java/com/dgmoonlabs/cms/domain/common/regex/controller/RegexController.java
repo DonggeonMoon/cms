@@ -44,6 +44,12 @@ public class RegexController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/api/admin/regexes/{id}")
+    public ResponseEntity<Void> delete(@PathVariable final Long id) {
+        regexService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/api/admin/regexes/test")
     public ResponseEntity<RegexTestResult> test(@RequestBody @Valid final RegexTestRequest request) {
         return ResponseEntity.ok(regexService.test(request));

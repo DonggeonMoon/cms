@@ -1,7 +1,7 @@
 import {type FormEvent, useEffect, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {useAuth} from '../../auth/AuthContext';
-import type {Availability, MemberPass, Program} from '../../api/domain';
+import type {Availability, MemberPass, ReservationItem} from '../../api/domain';
 import {shopApi} from '../../api/endpoints';
 import {won} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
@@ -20,39 +20,39 @@ const today = () => new Date().toISOString().slice(0, 10);
 const dateOf = (value: string | null) => (value ? value.slice(0, 10) : '');
 const minutesBetween = (from: string, to: string) => (new Date(to).getTime() - new Date(from).getTime()) / 60000;
 
-export function estimateReservation(program: Program, selection: ReservationSelection): number {
-    const price = Number(program.price);
-    if (program.reservationType === 'TOUR') {
+export function estimateReservation(item: ReservationItem, selection: ReservationSelection): number {
+    const price = Number(item.price);
+    if (item.reservationType === 'TOUR') {
         const counts = selection.partyCounts ?? {};
-        return (program.priceTiers ?? []).reduce((sum, tier) => sum + Number(tier.price) * (counts[tier.name] ?? 0), 0);
+        return (item.priceTiers ?? []).reduce((sum, tier) => sum + Number(tier.price) * (counts[tier.name] ?? 0), 0);
     }
-    if (program.reservationType === 'CONSULTATION' || program.reservationType === 'VISIT') {
+    if (item.reservationType === 'CONSULTATION' || item.reservationType === 'VISIT') {
         return price;
     }
-    if (program.reservationType === 'ITEM_RENTAL') {
+    if (item.reservationType === 'ITEM_RENTAL') {
         const days = selection.startAt && selection.endAt ? Math.max(0, Math.round(minutesBetween(selection.startAt, selection.endAt) / 1440)) : 0;
-        return (price * days + Number(program.depositAmount ?? 0)) * (selection.quantity ?? 1);
+        return (price * days + Number(item.depositAmount ?? 0)) * (selection.quantity ?? 1);
     }
     const perUnit = selection.cells.reduce((sum, key) => {
-        const cell = program.layout?.cells.find((c) => c.key === key);
+        const cell = item.layout?.cells.find((c) => c.key === key);
         return sum + (cell?.price != null ? Number(cell.price) : price);
     }, 0);
     if (!selection.startAt || !selection.endAt) {
         return perUnit;
     }
-    if (program.reservationType === 'RENTAL' || program.reservationType === 'TABLE') {
-        return perUnit * (minutesBetween(selection.startAt, selection.endAt) / (program.slotMinutes ?? 60));
+    if (item.reservationType === 'RENTAL' || item.reservationType === 'TABLE') {
+        return perUnit * (minutesBetween(selection.startAt, selection.endAt) / (item.slotMinutes ?? 60));
     }
-    if (program.reservationType === 'LODGING') {
+    if (item.reservationType === 'LODGING') {
         return perUnit * Math.round(minutesBetween(selection.startAt, selection.endAt) / 1440);
     }
     return perUnit;
 }
 
-export function ReservationPicker({program}: { program: Program }) {
+export function ReservationPicker({item}: { item: ReservationItem }) {
     const navigate = useNavigate();
     const {user} = useAuth();
-    const firstDay = [today(), dateOf(program.startDateTime)].sort().at(-1)!;
+    const firstDay = [today(), dateOf(item.startDateTime)].sort().at(-1)!;
     const [date, setDate] = useState(firstDay);
     const [checkOut, setCheckOut] = useState('');
     const [startAt, setStartAt] = useState<string | null>(null);
@@ -66,24 +66,24 @@ export function ReservationPicker({program}: { program: Program }) {
     const [passId, setPassId] = useState('');
     const [availability, setAvailability] = useState<Availability | null>(null);
     const [error, setError] = useState<unknown>(null);
-    const type = program.reservationType;
-    const eventSessions = (program.sessions ?? []).filter((s) => s.isOpen);
+    const type = item.reservationType;
+    const eventSessions = (item.sessions ?? []).filter((s) => s.isOpen);
     const hasEventSessions = type === 'EVENT' && eventSessions.length > 0;
-    const tourSessions = (program.sessions ?? []).filter((s) => s.isOpen);
+    const tourSessions = (item.sessions ?? []).filter((s) => s.isOpen);
     const hasTourSessions = type === 'TOUR' && tourSessions.length > 0;
     const totalParty = Object.values(partyCounts).reduce((sum, n) => sum + (n || 0), 0);
 
     useEffect(() => {
         if (type === 'TOUR') {
-            setPartyCounts(Object.fromEntries((program.priceTiers ?? []).map((t) => [t.name, 0])));
+            setPartyCounts(Object.fromEntries((item.priceTiers ?? []).map((t) => [t.name, 0])));
         }
-    }, [program.id, type, program.priceTiers]);
+    }, [item.id, type, item.priceTiers]);
 
     useEffect(() => {
         if (user?.userType === 'MEMBER') {
-            shopApi.usablePasses(program.id).then(setPasses).catch(() => setPasses([]));
+            shopApi.usablePasses(item.id).then(setPasses).catch(() => setPasses([]));
         }
-    }, [program.id, user?.userType]);
+    }, [item.id, user?.userType]);
 
     useEffect(() => {
         if (type === 'TOUR') {
@@ -103,11 +103,11 @@ export function ReservationPicker({program}: { program: Program }) {
             setAvailability(null);
             return;
         }
-        shopApi.availability(program.id, query).then((loaded) => {
+        shopApi.availability(item.id, query).then((loaded) => {
             setAvailability(loaded);
             setCells((current) => current.filter((key) => !loaded.takenCells.includes(key)));
         }).catch(setError);
-    }, [program.id, type, date, checkOut, startAt, endAt, hasEventSessions, sessionId]);
+    }, [item.id, type, date, checkOut, startAt, endAt, hasEventSessions, sessionId]);
 
     const byDates = type === 'LODGING' || type === 'ITEM_RENTAL';
     const selection: ReservationSelection = byDates
@@ -117,7 +117,7 @@ export function ReservationPicker({program}: { program: Program }) {
     const needsCells = type !== 'CONSULTATION' && type !== 'ITEM_RENTAL' && type !== 'VISIT' && type !== 'TOUR';
     const remaining = availability?.remainingItems ?? null;
     const rentalDays = selection.startAt && selection.endAt ? Math.round(minutesBetween(selection.startAt, selection.endAt) / 1440) : 0;
-    const rentalReady = type !== 'ITEM_RENTAL' || (rentalDays > 0 && (program.maxRentalDays == null || rentalDays <= program.maxRentalDays)
+    const rentalReady = type !== 'ITEM_RENTAL' || (rentalDays > 0 && (item.maxRentalDays == null || rentalDays <= item.maxRentalDays)
         && remaining != null && quantity <= remaining);
     const ready = (type === 'EVENT' || type === 'TOUR' || selection.startAt) && (!needsCells || cells.length > 0)
         && (type !== 'RENTAL' && type !== 'TABLE' || (startAt && endAt && minutesBetween(startAt, endAt) > 0)) && rentalReady
@@ -126,7 +126,7 @@ export function ReservationPicker({program}: { program: Program }) {
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        const query = new URLSearchParams({programId: String(program.id)});
+        const query = new URLSearchParams({reservationItemId: String(item.id)});
         if (selection.startAt) query.set('startAt', selection.startAt);
         if (selection.endAt) query.set('endAt', selection.endAt);
         if (cells.length) query.set('cells', cells.join(','));
@@ -179,7 +179,7 @@ export function ReservationPicker({program}: { program: Program }) {
             )}
             {type === 'TOUR' && (
                 <div className="row align-center">
-                    {(program.priceTiers ?? []).map((tier) => (
+                    {(item.priceTiers ?? []).map((tier) => (
                         <label key={tier.name}>{tier.name} ({won(tier.price)}){' '}
                             <input type="number" min={0} value={partyCounts[tier.name] ?? 0}
                                    onChange={(e) => setPartyCounts({...partyCounts, [tier.name]: Math.max(0, Number(e.target.value))})}/>
@@ -190,7 +190,7 @@ export function ReservationPicker({program}: { program: Program }) {
             {(type === 'CONSULTATION' || type === 'VISIT' || type === 'RENTAL' || type === 'TABLE' || byDates) && (
                 <div className="row align-center">
                     <label>{type === 'LODGING' ? '체크인' : type === 'ITEM_RENTAL' ? '대여일' : '날짜'}{' '}
-                        <input type="date" value={date} min={firstDay} max={dateOf(program.endDateTime) || undefined}
+                        <input type="date" value={date} min={firstDay} max={dateOf(item.endDateTime) || undefined}
                                onChange={(e) => {
                                    setDate(e.target.value);
                                    setStartAt(null);
@@ -249,21 +249,21 @@ export function ReservationPicker({program}: { program: Program }) {
                     )}
                 </div>
             )}
-            {needsCells && program.layout && (!hasEventSessions || sessionId)
+            {needsCells && item.layout && (!hasEventSessions || sessionId)
                 && (type === 'EVENT' || (type === 'RENTAL' || type === 'TABLE' ? startAt && endAt : type === 'LODGING' ? checkOut : true)) && (
                 <>
-                    <SpaceGrid layout={program.layout} taken={availability?.takenCells ?? []} selected={cells}
+                    <SpaceGrid layout={item.layout} taken={availability?.takenCells ?? []} selected={cells}
                                onCellClick={(cell) => cell && toggleCell(cell.key)}/>
                     <p className="muted small">회색 칸은 이미 예약되었습니다. {cells.length > 0 && `선택: ${cells.map((key) =>
-                        program.layout?.cells.find((c) => c.key === key)?.label ?? key).join(', ')}`}</p>
+                        item.layout?.cells.find((c) => c.key === key)?.label ?? key).join(', ')}`}</p>
                 </>
             )}
             {type === 'ITEM_RENTAL' && (
                 <p className="muted small">
                     {remaining != null && `이 기간에 ${remaining}개를 빌릴 수 있습니다. `}
-                    {program.maxRentalDays != null && `최대 ${program.maxRentalDays}일까지 빌릴 수 있습니다. `}
+                    {item.maxRentalDays != null && `최대 ${item.maxRentalDays}일까지 빌릴 수 있습니다. `}
                     {rentalDays > 0 && `${rentalDays}일 대여. `}
-                    {Number(program.depositAmount ?? 0) > 0 && `보증금 1개당 ${won(program.depositAmount!)}이 포함되며, 반납하면 돌려받습니다.`}
+                    {Number(item.depositAmount ?? 0) > 0 && `보증금 1개당 ${won(item.depositAmount!)}이 포함되며, 반납하면 돌려받습니다.`}
                 </p>
             )}
             {passes.length > 0 && (
@@ -280,8 +280,8 @@ export function ReservationPicker({program}: { program: Program }) {
                 </div>
             )}
             <p className="price align-right">예상 금액 {passId ? '이용권 사용 (0원)'
-                : Number(program.price) === 0 && type !== 'RENTAL' && type !== 'LODGING' && type !== 'EVENT' && type !== 'TABLE' && type !== 'TOUR'
-                ? '무료' : won(estimateReservation(program, selection))}</p>
+                : Number(item.price) === 0 && type !== 'RENTAL' && type !== 'LODGING' && type !== 'EVENT' && type !== 'TABLE' && type !== 'TOUR'
+                ? '무료' : won(estimateReservation(item, selection))}</p>
             <ErrorBanner error={error}/>
             <div className="toolbar form-actions">
                 <button type="submit" className="primary" disabled={!ready}>예약하기</button>

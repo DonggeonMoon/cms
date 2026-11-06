@@ -255,6 +255,17 @@ input[aria-invalid='true'] {
     border-color: var(--danger);
 }
 
+input[type='number'] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 .field-error {
     margin: 0;
     color: var(--danger);
@@ -321,6 +332,11 @@ button.danger {
     border-radius: 6px;
     background: color-mix(in srgb, var(--danger) 12%, transparent);
     color: var(--danger);
+}
+
+.error-banner-list {
+    margin: 0;
+    padding-left: 1.2em;
 }
 
 .toolbar {
@@ -422,6 +438,8 @@ td.button-cell > :only-child {
     padding: 2px 8px;
     border-radius: 999px;
     font-size: 0.8rem;
+    font-weight: 600;
+    border: none;
     background: color-mix(in srgb, var(--muted) 18%, transparent);
 }
 
@@ -1851,15 +1869,6 @@ input[type='checkbox'], input[type='radio'] {
     font-size: 0.875rem;
 }
 
-.badge {
-    border-radius: 999px;
-    padding: 2px 10px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    border: none;
-    background: var(--subtle);
-}
-
 .notice-box {
     border-radius: var(--radius);
     padding: 14px 16px;
@@ -2846,12 +2855,6 @@ input[type='checkbox'], input[type='radio'] {
     margin: 4px 0;
 }
 
-.bundle-editor textarea {
-    width: 100%;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.85rem;
-}
-
 .language-select {
     padding: 4px 8px;
 }
@@ -2932,6 +2935,43 @@ tr.muted td:nth-last-child(2) {
 
 .plain-list {
     padding-left: 1.2em;
+}
+
+.stage-template-list {
+    list-style: none;
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.stage-template-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
+.stage-template-sequence {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.6em;
+    height: 1.6em;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--muted) 18%, transparent);
+    font-size: 0.85em;
+    flex-shrink: 0;
+}
+
+.stage-template-label {
+    flex: 1;
+}
+
+.stage-template-list li button {
+    margin-left: auto;
 }
 
 .progress-panel {

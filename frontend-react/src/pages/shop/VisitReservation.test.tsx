@@ -33,7 +33,7 @@ describe('visit reservation', () => {
                 ? respond(200, []) : respond(204);
         }));
         render(<AuthProvider><RouterProvider router={createMemoryRouter(routes, {
-            initialEntries: ['/reservations/new?programId=7&startAt=2030-01-02T09:00:00&endAt=2030-01-02T11:00:00'],
+            initialEntries: ['/reservations/new?reservationItemId=7&startAt=2030-01-02T09:00:00&endAt=2030-01-02T11:00:00'],
         })}/></AuthProvider>);
 
         await userEvent.type(await screen.findByLabelText(/방문 주소/), '서울 강남구 테헤란로 1');
@@ -41,7 +41,7 @@ describe('visit reservation', () => {
         await userEvent.click(screen.getByRole('button', {name: '예약 신청'}));
 
         await waitFor(() => expect(sent[0]).toMatchObject({
-            programId: 7, startAt: '2030-01-02T09:00:00', visitAddress: '서울 강남구 테헤란로 1', requestMemo: '주차 가능',
+            reservationItemId: 7, startAt: '2030-01-02T09:00:00', visitAddress: '서울 강남구 테헤란로 1', requestMemo: '주차 가능',
         }));
     });
 });

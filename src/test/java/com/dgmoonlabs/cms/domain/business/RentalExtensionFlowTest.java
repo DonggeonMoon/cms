@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RentalExtensionFlowTest extends ApiTestSupport {
     private static final String APPLICANT = "\"applicantName\":\"대여자\",\"phoneNumber\":\"010-1234-5678\"";
     private static final LocalDate DAY = LocalDate.now().plusDays(2);
-    private static final String RENT = "{\"programId\":%d,\"quantity\":%d,\"startAt\":\"%sT00:00:00\",\"endAt\":\"%sT00:00:00\",%s}";
+    private static final String RENT = "{\"reservationItemId\":%d,\"quantity\":%d,\"startAt\":\"%sT00:00:00\",\"endAt\":\"%sT00:00:00\",%s}";
 
     @Autowired
     private EntityManager entityManager;

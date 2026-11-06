@@ -81,62 +81,62 @@ class ShopFlowTest extends ApiTestSupport {
     }
 
     @Test
-    void confirmedParticipantsReviewProgramsSeparatelyFromProducts() throws Exception {
+    void confirmedParticipantsReviewReservationItemsSeparatelyFromProducts() throws Exception {
         MockHttpSession admin = admin();
-        long programId = createdId(postJson("/api/admin/reservation-items", admin, """
+        long reservationItemId = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"요가 교실","price":0,"maximumPerson":10,"isEnabled":true}
                 """).andExpect(status().isCreated()));
         MockHttpSession member = member("yogaone");
 
-        postJson("/api/reservation-items/" + programId + "/reviews", member, """
+        postJson("/api/reservation-items/" + reservationItemId + "/reviews", member, """
                 {"rating":5,"title":"예약 전"}
                 """).andExpect(status().isForbidden());
         postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,"applicantName":"요가","phoneNumber":"010-1234-5678"}
-                """.formatted(programId)).andExpect(status().isCreated());
+                {"reservationItemId":%d,"quantity":1,"applicantName":"요가","phoneNumber":"010-1234-5678"}
+                """.formatted(reservationItemId)).andExpect(status().isCreated());
 
-        postJson("/api/reservation-items/" + programId + "/reviews", member, """
+        postJson("/api/reservation-items/" + reservationItemId + "/reviews", member, """
                 {"rating":4,"title":"좋았어요","contentHtml":"<p>강사님 친절</p>"}
                 """).andExpect(status().isCreated());
-        postJson("/api/reservation-items/" + programId + "/reviews", member, """
+        postJson("/api/reservation-items/" + reservationItemId + "/reviews", member, """
                 {"rating":1,"title":"두 번째"}
                 """).andExpect(jsonPath("$.code").value("ALREADY_SUBMITTED"));
 
-        getJson("/api/reservation-items/" + programId + "/reviews", null)
+        getJson("/api/reservation-items/" + reservationItemId + "/reviews", null)
                 .andExpect(jsonPath("$.content[0].title").value("좋았어요"))
-                .andExpect(jsonPath("$.content[0].targetType").value("PROGRAM"));
-        getJson("/api/reservation-items/" + programId, null).andExpect(jsonPath("$.averageRating").value(4.0));
+                .andExpect(jsonPath("$.content[0].targetType").value("RESERVATION_ITEM"));
+        getJson("/api/reservation-items/" + reservationItemId, null).andExpect(jsonPath("$.averageRating").value(4.0));
 
-        getJson("/api/admin/reviews?targetType=PROGRAM", admin)
-                .andExpect(jsonPath("$.content[0].programId").value(programId));
+        getJson("/api/admin/reviews?targetType=RESERVATION_ITEM", admin)
+                .andExpect(jsonPath("$.content[0].reservationItemId").value(reservationItemId));
         getJson("/api/admin/reviews?targetType=PRODUCT", admin).andExpect(jsonPath("$.page.totalElements").value(0));
     }
 
     @Test
     void reservationsRespectCapacityAndPeriod() throws Exception {
         MockHttpSession admin = admin();
-        long freeProgram = createdId(postJson("/api/admin/reservation-items", admin, """
+        long freeItem = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"무료 강좌","price":0,"maximumPerson":2,"isEnabled":true}
                 """).andExpect(status().isCreated()));
-        long closedProgram = createdId(postJson("/api/admin/reservation-items", admin, """
+        long closedItem = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"마감 강좌","price":0,"maximumPerson":10,"isEnabled":true,"applicationEndDateTime":"%s"}
                 """.formatted(LocalDateTime.now().minusDays(1))).andExpect(status().isCreated()));
 
         MockHttpSession member = member("student");
         JsonNode reservation = body(postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":2,"applicantName":"학생","phoneNumber":"010-1234-5678"}
-                """.formatted(freeProgram)).andExpect(status().isCreated()));
+                {"reservationItemId":%d,"quantity":2,"applicantName":"학생","phoneNumber":"010-1234-5678"}
+                """.formatted(freeItem)).andExpect(status().isCreated()));
         assertThat(reservation.get("status").asString()).isEqualTo("CONFIRMED");
 
         postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,"applicantName":"학생","phoneNumber":"010-1234-5678"}
-                """.formatted(freeProgram)).andExpect(jsonPath("$.code").value("PROGRAM_FULL"));
+                {"reservationItemId":%d,"quantity":1,"applicantName":"학생","phoneNumber":"010-1234-5678"}
+                """.formatted(freeItem)).andExpect(jsonPath("$.code").value("RESERVATION_ITEM_FULL"));
         postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,"applicantName":"학생","phoneNumber":"010-1234-5678"}
-                """.formatted(closedProgram)).andExpect(jsonPath("$.code").value("PROGRAM_NOT_OPEN"));
+                {"reservationItemId":%d,"quantity":1,"applicantName":"학생","phoneNumber":"010-1234-5678"}
+                """.formatted(closedItem)).andExpect(jsonPath("$.code").value("RESERVATION_ITEM_NOT_OPEN"));
 
         postJson("/api/reservations/" + reservation.get("id").asLong() + "/cancel", member, "").andExpect(status().isNoContent());
-        getJson("/api/reservation-items/" + freeProgram, null).andExpect(jsonPath("$.availablePerson").value(2));
+        getJson("/api/reservation-items/" + freeItem, null).andExpect(jsonPath("$.availablePerson").value(2));
     }
 
     @Test
@@ -169,23 +169,23 @@ class ShopFlowTest extends ApiTestSupport {
     @Test
     void adminBooksOutsideTheApplicationPeriodButNotBeyondCapacity() throws Exception {
         MockHttpSession admin = admin();
-        long programId = createdId(postJson("/api/admin/reservation-items", admin, """
+        long reservationItemId = createdId(postJson("/api/admin/reservation-items", admin, """
                 {"name":"마감된 유료 강좌","price":30000,"maximumPerson":2,"isEnabled":true,"applicationEndDateTime":"%s"}
                 """.formatted(LocalDateTime.now().minusDays(1))));
 
         JsonNode pending = body(postJson("/api/admin/reservations", admin, """
-                {"programId":%d,"quantity":1,"applicantName":"현장 접수","phoneNumber":"010-1234-5678"}
-                """.formatted(programId)).andExpect(status().isCreated()));
+                {"reservationItemId":%d,"quantity":1,"applicantName":"현장 접수","phoneNumber":"010-1234-5678"}
+                """.formatted(reservationItemId)).andExpect(status().isCreated()));
         assertThat(pending.get("status").asString()).isEqualTo("PENDING_PAYMENT");
         postJson("/api/admin/reservations/" + pending.get("id").asLong() + "/confirm", admin, "").andExpect(status().isNoContent());
 
         postJson("/api/admin/reservations?paid=true", admin, """
-                {"programId":%d,"quantity":1,"applicantName":"현장 접수","phoneNumber":"010-1234-5678"}
-                """.formatted(programId)).andExpect(jsonPath("$.status").value("CONFIRMED"));
+                {"reservationItemId":%d,"quantity":1,"applicantName":"현장 접수","phoneNumber":"010-1234-5678"}
+                """.formatted(reservationItemId)).andExpect(jsonPath("$.status").value("CONFIRMED"));
         postJson("/api/admin/reservations", admin, """
-                {"programId":%d,"quantity":1,"applicantName":"초과","phoneNumber":"010-1234-5678"}
-                """.formatted(programId)).andExpect(jsonPath("$.code").value("PROGRAM_FULL"));
-        getJson("/api/admin/reservations?status=CONFIRMED&programId=" + programId, admin)
+                {"reservationItemId":%d,"quantity":1,"applicantName":"초과","phoneNumber":"010-1234-5678"}
+                """.formatted(reservationItemId)).andExpect(jsonPath("$.code").value("RESERVATION_ITEM_FULL"));
+        getJson("/api/admin/reservations?status=CONFIRMED&reservationItemId=" + reservationItemId, admin)
                 .andExpect(jsonPath("$.page.totalElements").value(2));
     }
 }

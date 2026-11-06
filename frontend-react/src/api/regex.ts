@@ -46,6 +46,7 @@ export const regexAdminApi = {
     options: () => request<RegexOption[]>('/api/admin/regexes/options'),
     create: (body: Body) => request<void>('/api/admin/regexes', {method: 'POST', body}),
     update: (id: number, body: Body) => request<void>(`/api/admin/regexes/${id}`, {method: 'PUT', body}),
+    remove: (id: number) => request<void>(`/api/admin/regexes/${id}`, {method: 'DELETE'}),
     test: (pattern: string, value: string) =>
         request<RegexTestResult>('/api/admin/regexes/test', {method: 'POST', body: {pattern, value}}),
     binding: (target: NumberRegexTarget) =>

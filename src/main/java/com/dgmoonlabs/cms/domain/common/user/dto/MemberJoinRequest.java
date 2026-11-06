@@ -31,6 +31,7 @@ public record MemberJoinRequest(
         @MatchesRegex(RegexTarget.EMAIL) String email,
         @MatchesRegex(RegexTarget.PHONE_NUMBER) String telephoneNumber,
         @MatchesRegex(RegexTarget.MOBILE_PHONE) String mobilePhoneNumber,
+        @Pattern(regexp = "^\\+[1-9]\\d{0,3}$", message = "국가 코드 형식이 올바르지 않습니다. (예: +82)") String mobilePhoneCountryCode,
         @MatchesRegex(RegexTarget.POSTAL_CODE) String postalCode,
         String address,
         String detailAddress,
@@ -59,6 +60,7 @@ public record MemberJoinRequest(
                 .email(setting.keep(PersonalInfoItem.EMAIL, email))
                 .telephoneNumber(setting.keep(PersonalInfoItem.TELEPHONE, telephoneNumber))
                 .mobilePhoneNumber(setting.keep(PersonalInfoItem.MOBILE_PHONE, mobilePhoneNumber))
+                .mobilePhoneCountryCode(setting.keepMobilePhoneCountryCode(mobilePhoneCountryCode))
                 .termConfirmationDate(LocalDate.now())
                 .referredByMemberId(validReferredBy)
                 .build();

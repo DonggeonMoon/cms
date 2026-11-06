@@ -31,7 +31,10 @@ describe('RegexAdminPage', () => {
 
         expect(await screen.findByText('사용 안 함')).toBeInTheDocument();
         expect(screen.getAllByText('비밀번호')).toHaveLength(2);
-        expect(screen.queryByRole('button', {name: '삭제'})).not.toBeInTheDocument();
+        const deleteButtons = screen.getAllByRole('button', {name: '삭제'});
+        expect(deleteButtons).toHaveLength(2);
+        expect(deleteButtons[0]).toBeDisabled();
+        expect(deleteButtons[1]).toBeEnabled();
 
         await userEvent.click(screen.getAllByRole('button', {name: '테스트'})[1]);
         await userEvent.type(screen.getByLabelText('테스트할 값'), '123-45-67890');

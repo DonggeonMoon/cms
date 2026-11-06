@@ -51,8 +51,14 @@ describe('admin accounts', () => {
         await userEvent.click(screen.getByRole('button', {name: '잠금 풀기'}));
         await waitFor(() => expect(sent.at(-1)?.url).toBe('/api/admin/admins/2/unlock'));
 
+        const gradeTable = screen.getAllByRole('table')[1];
+        const superAdminRow = within(gradeTable).getAllByText('최고 관리자', {exact: false})[0].closest('tr')!;
+        await userEvent.click(within(superAdminRow).getByRole('button', {name: '수정'}));
         const superAreas = screen.getByRole('group', {name: '최고 관리자 등급 관리 영역'});
         expect(within(superAreas).getByLabelText('보안')).toBeDisabled();
+
+        const contentRow = within(gradeTable).getByText('콘텐츠 담당', {exact: false}).closest('tr')!;
+        await userEvent.click(within(contentRow).getByRole('button', {name: '수정'}));
         const contentGrade = screen.getByRole('form', {name: '콘텐츠 담당 등급'});
         await userEvent.click(within(contentGrade).getByLabelText('비즈니스'));
         await userEvent.click(within(contentGrade).getByRole('button', {name: '저장'}));

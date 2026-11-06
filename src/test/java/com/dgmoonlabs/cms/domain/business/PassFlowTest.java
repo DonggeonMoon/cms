@@ -34,7 +34,7 @@ class PassFlowTest extends ApiTestSupport {
                 {"name":"요가 5회권","price":90000,"saleType":"PASS","isEnabled":true}
                 """).andExpect(jsonPath("$.code").value("PASS_CONFIG_REQUIRED"));
         long pass5 = createdId(postJson("/api/admin/products", admin, """
-                {"name":"요가 5회권","price":90000,"saleType":"PASS","passUnit":"COUNT","passCount":5,"passProgramId":%d,"isEnabled":true}
+                {"name":"요가 5회권","price":90000,"saleType":"PASS","passUnit":"COUNT","passCount":5,"passReservationItemId":%d,"isEnabled":true}
                 """.formatted(yoga)));
 
         MockHttpSession member = member("yogi");
@@ -43,7 +43,7 @@ class PassFlowTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.content[0].remainingCount").value(5))
                 .andExpect(jsonPath("$.content[0].status").value("ACTIVE"))).get("content").get(0).get("id").asLong();
 
-        String book = "{\"programId\":%d,\"quantity\":%d,%s,\"passId\":%d}";
+        String book = "{\"reservationItemId\":%d,\"quantity\":%d,%s,\"passId\":%d}";
         postJson("/api/reservations", member, book.formatted(pilates, 1, APPLICANT, passId))
                 .andExpect(jsonPath("$.code").value("PASS_NOT_USABLE"));
 
@@ -67,7 +67,7 @@ class PassFlowTest extends ApiTestSupport {
                 {"name":"요가","price":20000,"reservationType":"PROGRAM","isEnabled":true}
                 """));
         long passMonth = createdId(postJson("/api/admin/products", admin, """
-                {"name":"요가 한달 자유이용권","price":150000,"saleType":"PASS","passUnit":"PERIOD","passDays":30,"passProgramId":%d,"isEnabled":true}
+                {"name":"요가 한달 자유이용권","price":150000,"saleType":"PASS","passUnit":"PERIOD","passDays":30,"passReservationItemId":%d,"isEnabled":true}
                 """.formatted(yoga)));
 
         MockHttpSession member = member("yogi2");
@@ -75,7 +75,7 @@ class PassFlowTest extends ApiTestSupport {
         long passId = body(getJson("/api/passes/me", member)
                 .andExpect(jsonPath("$.content[0].expiresAt").exists())).get("content").get(0).get("id").asLong();
 
-        String book = "{\"programId\":%d,\"quantity\":%d,%s,\"passId\":%d}";
+        String book = "{\"reservationItemId\":%d,\"quantity\":%d,%s,\"passId\":%d}";
         postJson("/api/reservations", member, book.formatted(yoga, 3, APPLICANT, passId))
                 .andExpect(jsonPath("$.totalPrice").value(0))
                 .andExpect(jsonPath("$.passId").value(passId));

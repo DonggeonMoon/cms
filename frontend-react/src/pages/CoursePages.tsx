@@ -93,11 +93,11 @@ function LessonItem({course, lesson, enrolled, onChange}: {
                 {lesson.completed && <span className="badge ok">완료</span>}
                 {enrolled && lesson.locked && <span className="badge">앞 차시를 먼저 마쳐 주세요</span>}
             </div>
-            {lesson.mediaId != null && (
+            {lesson.streamingId != null && (
                 <p className="small">
-                    강의: <Link to={`/media/${lesson.mediaId}`}>{lesson.mediaTitle ?? '강의 보기'}</Link>
+                    강의: <Link to={`/streaming/${lesson.streamingId}`}>{lesson.streamingTitle ?? '강의 보기'}</Link>
                     {lesson.durationSeconds != null && ` (${formatDuration(lesson.durationSeconds)})`}
-                    {enrolled && (lesson.mediaCompleted ? ' · 시청 완료' : ' · 아직 다 보지 않음')}
+                    {enrolled && (lesson.streamingCompleted ? ' · 시청 완료' : ' · 아직 다 보지 않음')}
                 </p>
             )}
             {lesson.quiz.length > 0 && (

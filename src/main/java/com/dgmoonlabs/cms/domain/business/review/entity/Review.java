@@ -13,7 +13,7 @@ import org.hibernate.type.SqlTypes;
 @Entity
 @Table(indexes = {
         @Index(name = "idx_review_product", columnList = "productId"),
-        @Index(name = "idx_review_program", columnList = "programId")
+        @Index(name = "idx_review_reservation_item", columnList = "reservationItemId")
 })
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -34,8 +34,8 @@ public class Review extends BaseEntity {
     @Comment("상품 ID")
     private Long productId;
 
-    @Comment("프로그램 ID")
-    private Long programId;
+    @Comment("예약 상품 ID")
+    private Long reservationItemId;
 
     @Column(nullable = false)
     @ColumnDefault("5")

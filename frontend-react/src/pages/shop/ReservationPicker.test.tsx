@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {createMemoryRouter, RouterProvider} from 'react-router';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import type {Program, SpaceLayout} from '../../api/domain';
+import type {ReservationItem, SpaceLayout} from '../../api/domain';
 import {AuthProvider} from '../../auth/AuthContext';
 import {LayoutEditor} from '../../components/LayoutEditor';
 import {ReservationPicker} from './ReservationPicker';
@@ -23,7 +23,7 @@ const LAYOUT: SpaceLayout = {
 const EVENT = {
     id: 9, name: '재즈 공연', price: 10000, reservationType: 'EVENT', layout: LAYOUT, startDateTime: '2026-12-01T19:00:00',
     endDateTime: null, slotMinutes: null, openTime: null, closeTime: null,
-} as unknown as Program;
+} as unknown as ReservationItem;
 
 describe('reservation picker', () => {
     afterEach(() => vi.unstubAllGlobals());
@@ -32,7 +32,7 @@ describe('reservation picker', () => {
         vi.stubGlobal('fetch', vi.fn(async (url: string) =>
             url === '/api/auth/me' ? respond401() : new Response(JSON.stringify({takenCells: ['r0c0'], slots: []}), {status: 200})));
         const router = createMemoryRouter([
-            {path: '/', element: <ReservationPicker program={EVENT}/>},
+            {path: '/', element: <ReservationPicker item={EVENT}/>},
             {path: '/reservations/new', element: <p>예약 정보 입력</p>},
         ]);
         render(<AuthProvider><RouterProvider router={router}/></AuthProvider>);
@@ -44,7 +44,7 @@ describe('reservation picker', () => {
         expect(screen.getByText(/예상 금액 30,000원/)).toBeInTheDocument();
 
         await userEvent.click(screen.getByRole('button', {name: '예약하기'}));
-        expect(router.state.location.search).toBe('?programId=9&cells=r0c1%2Cr0c2');
+        expect(router.state.location.search).toBe('?reservationItemId=9&cells=r0c1%2Cr0c2');
     });
 
     it('prices a tour by its party-type counts and requires a departure to be chosen', async () => {
@@ -54,9 +54,9 @@ describe('reservation picker', () => {
             slotMinutes: null, openTime: null, closeTime: null,
             priceTiers: [{name: '성인', price: 100000}, {name: '아동', price: 50000}],
             sessions: [{id: 21, name: '1차 출발', startAt: '2026-12-10T08:00:00', endAt: null, capacity: 10, reservedCount: 0, remaining: 10, isOpen: true}],
-        } as unknown as Program;
+        } as unknown as ReservationItem;
         const router = createMemoryRouter([
-            {path: '/', element: <ReservationPicker program={tour}/>},
+            {path: '/', element: <ReservationPicker item={tour}/>},
             {path: '/reservations/new', element: <p>예약 정보 입력</p>},
         ]);
         render(<AuthProvider><RouterProvider router={router}/></AuthProvider>);
@@ -72,7 +72,7 @@ describe('reservation picker', () => {
         await userEvent.selectOptions(screen.getByLabelText('출발일 선택'), '21');
         expect(screen.getByRole('button', {name: '예약하기'})).not.toBeDisabled();
         await userEvent.click(screen.getByRole('button', {name: '예약하기'}));
-        expect(router.state.location.search).toBe('?programId=11&quantity=3&partyCounts=%7B%22%EC%84%B1%EC%9D%B8%22%3A2%2C%22%EC%95%84%EB%8F%99%22%3A1%7D&sessionId=21');
+        expect(router.state.location.search).toBe('?reservationItemId=11&quantity=3&partyCounts=%7B%22%EC%84%B1%EC%9D%B8%22%3A2%2C%22%EC%95%84%EB%8F%99%22%3A1%7D&sessionId=21');
     });
 });
 
@@ -99,9 +99,9 @@ describe('layout editor', () => {
         const tent = {
             id: 4, name: '텐트', price: 10000, reservationType: 'ITEM_RENTAL', layout: null, startDateTime: '2030-01-01T00:00:00',
             endDateTime: null, slotMinutes: null, openTime: null, closeTime: null, depositAmount: 50000, maxRentalDays: 5,
-        } as unknown as Program;
+        } as unknown as ReservationItem;
         const router = createMemoryRouter([
-            {path: '/', element: <ReservationPicker program={tent}/>},
+            {path: '/', element: <ReservationPicker item={tent}/>},
             {path: '/reservations/new', element: <p>예약 정보 입력</p>},
         ]);
         render(<AuthProvider><RouterProvider router={router}/></AuthProvider>);

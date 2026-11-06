@@ -17,7 +17,7 @@ const applicationFields = (products: { value: string; label: string }[]): FieldS
     {name: 'isEnabled', label: '공개', type: 'checkbox', wide: true},
     {name: 'startDateTime', label: '접수 시작', type: 'datetime'},
     {name: 'endDateTime', label: '접수 마감', type: 'datetime'},
-    {name: 'maximumSubmissions', label: '최대 접수 건수', type: 'number', help: '비워두면 제한 없음'},
+    {name: 'maximumSubmissions', label: '최대 접수 건수', type: 'number', min: 0, help: '비워두면 제한 없음'},
     {name: 'allowMultiple', label: '한 회원이 여러 번 신청 가능', type: 'checkbox'},
     {name: 'selectionMethod', label: '선정 방식', type: 'select', required: true, options: toOptions(SELECTION_METHOD), newRow: true,
         help: '추첨은 접수(검토 중 포함)된 신청 중에서 무작위로 뽑고, 공모전은 심사위원이 매긴 평균 점수가 높은 순으로 뽑습니다. 둘 다 선정하면 접수를 마감합니다.'},

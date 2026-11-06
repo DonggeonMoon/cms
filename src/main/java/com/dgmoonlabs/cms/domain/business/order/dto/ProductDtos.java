@@ -61,8 +61,8 @@ public final class ProductDtos {
             PassUnit passUnit,
             @Positive @Max(3_650) Integer passDays,
             @Positive @Max(100_000) Integer passCount,
-            Long passProgramId,
-            Long inquiryProgramId,
+            Long passReservationItemId,
+            Long inquiryReservationItemId,
             LocalDateTime preorderSaleStartAt,
             LocalDateTime preorderSaleEndAt,
             LocalDate preorderShipDate,
@@ -130,16 +130,16 @@ public final class ProductDtos {
         }
     }
 
-    public record PassInfo(PassUnit unit, Integer days, Integer count, Long programId) {
+    public record PassInfo(PassUnit unit, Integer days, Integer count, Long reservationItemId) {
         public static PassInfo of(final Product product) {
             return product.getPassUnit() == null ? null
-                    : new PassInfo(product.getPassUnit(), product.getPassDays(), product.getPassCount(), product.getPassProgramId());
+                    : new PassInfo(product.getPassUnit(), product.getPassDays(), product.getPassCount(), product.getPassReservationItemId());
         }
     }
 
-    public record InquiryInfo(Long programId) {
+    public record InquiryInfo(Long reservationItemId) {
         public static InquiryInfo of(final Product product) {
-            return product.getSaleType() == ProductSaleType.INQUIRY ? new InquiryInfo(product.getInquiryProgramId()) : null;
+            return product.getSaleType() == ProductSaleType.INQUIRY ? new InquiryInfo(product.getInquiryReservationItemId()) : null;
         }
     }
 

@@ -44,7 +44,7 @@ import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ExtendRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ExtensionResponse;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.CheckInRequest;
-import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ProgramSaveRequest;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationItemSaveRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.QueueStatusRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.SessionResponse;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.SessionSaveRequest;
@@ -335,19 +335,19 @@ public class BusinessAdminController {
     }
 
     @PostMapping("/reservation-items")
-    public ResponseEntity<Void> createProgram(@RequestBody @Valid final ProgramSaveRequest request) {
-        return ResponseEntity.created(URI.create("/api/reservation-items/" + reservationService.createProgram(request))).build();
+    public ResponseEntity<Void> createReservationItem(@RequestBody @Valid final ReservationItemSaveRequest request) {
+        return ResponseEntity.created(URI.create("/api/reservation-items/" + reservationService.createReservationItem(request))).build();
     }
 
     @PutMapping("/reservation-items/{id}")
-    public ResponseEntity<Void> updateProgram(@PathVariable final Long id, @RequestBody @Valid final ProgramSaveRequest request) {
-        reservationService.updateProgram(id, request);
+    public ResponseEntity<Void> updateReservationItem(@PathVariable final Long id, @RequestBody @Valid final ReservationItemSaveRequest request) {
+        reservationService.updateReservationItem(id, request);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/reservation-items/{id}")
-    public ResponseEntity<Void> deleteProgram(@PathVariable final Long id) {
-        reservationService.deleteProgram(id);
+    public ResponseEntity<Void> deleteReservationItem(@PathVariable final Long id) {
+        reservationService.deleteReservationItem(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -384,11 +384,11 @@ public class BusinessAdminController {
     }
 
     @GetMapping("/reservations")
-    public ResponseEntity<PagedModel<ReservationResponse>> reservations(@RequestParam(required = false) final Long programId,
+    public ResponseEntity<PagedModel<ReservationResponse>> reservations(@RequestParam(required = false) final Long reservationItemId,
                                                                         @RequestParam(required = false) final ReservationStatus status,
                                                                         @RequestParam(required = false) final String keyword,
                                                                         @PageableDefault(size = 20) final Pageable pageable) {
-        return ResponseEntity.ok(new PagedModel<>(reservationService.searchReservations(programId, status, keyword, pageable)));
+        return ResponseEntity.ok(new PagedModel<>(reservationService.searchReservations(reservationItemId, status, keyword, pageable)));
     }
 
     @PostMapping("/reservations")
@@ -433,9 +433,9 @@ public class BusinessAdminController {
     }
 
     @GetMapping("/reservations/queue")
-    public ResponseEntity<List<ReservationResponse>> queue(@RequestParam final Long programId,
+    public ResponseEntity<List<ReservationResponse>> queue(@RequestParam final Long reservationItemId,
                                                             @RequestParam(required = false) final LocalDate date) {
-        return ResponseEntity.ok(reservationService.getQueue(programId, date));
+        return ResponseEntity.ok(reservationService.getQueue(reservationItemId, date));
     }
 
     @PostMapping("/reservations/{id}/queue-status")

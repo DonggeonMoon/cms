@@ -19,7 +19,7 @@ class CheckInFlowTest extends ApiTestSupport {
 
         MockHttpSession member = member("yogi");
         String code = body(postJson("/api/reservations", member, """
-                {"programId":%d,"quantity":1,%s}
+                {"reservationItemId":%d,"quantity":1,%s}
                 """.formatted(yoga, APPLICANT)).andExpect(jsonPath("$.status").value("CONFIRMED"))).get("checkInCode").asText();
 
         postJson("/api/admin/reservations/check-in", admin, "{\"code\":\"NOPE\"}").andExpect(status().isNotFound());

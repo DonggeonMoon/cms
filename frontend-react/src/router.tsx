@@ -30,7 +30,7 @@ import {ApplicationAdminPage} from './pages/admin/ApplicationAdminPage';
 import {RepairAdminPage} from './pages/admin/RepairAdminPage';
 import {VoteAdminPage} from './pages/admin/VoteAdminPage';
 import {MapAdminPage} from './pages/admin/MapAdminPage';
-import {MediaAdminPage} from './pages/admin/MediaAdminPage';
+import {StreamingAdminPage} from './pages/admin/StreamingAdminPage';
 import {ReportAdminPage, SatisfactionAdminPage} from './pages/admin/GovAdminPages';
 import {MemberDetailPage} from './pages/admin/MemberDetailPage';
 import {MemberJoinSettingPage} from './pages/admin/MemberJoinSettingPage';
@@ -45,18 +45,15 @@ import {ShippingPolicyPage} from './pages/admin/ShippingPolicyPage';
 import {TaxSettingPage} from './pages/admin/TaxSettingPage';
 import {ExchangeRateAdminPage} from './pages/admin/ExchangeRateAdminPage';
 import {MarketingAdminPage} from './pages/admin/MarketingAdminPage';
-import {LicenseKeyAdminPage} from './pages/admin/LicenseKeyAdminPage';
 import {StockMovementAdminPage} from './pages/admin/StockMovementAdminPage';
 import {AccountingAdminPage} from './pages/admin/AccountingAdminPage';
 import {
     DiscountAdminPage,
-    OrderAdminPage,
     OrderReturnAdminPage,
-    PassAdminPage,
-    SubscriptionAdminPage,
+    OrdersAdminPage,
     PaymentAdminPage,
     ProductAdminPage,
-    ProgramAdminPage,
+    ReservationItemAdminPage,
     ReservationAdminPage,
     ReviewAdminPage
 } from './pages/admin/ShopAdminPages';
@@ -79,11 +76,11 @@ import {SocialJoinPage} from './pages/SocialJoinPage';
 import {AdminLoginPage, LoginPage} from './pages/LoginPage';
 import {ApplicationDetailPage, ApplicationJudgingPage, ApplicationListPage, MyApplicationsPage} from './pages/ApplicationPages';
 import {MapPage} from './pages/MapPage';
-import {MediaDetailPage, MediaListPage, MyMediaPage} from './pages/MediaPages';
+import {StreamingDetailPage, StreamingListPage, MyStreamingPage} from './pages/StreamingPages';
 import {CourseDetailPage, CourseListPage, MyCoursesPage} from './pages/CoursePages';
 import {CourseAdminPage} from './pages/admin/CourseAdminPage';
 import {MyPage, PasswordChangePage, QuitPage} from './pages/MyPage';
-import {PrivacyPolicyPage} from './pages/PolicyPage';
+import {PolicyDocumentPage, PrivacyPolicyPage} from './pages/PolicyPage';
 import {MyReportsPage, ReportDetailPage, ReportWritePage} from './pages/ReportPages';
 import {
     CheckoutPage,
@@ -95,8 +92,8 @@ import {
     MySubscriptionsPage,
     ProductDetailPage,
     ProductListPage,
-    ProgramDetailPage,
-    ProgramListPage,
+    ReservationItemDetailPage,
+    ReservationItemListPage,
 } from './pages/shop/ShopPages';
 
 export const routes = [
@@ -111,6 +108,9 @@ export const routes = [
                     {path: '/join', element: <JoinPage/>},
                     {path: '/join/social', element: <SocialJoinPage/>},
                     {path: '/privacy', element: <PrivacyPolicyPage/>},
+                    {path: '/terms', element: <PolicyDocumentPage type="TERMS_OF_SERVICE"/>},
+                    {path: '/operation-policy', element: <PolicyDocumentPage type="OPERATION_POLICY"/>},
+                    {path: '/youth-protection', element: <PolicyDocumentPage type="YOUTH_PROTECTION_POLICY"/>},
                     {
                         element: <RequireFeature feature="CONTENT"/>,
                         children: [{path: '/contents/:id', element: <ContentPage/>}],
@@ -154,15 +154,15 @@ export const routes = [
                     {
                         element: <RequireFeature feature="PROGRAM"/>,
                         children: [
-                            {path: '/reservation-items', element: <ProgramListPage/>},
-                            {path: '/reservation-items/:id', element: <ProgramDetailPage/>},
+                            {path: '/reservation-items', element: <ReservationItemListPage/>},
+                            {path: '/reservation-items/:id', element: <ReservationItemDetailPage/>},
                         ],
                     },
                     {
                         element: <RequireFeature feature="MEDIA"/>,
                         children: [
-                            {path: '/media', element: <MediaListPage/>},
-                            {path: '/media/:id', element: <MediaDetailPage/>},
+                            {path: '/streaming', element: <StreamingListPage/>},
+                            {path: '/streaming/:id', element: <StreamingDetailPage/>},
                             {path: '/courses', element: <CourseListPage/>},
                             {path: '/courses/:id', element: <CourseDetailPage/>},
                         ],
@@ -229,7 +229,7 @@ export const routes = [
                             },
                             {
                                 element: <RequireFeature feature="MEDIA"/>,
-                                children: [{path: '/mypage/media', element: <MyMediaPage/>}, {path: '/mypage/courses', element: <MyCoursesPage/>}],
+                                children: [{path: '/mypage/streaming', element: <MyStreamingPage/>}, {path: '/mypage/courses', element: <MyCoursesPage/>}],
                             },
                             {path: '/checkout/:type/:id', element: <CheckoutPage/>},
                         ],
@@ -291,19 +291,16 @@ export const routes = [
                                     {path: 'marketing', element: <MarketingAdminPage/>},
                                     {path: 'store', element: <StoreSettingPage/>},
                                     {path: 'store-orders', element: <StoreOrderQueuePage/>},
-                                    {path: 'orders', element: <OrderAdminPage/>},
+                                    {path: 'orders', element: <OrdersAdminPage/>},
                                     {path: 'order-returns', element: <OrderReturnAdminPage/>},
-                                    {path: 'license-keys', element: <LicenseKeyAdminPage/>},
                                     {path: 'stock-movements', element: <StockMovementAdminPage/>},
                                     {path: 'accounting', element: <AccountingAdminPage/>},
-                                    {path: 'subscriptions', element: <SubscriptionAdminPage/>},
-                                    {path: 'passes', element: <PassAdminPage/>},
                                 ],
                             },
                             {
                                 element: <RequireFeature feature="PROGRAM"/>,
                                 children: [
-                                    {path: 'reservation-items', element: <ProgramAdminPage/>},
+                                    {path: 'reservation-items', element: <ReservationItemAdminPage/>},
                                     {path: 'reservations', element: <ReservationAdminPage/>},
                                     {path: 'customer-records', element: <CustomerRecordAdminPage/>},
                                     {path: 'check-in', element: <CheckInAdminPage/>},
@@ -313,7 +310,7 @@ export const routes = [
                             },
                             {
                                 element: <RequireFeature feature="MEDIA"/>,
-                                children: [{path: 'media', element: <MediaAdminPage/>}, {path: 'courses', element: <CourseAdminPage/>}],
+                                children: [{path: 'streaming', element: <StreamingAdminPage/>}, {path: 'courses', element: <CourseAdminPage/>}],
                             },
                             {
                                 element: <RequireFeature feature="APPLICATION"/>,

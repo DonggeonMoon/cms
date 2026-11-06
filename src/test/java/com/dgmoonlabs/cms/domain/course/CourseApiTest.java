@@ -19,7 +19,7 @@ class CourseApiTest extends ApiTestSupport {
     @Test
     void lessonsCompleteByWatchingAndPassingQuizzesInOrder() throws Exception {
         MockHttpSession admin = admin();
-        long mediaId = createdId(postJson("/api/admin/media", admin, """
+        long streamingId = createdId(postJson("/api/admin/streaming", admin, """
                 {"title":"1강 영상","fileId":%d,"durationSeconds":100,"completionRate":90}
                 """.formatted(upload(admin))));
 
@@ -31,14 +31,14 @@ class CourseApiTest extends ApiTestSupport {
                 """).andExpect(jsonPath("$.code").value("INVALID_LESSON"));
         long courseId = createdId(postJson("/api/admin/courses", admin, """
                 {"title":"기초 과정","sequential":true,"isUsing":true,"lessons":[
-                  {"title":"1차시 강의","mediaId":%d},
+                  {"title":"1차시 강의","streamingId":%d},
                   {"title":"2차시 확인 문제","quiz":%s,"passScore":100}]}
-                """.formatted(mediaId, QUIZ)).andExpect(status().isCreated()));
+                """.formatted(streamingId, QUIZ)).andExpect(status().isCreated()));
 
         getJson("/api/admin/courses/" + courseId, admin).andExpect(jsonPath("$.lessons[1].quiz[0].answerIndex").value(1));
         JsonNode course = body(getJson("/api/courses/" + courseId, null)
                 .andExpect(jsonPath("$.lessonCount").value(2))
-                .andExpect(jsonPath("$.lessons[0].mediaTitle").value("1강 영상"))
+                .andExpect(jsonPath("$.lessons[0].streamingTitle").value("1강 영상"))
                 .andExpect(jsonPath("$.lessons[1].quiz[0].answerIndex").doesNotExist())
                 .andExpect(jsonPath("$.lessons[1].passScore").value(100)));
         long quizLesson = course.get("lessons").get(1).get("id").asLong();
@@ -51,8 +51,8 @@ class CourseApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.lessons[1].locked").value(true));
         postJson(quizUrl, learner, "{\"answers\":[1,0]}").andExpect(jsonPath("$.code").value("LESSON_LOCKED"));
 
-        postJson("/api/media/" + mediaId + "/start", learner, "{}").andExpect(status().isOk());
-        postJson("/api/media/" + mediaId + "/progress", learner, """
+        postJson("/api/streaming/" + streamingId + "/start", learner, "{}").andExpect(status().isOk());
+        postJson("/api/streaming/" + streamingId + "/progress", learner, """
                 {"ranges":[{"start":0,"end":95}],"position":95}
                 """).andExpect(jsonPath("$.status").value("COMPLETED"));
         getJson("/api/courses/" + courseId, learner)
@@ -83,8 +83,8 @@ class CourseApiTest extends ApiTestSupport {
         putJson("/api/admin/courses/" + courseId, admin, """
                 {"title":"기초 과정","sequential":true,"isUsing":true,"lessons":[
                   {"id":%d,"title":"확인 문제를 앞으로","quiz":%s,"passScore":100},
-                  {"title":"1차시 강의","mediaId":%d}]}
-                """.formatted(quizLesson, QUIZ, mediaId)).andExpect(status().isNoContent());
+                  {"title":"1차시 강의","streamingId":%d}]}
+                """.formatted(quizLesson, QUIZ, streamingId)).andExpect(status().isNoContent());
         getJson("/api/courses/" + courseId, learner)
                 .andExpect(jsonPath("$.lessons[0].title").value("확인 문제를 앞으로"))
                 .andExpect(jsonPath("$.lessons[0].quizPassed").value(true))

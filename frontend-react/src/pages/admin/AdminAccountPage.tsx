@@ -1,4 +1,4 @@
-import {type FormEvent, useCallback, useEffect, useState} from 'react';
+import {Fragment, type FormEvent, useCallback, useEffect, useState} from 'react';
 import {ADMIN_AREA, type AdminAccount, adminAccountApi, type AdminArea, type AdminGrade} from '../../api/admins';
 import {useAuth} from '../../auth/AuthContext';
 import {ErrorBanner} from '../../components/ErrorBanner';
@@ -17,6 +17,8 @@ function AdminAccounts({guard}: { guard: ReauthGuard }) {
     const [admins, setAdmins] = useState<AdminAccount[]>([]);
     const [grades, setGrades] = useState<AdminGrade[]>([]);
     const [error, setError] = useState<unknown>(null);
+    const [addingAdmin, setAddingAdmin] = useState(false);
+    const [editingGrade, setEditingGrade] = useState<number | 'new' | null>(null);
     const reload = useCallback(() => {
         setError(null);
         Promise.all([guard(adminAccountApi.admins()), guard(adminAccountApi.grades())])
@@ -71,20 +73,76 @@ function AdminAccounts({guard}: { guard: ReauthGuard }) {
                     </tbody>
                 </table>
             </div>
-            <NewAdminForm grades={grades} onCreate={(body) => guard(adminAccountApi.createAdmin(body)).then(reload)}/>
+            <div className="toolbar">
+                <button type="button" className="primary" onClick={() => setAddingAdmin(true)}>관리자 추가</button>
+            </div>
+            {addingAdmin && (
+                <NewAdminForm grades={grades} onCancel={() => setAddingAdmin(false)}
+                              onCreate={(body) => guard(adminAccountApi.createAdmin(body)).then(() => {
+                                  setAddingAdmin(false);
+                                  reload();
+                              })}/>
+            )}
 
             <h2>관리자 등급</h2>
-            {grades.map((grade) => (
-                <GradeEditor key={grade.id} grade={grade}
-                             onSave={(body) => guard(adminAccountApi.updateGrade(grade.id, body)).then(reload)}
-                             onRemove={() => guard(adminAccountApi.removeGrade(grade.id)).then(reload)}/>
-            ))}
-            <GradeEditor onSave={(body) => guard(adminAccountApi.createGrade(body)).then(reload)}/>
+            <div className="toolbar">
+                <button type="button" className="primary" onClick={() => setEditingGrade('new')}>등급 추가</button>
+            </div>
+            {editingGrade === 'new' && (
+                <GradeEditor onCancel={() => setEditingGrade(null)}
+                             onSave={(body) => guard(adminAccountApi.createGrade(body)).then(() => {
+                                 setEditingGrade(null);
+                                 reload();
+                             })}/>
+            )}
+            <div className="table-wrap">
+                <table>
+                    <thead><tr><th>등급 이름</th><th>설명</th><th>관리 영역</th><th>관리자 수</th><th/></tr></thead>
+                    <tbody>
+                    {grades.map((grade) => (
+                        <Fragment key={grade.id}>
+                            <tr>
+                                <td>{grade.name}{grade.superAdmin && <span className="muted small"> (최고 관리자)</span>}</td>
+                                <td>{grade.description || '-'}</td>
+                                <td>{grade.superAdmin ? '전체' : (grade.areas.map((area) => ADMIN_AREA[area]).join(', ') || '-')}</td>
+                                <td>{grade.adminCount}명</td>
+                                <td className="button-cell">
+                                    <button type="button" onClick={() => setEditingGrade(editingGrade === grade.id ? null : grade.id)}>
+                                        {editingGrade === grade.id ? '닫기' : '수정'}
+                                    </button>
+                                    {!grade.superAdmin && (
+                                        <button type="button" className="danger" onClick={() => {
+                                            if (window.confirm(`${grade.name} 등급을 삭제할까요?`)) {
+                                                void run(adminAccountApi.removeGrade(grade.id));
+                                            }
+                                        }}>삭제</button>
+                                    )}
+                                </td>
+                            </tr>
+                            {editingGrade === grade.id && (
+                                <tr className="expanded-row">
+                                    <td colSpan={5}>
+                                        <GradeEditor grade={grade} onCancel={() => setEditingGrade(null)}
+                                                     onSave={(body) => guard(adminAccountApi.updateGrade(grade.id, body)).then(() => {
+                                                         setEditingGrade(null);
+                                                         reload();
+                                                     })}/>
+                                    </td>
+                                </tr>
+                            )}
+                        </Fragment>
+                    ))}
+                    {grades.length === 0 && <tr><td colSpan={5} className="muted">등록된 등급이 없습니다.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
         </section>
     );
 }
 
-function NewAdminForm({grades, onCreate}: { grades: AdminGrade[]; onCreate: (body: object) => Promise<void> }) {
+function NewAdminForm({grades, onCreate, onCancel}: {
+    grades: AdminGrade[]; onCreate: (body: object) => Promise<void>; onCancel: () => void;
+}) {
     const empty = {username: '', password: '', name: '', gradeId: ''};
     const [form, setForm] = useState(empty);
     const [error, setError] = useState<unknown>(null);
@@ -93,7 +151,6 @@ function NewAdminForm({grades, onCreate}: { grades: AdminGrade[]; onCreate: (bod
         setError(null);
         try {
             await onCreate({...form, gradeId: form.gradeId ? Number(form.gradeId) : null});
-            setForm(empty);
         } catch (e) {
             setError(e);
         }
@@ -116,33 +173,28 @@ function NewAdminForm({grades, onCreate}: { grades: AdminGrade[]; onCreate: (bod
                     </select>
                 </div>
                 <ErrorBanner error={error}/>
-                <button type="submit" className="primary">추가</button>
+                <div className="toolbar">
+                    <button type="submit" className="primary">추가</button>
+                    <button type="button" onClick={onCancel}>취소</button>
+                </div>
             </fieldset>
         </form>
     );
 }
 
-function GradeEditor({grade, onSave, onRemove}: {
-    grade?: AdminGrade; onSave: (body: object) => Promise<void>; onRemove?: () => Promise<void>;
+function GradeEditor({grade, onSave, onCancel}: {
+    grade?: AdminGrade; onSave: (body: object) => Promise<void>; onCancel: () => void;
 }) {
     const [name, setName] = useState(grade?.name ?? '');
     const [description, setDescription] = useState(grade?.description ?? '');
     const [areas, setAreas] = useState<AdminArea[]>(grade?.areas ?? []);
     const [error, setError] = useState<unknown>(null);
-    const [saved, setSaved] = useState(false);
     const locked = grade?.superAdmin === true;
     const submit = async (event: FormEvent) => {
         event.preventDefault();
         setError(null);
-        setSaved(false);
         try {
             await onSave({name, description, areas});
-            if (!grade) {
-                setName('');
-                setDescription('');
-                setAreas([]);
-            }
-            setSaved(true);
         } catch (e) {
             setError(e);
         }
@@ -151,7 +203,7 @@ function GradeEditor({grade, onSave, onRemove}: {
     return (
         <form className="grade-editor" onSubmit={submit} aria-label={title}>
             <fieldset>
-                <legend>{grade ? <>{grade.name} <span className="muted small">관리자 {grade.adminCount}명</span></> : '새 등급'}</legend>
+                <legend>{title}</legend>
                 <Field label="등급 이름" name={`grade-name-${grade?.id ?? 'new'}`} required value={name} onChange={(e) => setName(e.target.value)}/>
                 <Field label="설명" name={`grade-description-${grade?.id ?? 'new'}`} value={description}
                        onChange={(e) => setDescription(e.target.value)}/>
@@ -165,16 +217,9 @@ function GradeEditor({grade, onSave, onRemove}: {
                     {locked && <p className="muted small">최고 관리자 등급은 모든 영역과 관리자 관리를 쓸 수 있고 삭제할 수 없습니다.</p>}
                 </div>
                 <ErrorBanner error={error}/>
-                {saved && <p className="muted small" role="status">저장했습니다.</p>}
                 <div className="toolbar">
                     <button type="submit" className="primary">{grade ? '저장' : '등급 추가'}</button>
-                    {grade && !locked && onRemove && (
-                        <button type="button" className="danger" onClick={() => {
-                            if (window.confirm(`${grade.name} 등급을 삭제할까요?`)) {
-                                onRemove().catch(setError);
-                            }
-                        }}>삭제</button>
-                    )}
+                    <button type="button" onClick={onCancel}>취소</button>
                 </div>
             </fieldset>
         </form>

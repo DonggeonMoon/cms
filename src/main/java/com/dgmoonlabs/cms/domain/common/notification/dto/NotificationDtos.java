@@ -1,12 +1,19 @@
 package com.dgmoonlabs.cms.domain.common.notification.dto;
 
 import com.dgmoonlabs.cms.domain.common.notification.constant.NotificationChannel;
+import com.dgmoonlabs.cms.domain.common.notification.constant.NotificationType;
 import com.dgmoonlabs.cms.domain.common.notification.entity.Notification;
 
 import java.time.LocalDateTime;
 
 public final class NotificationDtos {
     private NotificationDtos() {
+    }
+
+    public record NotificationTypeSettingResponse(NotificationType type, String label, boolean enabled) {
+        public static NotificationTypeSettingResponse of(final NotificationType type, final boolean enabled) {
+            return new NotificationTypeSettingResponse(type, type.getLabel(), enabled);
+        }
     }
 
     public record NotificationResponse(Long id, NotificationChannel channel, String title, String content, String link,

@@ -1,14 +1,59 @@
 import {type FormEvent, useCallback, useEffect, useState} from 'react';
-import type {AdminNotification, MarketingCampaign, NotificationChannel} from '../../api/domain';
+import type {AdminNotification, MarketingCampaign, NotificationChannel, NotificationTypeSetting} from '../../api/domain';
 import {adminApi} from '../../api/endpoints';
 import {gradeNameOf, useGrades} from '../../api/grades';
 import type {Page} from '../../api/types';
+import {Checkbox} from '../../components/Field';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatDateTime} from '../../components/format';
 import {Pagination} from '../../components/Pagination';
 
 const CHANNELS: NotificationChannel[] = ['IN_APP', 'EMAIL', 'SMS'];
 const CHANNEL_LABEL: Record<NotificationChannel, string> = {IN_APP: '앱 내', EMAIL: '이메일', SMS: 'SMS'};
+
+function AutoNotificationSettings() {
+    const [settings, setSettings] = useState<NotificationTypeSetting[] | null>(null);
+    const [error, setError] = useState<unknown>(null);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        adminApi.notificationSettings.list().then(setSettings).catch(setError);
+    }, []);
+
+    const toggle = async (type: NotificationTypeSetting['type'], enabled: boolean) => {
+        if (!settings) {
+            return;
+        }
+        setSettings(settings.map((s) => (s.type === type ? {...s, enabled} : s)));
+        setSaving(true);
+        setError(null);
+        try {
+            setSettings(await adminApi.notificationSettings.save({[type]: enabled}));
+        } catch (e) {
+            setError(e);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <section>
+            <h2>거래 알림 사용 설정</h2>
+            <p className="muted small">가입환영·결제완료·환불처리 알림을 각각 켜고 끌 수 있습니다. 꺼두면 해당 이벤트가 생겨도 알림을 보내지 않습니다.</p>
+            <ErrorBanner error={error}/>
+            {settings ? (
+                <div className="schema-grid">
+                    {settings.map((s) => (
+                        <div key={s.type} className="inline-check">
+                            <Checkbox label={s.label} name={`notification-${s.type}`} checked={s.enabled} disabled={saving}
+                                      onChange={(e) => toggle(s.type, e.target.checked)}/>
+                        </div>
+                    ))}
+                </div>
+            ) : <p className="muted">불러오는 중…</p>}
+        </section>
+    );
+}
 
 export function MarketingAdminPage() {
     const grades = useGrades();
@@ -77,6 +122,7 @@ export function MarketingAdminPage() {
             <h1>알림</h1>
             <p className="muted">결제완료·환불·가입환영 같은 거래 알림은 이벤트가 생기면 자동으로 간다. 아래 발송은 등급으로 대상을 좁혀 바로 보내는 마케팅성 알림이고,
                 마케팅 활용 동의가 없는 회원에게는 가지 않는다.</p>
+            <AutoNotificationSettings/>
             <h2>대상 발송</h2>
             <ErrorBanner error={error}/>
             <form onSubmit={send} className="inline-form">

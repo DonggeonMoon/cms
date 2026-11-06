@@ -1,6 +1,6 @@
 import {type FormEvent, useEffect, useState} from 'react';
 import {Link, useNavigate, useSearchParams} from 'react-router';
-import type {ProductDetail, ProductSaleType, Program} from '../../api/domain';
+import type {ProductDetail, ProductSaleType, ReservationItem} from '../../api/domain';
 import {EMPTY_STORE_CHOICE, type StoreChoice, StoreOrderFields} from './StoreOrderFields';
 import {type DiscountChoice, DiscountSelector, NO_DISCOUNT} from './DiscountSelector';
 import {shopApi} from '../../api/endpoints';
@@ -168,7 +168,7 @@ export function OrderFormPage() {
 export function ReservationFormPage() {
     const [params] = useSearchParams();
     const navigate = useNavigate();
-    const programId = Number(params.get('programId'));
+    const reservationItemId = Number(params.get('reservationItemId'));
     const quantity = positive(params.get('quantity'));
     const sessionId = params.get('sessionId') ? Number(params.get('sessionId')) : null;
     const passId = params.get('passId') ? Number(params.get('passId')) : null;
@@ -176,24 +176,24 @@ export function ReservationFormPage() {
     const partyCounts = params.get('partyCounts') ? JSON.parse(params.get('partyCounts')!) : null;
     const selection = {startAt: params.get('startAt'), endAt: params.get('endAt'),
         cells: (params.get('cells') ?? '').split(',').filter(Boolean), quantity, partyCounts};
-    const [program, setProgram] = useState<Program | null>(null);
+    const [item, setItem] = useState<ReservationItem | null>(null);
     const [form, setForm] = useState({applicantName: '', phoneNumber: ''});
     const [visit, setVisit] = useState({visitPostalCode: '', visitAddress: '', visitDetailAddress: '', requestMemo: ''});
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        shopApi.program(programId).then(setProgram).catch(setError);
+        shopApi.reservationItem(reservationItemId).then(setItem).catch(setError);
         memberApi.me().then((me) => setForm((current) => ({
             applicantName: current.applicantName || me.name || '',
             phoneNumber: current.phoneNumber || me.mobilePhoneNumber || me.telephoneNumber || '',
         }))).catch(() => undefined);
-    }, [programId]);
+    }, [reservationItemId]);
 
-    if (error && !program) {
+    if (error && !item) {
         return <ErrorBanner error={error}/>;
     }
-    if (!program) {
+    if (!item) {
         return <p className="muted">불러오는 중…</p>;
     }
 
@@ -202,8 +202,8 @@ export function ReservationFormPage() {
         setSubmitting(true);
         setError(null);
         try {
-            const reservation = await shopApi.reserve({programId, ...selection, quantity, sessionId, passId, partySize, ...form,
-                ...(program.reservationType === 'VISIT' ? visit : {})});
+            const reservation = await shopApi.reserve({reservationItemId, ...selection, quantity, sessionId, passId, partySize, ...form,
+                ...(item.reservationType === 'VISIT' ? visit : {})});
             navigate(reservation.status === 'PENDING_PAYMENT' ? `/checkout/RESERVATION/${reservation.id}` : '/mypage/reservations');
         } catch (e) {
             setError(e);
@@ -217,15 +217,15 @@ export function ReservationFormPage() {
             <h1>예약 정보 입력</h1>
             <dl className="meta">
                 <dt>예약 상품</dt>
-                <dd><Link to={`/reservation-items/${program.id}`}>{program.name}</Link></dd>
-                {program.reservationType === 'PROGRAM' ? (
+                <dd><Link to={`/reservation-items/${item.id}`}>{item.name}</Link></dd>
+                {item.reservationType === 'PROGRAM' ? (
                     <>
                         <dt>진행 일정</dt>
                         <dd>{(() => {
-                            const session = program.sessions.find((s) => s.id === sessionId);
+                            const session = item.sessions.find((s) => s.id === sessionId);
                             return session
                                 ? `${formatDateTime(session.startAt)}${session.endAt ? ` ~ ${formatDateTime(session.endAt)}` : ''}${session.name ? ` · ${session.name}` : ''}`
-                                : `${formatDateTime(program.startDateTime)} ~ ${formatDateTime(program.endDateTime)}`;
+                                : `${formatDateTime(item.startDateTime)} ~ ${formatDateTime(item.endDateTime)}`;
                         })()}</dd>
                         <dt>인원</dt>
                         <dd>{quantity}명</dd>
@@ -233,12 +233,12 @@ export function ReservationFormPage() {
                 ) : (
                     <>
                         <dt>이용</dt>
-                        <dd>{reservationUsage({reservationType: program.reservationType, ...selection, partySize, partyBreakdown: partyCounts,
-                            cells: selection.cells.map((key) => program.layout?.cells.find((c) => c.key === key)?.label ?? key)})}</dd>
-                        {program.reservationType === 'ITEM_RENTAL' && (
+                        <dd>{reservationUsage({reservationType: item.reservationType, ...selection, partySize, partyBreakdown: partyCounts,
+                            cells: selection.cells.map((key) => item.layout?.cells.find((c) => c.key === key)?.label ?? key)})}</dd>
+                        {item.reservationType === 'ITEM_RENTAL' && (
                             <>
                                 <dt>수량</dt>
-                                <dd>{quantity}개{Number(program.depositAmount ?? 0) > 0 && ` · 보증금 ${won(Number(program.depositAmount) * quantity)} 포함`}</dd>
+                                <dd>{quantity}개{Number(item.depositAmount ?? 0) > 0 && ` · 보증금 ${won(Number(item.depositAmount) * quantity)} 포함`}</dd>
                             </>
                         )}
                     </>
@@ -252,7 +252,7 @@ export function ReservationFormPage() {
                     <Field label="연락처" name="phoneNumber" type="tel" required value={form.phoneNumber}
                            onChange={(e) => setForm({...form, phoneNumber: e.target.value})}/>
                 </fieldset>
-                {program.reservationType === 'VISIT' && (
+                {item.reservationType === 'VISIT' && (
                     <fieldset>
                         <legend>방문 정보</legend>
                         <Field label="우편번호" name="visitPostalCode" value={visit.visitPostalCode}
@@ -268,9 +268,9 @@ export function ReservationFormPage() {
                         </div>
                     </fieldset>
                 )}
-                <p className="price align-right">결제 금액 {passId ? '이용권 사용 (0원)' : program.reservationType === 'PROGRAM'
-                    ? (Number(program.price) === 0 ? '무료' : won(Number(program.price) * quantity))
-                    : won(estimateReservation(program, selection))}</p>
+                <p className="price align-right">결제 금액 {passId ? '이용권 사용 (0원)' : item.reservationType === 'PROGRAM'
+                    ? (Number(item.price) === 0 ? '무료' : won(Number(item.price) * quantity))
+                    : won(estimateReservation(item, selection))}</p>
                 <ErrorBanner error={error}/>
                 <div className="toolbar form-actions">
                     <button type="button" onClick={() => navigate(-1)}>이전</button>

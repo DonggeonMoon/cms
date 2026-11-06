@@ -48,7 +48,7 @@ public class PassService {
                 .productId(order.getProductId())
                 .productName(order.getProductName())
                 .unit(product.getPassUnit())
-                .programId(product.getPassProgramId())
+                .reservationItemId(product.getPassReservationItemId())
                 .totalCount(product.getPassUnit() == PassUnit.COUNT ? product.getPassCount() * order.getQuantity() : null)
                 .remainingCount(product.getPassUnit() == PassUnit.COUNT ? product.getPassCount() * order.getQuantity() : null)
                 .expiresAt(product.getPassUnit() == PassUnit.PERIOD ? LocalDateTime.now().plusDays(product.getPassDays()) : null)
@@ -68,19 +68,19 @@ public class PassService {
     }
 
     @Transactional(readOnly = true)
-    public List<PassResponse> usableFor(final Long memberId, final Long programId) {
+    public List<PassResponse> usableFor(final Long memberId, final Long reservationItemId) {
         LocalDateTime now = LocalDateTime.now();
-        return passRepository.findAllByMemberIdAndProgramIdAndStatusOrderByIdAsc(memberId, programId, PassStatus.ACTIVE).stream()
-                .filter(pass -> pass.isUsableFor(programId, now))
+        return passRepository.findAllByMemberIdAndReservationItemIdAndStatusOrderByIdAsc(memberId, reservationItemId, PassStatus.ACTIVE).stream()
+                .filter(pass -> pass.isUsableFor(reservationItemId, now))
                 .map(PassResponse::from)
                 .toList();
     }
 
     @Transactional
-    public MemberPass consumeForMember(final Long memberId, final Long passId, final Long programId, final int quantity) {
+    public MemberPass consumeForMember(final Long memberId, final Long passId, final Long reservationItemId, final int quantity) {
         MemberPass pass = passRepository.findForUpdate(passId).filter(found -> found.getMemberId().equals(memberId))
                 .orElseThrow(BusinessException::notFound);
-        if (!pass.isUsableFor(programId, LocalDateTime.now())) {
+        if (!pass.isUsableFor(reservationItemId, LocalDateTime.now())) {
             throw new BusinessException(ErrorCode.PASS_NOT_USABLE);
         }
         pass.consume(quantity);

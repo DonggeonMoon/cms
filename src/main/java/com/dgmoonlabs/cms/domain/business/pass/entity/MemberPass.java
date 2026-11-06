@@ -41,7 +41,7 @@ public class MemberPass extends BaseEntity {
 
     @Column(nullable = false)
     @Comment("예약할 수 있는 예약 상품 ID")
-    private Long programId;
+    private Long reservationItemId;
 
     @Comment("전체 횟수 (횟수권)")
     private Integer totalCount;
@@ -61,8 +61,8 @@ public class MemberPass extends BaseEntity {
     @Comment("상태")
     private PassStatus status;
 
-    public boolean isUsableFor(final Long programId, final LocalDateTime now) {
-        if (status != PassStatus.ACTIVE || !this.programId.equals(programId)) {
+    public boolean isUsableFor(final Long reservationItemId, final LocalDateTime now) {
+        if (status != PassStatus.ACTIVE || !this.reservationItemId.equals(reservationItemId)) {
             return false;
         }
         if (expiresAt != null && now.isAfter(expiresAt)) {

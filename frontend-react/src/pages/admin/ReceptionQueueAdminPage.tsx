@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useState} from 'react';
-import type {Program, QueueStatus, Reservation} from '../../api/domain';
+import type {QueueStatus, Reservation, ReservationItem} from '../../api/domain';
 import {adminApi} from '../../api/endpoints';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatTime} from '../../components/format';
@@ -8,15 +8,15 @@ import {QUEUE_STATUS} from '../../components/labels';
 const REFRESH_MS = 10_000;
 
 export function ReceptionQueueAdminPage() {
-    const [programs, setPrograms] = useState<Program[] | null>(null);
+    const [reservationItems, setReservationItems] = useState<ReservationItem[] | null>(null);
     const [programId, setProgramId] = useState<number | null>(null);
     const [queue, setQueue] = useState<Reservation[] | null>(null);
     const [error, setError] = useState<unknown>(null);
 
     useEffect(() => {
-        adminApi.programs.search({size: 100}).then((page) => {
+        adminApi.reservationItems.search({size: 100}).then((page) => {
             const supported = page.content.filter((p) => p.supportsQueue);
-            setPrograms(supported);
+            setReservationItems(supported);
             setProgramId((current) => current ?? supported[0]?.id ?? null);
         }).catch(setError);
     }, []);
@@ -47,13 +47,13 @@ export function ReceptionQueueAdminPage() {
             <h1>접수·대기</h1>
             <p className="muted small">접수·대기를 켠 상담 예약 상품에서 체크인한 손님의 대기 순번입니다. 10초마다 새로 불러옵니다.</p>
             <ErrorBanner error={error}/>
-            {programs?.length === 0 && <p className="muted">접수·대기를 켠 예약 상품이 없습니다. 예약 메뉴에서 상담 유형 예약 상품의 "접수·대기 사용"을 켜 주세요.</p>}
-            {programs != null && programs.length > 0 && (
+            {reservationItems?.length === 0 && <p className="muted">접수·대기를 켠 예약 상품이 없습니다. 예약 메뉴에서 상담 유형 예약 상품의 "접수·대기 사용"을 켜 주세요.</p>}
+            {reservationItems != null && reservationItems.length > 0 && (
                 <div className="toolbar">
                     <label>
                         예약 상품
                         <select value={programId ?? ''} onChange={(e) => setProgramId(Number(e.target.value))}>
-                            {programs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            {reservationItems.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                     </label>
                 </div>

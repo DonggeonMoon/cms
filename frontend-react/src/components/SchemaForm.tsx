@@ -24,6 +24,7 @@ export interface FieldSpec {
     placeholder?: string;
     help?: string;
     min?: number;
+    emptyOptionLabel?: string;
     wide?: boolean;
     spaced?: boolean;
     newRow?: boolean;
@@ -155,7 +156,7 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
                     {label}
                     <select id={id} value={value == null ? '' : String(value)} required={field.required}
                             onChange={(e) => onChange(e.target.value)}>
-                        {!field.required && <option value="">선택 안 함</option>}
+                        {!field.required && <option value="">{field.emptyOptionLabel ?? '선택 안 함'}</option>}
                         {field.options?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
                     {help}

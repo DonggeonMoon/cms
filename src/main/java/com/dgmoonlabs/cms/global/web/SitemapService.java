@@ -3,7 +3,7 @@ package com.dgmoonlabs.cms.global.web;
 import com.dgmoonlabs.cms.domain.admin.site.constant.SiteFeature;
 import com.dgmoonlabs.cms.domain.admin.site.service.SiteService;
 import com.dgmoonlabs.cms.domain.business.order.repository.ProductRepository;
-import com.dgmoonlabs.cms.domain.business.reservation.repository.ProgramRepository;
+import com.dgmoonlabs.cms.domain.business.reservation.repository.ReservationItemRepository;
 import com.dgmoonlabs.cms.domain.content.constant.ContentStatus;
 import com.dgmoonlabs.cms.domain.content.repository.ContentRepository;
 import com.dgmoonlabs.cms.domain.course.repository.CourseRepository;
@@ -24,7 +24,7 @@ public class SitemapService {
     private final SiteService siteService;
     private final ContentRepository contentRepository;
     private final ProductRepository productRepository;
-    private final ProgramRepository programRepository;
+    private final ReservationItemRepository reservationItemRepository;
     private final CourseRepository courseRepository;
 
     public record Entry(String path, LocalDateTime lastModified) {
@@ -41,13 +41,13 @@ public class SitemapService {
         }
         if (siteService.isEnabled(SiteFeature.PRODUCT)) {
             productRepository.findAllByIsEnabledTrueAndDeletedAtIsNullOrderByIdAsc().stream()
-                    .filter(product -> product.getAccessGradeId() == null && product.getMediaId() == null)
+                    .filter(product -> product.getAccessGradeId() == null && product.getStreamingId() == null)
                     .forEach(product -> entries.add(new Entry("/products/" + product.getId(), product.getModifiedAt())));
         }
         if (siteService.isEnabled(SiteFeature.PROGRAM)) {
-            programRepository.findAllByIsEnabledTrueAndDeletedAtIsNullOrderByIdAsc().stream()
-                    .filter(program -> program.getAccessGradeId() == null)
-                    .forEach(program -> entries.add(new Entry("/reservation-items/" + program.getId(), program.getModifiedAt())));
+            reservationItemRepository.findAllByIsEnabledTrueAndDeletedAtIsNullOrderByIdAsc().stream()
+                    .filter(item -> item.getAccessGradeId() == null)
+                    .forEach(item -> entries.add(new Entry("/reservation-items/" + item.getId(), item.getModifiedAt())));
         }
         if (siteService.isEnabled(SiteFeature.MEDIA)) {
             courseRepository.findAllByIsUsingTrueAndDeletedAtIsNullOrderByIdAsc().stream()

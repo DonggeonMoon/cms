@@ -37,7 +37,7 @@ export const SITE_FEATURES: { value: SiteFeature; label: string }[] = [
 
 export type EnrollmentStatus = 'IN_PROGRESS' | 'COMPLETED';
 
-export interface MediaProgress {
+export interface StreamingProgress {
     status: EnrollmentStatus;
     progressRate: number;
     watchedSeconds: number;
@@ -47,7 +47,7 @@ export interface MediaProgress {
     completedAt: string | null;
 }
 
-export interface MediaItem {
+export interface StreamingItem {
     id: number;
     accessGradeId: number | null;
     title: string;
@@ -55,15 +55,16 @@ export interface MediaItem {
     fileId: number;
     fileName: string | null;
     mediaType: MediaType | null;
-    mediaUrl: string | null;
+    streamingUrl: string | null;
     thumbnailFileId: number | null;
     thumbnailUrl: string | null;
     posterUrl: string | null;
     durationSeconds: number;
     completionRate: number;
+    trackProgress: boolean;
     isUsing: boolean;
     createdAt: string;
-    myProgress: MediaProgress | null;
+    myProgress: StreamingProgress | null;
     paid: boolean;
     price: number | null;
     accessDays: number | null;
@@ -72,14 +73,14 @@ export interface MediaItem {
     accessExpiresAt: string | null;
 }
 
-export interface MyMedia {
-    mediaId: number;
+export interface MyStreaming {
+    streamingId: number;
     title: string;
     mediaType: MediaType | null;
     thumbnailUrl: string | null;
     durationSeconds: number;
     available: boolean;
-    progress: MediaProgress | null;
+    progress: StreamingProgress | null;
 }
 
 export interface Learner {
@@ -464,8 +465,8 @@ export interface ProductDetail extends ProductSummary {
     donation: { raisedAmount: number; supporterCount: number } | null;
     funding: { goalAmount: number | null; deadline: string | null; raisedAmount: number; supporterCount: number;
         resolved: boolean; succeeded: boolean } | null;
-    pass: { unit: PassUnit; days: number | null; count: number | null; programId: number | null } | null;
-    inquiry: { programId: number | null } | null;
+    pass: { unit: PassUnit; days: number | null; count: number | null; reservationItemId: number | null } | null;
+    inquiry: { reservationItemId: number | null } | null;
     preorder: { saleStartAt: string | null; saleEndAt: string | null; shipDate: string | null } | null;
 }
 
@@ -475,7 +476,7 @@ export interface MemberPass {
     productId: number;
     productName: string;
     unit: PassUnit;
-    programId: number;
+    reservationItemId: number;
     totalCount: number | null;
     remainingCount: number | null;
     expiresAt: string | null;
@@ -582,6 +583,14 @@ export interface MyVote {
 }
 
 export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'SMS';
+
+export type NotificationType = 'MEMBER_JOINED' | 'ORDER_PAID' | 'ORDER_REFUNDED';
+
+export interface NotificationTypeSetting {
+    type: NotificationType;
+    label: string;
+    enabled: boolean;
+}
 
 export interface AppNotification {
     id: number;
@@ -905,7 +914,7 @@ export interface Availability {
     remainingItems: number | null;
 }
 
-export interface Program {
+export interface ReservationItem {
     id: number;
     accessGradeId: number | null;
     name: string;
@@ -931,12 +940,12 @@ export interface Program {
     depositAmount: number | null;
     maxRentalDays: number | null;
     lateFeePerDay: number | null;
-    sessions: ProgramSession[];
+    sessions: ReservationItemSession[];
     supportsQueue: boolean;
     priceTiers: PriceTier[] | null;
 }
 
-export interface ProgramSession {
+export interface ReservationItemSession {
     id: number;
     name: string | null;
     startAt: string;
@@ -965,8 +974,8 @@ export interface Reservation {
     id: number;
     reservationNumber: string;
     userId: number;
-    programId: number;
-    programName: string;
+    reservationItemId: number;
+    reservationItemName: string;
     reservationType: ReservationType;
     startAt: string | null;
     endAt: string | null;
@@ -1029,13 +1038,13 @@ export interface Payment {
     canceledAt: string | null;
 }
 
-export type ReviewTargetType = 'PRODUCT' | 'PROGRAM';
+export type ReviewTargetType = 'PRODUCT' | 'RESERVATION_ITEM';
 
 export interface Review {
     id: number;
     targetType: ReviewTargetType;
     productId: number | null;
-    programId: number | null;
+    reservationItemId: number | null;
     rating: number;
     title: string;
     contentHtml: string;
@@ -1139,7 +1148,8 @@ export interface MapSetting {
     office: Office;
 }
 
-export type PolicyType = 'PRIVACY_CONSENT' | 'PRIVACY_POLICY' | 'MAIL_RECEPTION' | 'SMS_RECEPTION' | 'MARKETING_USAGE';
+export type PolicyType = 'PRIVACY_CONSENT' | 'PRIVACY_POLICY' | 'TERMS_OF_SERVICE' | 'OPERATION_POLICY'
+    | 'YOUTH_PROTECTION_POLICY' | 'MAIL_RECEPTION' | 'SMS_RECEPTION' | 'MARKETING_USAGE';
 
 export interface Policy {
     type: PolicyType;

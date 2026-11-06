@@ -7,8 +7,8 @@ import jakarta.validation.Valid;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
 import com.dgmoonlabs.cms.domain.business.reservation.entity.Reservation;
 import com.dgmoonlabs.cms.domain.business.reservation.entity.ReservationExtension;
-import com.dgmoonlabs.cms.domain.business.reservation.entity.program.Program;
-import com.dgmoonlabs.cms.domain.business.reservation.entity.program.ProgramSession;
+import com.dgmoonlabs.cms.domain.business.reservation.entity.reservationitem.ReservationItem;
+import com.dgmoonlabs.cms.domain.business.reservation.entity.reservationitem.ReservationItemSession;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import jakarta.validation.constraints.*;
 import com.dgmoonlabs.cms.domain.common.regex.constant.RegexTarget;
@@ -26,7 +26,7 @@ public final class ReservationDtos {
     }
 
     @Builder
-    public record ProgramSaveRequest(
+    public record ReservationItemSaveRequest(
             @NotBlank @Size(max = 200) String name,
             @Size(max = 500) String description,
             Long imageFileId,
@@ -63,33 +63,33 @@ public final class ReservationDtos {
         }
     }
 
-    public record ProgramResponse(Long id, String name, String description, Long imageFileId, String imageUrl,
-                                  BigDecimal price, ReservationType reservationType, Integer slotMinutes,
-                                  LocalTime openTime, LocalTime closeTime, SpaceLayout layout,
-                                  Integer maximumPerson, Integer availablePerson,
-                                  LocalDateTime startDateTime, LocalDateTime endDateTime,
-                                  LocalDateTime applicationStartDateTime, LocalDateTime applicationEndDateTime,
-                                  String contentHtml, boolean isEnabled, boolean isOpen, Double averageRating,
-                                  Long accessGradeId, BigDecimal depositAmount, Integer maxRentalDays,
-                                  BigDecimal lateFeePerDay, List<SessionResponse> sessions, boolean supportsQueue,
-                                  List<PriceTier> priceTiers) {
-        public static ProgramResponse of(final Program program, final SpaceLayout layout, final boolean isOpen,
-                                         final Double averageRating) {
-            return of(program, layout, isOpen, averageRating, List.of(), List.of());
+    public record ReservationItemResponse(Long id, String name, String description, Long imageFileId, String imageUrl,
+                                          BigDecimal price, ReservationType reservationType, Integer slotMinutes,
+                                          LocalTime openTime, LocalTime closeTime, SpaceLayout layout,
+                                          Integer maximumPerson, Integer availablePerson,
+                                          LocalDateTime startDateTime, LocalDateTime endDateTime,
+                                          LocalDateTime applicationStartDateTime, LocalDateTime applicationEndDateTime,
+                                          String contentHtml, boolean isEnabled, boolean isOpen, Double averageRating,
+                                          Long accessGradeId, BigDecimal depositAmount, Integer maxRentalDays,
+                                          BigDecimal lateFeePerDay, List<SessionResponse> sessions, boolean supportsQueue,
+                                          List<PriceTier> priceTiers) {
+        public static ReservationItemResponse of(final ReservationItem item, final SpaceLayout layout, final boolean isOpen,
+                                                  final Double averageRating) {
+            return of(item, layout, isOpen, averageRating, List.of(), List.of());
         }
 
-        public static ProgramResponse of(final Program program, final SpaceLayout layout, final boolean isOpen,
-                                         final Double averageRating, final List<SessionResponse> sessions,
-                                         final List<PriceTier> priceTiers) {
-            return new ProgramResponse(program.getId(), program.getName(), program.getDescription(),
-                    program.getImageFileId(),
-                    program.getImageFileId() == null ? null : "/api/files/" + program.getImageFileId() + "/view",
-                    program.getPrice(), program.getReservationType(), program.getSlotMinutes(), program.getOpenTime(),
-                    program.getCloseTime(), layout, program.getMaximumPerson(), program.getAvailablePerson(),
-                    program.getStartDateTime(), program.getEndDateTime(), program.getApplicationStartDateTime(),
-                    program.getApplicationEndDateTime(), program.getContentHtml(), program.isEnabled(), isOpen, averageRating,
-                    program.getAccessGradeId(), program.getDepositAmount(), program.getMaxRentalDays(),
-                    program.getLateFeePerDay(), sessions, program.isSupportsQueue(), priceTiers);
+        public static ReservationItemResponse of(final ReservationItem item, final SpaceLayout layout, final boolean isOpen,
+                                                  final Double averageRating, final List<SessionResponse> sessions,
+                                                  final List<PriceTier> priceTiers) {
+            return new ReservationItemResponse(item.getId(), item.getName(), item.getDescription(),
+                    item.getImageFileId(),
+                    item.getImageFileId() == null ? null : "/api/files/" + item.getImageFileId() + "/view",
+                    item.getPrice(), item.getReservationType(), item.getSlotMinutes(), item.getOpenTime(),
+                    item.getCloseTime(), layout, item.getMaximumPerson(), item.getAvailablePerson(),
+                    item.getStartDateTime(), item.getEndDateTime(), item.getApplicationStartDateTime(),
+                    item.getApplicationEndDateTime(), item.getContentHtml(), item.isEnabled(), isOpen, averageRating,
+                    item.getAccessGradeId(), item.getDepositAmount(), item.getMaxRentalDays(),
+                    item.getLateFeePerDay(), sessions, item.isSupportsQueue(), priceTiers);
         }
     }
 
@@ -102,7 +102,7 @@ public final class ReservationDtos {
 
     public record SessionResponse(Long id, String name, LocalDateTime startAt, LocalDateTime endAt, Integer capacity,
                                   int reservedCount, Integer remaining, boolean isOpen) {
-        public static SessionResponse of(final ProgramSession session, final LocalDateTime now) {
+        public static SessionResponse of(final ReservationItemSession session, final LocalDateTime now) {
             return new SessionResponse(session.getId(), session.getName(), session.getStartAt(), session.getEndAt(),
                     session.getCapacity(), session.getReservedCount(), session.remaining(), session.isOpenAt(now));
         }
@@ -142,7 +142,7 @@ public final class ReservationDtos {
 
     @Builder
     public record ReservationCreateRequest(
-            @NotNull Long programId,
+            @NotNull Long reservationItemId,
             @NotNull @Min(1) @Max(100) Integer quantity,
             @NotBlank @Size(max = 50) String applicantName,
             @NotBlank @Size(max = 30) @MatchesRegex(RegexTarget.PHONE_NUMBER) String phoneNumber,
@@ -166,7 +166,7 @@ public final class ReservationDtos {
     public record CheckInRequest(@NotBlank @Size(max = 40) String code) {
     }
 
-    public record ReservationResponse(Long id, String reservationNumber, Long userId, Long programId, String programName,
+    public record ReservationResponse(Long id, String reservationNumber, Long userId, Long reservationItemId, String reservationItemName,
                                       ReservationType reservationType, LocalDateTime startAt, LocalDateTime endAt,
                                       List<String> cells, int quantity, BigDecimal totalPrice, ReservationStatus status, String customStatus,
                                       String applicantName, String phoneNumber, BigDecimal depositAmount,
@@ -183,7 +183,7 @@ public final class ReservationDtos {
         public static ReservationResponse from(final Reservation reservation) {
             LocalDateTime now = LocalDateTime.now();
             return new ReservationResponse(reservation.getId(), reservation.getReservationNumber(),
-                    reservation.getUserId(), reservation.getProgramId(), reservation.getProgramName(),
+                    reservation.getUserId(), reservation.getReservationItemId(), reservation.getReservationItemName(),
                     reservation.getReservationType(), reservation.getStartAt(), reservation.getEndAt(),
                     reservation.cellKeys(), reservation.getQuantity(), reservation.getTotalPrice(), reservation.getStatus(),
                     reservation.getCustomStatus(),

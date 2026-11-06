@@ -1,14 +1,14 @@
 import {useEffect, useState} from 'react';
 import type {LessonDraft} from '../api/courses';
-import type {MediaItem} from '../api/domain';
+import type {StreamingItem} from '../api/domain';
 import {adminApi} from '../api/endpoints';
 
-const emptyLesson = (): LessonDraft => ({id: null, title: '', mediaId: null, passScore: 60, quiz: []});
+const emptyLesson = (): LessonDraft => ({id: null, title: '', streamingId: null, passScore: 60, quiz: []});
 
 export function CourseLessonsEditor({value, onChange}: { value: LessonDraft[]; onChange: (lessons: LessonDraft[]) => void }) {
-    const [media, setMedia] = useState<MediaItem[]>([]);
+    const [streamingItems, setStreamingItems] = useState<StreamingItem[]>([]);
     useEffect(() => {
-        adminApi.media.search({size: 200}).then((page) => setMedia(page.content)).catch(() => setMedia([]));
+        adminApi.streaming.search({size: 200}).then((page) => setStreamingItems(page.content)).catch(() => setStreamingItems([]));
     }, []);
     const update = (index: number, patch: Partial<LessonDraft>) =>
         onChange(value.map((lesson, i) => (i === index ? {...lesson, ...patch} : lesson)));
@@ -30,10 +30,10 @@ export function CourseLessonsEditor({value, onChange}: { value: LessonDraft[]; o
                         <div className="form-field-row">
                             <input aria-label={`${label} 제목`} placeholder="차시 제목" required value={lesson.title}
                                    onChange={(e) => update(index, {title: e.target.value})}/>
-                            <select aria-label={`${label} 강의`} value={lesson.mediaId ?? ''}
-                                    onChange={(e) => update(index, {mediaId: e.target.value ? Number(e.target.value) : null})}>
+                            <select aria-label={`${label} 강의`} value={lesson.streamingId ?? ''}
+                                    onChange={(e) => update(index, {streamingId: e.target.value ? Number(e.target.value) : null})}>
                                 <option value="">강의 없음 (퀴즈만)</option>
-                                {media.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+                                {streamingItems.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
                             </select>
                             <span className="actions">
                                 <button type="button" aria-label={`${label} 위로`} disabled={index === 0} onClick={() => move(index, -1)}>↑</button>

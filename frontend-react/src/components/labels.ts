@@ -123,10 +123,9 @@ export const RESERVATION_TYPE: Record<ReservationType, string> = {
 };
 
 export const RESERVATION_TYPE_GROUPS: { label: string; types: ReservationType[] }[] = [
-    {label: '시간 예약', types: ['PROGRAM', 'CONSULTATION', 'VISIT']},
+    {label: '시간 예약', types: ['PROGRAM', 'CONSULTATION', 'VISIT', 'TOUR']},
     {label: '공간 예약', types: ['RENTAL', 'LODGING', 'EVENT', 'TABLE']},
     {label: '물품', types: ['ITEM_RENTAL']},
-    {label: '패키지 예약', types: ['TOUR']},
 ];
 
 export const CELL_KIND: Record<CellKind, string> = {

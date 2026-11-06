@@ -5,7 +5,7 @@ import com.dgmoonlabs.cms.domain.business.order.dto.ProductDtos.ProductSummary;
 import com.dgmoonlabs.cms.domain.business.order.service.AttributeFilters;
 import com.dgmoonlabs.cms.domain.business.order.service.ProductService;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.Availability;
-import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ProgramResponse;
+import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationItemResponse;
 import com.dgmoonlabs.cms.domain.business.reservation.service.ReservationService;
 import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewResponse;
 import com.dgmoonlabs.cms.domain.business.review.service.ReviewService;
@@ -49,14 +49,14 @@ public class ShopController {
     }
 
     @GetMapping("/api/reservation-items")
-    public ResponseEntity<PagedModel<ProgramResponse>> programs(@RequestParam(required = false) final String keyword,
-                                                                @PageableDefault(size = 12) final Pageable pageable) {
-        return ResponseEntity.ok(new PagedModel<>(reservationService.getPrograms(keyword, pageable)));
+    public ResponseEntity<PagedModel<ReservationItemResponse>> reservationItems(@RequestParam(required = false) final String keyword,
+                                                                                 @PageableDefault(size = 12) final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(reservationService.getReservationItems(keyword, pageable)));
     }
 
     @GetMapping("/api/reservation-items/{id}")
-    public ResponseEntity<ProgramResponse> program(@PathVariable final Long id) {
-        return ResponseEntity.ok(reservationService.getProgram(id));
+    public ResponseEntity<ReservationItemResponse> reservationItem(@PathVariable final Long id) {
+        return ResponseEntity.ok(reservationService.getReservationItem(id));
     }
 
     @GetMapping("/api/reservation-items/{id}/availability")
@@ -70,8 +70,8 @@ public class ShopController {
     }
 
     @GetMapping("/api/reservation-items/{id}/reviews")
-    public ResponseEntity<PagedModel<ReviewResponse>> programReviews(@PathVariable final Long id,
-                                                                     @PageableDefault final Pageable pageable) {
-        return ResponseEntity.ok(new PagedModel<>(reviewService.getProgramReviews(id, pageable)));
+    public ResponseEntity<PagedModel<ReviewResponse>> reservationItemReviews(@PathVariable final Long id,
+                                                                              @PageableDefault final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(reviewService.getReservationItemReviews(id, pageable)));
     }
 }

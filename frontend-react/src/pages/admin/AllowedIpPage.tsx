@@ -53,7 +53,7 @@ function AllowedIpEditor({guard}: { guard: ReauthGuard }) {
 
             <div className="toolbar">
                 <span>지금 접속한 IP: <code>{settings.currentIp}</code></span>
-                {currentListed ? <span className="badge ok">목록에 있음</span> : <span className="badge">목록에 없음</span>}
+                {currentListed ? <span className="badge ok">목록에 있음</span> : <span className="badge danger">목록에 없음</span>}
                 {!currentListed && (
                     <button type="button" onClick={() => void run(() => allowedIpApi.create(settings.currentIp, '현재 접속 IP'))}>
                         현재 IP 추가

@@ -4,7 +4,7 @@ import {Link} from 'react-router';
 import type {Banner} from '../api/domain';
 import {siteApi} from '../api/endpoints';
 import {dismissForDays, dismissLabel, isDismissed} from '../components/dismissal';
-import {Greeting, HOME_BLOCKS, LatestPosts, NewProducts, OpenPrograms, ProductSearch, Shortcuts} from '../components/HomeBlocks';
+import {Greeting, HOME_BLOCKS, LatestPosts, NewProducts, OpenReservationItems, ProductSearch, Shortcuts} from '../components/HomeBlocks';
 import {useSite} from '../components/SiteContext';
 
 export function HomePage() {
@@ -47,7 +47,7 @@ function DefaultHome() {
             <Shortcuts/>
             <NewProducts/>
             <div className="home-columns">
-                <OpenPrograms/>
+                <OpenReservationItems/>
                 <LatestPosts/>
             </div>
         </>

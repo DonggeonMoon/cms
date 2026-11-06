@@ -16,7 +16,7 @@ export function CategoryAdminPage() {
         {name: 'parentId', label: '상위 카테고리', type: 'select', wide: true,
             options: categories.filter((c) => c.parentId == null).map((c) => ({value: String(c.id), label: c.name})),
             help: '두 단계까지 만들 수 있습니다. 하위 카테고리는 상위 카테고리의 속성을 물려받습니다.'},
-        {name: 'sequence', label: '정렬 순서', type: 'number', wide: true, help: '작을수록 앞에 나옵니다.'},
+        {name: 'sequence', label: '정렬 순서', type: 'number', min: 0, wide: true, help: '작을수록 앞에 나옵니다.'},
         {name: 'attributes', label: '속성', type: 'categoryAttributes',
             help: '상품마다 입력할 사양입니다. "검색 조건"을 켠 선택형·숫자 속성은 상품 목록에서 조건으로 거를 수 있습니다.'},
     ], [categories]);

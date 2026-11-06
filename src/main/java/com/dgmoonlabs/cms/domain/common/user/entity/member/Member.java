@@ -95,6 +95,11 @@ public class Member extends BaseEntity {
     @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
     private String mobilePhoneNumber;
 
+    @Comment("휴대폰 번호 국가 코드 (예: +82)")
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = EncryptedStringConverter.COLUMN_LENGTH)
+    private String mobilePhoneCountryCode;
+
     @Comment("회원 등급 ID (없으면 기본 등급)")
     private Long gradeId;
 
@@ -134,6 +139,7 @@ public class Member extends BaseEntity {
         this.email = setting.keep(PersonalInfoItem.EMAIL, request.email());
         this.telephoneNumber = setting.keep(PersonalInfoItem.TELEPHONE, request.telephoneNumber());
         this.mobilePhoneNumber = setting.keep(PersonalInfoItem.MOBILE_PHONE, request.mobilePhoneNumber());
+        this.mobilePhoneCountryCode = setting.keepMobilePhoneCountryCode(request.mobilePhoneCountryCode());
     }
 
     public void changePassword(final String encodedPassword) {

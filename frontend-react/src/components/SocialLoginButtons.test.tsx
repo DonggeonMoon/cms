@@ -14,10 +14,10 @@ describe('SocialLoginButtons', () => {
             {provider: 'KAKAO', path: 'kakao', label: '카카오'},
             {provider: 'APPLE', path: 'apple', label: '애플'},
         ])));
-        render(<SocialLoginButtons redirect="/media?type=VIDEO"/>);
+        render(<SocialLoginButtons redirect="/streaming?type=VIDEO"/>);
 
         expect(await screen.findByRole('link', {name: '카카오로 로그인'}))
-            .toHaveAttribute('href', '/api/auth/oauth/kakao/authorize?redirect=%2Fmedia%3Ftype%3DVIDEO');
+            .toHaveAttribute('href', '/api/auth/oauth/kakao/authorize?redirect=%2Fstreaming%3Ftype%3DVIDEO');
         expect(screen.getByRole('link', {name: '애플로 로그인'})).toHaveClass('social-apple');
     });
 

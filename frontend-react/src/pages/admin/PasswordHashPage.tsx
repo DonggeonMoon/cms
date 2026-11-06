@@ -51,7 +51,7 @@ function PasswordHashPanel({guard}: { guard: ReauthGuard }) {
         <section className="card">
             <h1>해시 알고리즘 관리</h1>
             <div className="muted page-description">
-                <p>회원·관리자 비밀번호와 비회원 글 비밀번호를 저장할 때 쓰는 해시 알고리즘입니다. Spring Security가 권장하는 안전한
+                <p>회원·관리자 비밀번호와 비회원 글 비밀번호를 저장할 때 쓰는 해시 알고리즘입니다. 안전성이 검증된
                     알고리즘만 고를 수 있습니다.</p>
                 <p>바꿔도 기존 비밀번호로 그대로 로그인할 수 있습니다. 회원·관리자 비밀번호는 다음 로그인에 성공할 때 새 알고리즘으로 다시 저장됩니다.</p>
             </div>

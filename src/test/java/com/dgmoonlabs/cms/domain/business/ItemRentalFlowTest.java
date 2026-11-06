@@ -24,7 +24,7 @@ class ItemRentalFlowTest extends ApiTestSupport {
                 """).andExpect(status().isCreated()));
         getJson("/api/reservation-items/" + tent, null).andExpect(jsonPath("$.depositAmount").value(50000));
 
-        String rent = "{\"programId\":%d,\"quantity\":%d,\"startAt\":\"%sT00:00:00\",\"endAt\":\"%sT00:00:00\",%s}";
+        String rent = "{\"reservationItemId\":%d,\"quantity\":%d,\"startAt\":\"%sT00:00:00\",\"endAt\":\"%sT00:00:00\",%s}";
         MockHttpSession camper = member("camper");
         postJson("/api/reservations", camper, rent.formatted(tent, 1, DAY, DAY.plusDays(6), APPLICANT))
                 .andExpect(jsonPath("$.code").value("INVALID_RESERVATION_TIME"));
