@@ -26,6 +26,7 @@ import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -49,6 +51,7 @@ public class ArchiveService {
     private final ArchiveArticleLikeRepository articleLikeRepository;
     private final FileService fileService;
     private final HtmlSanitizer htmlSanitizer;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public List<ArchiveResponse> getArchives() {
@@ -71,6 +74,7 @@ public class ArchiveService {
                 .description(request.description())
                 .type(request.type())
                 .supportsComment(request.supportsComment())
+                .isGuestCommentable(request.isGuestCommentable())
                 .supportsLike(request.supportsLike())
                 .pageSize(request.pageSize())
                 .build()).getId();
@@ -82,7 +86,7 @@ public class ArchiveService {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         findArchive(id).update(request.name(), request.description(), request.type(), request.supportsComment(),
-                request.supportsLike(), request.pageSize());
+                request.isGuestCommentable(), request.supportsLike(), request.pageSize());
         findArchive(id).changeAccessGrade(gradeService.validGradeId(request.accessGradeId()));
     }
 
@@ -168,8 +172,8 @@ public class ArchiveService {
             if (root.getDeletedAt() != null && children.isEmpty()) {
                 continue;
             }
-            result.add(ArchiveCommentResponse.of(root, canDelete(root), isCommentOwner(root)));
-            children.forEach(child -> result.add(ArchiveCommentResponse.of(child, canDelete(child), isCommentOwner(child))));
+            result.add(ArchiveCommentResponse.of(root, canDelete(root), canEdit(root)));
+            children.forEach(child -> result.add(ArchiveCommentResponse.of(child, canDelete(child), canEdit(child))));
         }
         return result;
     }
@@ -177,9 +181,17 @@ public class ArchiveService {
     @Transactional
     public Long createComment(final Long archiveId, final Long articleId, final ArchiveCommentSaveRequest request,
                               final String ipAddress) {
-        requireCommentable(archiveId);
+        Archive archive = requireCommentable(archiveId);
         requirePublished(findArticle(archiveId, articleId));
-        LoginUser user = CurrentUser.get().orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED));
+        Optional<LoginUser> user = CurrentUser.get();
+        if (user.isEmpty()) {
+            if (!archive.isGuestCommentable()) {
+                throw new BusinessException(ErrorCode.UNAUTHENTICATED);
+            }
+            if (isBlank(request.authorName()) || isBlank(request.password())) {
+                throw new BusinessException(ErrorCode.GUEST_PASSWORD_REQUIRED);
+            }
+        }
         int depth = 0;
         if (request.parentId() != null) {
             ArchiveComment parent = commentRepository.findByIdAndArticleIdAndDeletedAtIsNull(request.parentId(), articleId)
@@ -194,38 +206,51 @@ public class ArchiveService {
                 .parentId(request.parentId())
                 .depth(depth)
                 .content(request.content())
-                .userType(user.userType())
-                .userId(user.id())
-                .authorName(user.name())
+                .userType(user.map(LoginUser::userType).orElse(UserType.GUEST))
+                .userId(user.map(LoginUser::id).orElse(null))
+                .authorName(user.map(LoginUser::name).orElse(request.authorName()))
+                .password(user.isPresent() ? null : passwordEncoder.encode(request.password()))
                 .status(CommentStatus.APPROVED)
                 .ipAddress(ipAddress)
                 .build()).getId();
     }
 
     @Transactional
-    public void deleteComment(final Long archiveId, final Long articleId, final Long commentId) {
+    public void deleteComment(final Long archiveId, final Long articleId, final Long commentId, final String password) {
         findArticle(archiveId, articleId);
         ArchiveComment comment = commentRepository.findByIdAndArticleIdAndDeletedAtIsNull(commentId, articleId)
                 .orElseThrow(BusinessException::notFound);
-        if (!canDelete(comment)) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        boolean guestMatches = comment.isWrittenByGuest() && password != null && comment.getPassword() != null
+                && passwordEncoder.matches(password, comment.getPassword());
+        if (!isOwnerOrAdmin(comment) && !guestMatches) {
+            throw new BusinessException(comment.isWrittenByGuest() ? ErrorCode.ARTICLE_PASSWORD_MISMATCH : ErrorCode.ACCESS_DENIED);
         }
         comment.delete();
     }
 
     @Transactional
-    public void editComment(final Long archiveId, final Long articleId, final Long commentId, final String content) {
+    public void editComment(final Long archiveId, final Long articleId, final Long commentId, final ArchiveCommentEditRequest request) {
         requireCommentable(archiveId);
         findArticle(archiveId, articleId);
         ArchiveComment comment = commentRepository.findByIdAndArticleIdAndDeletedAtIsNull(commentId, articleId)
                 .orElseThrow(BusinessException::notFound);
-        if (!isCommentOwner(comment)) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        boolean guestMatches = comment.isWrittenByGuest() && request.password() != null && comment.getPassword() != null
+                && passwordEncoder.matches(request.password(), comment.getPassword());
+        if (!isCommentOwner(comment) && !guestMatches) {
+            throw new BusinessException(comment.isWrittenByGuest() ? ErrorCode.ARTICLE_PASSWORD_MISMATCH : ErrorCode.ACCESS_DENIED);
         }
-        comment.edit(content);
+        comment.edit(request.content());
     }
 
     private boolean canDelete(final ArchiveComment comment) {
+        return isOwnerOrAdmin(comment) || comment.isWrittenByGuest();
+    }
+
+    private boolean canEdit(final ArchiveComment comment) {
+        return isCommentOwner(comment) || comment.isWrittenByGuest();
+    }
+
+    private boolean isOwnerOrAdmin(final ArchiveComment comment) {
         return CurrentUser.isAdmin() || isCommentOwner(comment);
     }
 
@@ -234,10 +259,16 @@ public class ArchiveService {
                 && CurrentUser.is(comment.getUserType() == null ? UserType.MEMBER : comment.getUserType(), comment.getUserId());
     }
 
-    private void requireCommentable(final Long archiveId) {
-        if (!findArchive(archiveId).isSupportsComment()) {
+    private Archive requireCommentable(final Long archiveId) {
+        Archive archive = findArchive(archiveId);
+        if (!archive.isSupportsComment()) {
             throw new BusinessException(ErrorCode.COMMENT_NOT_SUPPORTED);
         }
+        return archive;
+    }
+
+    private static boolean isBlank(final String value) {
+        return value == null || value.isBlank();
     }
 
     @Transactional

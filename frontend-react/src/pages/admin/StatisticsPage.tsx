@@ -11,6 +11,7 @@ const DIMENSIONS = [
     {value: 'URL', label: '페이지'},
     {value: 'BROWSER', label: '브라우저'},
     {value: 'OS', label: '운영체제'},
+    {value: 'NATION', label: '국가'},
 ] as const;
 
 const PERIODS: { value: PeriodUnit; label: string; unitLabel: string; formatLabel: (date: string) => string }[] = [
@@ -36,7 +37,7 @@ function defaultRange(unit: PeriodUnit): { from: string; to: string } {
 export function StatisticsPage() {
     const [unit, setUnit] = useState<PeriodUnit>('DAY');
     const [{from, to}, setRange] = useState(() => defaultRange('DAY'));
-    const [dimension, setDimension] = useState<'URL' | 'BROWSER' | 'OS'>('URL');
+    const [dimension, setDimension] = useState<'URL' | 'BROWSER' | 'OS' | 'NATION'>('URL');
     const [series, setSeries] = useState<DailyVisits[]>([]);
     const [breakdown, setBreakdown] = useState<{ label: string; visits: number }[]>([]);
     const [error, setError] = useState<unknown>(null);

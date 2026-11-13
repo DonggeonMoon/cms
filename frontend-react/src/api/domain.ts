@@ -117,6 +117,7 @@ export interface Site {
     searchIndexing?: boolean;
     googleVerification?: string | null;
     naverVerification?: string | null;
+    customRobotsTxt?: string | null;
 }
 
 export type OptionType = 'TEXT' | 'RADIO' | 'CHECKBOX' | 'TEXTAREA';
@@ -336,6 +337,7 @@ export interface Archive {
     description: string | null;
     type: BoardType;
     supportsComment: boolean;
+    isGuestCommentable: boolean;
     supportsLike: boolean;
     pageSize: number;
 }
@@ -370,6 +372,7 @@ export interface ArchiveComment {
     depth: number;
     content: string;
     authorName: string | null;
+    authorType: 'ADMIN' | 'MEMBER' | 'GUEST';
     deleted: boolean;
     canDelete: boolean;
     canEdit: boolean;
@@ -1037,6 +1040,7 @@ export interface Payment {
     transactionId: string;
     approvedAt: string;
     canceledAt: string | null;
+    refundedAmount: number;
 }
 
 export type ReviewTargetType = 'PRODUCT' | 'RESERVATION_ITEM';

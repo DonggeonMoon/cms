@@ -2,6 +2,7 @@ package com.dgmoonlabs.cms.domain.archive.controller;
 
 import com.dgmoonlabs.cms.domain.archive.dto.ArchiveDtos.*;
 import com.dgmoonlabs.cms.domain.archive.service.ArchiveService;
+import com.dgmoonlabs.cms.domain.board.dto.PasswordRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -64,14 +65,15 @@ public class ArchiveController {
     public ResponseEntity<Void> editComment(@PathVariable final Long archiveId, @PathVariable final Long articleId,
                                             @PathVariable final Long commentId,
                                             @RequestBody @Valid final ArchiveCommentEditRequest request) {
-        archiveService.editComment(archiveId, articleId, commentId, request.content());
+        archiveService.editComment(archiveId, articleId, commentId, request);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/api/archives/{archiveId}/articles/{articleId}/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(@PathVariable final Long archiveId, @PathVariable final Long articleId,
-                                              @PathVariable final Long commentId) {
-        archiveService.deleteComment(archiveId, articleId, commentId);
+                                              @PathVariable final Long commentId,
+                                              @RequestBody(required = false) final PasswordRequest request) {
+        archiveService.deleteComment(archiveId, articleId, commentId, request == null ? null : request.password());
         return ResponseEntity.noContent().build();
     }
 

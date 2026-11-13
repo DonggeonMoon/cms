@@ -1030,9 +1030,14 @@ function ExtensionAdminCell({reservation, onDone}: { reservation: Reservation; o
     );
 }
 
-const loadPayments = (query: Query) => adminApi.payments(query);
+const loadPayments = (query: Query) => adminApi.payments.search(query);
+
+const PAYMENT_TARGET_LABEL: Record<Payment['targetType'], string> = {
+    ORDER: '주문', RESERVATION: '예약', RESERVATION_EXTENSION: '예약 연장',
+};
 
 export function PaymentAdminPage() {
+    const [detail, setDetail] = useState<number | null>(null);
     return (
         <AdminCrudPage<Payment>
             title="결제 내역"
@@ -1044,13 +1049,67 @@ export function PaymentAdminPage() {
             columns={[
                 {label: '결제번호', render: (p) => <code>{p.paymentNumber ?? '-'}</code>},
                 {label: '거래 ID', render: (p) => <code className="small">{p.transactionId}</code>},
-                {label: '대상', render: (p) => `${p.targetType === 'ORDER' ? '주문' : p.targetType === 'RESERVATION_EXTENSION' ? '예약 연장' : '예약'} #${p.targetId}`},
+                {label: '대상', render: (p) => (
+                    <button type="button" className="link-button" onClick={() => setDetail(detail === p.id ? null : p.id)}>
+                        {PAYMENT_TARGET_LABEL[p.targetType]} #{p.targetId}
+                    </button>
+                )},
                 {label: '금액', render: (p) => won(p.amount)},
                 {label: '수단', render: (p) => p.method},
                 {label: '상태', render: (p) => (p.status === 'APPROVED' ? '승인' : '취소')},
                 {label: '승인 일시', render: (p) => formatDateTime(p.approvedAt)},
+                {label: '취소', className: 'button-cell', render: (p, reload) => p.status === 'APPROVED' && (
+                    <button type="button" className="danger" onClick={() => {
+                        if (window.confirm('결제를 취소할까요? 대상 주문·예약도 함께 취소되고 환불 처리됩니다.')) {
+                            void adminApi.payments.cancel(p.id).then(reload);
+                        }
+                    }}>취소</button>
+                )},
             ]}
+            expandedRow={(p, reload) => detail === p.id && <PaymentTargetPanel payment={p} onChange={reload}/>}
         />
+    );
+}
+
+function PaymentTargetPanel({payment, onChange}: { payment: Payment; onChange: () => void }) {
+    const [order, setOrder] = useState<Order | null>(null);
+    const [reservation, setReservation] = useState<Reservation | null>(null);
+    const [error, setError] = useState<unknown>(null);
+
+    useEffect(() => {
+        setOrder(null);
+        setReservation(null);
+        setError(null);
+        if (payment.targetType === 'ORDER') {
+            adminApi.orders.get(payment.targetId).then(setOrder).catch(setError);
+        } else if (payment.targetType === 'RESERVATION') {
+            adminApi.reservations.get(payment.targetId).then(setReservation).catch(setError);
+        } else {
+            adminApi.reservations.getByExtension(payment.targetId).then(setReservation).catch(setError);
+        }
+    }, [payment.targetType, payment.targetId]);
+
+    if (error) {
+        return <ErrorBanner error={error}/>;
+    }
+    if (payment.targetType === 'ORDER') {
+        return order ? <OrderDetailPanel order={order} onChange={onChange}/> : <p className="muted">불러오는 중…</p>;
+    }
+    if (!reservation) {
+        return <p className="muted">불러오는 중…</p>;
+    }
+    return (
+        <>
+            {payment.targetType === 'RESERVATION_EXTENSION' && <p className="muted small">연장료가 속한 예약입니다.</p>}
+            <dl className="meta">
+                <dt>예약번호</dt><dd><code>{reservation.reservationNumber}</code></dd>
+                <dt>예약 상품</dt><dd>{reservation.reservationItemName}</dd>
+                <dt>신청자</dt><dd>{reservation.applicantName} ({reservation.phoneNumber})</dd>
+                <dt>수량</dt><dd>{reservation.quantity}</dd>
+                <dt>금액</dt><dd>{won(reservation.totalPrice)}</dd>
+                <dt>상태</dt><dd>{reservation.status}</dd>
+            </dl>
+        </>
     );
 }
 

@@ -690,6 +690,17 @@ public class ReservationService {
         reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound).confirm();
     }
 
+    @Transactional(readOnly = true)
+    public ReservationResponse getReservation(final Long reservationId) {
+        return ReservationResponse.from(reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound));
+    }
+
+    @Transactional(readOnly = true)
+    public ReservationResponse getReservationByExtension(final Long extensionId) {
+        ReservationExtension extension = extensionRepository.findById(extensionId).orElseThrow(BusinessException::notFound);
+        return getReservation(extension.getReservationId());
+    }
+
     @Transactional
     public void cancelReservation(final Long reservationId) {
         cancel(reservationRepository.findById(reservationId).orElseThrow(BusinessException::notFound));

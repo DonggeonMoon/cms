@@ -56,7 +56,7 @@ class SeoApiTest extends ApiTestSupport {
     @Test
     void replacesTheTitleAndFaviconOfARealIndexPage() {
         SiteResponse site = new SiteResponse(1L, "카페", null, null, null, null, null, null, true, null, Map.of(), true, 3L, "/api/files/3/view",
-                null, "설명", null, 4L, "/api/files/4/view", true, null, null, null);
+                null, "설명", null, 4L, "/api/files/4/view", true, null, null, null, null);
         String html = SeoIndexRenderer.inject("<html><head><link rel=\"icon\" href=\"/favicon.ico\"/><title>cms</title></head><body></body></html>",
                 site, "https://cafe.example");
         assertThat(html).contains("<title>카페</title>", "<link rel=\"icon\" href=\"/api/files/3/view\"/>",

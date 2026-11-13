@@ -148,7 +148,8 @@ public class SiteService {
         }
         site.changeSeo(request.faviconFileId(), blankToNull(request.seoTitle()), blankToNull(request.metaDescription()),
                 blankToNull(request.metaKeywords()), request.ogImageFileId(), request.searchIndexingOrDefault(),
-                blankToNull(request.googleVerification()), blankToNull(request.naverVerification()));
+                blankToNull(request.googleVerification()), blankToNull(request.naverVerification()),
+                blankToNull(request.customRobotsTxt()));
     }
 
     private static String blankToNull(final String value) {

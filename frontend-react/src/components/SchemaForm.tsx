@@ -29,6 +29,7 @@ export interface FieldSpec {
     spaced?: boolean;
     newRow?: boolean;
     group?: string;
+    subgroup?: string;
     visibleWhen?: (values: FormValues) => boolean;
 }
 
@@ -107,12 +108,22 @@ export function SchemaForm({fields, initial, onSubmit, onCancel, submitLabel = '
         <form className="inline-form" onSubmit={handleSubmit}>
             {title && <h2>{title}</h2>}
             {grid(fields.filter((field) => !field.group))}
-            {groups.map((group) => (
-                <fieldset key={group}>
-                    <legend>{group}</legend>
-                    {grid(fields.filter((field) => field.group === group))}
-                </fieldset>
-            ))}
+            {groups.map((group) => {
+                const groupFields = fields.filter((field) => field.group === group);
+                const subgroups = [...new Set(groupFields.flatMap((field) => (field.subgroup ? [field.subgroup] : [])))];
+                return (
+                    <fieldset key={group}>
+                        <legend>{group}</legend>
+                        {grid(groupFields.filter((field) => !field.subgroup))}
+                        {subgroups.map((subgroup) => (
+                            <div key={subgroup} className="schema-subgroup">
+                                <h4>{subgroup}</h4>
+                                {grid(groupFields.filter((field) => field.subgroup === subgroup))}
+                            </div>
+                        ))}
+                    </fieldset>
+                );
+            })}
             <ErrorBanner error={error}/>
             {footer}
             <div className="toolbar form-actions">
@@ -172,16 +183,11 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
                 </div>
             );
         case 'color':
-            return (
-                <div className="field">
-                    {label}
-                    <div className="row align-center">
-                        <input id={id} type="color" value={(value as string) || '#000000'} onChange={(e) => onChange(e.target.value)}/>
-                        <code>{(value as string) || '-'}</code>
-                    </div>
-                    {help}
-                </div>
-            );
+            return <ColorField id={id} label={label} value={value as string | null} onChange={onChange} help={help}/>;
+        case 'date':
+            return <DateField id={id} label={label} value={value as string | null} field={field} error={error} onChange={onChange} help={help}/>;
+        case 'time':
+            return <TimeField id={id} label={label} value={value as string | null} field={field} error={error} onChange={onChange} help={help}/>;
         case 'html':
             return <HtmlField id={id} label={label} labelText={field.label} value={(value as string) ?? ''} onChange={onChange} help={help}/>;
         case 'image':
@@ -235,7 +241,7 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
                 <div className="field">
                     {label}
                     <input id={id} type={field.type === 'number' ? 'number' : field.type === 'datetime' ? 'datetime-local'
-                        : field.type === 'date' ? 'date' : field.type === 'password' ? 'password' : field.type === 'time' ? 'time' : 'text'}
+                        : field.type === 'password' ? 'password' : 'text'}
                            value={value == null ? '' : field.type === 'datetime' ? String(value).slice(0, 16) : String(value)}
                            required={field.required} placeholder={field.placeholder} min={field.min}
                            step={field.type === 'number' ? 'any' : undefined}
@@ -258,6 +264,58 @@ function HtmlField({id, label, labelText, value, onChange, help}: {
                 <RichTextEditor id={id} label={labelText} value={value} onChange={onChange}/>
             </Suspense>
             <p className="muted small">저장할 때 허용되지 않은 태그와 스크립트는 제거됩니다.</p>
+            {help}
+        </div>
+    );
+}
+
+/**
+ * 네이티브 <input type="color"> 구현. 서드파티 컬러 피커(예: react-colorful)로 교체하려면
+ * 이 컴포넌트만 바꾸면 되고, SchemaForm의 나머지 로직(label/help/value 전달 방식)은 그대로 유지된다.
+ */
+function ColorField({id, label, value, onChange, help}: {
+    id: string; label: ReactNode; value: string | null; onChange: (v: unknown) => void; help: ReactNode;
+}) {
+    return (
+        <div className="field">
+            {label}
+            <div className="row align-center">
+                <input id={id} type="color" value={value || '#000000'} onChange={(e) => onChange(e.target.value)}/>
+                <code>{value || '-'}</code>
+            </div>
+            {help}
+        </div>
+    );
+}
+
+/**
+ * 네이티브 <input type="date"> 구현. 서드파티 날짜 피커(예: react-datepicker)로 교체하려면
+ * 이 컴포넌트만 바꾸면 된다.
+ */
+function DateField({id, label, value, field, error, onChange, help}: {
+    id: string; label: ReactNode; value: string | null; field: FieldSpec; error?: string; onChange: (v: unknown) => void; help: ReactNode;
+}) {
+    return (
+        <div className="field">
+            {label}
+            <input id={id} type="date" value={value ?? ''} required={field.required} placeholder={field.placeholder}
+                   aria-invalid={Boolean(error)} onChange={(e) => onChange(e.target.value)}/>
+            {help}
+        </div>
+    );
+}
+
+/**
+ * 네이티브 <input type="time"> 구현. 서드파티 시간 피커로 교체하려면 이 컴포넌트만 바꾸면 된다.
+ */
+function TimeField({id, label, value, field, error, onChange, help}: {
+    id: string; label: ReactNode; value: string | null; field: FieldSpec; error?: string; onChange: (v: unknown) => void; help: ReactNode;
+}) {
+    return (
+        <div className="field">
+            {label}
+            <input id={id} type="time" value={value ?? ''} required={field.required} placeholder={field.placeholder}
+                   aria-invalid={Boolean(error)} onChange={(e) => onChange(e.target.value)}/>
             {help}
         </div>
     );

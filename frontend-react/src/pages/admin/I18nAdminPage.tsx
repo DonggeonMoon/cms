@@ -1,12 +1,12 @@
 import {Fragment, type FormEvent, useCallback, useEffect, useState} from 'react';
-import {DEFAULT_MESSAGES, i18nApi, type I18nSetting, LANGUAGE_NAMES, type Translation} from '../../api/i18n';
+import {DEFAULT_MESSAGES, defaultMessageFor, i18nApi, type I18nSetting, LANGUAGE_NAMES, type Translation} from '../../api/i18n';
 import {adminApi} from '../../api/endpoints';
 import type {Menu} from '../../api/domain';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {Field} from '../../components/Field';
 
-function baseEntries(menus: Menu[], siteName: string | null): [string, string][] {
-    const entries: [string, string][] = Object.entries(DEFAULT_MESSAGES);
+function baseEntries(menus: Menu[], siteName: string | null, language: string): [string, string][] {
+    const entries: [string, string][] = Object.keys(DEFAULT_MESSAGES).map((key) => [key, defaultMessageFor(key, language)]);
     if (siteName) {
         entries.push(['site.name', siteName]);
     }
@@ -123,11 +123,14 @@ function TranslationEditor({language}: { language: string }) {
         try {
             const [menus, site] = await Promise.all([adminApi.menus.tree(), adminApi.sites.search({size: 1}).catch(() => null)]);
             const existing = new Set((translations ?? []).map((t) => t.key));
-            const missing = baseEntries(menus, site?.content[0]?.name ?? null).filter(([key]) => !existing.has(key));
+            const missing = baseEntries(menus, site?.content[0]?.name ?? null, language).filter(([key]) => !existing.has(key));
             for (const [key, message] of missing) {
                 await i18nApi.createTranslation(language, key, message);
             }
-            setNotice(missing.length ? `키 ${missing.length}개를 한국어 원문과 함께 추가했습니다. 번역으로 바꿔 주세요.` : '빠진 키가 없습니다.');
+            const translated = missing.filter(([key]) => key in DEFAULT_MESSAGES).length;
+            setNotice(missing.length
+                ? `키 ${missing.length}개를 추가했습니다${translated ? ` (번역 ${translated}개 포함)` : ''}. 메뉴·사이트 이름처럼 미리 번역할 수 없는 키는 한국어 원문이 들어가니 번역으로 바꿔 주세요.`
+                : '빠진 키가 없습니다.');
             reload();
         } catch (e) {
             setError(e);

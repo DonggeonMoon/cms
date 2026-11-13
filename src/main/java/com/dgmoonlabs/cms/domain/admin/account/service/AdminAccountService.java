@@ -4,11 +4,11 @@ import com.dgmoonlabs.cms.domain.admin.account.constant.AdminArea;
 import com.dgmoonlabs.cms.domain.admin.account.dto.AdminAccountDtos.*;
 import com.dgmoonlabs.cms.domain.admin.account.entity.AdminGrade;
 import com.dgmoonlabs.cms.domain.admin.account.repository.AdminGradeRepository;
+import com.dgmoonlabs.cms.domain.admin.security.service.LoginSecuritySettingService;
 import com.dgmoonlabs.cms.domain.common.user.entity.admin.entity.Admin;
 import com.dgmoonlabs.cms.domain.common.user.repository.AdminRepository;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
-import com.dgmoonlabs.cms.global.security.SecurityProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -33,7 +33,7 @@ public class AdminAccountService implements ApplicationRunner {
     private final AdminRepository adminRepository;
     private final AdminGradeRepository gradeRepository;
     private final PasswordEncoder passwordEncoder;
-    private final SecurityProperties securityProperties;
+    private final LoginSecuritySettingService loginSecuritySettingService;
 
     @Override
     @Transactional
@@ -115,7 +115,7 @@ public class AdminAccountService implements ApplicationRunner {
                 .collect(Collectors.toMap(AdminGrade::getId, Function.identity()));
         return adminRepository.findAllByDeletedAtIsNullOrderByIdAsc().stream()
                 .map(admin -> AdminResponse.of(admin, admin.getGradeId() == null ? null : grades.get(admin.getGradeId()),
-                        admin.isLocked(securityProperties.maxLoginTryCount())))
+                        admin.isLocked(loginSecuritySettingService.maxLoginTryCount())))
                 .toList();
     }
 

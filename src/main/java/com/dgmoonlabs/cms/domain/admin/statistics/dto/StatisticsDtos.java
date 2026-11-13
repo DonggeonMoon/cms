@@ -14,7 +14,7 @@ public final class StatisticsDtos {
     }
 
     public enum Dimension {
-        BROWSER, OS, URL
+        BROWSER, OS, URL, NATION
     }
 
     public enum PeriodUnit {

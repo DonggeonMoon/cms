@@ -89,6 +89,10 @@ public class Site extends BaseEntity {
     @Comment("네이버 서치어드바이저 소유 확인 코드")
     private String naverVerification;
 
+    @Column(columnDefinition = "text")
+    @Comment("robots.txt 직접 입력 (없으면 검색엔진 노출 허용 여부로 자동 생성)")
+    private String customRobotsTxt;
+
     @Comment("홈 화면으로 쓰는 컨텐츠 ID (없으면 기본 홈)")
     private Long homeContentId;
 
@@ -120,7 +124,7 @@ public class Site extends BaseEntity {
 
     public void changeSeo(final Long faviconFileId, final String seoTitle, final String metaDescription, final String metaKeywords,
                           final Long ogImageFileId, final boolean searchIndexing, final String googleVerification,
-                          final String naverVerification) {
+                          final String naverVerification, final String customRobotsTxt) {
         this.faviconFileId = faviconFileId;
         this.seoTitle = seoTitle;
         this.metaDescription = metaDescription;
@@ -129,6 +133,7 @@ public class Site extends BaseEntity {
         this.searchIndexing = searchIndexing;
         this.googleVerification = googleVerification;
         this.naverVerification = naverVerification;
+        this.customRobotsTxt = customRobotsTxt;
     }
 
     public void unmarkDefault() {

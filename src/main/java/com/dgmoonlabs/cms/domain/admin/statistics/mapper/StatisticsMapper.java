@@ -49,4 +49,14 @@ public interface StatisticsMapper {
             limit #{limit}
             """)
     List<CountRow> byUrl(@Param("from") LocalDate from, @Param("to") LocalDate to, @Param("limit") int limit);
+
+    @Select("""
+            select coalesce(nullif(s.nation_code, ''), 'Unknown') as label, sum(s."count") as visits
+            from statistics s
+            where s."date" between #{from} and #{to}
+            group by s.nation_code
+            order by visits desc
+            limit #{limit}
+            """)
+    List<CountRow> byNation(@Param("from") LocalDate from, @Param("to") LocalDate to, @Param("limit") int limit);
 }

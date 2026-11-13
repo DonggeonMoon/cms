@@ -31,7 +31,9 @@ public class SeoController {
     @GetMapping(value = "/robots.txt", produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> robots() {
         SiteResponse site = siteService.getDefaultSite();
-        String body = site.searchIndexing()
+        String custom = site.customRobotsTxt();
+        String body = custom != null && !custom.isBlank() ? custom.stripTrailing() + "\n"
+                : site.searchIndexing()
                 ? "User-agent: *\nDisallow: /admin\nDisallow: /api/\nDisallow: /mypage\nAllow: /\n\nSitemap: " + baseUrl() + "/sitemap.xml\n"
                 : "User-agent: *\nDisallow: /\n";
         return ResponseEntity.ok().cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS)).body(body);

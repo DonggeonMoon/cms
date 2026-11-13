@@ -4,6 +4,7 @@ import {siteApi} from '../api/endpoints';
 import {HtmlView} from '../components/HtmlView';
 import type {JoinSettings, MemberProfile, PersonalInfoItem} from '../api/types';
 import {Checkbox, Field} from '../components/Field';
+import {PostcodeButton} from '../components/PostcodeButton';
 
 interface Props<T extends MemberProfile> {
     value: T;
@@ -84,7 +85,10 @@ export function ProfileFields<T extends MemberProfile>({value, onChange, errorOf
             {collects('ADDRESS') && (
                 <fieldset>
                     <legend>주소</legend>
-                    <Field label="우편번호" autoComplete="postal-code" {...text('postalCode')}/>
+                    <div className="row align-end">
+                        <Field label="우편번호" autoComplete="postal-code" {...text('postalCode')}/>
+                        <PostcodeButton onFound={(result) => onChange({...value, postalCode: result.zonecode, address: result.roadAddress || result.jibunAddress})}/>
+                    </div>
                     <Field label="주소" {...text('address')}/>
                     <Field label="상세주소" {...text('detailAddress')}/>
                 </fieldset>

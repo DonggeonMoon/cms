@@ -2,11 +2,21 @@ package com.dgmoonlabs.cms.global.web;
 
 import com.dgmoonlabs.cms.domain.admin.site.constant.SiteFeature;
 import com.dgmoonlabs.cms.domain.admin.site.service.SiteService;
+import com.dgmoonlabs.cms.domain.archive.constant.ArchiveStatus;
+import com.dgmoonlabs.cms.domain.archive.entity.article.Archive;
+import com.dgmoonlabs.cms.domain.archive.repository.ArchiveArticleRepository;
+import com.dgmoonlabs.cms.domain.archive.repository.ArchiveRepository;
+import com.dgmoonlabs.cms.domain.board.entity.aritcle.Board;
+import com.dgmoonlabs.cms.domain.board.entity.aritcle.BoardConfig;
+import com.dgmoonlabs.cms.domain.board.repository.BoardArticleRepository;
+import com.dgmoonlabs.cms.domain.board.repository.BoardConfigRepository;
+import com.dgmoonlabs.cms.domain.board.repository.BoardRepository;
 import com.dgmoonlabs.cms.domain.business.order.repository.ProductRepository;
 import com.dgmoonlabs.cms.domain.business.reservation.repository.ReservationItemRepository;
 import com.dgmoonlabs.cms.domain.content.constant.ContentStatus;
 import com.dgmoonlabs.cms.domain.content.repository.ContentRepository;
 import com.dgmoonlabs.cms.domain.course.repository.CourseRepository;
+import com.dgmoonlabs.cms.domain.streaming.repository.StreamingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +36,12 @@ public class SitemapService {
     private final ProductRepository productRepository;
     private final ReservationItemRepository reservationItemRepository;
     private final CourseRepository courseRepository;
+    private final StreamingRepository streamingRepository;
+    private final BoardRepository boardRepository;
+    private final BoardConfigRepository boardConfigRepository;
+    private final BoardArticleRepository boardArticleRepository;
+    private final ArchiveRepository archiveRepository;
+    private final ArchiveArticleRepository archiveArticleRepository;
 
     public record Entry(String path, LocalDateTime lastModified) {
     }
@@ -53,7 +69,37 @@ public class SitemapService {
             courseRepository.findAllByIsUsingTrueAndSiteIdAndDeletedAtIsNullOrderByIdAsc(siteService.currentSiteId()).stream()
                     .filter(course -> course.getAccessGradeId() == null)
                     .forEach(course -> entries.add(new Entry("/courses/" + course.getId(), course.getModifiedAt())));
+            streamingRepository.findAllByIsUsingTrueAndDeletedAtIsNullOrderByIdAsc().stream()
+                    .filter(streaming -> streaming.getAccessGradeId() == null)
+                    .forEach(streaming -> entries.add(new Entry("/streaming/" + streaming.getId(), streaming.getModifiedAt())));
+        }
+        if (siteService.isEnabled(SiteFeature.BOARD)) {
+            boardRepository.findAllBySiteIdAndDeletedAtIsNullOrderByIdAsc(siteService.currentSiteId())
+                    .forEach(board -> addBoardEntries(entries, board));
+        }
+        if (siteService.isEnabled(SiteFeature.ARCHIVE)) {
+            archiveRepository.findAllByDeletedAtIsNullOrderByIdAsc().stream()
+                    .filter(archive -> archive.getAccessGradeId() == null)
+                    .forEach(archive -> addArchiveEntries(entries, archive));
         }
         return entries.size() > MAX_ENTRIES ? entries.subList(0, MAX_ENTRIES) : entries;
+    }
+
+    private void addBoardEntries(final List<Entry> entries, final Board board) {
+        BoardConfig config = boardConfigRepository.findByBoardId(board.getId()).orElse(null);
+        if (config == null || !config.isGuestAccessible() || !config.isGuestReadable() || config.getReadGradeId() != null) {
+            return;
+        }
+        entries.add(new Entry("/boards/" + board.getId(), board.getModifiedAt()));
+        boardArticleRepository.findAllByBoardIdAndIsHiddenFalseAndIsSecretFalseAndDeletedAtIsNullOrderByIdAsc(board.getId())
+                .forEach(article -> entries.add(new Entry("/boards/" + board.getId() + "/articles/" + article.getId(),
+                        article.getModifiedAt())));
+    }
+
+    private void addArchiveEntries(final List<Entry> entries, final Archive archive) {
+        entries.add(new Entry("/archives/" + archive.getId(), archive.getModifiedAt()));
+        archiveArticleRepository.findAllByArchiveIdAndStatusAndDeletedAtIsNullOrderByIdAsc(archive.getId(), ArchiveStatus.PUBLISHED)
+                .forEach(article -> entries.add(new Entry("/archives/" + archive.getId() + "/articles/" + article.getId(),
+                        article.getModifiedAt())));
     }
 }

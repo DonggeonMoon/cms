@@ -648,6 +648,16 @@ h1 .badge {
     margin: 0;
 }
 
+.schema-subgroup {
+    margin-top: 12px;
+}
+
+.schema-subgroup h4 {
+    margin: 0 0 6px;
+    font-size: 0.9em;
+    color: var(--muted);
+}
+
 .field-head {
     display: flex;
     justify-content: space-between;

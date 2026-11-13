@@ -100,19 +100,15 @@ export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
                     </button>
                 )}
             </div>
-            {editing && fields && (
+            {editing && editing.item === null && fields && (
                 <SchemaForm
-                    key={editing.item?.id ?? 'new'}
-                    title={editing.item ? '수정' : '새로 등록'}
+                    key="new"
+                    title="새로 등록"
                     fields={fields}
                     initial={editing.values}
                     onCancel={() => setEditing(null)}
                     onSubmit={async (values) => {
-                        if (editing.item) {
-                            await update?.(editing.item, values);
-                        } else {
-                            await create?.(values);
-                        }
+                        await create?.(values);
                         setEditing(null);
                         reload();
                     }}
@@ -133,16 +129,39 @@ export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
                             <tbody>
                             {result.content.map((item) => {
                                 const expanded = expandedRow?.(item, reload);
+                                const isEditing = editing?.item?.id === item.id;
                                 return (
                                     <Fragment key={item.id}>
                                         <tr>
                                             {columns.map((column) => <td key={column.label} className={column.className}>{column.render(item, reload)}</td>)}
                                             <td className="actions">
                                                 {actions?.(item, reload)}
-                                                {update && fields && <button type="button" onClick={() => startEdit(item)}>수정</button>}
+                                                {update && fields && (
+                                                    <button type="button" onClick={() => (isEditing ? setEditing(null) : startEdit(item))}>
+                                                        {isEditing ? '취소' : '수정'}
+                                                    </button>
+                                                )}
                                                 {remove && <button type="button" className="danger" onClick={() => handleRemove(item)}>삭제</button>}
                                             </td>
                                         </tr>
+                                        {isEditing && fields && (
+                                            <tr className="expanded-row">
+                                                <td colSpan={columns.length + 1}>
+                                                    <SchemaForm
+                                                        key={item.id}
+                                                        title="수정"
+                                                        fields={fields}
+                                                        initial={editing.values}
+                                                        onCancel={() => setEditing(null)}
+                                                        onSubmit={async (values) => {
+                                                            await update?.(item, values);
+                                                            setEditing(null);
+                                                            reload();
+                                                        }}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        )}
                                         {expanded && (
                                             <tr className="expanded-row">
                                                 <td colSpan={columns.length + 1}>{expanded}</td>

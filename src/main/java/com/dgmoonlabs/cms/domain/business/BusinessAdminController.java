@@ -39,6 +39,7 @@ import com.dgmoonlabs.cms.domain.business.order.service.FundingService;
 import com.dgmoonlabs.cms.domain.business.order.service.OrderService;
 import com.dgmoonlabs.cms.domain.business.order.service.ProductService;
 import com.dgmoonlabs.cms.domain.business.payment.dto.PaymentDtos.PaymentResponse;
+import com.dgmoonlabs.cms.domain.business.payment.service.PaymentCancellationService;
 import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ExtendRequest;
@@ -94,6 +95,7 @@ public class BusinessAdminController {
     private final FundingService fundingService;
     private final ReservationService reservationService;
     private final PaymentService paymentService;
+    private final PaymentCancellationService paymentCancellationService;
     private final ReviewService reviewService;
 
     @PostMapping("/products")
@@ -151,6 +153,11 @@ public class BusinessAdminController {
                                                             @RequestParam(required = false) final String keyword,
                                                             @PageableDefault(size = 20) final Pageable pageable) {
         return ResponseEntity.ok(new PagedModel<>(orderService.searchOrders(status, keyword, pageable)));
+    }
+
+    @GetMapping("/orders/{id}")
+    public ResponseEntity<OrderResponse> order(@PathVariable final Long id) {
+        return ResponseEntity.ok(orderService.getOrder(id));
     }
 
     @PostMapping("/orders")
@@ -391,6 +398,16 @@ public class BusinessAdminController {
         return ResponseEntity.ok(new PagedModel<>(reservationService.searchReservations(reservationItemId, status, keyword, pageable)));
     }
 
+    @GetMapping("/reservations/{id}")
+    public ResponseEntity<ReservationResponse> reservation(@PathVariable final Long id) {
+        return ResponseEntity.ok(reservationService.getReservation(id));
+    }
+
+    @GetMapping("/reservation-extensions/{id}/reservation")
+    public ResponseEntity<ReservationResponse> reservationByExtension(@PathVariable final Long id) {
+        return ResponseEntity.ok(reservationService.getReservationByExtension(id));
+    }
+
     @PostMapping("/reservations")
     public ResponseEntity<ReservationResponse> createReservation(@AuthenticationPrincipal final LoginUser admin,
                                                                  @RequestBody @Valid final ReservationCreateRequest request,
@@ -448,6 +465,12 @@ public class BusinessAdminController {
     public ResponseEntity<PagedModel<PaymentResponse>> payments(@RequestParam(required = false) final String keyword,
                                                                 @PageableDefault(size = 20) final Pageable pageable) {
         return ResponseEntity.ok(new PagedModel<>(paymentService.getPayments(keyword, pageable)));
+    }
+
+    @PostMapping("/payments/{id}/cancel")
+    public ResponseEntity<Void> cancelPayment(@PathVariable final Long id) {
+        paymentCancellationService.cancel(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/reviews")

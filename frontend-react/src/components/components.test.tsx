@@ -71,6 +71,36 @@ describe('AdminCrudPage', () => {
         expect(await screen.findByText('두 번째')).toBeInTheDocument();
         await waitFor(() => expect(load).toHaveBeenCalledTimes(2));
     });
+
+    it('edits a row inline instead of showing the form at the top', async () => {
+        const rows: Row[] = [{id: 1, name: '첫 번째'}, {id: 2, name: '두 번째'}];
+        const load = vi.fn(async () => page(rows));
+        const update = vi.fn(async () => {});
+
+        render(
+            <AdminCrudPage<Row>
+                title="테스트"
+                load={load}
+                columns={[{label: '이름', render: (row) => row.name}]}
+                fields={[{name: 'name', label: '이름 입력', required: true}]}
+                update={update}
+            />,
+        );
+
+        await screen.findByText('두 번째');
+        const editButtons = screen.getAllByRole('button', {name: '수정'});
+        await userEvent.click(editButtons[1]);
+
+        const input = screen.getByLabelText(/이름 입력/) as HTMLInputElement;
+        expect(input.closest('tr')?.previousElementSibling?.textContent).toContain('두 번째');
+        expect(input.value).toBe('두 번째');
+
+        await userEvent.clear(input);
+        await userEvent.type(input, '수정됨');
+        await userEvent.click(screen.getByRole('button', {name: '저장'}));
+
+        expect(update).toHaveBeenCalledWith(rows[1], {id: 2, name: '수정됨'});
+    });
 });
 
 describe('Pagination', () => {

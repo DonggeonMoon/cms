@@ -448,6 +448,11 @@ public class OrderService {
         return toResponse(findMine(memberId, orderId));
     }
 
+    @Transactional(readOnly = true)
+    public OrderResponse getOrder(final Long orderId) {
+        return toResponse(findOrder(orderId));
+    }
+
     @Transactional
     public void cancelMyOrder(final Long memberId, final Long orderId) {
         cancel(findMine(memberId, orderId));

@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.common.user.service;
 
+import com.dgmoonlabs.cms.domain.admin.security.service.LoginSecuritySettingService;
 import com.dgmoonlabs.cms.domain.common.user.dto.*;
 import com.dgmoonlabs.cms.domain.common.policy.constant.PolicyType;
 import com.dgmoonlabs.cms.domain.common.policy.service.PolicyService;
@@ -15,7 +16,6 @@ import com.dgmoonlabs.cms.domain.common.user.repository.MemberOrganizationReposi
 import com.dgmoonlabs.cms.domain.common.user.repository.MemberRepository;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
-import com.dgmoonlabs.cms.global.security.SecurityProperties;
 import com.dgmoonlabs.cms.domain.common.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -35,7 +35,7 @@ public class MemberService {
     private final MemberAgreementRepository memberAgreementRepository;
     private final MemberOrganizationRepository memberOrganizationRepository;
     private final PasswordEncoder passwordEncoder;
-    private final SecurityProperties securityProperties;
+    private final LoginSecuritySettingService loginSecuritySettingService;
     private final MemberJoinSettingService joinSettingService;
     private final PolicyService policyService;
     private final GradeService gradeService;
@@ -86,7 +86,7 @@ public class MemberService {
 
     @Transactional(readOnly = true)
     public Page<MemberSummaryResponse> searchMembers(final String keyword, final Pageable pageable) {
-        int maxLoginTryCount = securityProperties.maxLoginTryCount();
+        int maxLoginTryCount = loginSecuritySettingService.maxLoginTryCount();
         Function<Member, String> gradeName = gradeService.gradeNamer();
         return memberRepository.search(keyword, pageable)
                 .map(member -> MemberSummaryResponse.of(member, maxLoginTryCount, gradeName.apply(member)));

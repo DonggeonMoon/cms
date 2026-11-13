@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.admin.statistics.service;
 
+import com.dgmoonlabs.cms.domain.admin.statistics.client.GeoIpClient;
 import com.dgmoonlabs.cms.domain.admin.statistics.dto.StatisticsDtos.*;
 import com.dgmoonlabs.cms.domain.admin.statistics.entity.Statistics;
 import com.dgmoonlabs.cms.domain.admin.statistics.entity.StatisticsLog;
@@ -33,12 +34,12 @@ import java.util.stream.Collectors;
 public class StatisticsService {
     private static final int MAX_RANGE_DAYS = 366;
     private static final int BREAKDOWN_LIMIT = 20;
-    private static final String UNKNOWN_NATION = "";
 
     private final Parser userAgentParser = new Parser();
     private final StatisticsRepository statisticsRepository;
     private final StatisticsLogRepository statisticsLogRepository;
     private final StatisticsMapper statisticsMapper;
+    private final GeoIpClient geoIpClient;
 
     @Transactional
     public void recordVisit(final VisitRequest request, final String userAgent, final String ipAddress) {
@@ -46,12 +47,13 @@ public class StatisticsService {
         String os = client.os.family;
         String browser = client.userAgent.family;
         String path = normalize(request.path());
+        String nationCode = geoIpClient.resolveCountryCode(ipAddress);
         LocalDate today = LocalDate.now();
 
-        statisticsRepository.findFirstByDateAndNationCodeAndOsAndBrowserAndUrl(today, UNKNOWN_NATION, os, browser, path)
+        statisticsRepository.findFirstByDateAndNationCodeAndOsAndBrowserAndUrl(today, nationCode, os, browser, path)
                 .ifPresentOrElse(Statistics::increaseCount, () -> statisticsRepository.save(Statistics.builder()
                         .date(today)
-                        .nationCode(UNKNOWN_NATION)
+                        .nationCode(nationCode)
                         .os(os)
                         .browser(browser)
                         .url(path)
@@ -117,7 +119,8 @@ public class StatisticsService {
         Map<Dimension, Function<Integer, List<CountRow>>> queries = Map.of(
                 Dimension.BROWSER, limit -> statisticsMapper.byBrowser(from, to, limit),
                 Dimension.OS, limit -> statisticsMapper.byOs(from, to, limit),
-                Dimension.URL, limit -> statisticsMapper.byUrl(from, to, limit)
+                Dimension.URL, limit -> statisticsMapper.byUrl(from, to, limit),
+                Dimension.NATION, limit -> statisticsMapper.byNation(from, to, limit)
         );
         return queries.get(dimension).apply(BREAKDOWN_LIMIT);
     }

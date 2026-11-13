@@ -28,6 +28,8 @@ public enum ErrorCode {
     SOCIAL_LOGIN_DISABLED(HttpStatus.NOT_FOUND, "사용하지 않는 소셜 로그인입니다."),
     SOCIAL_LOGIN_NOT_CONFIGURED(HttpStatus.BAD_REQUEST, "소셜 로그인을 켜려면 필요한 키를 모두 지정해야 합니다."),
     SOCIAL_SIGNUP_EXPIRED(HttpStatus.BAD_REQUEST, "소셜 로그인 정보가 만료되었습니다. 처음부터 다시 시도해 주세요."),
+    IDENTITY_VERIFICATION_DISABLED(HttpStatus.NOT_FOUND, "본인인증 기능을 사용하지 않습니다."),
+    IDENTITY_VERIFICATION_NOT_CONFIGURED(HttpStatus.BAD_REQUEST, "본인인증 수단이 아직 연동되지 않았습니다. 관리자에게 문의하세요."),
     BILLING_CYCLE_REQUIRED(HttpStatus.BAD_REQUEST, "구독 상품은 결제 주기를 정해야 합니다."),
     PASS_CONFIG_REQUIRED(HttpStatus.BAD_REQUEST, "이용권 상품은 단위·기간 또는 횟수·예약 상품을 모두 정해야 합니다."),
     PREORDER_SHIP_DATE_REQUIRED(HttpStatus.BAD_REQUEST, "예약 판매 상품은 출고 예정일을 정해야 합니다."),

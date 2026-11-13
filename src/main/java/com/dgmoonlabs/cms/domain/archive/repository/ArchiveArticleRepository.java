@@ -7,10 +7,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ArchiveArticleRepository extends JpaRepository<ArchiveArticle, Long> {
     Optional<ArchiveArticle> findByIdAndArchiveIdAndDeletedAtIsNull(Long id, Long archiveId);
+
+    List<ArchiveArticle> findAllByArchiveIdAndStatusAndDeletedAtIsNullOrderByIdAsc(Long archiveId, ArchiveStatus status);
 
     @Query("select a from ArchiveArticle a where a.archiveId = :archiveId and a.deletedAt is null "
             + "and (:status is null or a.status = :status) "

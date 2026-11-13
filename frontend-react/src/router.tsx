@@ -8,6 +8,8 @@ import {SiteLayout} from './components/SiteLayout';
 import {CodePage} from './pages/admin/CodePage';
 import {ApiKeyPage} from './pages/admin/ApiKeyPage';
 import {AllowedIpPage} from './pages/admin/AllowedIpPage';
+import {LoginSecurityPage} from './pages/admin/LoginSecurityPage';
+import {IdentityVerificationSettingPage} from './pages/admin/IdentityVerificationSettingPage';
 import {CustomerRecordAdminPage} from './pages/admin/CustomerRecordAdminPage';
 import {ClassAttendanceAdminPage} from './pages/admin/ClassAttendanceAdminPage';
 import {CheckInAdminPage} from './pages/admin/CheckInAdminPage';
@@ -349,10 +351,12 @@ export const routes = [
                             {path: 'i18n', element: <I18nAdminPage/>},
                             {path: 'files', element: <FilePage/>},
                             {path: 'audit-logs', element: <AuditLogPage/>},
+                            {path: 'identity-verification', element: <IdentityVerificationSettingPage/>},
                             {path: 'password-hash', element: <PasswordHashPage/>},
                             {path: 'crypto-key', element: <CryptoKeyPage/>},
                             {path: 'api-keys', element: <ApiKeyPage/>},
                             {path: 'allowed-ips', element: <AllowedIpPage/>},
+                            {path: 'login-security', element: <LoginSecurityPage/>},
                             {path: 'admins', element: <AdminAccountPage/>},
                         ],
                     },

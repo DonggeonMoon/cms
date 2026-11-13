@@ -206,12 +206,16 @@ export function ArchiveArticlePage() {
                     </div>
                 )}
             </article>
-            {archive?.supportsComment && <ArchiveComments archiveId={archiveId} articleId={articleId}/>}
+            {archive?.supportsComment && (
+                <ArchiveComments archiveId={archiveId} articleId={articleId} guestCommentable={archive.isGuestCommentable}/>
+            )}
         </>
     );
 }
 
-function ArchiveComments({archiveId, articleId}: { archiveId: number; articleId: number }) {
+function ArchiveComments({archiveId, articleId, guestCommentable}: {
+    archiveId: number; articleId: number; guestCommentable: boolean;
+}) {
     const {user} = useAuth();
     const [comments, setComments] = useState<ArchiveComment[]>([]);
     const [editing, setEditing] = useState<number | null>(null);
@@ -221,6 +225,18 @@ function ArchiveComments({archiveId, articleId}: { archiveId: number; articleId:
         archiveApi.comments(archiveId, articleId).then(setComments).catch(setError);
     }, [archiveId, articleId]);
     useEffect(reload, [reload]);
+
+    const canWrite = guestCommentable || Boolean(user);
+
+    const remove = async (comment: ArchiveComment) => {
+        const password = comment.authorType === 'GUEST' && !user ? window.prompt('댓글 비밀번호를 입력하세요') ?? undefined : undefined;
+        try {
+            await archiveApi.removeComment(archiveId, articleId, comment.id, password);
+            reload();
+        } catch (e) {
+            setError(e);
+        }
+    };
 
     return (
         <section className="card">
@@ -235,9 +251,10 @@ function ArchiveComments({archiveId, articleId}: { archiveId: number; articleId:
                             <span className="muted small">{formatDateTime(comment.createdAt)}</span>
                         </div>
                         {editing === comment.id ? (
-                            <CommentEditor initial={comment.content} onCancel={() => setEditing(null)}
-                                           onSave={async (text) => {
-                                               await archiveApi.editComment(archiveId, articleId, comment.id, text);
+                            <CommentEditor initial={comment.content} needsPassword={comment.authorType === 'GUEST' && !user}
+                                           onCancel={() => setEditing(null)}
+                                           onSave={async (text, password) => {
+                                               await archiveApi.editComment(archiveId, articleId, comment.id, text, password);
                                                setEditing(null);
                                                reload();
                                            }}/>
@@ -245,15 +262,14 @@ function ArchiveComments({archiveId, articleId}: { archiveId: number; articleId:
                             <>
                                 <p className={comment.deleted ? 'muted' : ''}>{comment.content}</p>
                                 <div className="toolbar comment-actions">
-                                    {user && comment.depth === 0 && !comment.deleted && (
+                                    {canWrite && comment.depth === 0 && !comment.deleted && (
                                         <button type="button" className="link-button" onClick={() => setReplyTo(comment.id)}>답글</button>
                                     )}
                                     {comment.canEdit && (
                                         <button type="button" className="link-button" onClick={() => setEditing(comment.id)}>수정</button>
                                     )}
                                     {comment.canDelete && (
-                                        <button type="button" className="link-button" onClick={() =>
-                                            archiveApi.removeComment(archiveId, articleId, comment.id).then(reload).catch(setError)}>삭제</button>
+                                        <button type="button" className="link-button" onClick={() => remove(comment)}>삭제</button>
                                     )}
                                 </div>
                             </>
@@ -269,7 +285,7 @@ function ArchiveComments({archiveId, articleId}: { archiveId: number; articleId:
                     </li>
                 ))}
             </ul>
-            {user
+            {canWrite
                 ? <ArchiveCommentForm archiveId={archiveId} articleId={articleId} parentId={null} onDone={reload}/>
                 : <p className="muted"><Link to="/login">로그인</Link> 후 댓글을 남길 수 있습니다.</p>}
         </section>
@@ -279,20 +295,30 @@ function ArchiveComments({archiveId, articleId}: { archiveId: number; articleId:
 function ArchiveCommentForm({archiveId, articleId, parentId, onDone, onCancel}: {
     archiveId: number; articleId: number; parentId: number | null; onDone: () => void; onCancel?: () => void;
 }) {
+    const {user} = useAuth();
     const [content, setContent] = useState('');
+    const [authorName, setAuthorName] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState<unknown>(null);
     return (
         <form className="comment-form" onSubmit={async (e) => {
             e.preventDefault();
             try {
                 setError(null);
-                await archiveApi.addComment(archiveId, articleId, content, parentId);
+                await archiveApi.addComment(archiveId, articleId, {parentId, content, authorName, password});
                 setContent('');
                 onDone();
             } catch (err) {
                 setError(err);
             }
         }}>
+            {!user && (
+                <>
+                    <input aria-label="이름" placeholder="이름" value={authorName} onChange={(e) => setAuthorName(e.target.value)}/>
+                    <input aria-label="비밀번호" type="password" placeholder="비밀번호" value={password}
+                           onChange={(e) => setPassword(e.target.value)}/>
+                </>
+            )}
             <textarea aria-label="댓글 내용" rows={3} required value={content}
                       placeholder={parentId ? '답글을 입력하세요' : '댓글을 입력하세요'} onChange={(e) => setContent(e.target.value)}/>
             <ErrorBanner error={error}/>

@@ -43,6 +43,11 @@ public class Archive extends BaseEntity {
 
     @Column(nullable = false)
     @ColumnDefault("false")
+    @Comment("비회원 댓글 허용 여부")
+    private boolean isGuestCommentable;
+
+    @Column(nullable = false)
+    @ColumnDefault("false")
     @Comment("추천 기능 활성화 여부")
     private boolean supportsLike;
 
@@ -60,11 +65,12 @@ public class Archive extends BaseEntity {
     }
 
     public void update(final String name, final String description, final BoardType type, final boolean supportsComment,
-                       final boolean supportsLike, final int pageSize) {
+                       final boolean isGuestCommentable, final boolean supportsLike, final int pageSize) {
         this.name = name;
         this.description = description;
         this.type = type;
         this.supportsComment = supportsComment;
+        this.isGuestCommentable = isGuestCommentable;
         this.supportsLike = supportsLike;
         this.pageSize = pageSize;
     }

@@ -22,12 +22,12 @@ const BOARD_FIELDS: FieldSpec[] = [
     {name: 'description', label: '설명', wide: true},
     {name: 'pageSize', label: '페이지당 글 수', type: 'number', min: 0, required: true},
     {name: 'maximumFileCount', label: '최대 첨부 수', type: 'number', min: 0, required: true},
-    {name: 'isMemberAccessible', label: '회원 목록 보기', type: 'checkbox', group: '기능'},
-    {name: 'isMemberReadable', label: '회원 글 읽기', type: 'checkbox', group: '기능'},
-    {name: 'isMemberWritable', label: '회원 글 쓰기', type: 'checkbox', group: '기능'},
-    {name: 'isGuestAccessible', label: '비회원 목록 보기', type: 'checkbox', group: '기능'},
-    {name: 'isGuestReadable', label: '비회원 글 읽기', type: 'checkbox', group: '기능'},
-    {name: 'isGuestWritable', label: '비회원 글 쓰기', type: 'checkbox', group: '기능'},
+    {name: 'isMemberAccessible', label: '회원 목록 보기', type: 'checkbox', group: '기능', subgroup: '회원 기능'},
+    {name: 'isMemberReadable', label: '회원 글 읽기', type: 'checkbox', group: '기능', subgroup: '회원 기능'},
+    {name: 'isMemberWritable', label: '회원 글 쓰기', type: 'checkbox', group: '기능', subgroup: '회원 기능'},
+    {name: 'isGuestAccessible', label: '비회원 목록 보기', type: 'checkbox', group: '기능', subgroup: '비회원 기능'},
+    {name: 'isGuestReadable', label: '비회원 글 읽기', type: 'checkbox', group: '기능', subgroup: '비회원 기능'},
+    {name: 'isGuestWritable', label: '비회원 글 쓰기', type: 'checkbox', group: '기능', subgroup: '비회원 기능'},
     {name: 'supportsNotice', label: '공지 기능', type: 'checkbox', group: '기능'},
     {name: 'supportsSecret', label: '비밀글 기능', type: 'checkbox', group: '기능'},
     {name: 'supportsComment', label: '댓글 기능', type: 'checkbox', group: '기능'},
@@ -206,7 +206,9 @@ const ARCHIVE_FIELDS: FieldSpec[] = [
     {name: 'name', label: '이름', required: true, newRow: true},
     {name: 'description', label: '설명', wide: true},
     {name: 'pageSize', label: '페이지당 글 수', type: 'number', min: 0, required: true},
-    {name: 'supportsComment', label: '회원 댓글 허용', type: 'checkbox', group: '기능'},
+    {name: 'supportsComment', label: '댓글 허용', type: 'checkbox', group: '기능'},
+    {name: 'isGuestCommentable', label: '비회원 댓글 허용', type: 'checkbox', group: '기능',
+        help: '켜면 로그인하지 않은 방문자도 이름·비밀번호를 입력해 댓글을 남길 수 있습니다.'},
     {name: 'supportsLike', label: '추천', type: 'checkbox', group: '기능'},
 ];
 
@@ -325,6 +327,7 @@ export function QuestionAdminPage() {
                     reload();
                 }}/>
             )}
+            remove={(q) => qnaApi.remove(q.id)}
         />
     );
 }
@@ -351,6 +354,15 @@ function AnswerEditor({questionId, onDone}: { questionId: number; onDone: () => 
                 initial={{contentHtml: question.answer?.contentHtml ?? ''}}
                 submitLabel="답변 저장"
                 onCancel={onDone}
+                footer={question.answer && (
+                    <button type="button" className="danger" onClick={async () => {
+                        if (!window.confirm('답변을 삭제할까요?')) {
+                            return;
+                        }
+                        await adminApi.questions.deleteAnswer(questionId);
+                        onDone();
+                    }}>답변 삭제</button>
+                )}
                 onSubmit={async (values) => {
                     await adminApi.questions.answer(questionId, String(values.contentHtml ?? ''));
                     onDone();

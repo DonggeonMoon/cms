@@ -1,6 +1,7 @@
 package com.dgmoonlabs.cms.domain.common.user.service;
 
 import com.dgmoonlabs.cms.domain.admin.account.service.AdminAccountService;
+import com.dgmoonlabs.cms.domain.admin.security.service.LoginSecuritySettingService;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.domain.common.user.dto.LoginRequest;
 import com.dgmoonlabs.cms.domain.common.user.entity.admin.entity.Admin;
@@ -10,7 +11,6 @@ import com.dgmoonlabs.cms.domain.common.user.repository.MemberRepository;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
 import com.dgmoonlabs.cms.global.security.LoginUser;
-import com.dgmoonlabs.cms.global.security.SecurityProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ public class AuthService {
     private final MemberRepository memberRepository;
     private final AdminRepository adminRepository;
     private final PasswordEncoder passwordEncoder;
-    private final SecurityProperties securityProperties;
+    private final LoginSecuritySettingService loginSecuritySettingService;
 
     @Transactional(noRollbackFor = BusinessException.class)
     public LoginUser authenticate(final LoginRequest request) {
@@ -35,7 +35,7 @@ public class AuthService {
     private LoginUser authenticateMember(final LoginRequest request) {
         Member member = memberRepository.findByUsernameAndDeletedAtIsNull(request.username())
                 .orElseThrow(() -> new BusinessException(ErrorCode.LOGIN_FAILED));
-        if (member.isLocked(securityProperties.maxLoginTryCount())) {
+        if (member.isLocked(loginSecuritySettingService.maxLoginTryCount())) {
             throw new BusinessException(ErrorCode.ACCOUNT_LOCKED);
         }
         if (!passwordEncoder.matches(request.password(), member.getPassword())) {
@@ -55,7 +55,7 @@ public class AuthService {
         if (member == null) {
             return null;
         }
-        if (member.isLocked(securityProperties.maxLoginTryCount())) {
+        if (member.isLocked(loginSecuritySettingService.maxLoginTryCount())) {
             throw new BusinessException(ErrorCode.ACCOUNT_LOCKED);
         }
         member.recordLoginSuccess();
@@ -65,7 +65,7 @@ public class AuthService {
     private LoginUser authenticateAdmin(final LoginRequest request) {
         Admin admin = adminRepository.findByUsernameAndDeletedAtIsNull(request.username())
                 .orElseThrow(() -> new BusinessException(ErrorCode.LOGIN_FAILED));
-        if (admin.isLocked(securityProperties.maxLoginTryCount())) {
+        if (admin.isLocked(loginSecuritySettingService.maxLoginTryCount())) {
             throw new BusinessException(ErrorCode.ACCOUNT_LOCKED);
         }
         if (!passwordEncoder.matches(request.password(), admin.getPassword())) {
@@ -85,7 +85,7 @@ public class AuthService {
         Admin admin = adminRepository.findById(adminId)
                 .filter(found -> found.getDeletedAt() == null)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED));
-        if (admin.isLocked(securityProperties.maxLoginTryCount())) {
+        if (admin.isLocked(loginSecuritySettingService.maxLoginTryCount())) {
             throw new BusinessException(ErrorCode.ACCOUNT_LOCKED);
         }
         if (password == null || !passwordEncoder.matches(password, admin.getPassword())) {

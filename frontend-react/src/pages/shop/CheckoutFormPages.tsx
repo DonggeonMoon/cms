@@ -10,6 +10,7 @@ import {ErrorBanner} from '../../components/ErrorBanner';
 import {Field} from '../../components/Field';
 import {formatDate, formatDateTime} from '../../components/format';
 import {BILLING_CYCLE} from '../../components/labels';
+import {PostcodeButton} from '../../components/PostcodeButton';
 import {reservationUsage} from '../../components/reservationUsage';
 import {StableLabel} from '../../components/StableLabel';
 import {estimateReservation} from './ReservationPicker';
@@ -133,8 +134,12 @@ export function OrderFormPage() {
                            onChange={(e) => setReceiver({...receiver, phoneNumber: e.target.value})}/>
                     {product.saleType !== 'DONATION' && (!store || delivering) && (
                         <>
-                            <Field label="우편번호" name="postalCode" value={receiver.postalCode}
-                                   onChange={(e) => setReceiver({...receiver, postalCode: e.target.value})}/>
+                            <div className="row align-end">
+                                <Field label="우편번호" name="postalCode" value={receiver.postalCode}
+                                       onChange={(e) => setReceiver({...receiver, postalCode: e.target.value})}/>
+                                <PostcodeButton onFound={(result) => setReceiver({...receiver, postalCode: result.zonecode,
+                                    address: result.roadAddress || result.jibunAddress})}/>
+                            </div>
                             <Field label="주소" name="address" required={needsAddress} value={receiver.address}
                                    onChange={(e) => setReceiver({...receiver, address: e.target.value})}/>
                             <Field label="상세 주소" name="detailAddress" value={receiver.detailAddress}
@@ -255,8 +260,12 @@ export function ReservationFormPage() {
                 {item.reservationType === 'VISIT' && (
                     <fieldset>
                         <legend>방문 정보</legend>
-                        <Field label="우편번호" name="visitPostalCode" value={visit.visitPostalCode}
-                               onChange={(e) => setVisit({...visit, visitPostalCode: e.target.value})}/>
+                        <div className="row align-end">
+                            <Field label="우편번호" name="visitPostalCode" value={visit.visitPostalCode}
+                                   onChange={(e) => setVisit({...visit, visitPostalCode: e.target.value})}/>
+                            <PostcodeButton onFound={(result) => setVisit({...visit, visitPostalCode: result.zonecode,
+                                visitAddress: result.roadAddress || result.jibunAddress})}/>
+                        </div>
                         <Field label="방문 주소" name="visitAddress" required value={visit.visitAddress}
                                onChange={(e) => setVisit({...visit, visitAddress: e.target.value})}/>
                         <Field label="상세 주소" name="visitDetailAddress" value={visit.visitDetailAddress}

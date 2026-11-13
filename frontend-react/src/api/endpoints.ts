@@ -119,6 +119,7 @@ export const adminApi = {
     },
     orders: {
         search: (query: Query) => request<Page<D.Order>>('/api/admin/orders', {query}),
+        get: (id: number) => request<D.Order>(`/api/admin/orders/${id}`),
         create: (body: Body, paid: boolean) => request<D.Order>('/api/admin/orders', {method: 'POST', body, query: {paid}}),
         markPaid: (id: number) => request<void>(`/api/admin/orders/${id}/pay`, {method: 'POST'}),
         changeStatus: (id: number, status: D.OrderStatus) =>
@@ -213,6 +214,8 @@ export const adminApi = {
     },
     reservations: {
         search: (query: Query) => request<Page<D.Reservation>>('/api/admin/reservations', {query}),
+        get: (id: number) => request<D.Reservation>(`/api/admin/reservations/${id}`),
+        getByExtension: (extensionId: number) => request<D.Reservation>(`/api/admin/reservation-extensions/${extensionId}/reservation`),
         create: (body: Body, paid: boolean) =>
             request<D.Reservation>('/api/admin/reservations', {method: 'POST', body, query: {paid}}),
         confirm: (id: number) => request<void>(`/api/admin/reservations/${id}/confirm`, {method: 'POST'}),
@@ -279,7 +282,10 @@ export const adminApi = {
         createQuoteOrder: (id: number, productId: number) =>
             request<D.Order>(`/api/admin/repairs/${id}/quote-order`, {method: 'POST', body: {productId}}),
     },
-    payments: (query: Query) => request<Page<D.Payment>>('/api/admin/payments', {query}),
+    payments: {
+        search: (query: Query) => request<Page<D.Payment>>('/api/admin/payments', {query}),
+        cancel: (id: number) => request<void>(`/api/admin/payments/${id}/cancel`, {method: 'POST'}),
+    },
     cryptoKey: {
         get: () => request<D.CryptoKey>('/api/admin/crypto-key'),
         regenerate: () => request<D.ReencryptResult>('/api/admin/crypto-key/regenerate', {method: 'POST'}),
@@ -311,7 +317,7 @@ export const adminApi = {
         daily: (from: string, to: string) => request<D.DailyVisits[]>('/api/admin/statistics/daily', {query: {from, to}}),
         series: (unit: D.PeriodUnit, from: string, to: string) =>
             request<D.DailyVisits[]>('/api/admin/statistics/series', {query: {unit, from, to}}),
-        breakdown: (dimension: 'BROWSER' | 'OS' | 'URL', from: string, to: string) =>
+        breakdown: (dimension: 'BROWSER' | 'OS' | 'URL' | 'NATION', from: string, to: string) =>
             request<{ label: string; visits: number }[]>('/api/admin/statistics/breakdown', {query: {dimension, from, to}}),
     },
 };
@@ -365,12 +371,12 @@ export const archiveApi = {
         request<D.ArchiveArticleDetail>(`/api/archives/${id}/articles/${articleId}`),
     comments: (id: number, articleId: number) =>
         request<D.ArchiveComment[]>(`/api/archives/${id}/articles/${articleId}/comments`),
-    addComment: (id: number, articleId: number, content: string, parentId: number | null = null) =>
-        request<void>(`/api/archives/${id}/articles/${articleId}/comments`, {method: 'POST', body: {content, parentId}}),
-    editComment: (id: number, articleId: number, commentId: number, content: string) =>
-        request<void>(`/api/archives/${id}/articles/${articleId}/comments/${commentId}`, {method: 'PUT', body: {content}}),
-    removeComment: (id: number, articleId: number, commentId: number) =>
-        request<void>(`/api/archives/${id}/articles/${articleId}/comments/${commentId}`, {method: 'DELETE'}),
+    addComment: (id: number, articleId: number, body: Body) =>
+        request<void>(`/api/archives/${id}/articles/${articleId}/comments`, {method: 'POST', body}),
+    editComment: (id: number, articleId: number, commentId: number, content: string, password?: string) =>
+        request<void>(`/api/archives/${id}/articles/${articleId}/comments/${commentId}`, {method: 'PUT', body: {content, password}}),
+    removeComment: (id: number, articleId: number, commentId: number, password?: string) =>
+        request<void>(`/api/archives/${id}/articles/${articleId}/comments/${commentId}`, {method: 'DELETE', body: {password}}),
 };
 
 export const digitalApi = {

@@ -31,7 +31,8 @@ public record SiteSaveRequest(
         Long ogImageFileId,
         Boolean searchIndexing,
         @Size(max = 100) @Pattern(regexp = "^[A-Za-z0-9_-]*$") String googleVerification,
-        @Size(max = 100) @Pattern(regexp = "^[A-Za-z0-9_-]*$") String naverVerification
+        @Size(max = 100) @Pattern(regexp = "^[A-Za-z0-9_-]*$") String naverVerification,
+        @Size(max = 2000) String customRobotsTxt
 ) {
     public boolean darkModeEnabledOrDefault() {
         return darkModeEnabled == null || darkModeEnabled;

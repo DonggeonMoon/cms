@@ -6,6 +6,7 @@ import com.dgmoonlabs.cms.domain.archive.entity.article.ArchiveArticle;
 import com.dgmoonlabs.cms.domain.archive.entity.comment.ArchiveComment;
 import com.dgmoonlabs.cms.domain.board.constant.BoardType;
 import com.dgmoonlabs.cms.domain.common.file.dto.FileResponse;
+import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
 
@@ -22,6 +23,7 @@ public final class ArchiveDtos {
             @Size(max = 255) String description,
             @NotNull BoardType type,
             boolean supportsComment,
+            boolean isGuestCommentable,
             boolean supportsLike,
             @Min(1) @Max(100) int pageSize,
             Long accessGradeId
@@ -29,10 +31,11 @@ public final class ArchiveDtos {
     }
 
     public record ArchiveResponse(Long id, String name, String description, BoardType type, boolean supportsComment,
-                                  boolean supportsLike, int pageSize, Long accessGradeId) {
+                                  boolean isGuestCommentable, boolean supportsLike, int pageSize, Long accessGradeId) {
         public static ArchiveResponse from(final Archive archive) {
             return new ArchiveResponse(archive.getId(), archive.getName(), archive.getDescription(), archive.getType(),
-                    archive.isSupportsComment(), archive.isSupportsLike(), archive.getPageSize(), archive.getAccessGradeId());
+                    archive.isSupportsComment(), archive.isGuestCommentable(), archive.isSupportsLike(), archive.getPageSize(),
+                    archive.getAccessGradeId());
         }
     }
 
@@ -67,21 +70,23 @@ public final class ArchiveDtos {
         }
     }
 
-    public record ArchiveCommentSaveRequest(Long parentId, @NotBlank @Size(max = 2000) String content) {
+    public record ArchiveCommentSaveRequest(Long parentId, @NotBlank @Size(max = 2000) String content,
+                                            @Size(max = 50) String authorName, @Size(max = 64) String password) {
     }
 
-    public record ArchiveCommentEditRequest(@NotBlank @Size(max = 2000) String content) {
+    public record ArchiveCommentEditRequest(@NotBlank @Size(max = 2000) String content, @Size(max = 64) String password) {
     }
 
-    public record ArchiveCommentResponse(Long id, Long parentId, int depth, String content, String authorName, boolean deleted,
-                                         boolean canDelete, boolean canEdit, LocalDateTime createdAt) {
+    public record ArchiveCommentResponse(Long id, Long parentId, int depth, String content, String authorName,
+                                         UserType authorType, boolean deleted, boolean canDelete, boolean canEdit,
+                                         LocalDateTime createdAt) {
         private static final String REMOVED = "삭제된 댓글입니다.";
 
         public static ArchiveCommentResponse of(final ArchiveComment comment, final boolean canDelete, final boolean canEdit) {
             boolean deleted = comment.getDeletedAt() != null;
             return new ArchiveCommentResponse(comment.getId(), comment.getParentId(), comment.getDepth(),
-                    deleted ? REMOVED : comment.getContent(), deleted ? null : comment.getAuthorName(), deleted,
-                    canDelete && !deleted, canEdit && !deleted, comment.getCreatedAt());
+                    deleted ? REMOVED : comment.getContent(), deleted ? null : comment.getAuthorName(), comment.getUserType(),
+                    deleted, canDelete && !deleted, canEdit && !deleted, comment.getCreatedAt());
         }
     }
 }

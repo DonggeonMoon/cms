@@ -33,6 +33,7 @@ public record SiteResponse(
         boolean searchIndexing,
         String googleVerification,
         String naverVerification,
+        String customRobotsTxt,
         LocalDateTime createdAt
 ) {
     public static final String FALLBACK_NAME = "cms";
@@ -61,13 +62,14 @@ public record SiteResponse(
                 site.isSearchIndexing(),
                 site.getGoogleVerification(),
                 site.getNaverVerification(),
+                site.getCustomRobotsTxt(),
                 site.getCreatedAt()
         );
     }
 
     public static SiteResponse fallback() {
         return new SiteResponse(null, FALLBACK_NAME, null, null, null, null, null, null, true, null, features(Set.of()), true,
-                null, null, null, null, null, null, null, true, null, null, null);
+                null, null, null, null, null, null, null, true, null, null, null, null);
     }
 
     public String titleOrName() {

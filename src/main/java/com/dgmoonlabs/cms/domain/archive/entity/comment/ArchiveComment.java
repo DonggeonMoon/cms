@@ -35,6 +35,9 @@ public class ArchiveComment extends BaseEntity {
     @Comment("작성자 이름")
     private String authorName;
 
+    @Comment("비회원 비밀번호 (해시)")
+    private String password;
+
     @Comment("부모 댓글 ID")
     private Long parentId;
 
@@ -83,5 +86,9 @@ public class ArchiveComment extends BaseEntity {
 
     public void edit(final String content) {
         this.content = content;
+    }
+
+    public boolean isWrittenByGuest() {
+        return userType == UserType.GUEST;
     }
 }

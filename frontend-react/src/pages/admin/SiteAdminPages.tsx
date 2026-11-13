@@ -38,6 +38,8 @@ const SITE_FIELDS: FieldSpec[] = [
         help: 'google-site-verification 메타 태그의 content 값만 넣습니다.'},
     {name: 'naverVerification', label: '네이버 서치어드바이저 확인 코드', wide: true, group: '검색·공유 (SEO)',
         help: 'naver-site-verification 메타 태그의 content 값만 넣습니다. 사이트맵은 /sitemap.xml 입니다.'},
+    {name: 'customRobotsTxt', label: 'robots.txt 직접 입력', type: 'textarea', wide: true, group: '검색·공유 (SEO)',
+        help: '비워두면 위 "검색엔진 노출 허용" 설정에 따라 자동 생성됩니다. 입력하면 그 내용을 그대로 robots.txt로 내려줍니다.'},
 ];
 
 const ALL_FEATURES_ON = Object.fromEntries(SITE_FEATURES.map((feature) => [featureField(feature.value), true]));
