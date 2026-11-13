@@ -12,6 +12,7 @@ import type {FieldSpec, FormValues, MediaValue} from '../../components/SchemaFor
 import {type Grade, gradeSelectField, useWithGradeFields} from '../../api/grades';
 
 const FIELDS: FieldSpec[] = [
+    {name: 'isUsing', label: '공개', type: 'checkbox'},
     {name: 'title', label: '제목', required: true, wide: true},
     {name: 'description', label: '설명', type: 'textarea'},
     {name: 'media', label: '동영상/음악 파일', type: 'media', required: true,
@@ -21,7 +22,6 @@ const FIELDS: FieldSpec[] = [
     {name: 'completionRate', label: '수강 완료 진도율(%)', type: 'number', required: true, min: 1, wide: true, group: '교육',
         visibleWhen: (v) => Boolean(v.trackProgress),
         help: '실제로 재생한 구간이 이 비율 이상이면 수강 완료로 기록합니다.'},
-    {name: 'isUsing', label: '공개', type: 'checkbox'},
     {name: 'paid', label: '유료', type: 'checkbox',
         help: '켜면 결제한 회원만 볼 수 있습니다. 판매용 상품이 자동으로 만들어지고(상품 목록에는 나오지 않음) 쿠폰·포인트를 쓸 수 있습니다.'},
     {name: 'price', label: '가격(원)', type: 'number', min: 1, required: true, visibleWhen: (v) => Boolean(v.paid)},

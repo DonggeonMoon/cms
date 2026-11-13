@@ -12,8 +12,8 @@ import {Pagination} from '../../components/Pagination';
 import type {FieldSpec, FormValues} from '../../components/SchemaForm';
 
 const FIELDS: FieldSpec[] = [
-    {name: 'title', label: '과정 이름', required: true, wide: true},
     {name: 'isUsing', label: '공개', type: 'checkbox'},
+    {name: 'title', label: '과정 이름', required: true, wide: true},
     {name: 'sequential', label: '차시를 순서대로 듣기', type: 'checkbox',
         help: '켜면 앞 차시를 마쳐야 다음 차시 퀴즈를 풀 수 있습니다.'},
     {name: 'description', label: '소개', type: 'textarea'},
