@@ -24,7 +24,7 @@ const FIELDS: FieldSpec[] = [
         help: '실제로 재생한 구간이 이 비율 이상이면 수강 완료로 기록합니다.'},
     {name: 'paid', label: '유료', type: 'checkbox',
         help: '켜면 결제한 회원만 볼 수 있습니다. 판매용 상품이 자동으로 만들어지고(상품 목록에는 나오지 않음) 쿠폰·포인트를 쓸 수 있습니다.'},
-    {name: 'price', label: '가격(원)', type: 'number', min: 1, required: true, visibleWhen: (v) => Boolean(v.paid)},
+    {name: 'price', label: '가격(원)', type: 'number', min: 1, required: true, newRow: true, visibleWhen: (v) => Boolean(v.paid)},
     {name: 'accessDays', label: '시청 가능 기간(일)', type: 'number', min: 1, visibleWhen: (v) => Boolean(v.paid),
         help: '결제일부터 셉니다. 비워두면 무기한입니다.'},
 ];
