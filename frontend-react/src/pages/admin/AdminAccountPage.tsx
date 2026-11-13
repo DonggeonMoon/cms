@@ -85,9 +85,6 @@ function AdminAccounts({guard}: { guard: ReauthGuard }) {
             )}
 
             <h2>관리자 등급</h2>
-            <div className="toolbar">
-                <button type="button" className="primary" onClick={() => setEditingGrade('new')}>등급 추가</button>
-            </div>
             {editingGrade === 'new' && (
                 <GradeEditor onCancel={() => setEditingGrade(null)}
                              onSave={(body) => guard(adminAccountApi.createGrade(body)).then(() => {
@@ -135,6 +132,9 @@ function AdminAccounts({guard}: { guard: ReauthGuard }) {
                     {grades.length === 0 && <tr><td colSpan={5} className="muted">등록된 등급이 없습니다.</td></tr>}
                     </tbody>
                 </table>
+            </div>
+            <div className="toolbar">
+                <button type="button" className="primary" onClick={() => setEditingGrade('new')}>등급 추가</button>
             </div>
         </section>
     );
