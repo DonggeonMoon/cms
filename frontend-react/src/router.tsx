@@ -56,7 +56,6 @@ import {
     PaymentAdminPage,
     ProductAdminPage,
     ReservationItemAdminPage,
-    ReservationAdminPage,
     ReviewAdminPage
 } from './pages/admin/ShopAdminPages';
 import {AuditLogPage, BannerAdminPage, ConfigAdminPage, MenuAdminPage, SiteAdminPage} from './pages/admin/SiteAdminPages';
@@ -72,7 +71,7 @@ import {MyDownloadsPage} from './pages/shop/DigitalPages';
 import {CouponAdminPage, PointPolicyPage} from './pages/admin/RewardAdminPages';
 import {CategoryAdminPage} from './pages/admin/CategoryAdminPage';
 import {AdminAccountPage} from './pages/admin/AdminAccountPage';
-import {StoreOrderQueuePage, StoreSettingPage} from './pages/admin/StoreAdminPages';
+import {StoreSettingPage} from './pages/admin/StoreAdminPages';
 import {JoinPage} from './pages/JoinPage';
 import {SocialJoinPage} from './pages/SocialJoinPage';
 import {AdminLoginPage, LoginPage} from './pages/LoginPage';
@@ -292,7 +291,6 @@ export const routes = [
                                     {path: 'exchange-rates', element: <ExchangeRateAdminPage/>},
                                     {path: 'marketing', element: <MarketingAdminPage/>},
                                     {path: 'store', element: <StoreSettingPage/>},
-                                    {path: 'store-orders', element: <StoreOrderQueuePage/>},
                                     {path: 'orders', element: <OrdersAdminPage/>},
                                     {path: 'order-returns', element: <OrderReturnAdminPage/>},
                                     {path: 'stock-movements', element: <StockMovementAdminPage/>},
@@ -303,7 +301,6 @@ export const routes = [
                                 element: <RequireFeature feature="PROGRAM"/>,
                                 children: [
                                     {path: 'reservation-items', element: <ReservationItemAdminPage/>},
-                                    {path: 'reservations', element: <ReservationAdminPage/>},
                                     {path: 'customer-records', element: <CustomerRecordAdminPage/>},
                                     {path: 'check-in', element: <CheckInAdminPage/>},
                                     {path: 'reception-queue', element: <ReceptionQueueAdminPage/>},

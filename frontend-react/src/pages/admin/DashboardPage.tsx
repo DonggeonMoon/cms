@@ -28,7 +28,7 @@ export function DashboardPage() {
         {label: '미답변 질문', value: data.unansweredQuestions.toLocaleString('ko-KR'), to: '/admin/questions?unanswered=true', feature: 'QNA'},
         {label: '결제 대기 주문', value: data.pendingPaymentOrders.toLocaleString('ko-KR'), to: '/admin/orders', feature: 'PRODUCT'},
         {label: '결제 완료 주문', value: data.paidOrders.toLocaleString('ko-KR'), to: '/admin/orders', feature: 'PRODUCT'},
-        {label: '확정 예약', value: data.confirmedReservations.toLocaleString('ko-KR'), to: '/admin/reservations', feature: 'PROGRAM'},
+        {label: '확정 예약', value: data.confirmedReservations.toLocaleString('ko-KR'), to: '/admin/orders', feature: 'PROGRAM'},
         {label: '최근 30일 매출', value: won(data.revenueLast30Days), to: '/admin/payments', feature: 'PRODUCT'},
         {label: '미처리 신고', value: data.receivedReports.toLocaleString('ko-KR'), to: '/admin/reports', feature: 'REPORT'},
         {label: '회원', value: data.memberCount.toLocaleString('ko-KR'), to: '/admin/members'},

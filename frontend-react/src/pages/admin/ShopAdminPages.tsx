@@ -18,6 +18,7 @@ import {CustomStatusSelect, StatusManager} from '../../components/StatusManager'
 import {BILLING_CYCLE, ORDER_STATUS, PASS_UNIT, RESERVATION_STATUS, RESERVATION_TYPE, RESERVATION_TYPE_GROUPS, RETURN_STATUS, RETURN_TYPE, SALE_TYPE, toOptions} from '../../components/labels';
 import {EMPTY_LAYOUT} from '../../components/LayoutEditor';
 import type {FieldSpec, FormValues} from '../../components/SchemaForm';
+import {StoreOrderQueuePage} from './StoreAdminPages';
 import {type Grade, gradeSelectField, useGrades, useWithGradeFields} from '../../api/grades';
 import type {GradePrice} from '../../api/domain';
 import {EMPTY_OPTION_SET, type OptionSet, optionSetBody, toOptionSet} from '../../components/ProductOptionsEditor';
@@ -621,10 +622,12 @@ export function PassAdminPage() {
     );
 }
 
-type OrdersTab = 'orders' | 'subscriptions' | 'passes' | 'license-keys';
+type OrdersTab = 'orders' | 'reservations' | 'store-orders' | 'subscriptions' | 'passes' | 'license-keys';
 
 const ORDERS_TABS: { value: OrdersTab; label: string }[] = [
     {value: 'orders', label: '주문'},
+    {value: 'reservations', label: '예약'},
+    {value: 'store-orders', label: '매장 주문'},
     {value: 'subscriptions', label: '구독'},
     {value: 'passes', label: '이용권'},
     {value: 'license-keys', label: '라이선스 키'},
@@ -634,7 +637,7 @@ export function OrdersAdminPage() {
     const [tab, setTab] = useState<OrdersTab>('orders');
     return (
         <>
-            <div className="tabs" role="tablist" aria-label="주문 관리">
+            <div className="tabs" role="tablist" aria-label="주문/예약 관리">
                 {ORDERS_TABS.map((t) => (
                     <button key={t.value} type="button" role="tab" aria-selected={tab === t.value}
                             className={tab === t.value ? 'tab active' : 'tab'} onClick={() => setTab(t.value)}>
@@ -643,6 +646,8 @@ export function OrdersAdminPage() {
                 ))}
             </div>
             {tab === 'orders' && <OrderAdminPage/>}
+            {tab === 'reservations' && <ReservationAdminPage/>}
+            {tab === 'store-orders' && <StoreOrderQueuePage/>}
             {tab === 'subscriptions' && <SubscriptionAdminPage/>}
             {tab === 'passes' && <PassAdminPage/>}
             {tab === 'license-keys' && <LicenseKeyAdminPage/>}
