@@ -40,6 +40,9 @@ public class Product extends BaseEntity {
     @Comment("판매하는 유료 게시글 ID (게시글 설정에서 자동 관리, 상품 목록에는 나오지 않음)")
     private Long articleId;
 
+    @Comment("판매하는 시리즈/교육과정 ID (시리즈/교육과정 설정에서 자동 관리, 상품 목록에는 나오지 않음)")
+    private Long courseId;
+
     @Comment("카테고리 ID")
     private Long categoryId;
 

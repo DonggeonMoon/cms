@@ -13,14 +13,10 @@ import {ProgressAndMessages, ProgressTemplateManager} from '../../components/Pro
 import type {FieldSpec, FormValues} from '../../components/SchemaForm';
 
 const applicationFields = (products: { value: string; label: string }[]): FieldSpec[] => [
-    {name: 'title', label: '제목', required: true, wide: true},
     {name: 'isEnabled', label: '공개', type: 'checkbox', wide: true},
-    {name: 'startDateTime', label: '접수 시작', type: 'datetime'},
-    {name: 'endDateTime', label: '접수 마감', type: 'datetime'},
-    {name: 'maximumSubmissions', label: '최대 접수 건수', type: 'number', min: 0, help: '비워두면 제한 없음'},
-    {name: 'allowMultiple', label: '한 회원이 여러 번 신청 가능', type: 'checkbox'},
     {name: 'selectionMethod', label: '선정 방식', type: 'select', required: true, options: toOptions(SELECTION_METHOD), newRow: true,
         help: '추첨은 접수(검토 중 포함)된 신청 중에서 무작위로 뽑고, 공모전은 심사위원이 매긴 평균 점수가 높은 순으로 뽑습니다. 둘 다 선정하면 접수를 마감합니다.'},
+    {name: 'title', label: '제목', required: true, wide: true},
     {name: 'winnerCount', label: '당첨·선정 인원', type: 'number', min: 1,
         visibleWhen: (v) => v.selectionMethod === 'LOTTERY' || v.selectionMethod === 'CONTEST'},
     {name: 'judgeUsernamesText', label: '심사위원 아이디', type: 'text', wide: true, visibleWhen: (v) => v.selectionMethod === 'CONTEST',
@@ -29,6 +25,10 @@ const applicationFields = (products: { value: string; label: string }[]): FieldS
         help: '합격한 신청자가 마이페이지에서 이 상품(입학금·입회비 등)을 결제합니다. 선택 안 하면 결제 없이 결과만 안내합니다.'},
     {name: 'fields', label: '입력 항목', type: 'formFields', help: '신청자가 입력할 항목입니다. 형식에 맞게 검사합니다(이메일·전화번호는 정규식 설정을 따름).'},
     {name: 'contentHtml', label: '안내', type: 'html'},
+    {name: 'startDateTime', label: '접수 시작', type: 'datetime'},
+    {name: 'endDateTime', label: '접수 마감', type: 'datetime'},
+    {name: 'maximumSubmissions', label: '최대 접수 건수', type: 'number', min: 0, wide: true, newRow: true, help: '비워두면 제한 없음'},
+    {name: 'allowMultiple', label: '한 회원이 여러 번 신청 가능', type: 'checkbox', wide: true},
 ];
 
 const loadForms = (query: Query) => adminApi.applications.search(query);
@@ -94,6 +94,7 @@ function Submissions({form}: { form: ApplicationForm }) {
     const [showSummary, setShowSummary] = useState(false);
     const [status, setStatus] = useState<SubmissionStatus | ''>('');
     const [page, setPage] = useState(0);
+    const [openId, setOpenId] = useState<number | null>(null);
     const csvUrl = `/api/admin/applications/${form.id}/submissions.csv${status ? `?status=${status}` : ''}`;
     const [data, setData] = useState<Page<Submission> | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -173,7 +174,6 @@ function Submissions({form}: { form: ApplicationForm }) {
                     <thead>
                     <tr>
                         <th>신청자</th>
-                        {form.fields.map((f) => <th key={f.key}>{f.label}</th>)}
                         <th>신청일</th>
                         {form.selectionMethod === 'CONTEST' && <th>점수</th>}
                         <th>심사</th>
@@ -183,28 +183,48 @@ function Submissions({form}: { form: ApplicationForm }) {
                     </thead>
                     <tbody>
                     {data?.content.map((submission) => (
-                        <tr key={submission.id}>
-                            <td>{submission.username}</td>
-                            {form.fields.map((f) => <td key={f.key} className="small">{answer(submission, f.key)}</td>)}
-                            <td className="small">{formatDateTime(submission.createdAt)}</td>
-                            {form.selectionMethod === 'CONTEST' && <td className="small"><ScoreCell submission={submission}/></td>}
-                            <td><Review submission={submission} onSaved={reload}/></td>
-                            <td className="small">{submission.admissionOrderId ? `주문 #${submission.admissionOrderId}` : '-'}</td>
-                            <td>
-                                <details>
-                                    <summary>보기</summary>
-                                    <ProgressAndMessages
-                                        getProgress={() => adminApi.progress.get('APPLICATION', submission.id)}
-                                        advance={(stageCode, memo) => adminApi.progress.advance('APPLICATION', submission.id, {stageCode, memo})}
-                                        listMessages={() => adminApi.messages.list('APPLICATION', submission.id)}
-                                        postMessage={(content, fileIds) => adminApi.messages.post('APPLICATION', submission.id, {content, fileIds})}
-                                    />
-                                </details>
-                            </td>
-                        </tr>
+                        <>
+                            <tr key={submission.id}>
+                                <td>
+                                    <button type="button" className="link-button"
+                                            onClick={() => setOpenId(openId === submission.id ? null : submission.id)}>
+                                        {submission.username}
+                                    </button>
+                                </td>
+                                <td className="small">{formatDateTime(submission.createdAt)}</td>
+                                {form.selectionMethod === 'CONTEST' && <td className="small"><ScoreCell submission={submission}/></td>}
+                                <td><Review submission={submission} onSaved={reload}/></td>
+                                <td className="small">{submission.admissionOrderId ? `주문 #${submission.admissionOrderId}` : '-'}</td>
+                                <td>
+                                    <details>
+                                        <summary>보기</summary>
+                                        <ProgressAndMessages
+                                            getProgress={() => adminApi.progress.get('APPLICATION', submission.id)}
+                                            advance={(stageCode, memo) => adminApi.progress.advance('APPLICATION', submission.id, {stageCode, memo})}
+                                            listMessages={() => adminApi.messages.list('APPLICATION', submission.id)}
+                                            postMessage={(content, fileIds) => adminApi.messages.post('APPLICATION', submission.id, {content, fileIds})}
+                                        />
+                                    </details>
+                                </td>
+                            </tr>
+                            {openId === submission.id && (
+                                <tr>
+                                    <td colSpan={4 + (form.selectionMethod === 'CONTEST' ? 1 : 0)}>
+                                        <dl className="meta">
+                                            {form.fields.map((f) => (
+                                                <>
+                                                    <dt key={`${f.key}-label`}>{f.label}</dt>
+                                                    <dd key={`${f.key}-value`}>{answer(submission, f.key)}</dd>
+                                                </>
+                                            ))}
+                                        </dl>
+                                    </td>
+                                </tr>
+                            )}
+                        </>
                     ))}
                     {data?.content.length === 0 &&
-                        <tr><td colSpan={form.fields.length + 5 + (form.selectionMethod === 'CONTEST' ? 1 : 0)} className="muted">접수된 신청이 없습니다.</td></tr>}
+                        <tr><td colSpan={5 + (form.selectionMethod === 'CONTEST' ? 1 : 0)} className="muted">접수된 신청이 없습니다.</td></tr>}
                     </tbody>
                 </table>
             </div>

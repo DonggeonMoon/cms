@@ -588,7 +588,8 @@ export interface MyVote {
 
 export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'SMS';
 
-export type NotificationType = 'MEMBER_JOINED' | 'ORDER_PAID' | 'ORDER_REFUNDED';
+export type NotificationType = 'MEMBER_JOINED' | 'ORDER_PAID' | 'ORDER_REFUNDED'
+    | 'COURSE_APPLIED' | 'COURSE_APPROVED' | 'COURSE_COMPLETED' | 'COURSE_QUESTION_ANSWERED';
 
 export interface NotificationTypeSetting {
     type: NotificationType;

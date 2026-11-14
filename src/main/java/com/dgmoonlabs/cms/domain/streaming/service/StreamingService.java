@@ -92,7 +92,7 @@ public class StreamingService {
         for (WatchedRange range : request.ranges()) {
             ranges = ranges.add((int) Math.round(range.start()), (int) Math.round(range.end()), duration);
         }
-        progress.record(ranges, (int) Math.round(request.position()), duration);
+        progress.record(ranges, (int) Math.round(request.position()), duration, LocalDateTime.now());
         if (progress.getProgressRate() >= streaming.getCompletionRate()) {
             enrollment.complete();
         }

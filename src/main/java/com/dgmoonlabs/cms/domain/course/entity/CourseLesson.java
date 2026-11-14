@@ -3,11 +3,8 @@ package com.dgmoonlabs.cms.domain.course.entity;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
-import java.util.List;
 
 @Entity
 @Table(indexes = @Index(name = "idx_course_lesson_course", columnList = "courseId"))
@@ -21,37 +18,50 @@ public class CourseLesson extends BaseEntity {
     private Long id;
 
     @Column(nullable = false)
-    @Comment("과정 ID")
+    @Comment("과정(시리즈) ID")
     private Long courseId;
 
     @Column(nullable = false)
-    @Comment("차시 순서 (1부터)")
+    @Comment("항목 순서 (1부터)")
     private int sequence;
 
     @Column(nullable = false, length = 200)
-    @Comment("차시 제목")
+    @Comment("항목 제목")
     private String title;
 
-    @Comment("강의 스트리밍 ID (없으면 퀴즈만 있는 차시)")
+    @Comment("단원명 (화면에서 항목을 묶어 보여줄 때 씀, 없으면 단원 구분 없음)")
+    private String unitName;
+
+    @Comment("강의 스트리밍 ID (없으면 퀴즈만 있는 항목)")
     private Long streamingId;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Comment("퀴즈 문항 (없으면 강의만 있는 차시)")
-    private List<QuizQuestion> quiz;
+    @Comment("퀴즈 ID (없으면 강의만 있는 항목, 교육과정으로 사용하는 시리즈에서만 설정 가능)")
+    private Long quizId;
 
-    @Comment("퀴즈 통과 점수(%)")
-    private Integer passScore;
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    @Comment("필수 항목 여부 (교육과정 수료 진도율 기준과 무관하게 항상 완료해야 함)")
+    private boolean mandatory;
 
-    public void update(final int sequence, final String title, final Long streamingId, final List<QuizQuestion> quiz,
-                       final Integer passScore) {
+    @Comment("건너뛰기 방지 사용 여부(항목 단위 재정의). 없으면 시리즈 전체 설정을 따른다.")
+    private Boolean preventSkippingOverride;
+
+    public void update(final int sequence, final String title, final String unitName, final Long streamingId, final Long quizId,
+                       final boolean mandatory, final Boolean preventSkippingOverride) {
         this.sequence = sequence;
         this.title = title;
+        this.unitName = unitName;
         this.streamingId = streamingId;
-        this.quiz = quiz == null || quiz.isEmpty() ? null : quiz;
-        this.passScore = this.quiz == null ? null : passScore;
+        this.quizId = quizId;
+        this.mandatory = mandatory;
+        this.preventSkippingOverride = preventSkippingOverride;
     }
 
     public boolean hasQuiz() {
-        return quiz != null && !quiz.isEmpty();
+        return quizId != null;
+    }
+
+    public boolean effectivePreventSkipping(final Course course) {
+        return preventSkippingOverride != null ? preventSkippingOverride : course.effectivePreventSkipping();
     }
 }

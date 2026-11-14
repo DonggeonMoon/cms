@@ -96,6 +96,32 @@ class StreamingApiTest extends ApiTestSupport {
         assertThat(ranges.totalSeconds()).isEqualTo(40);
     }
 
+    @Test
+    void progressIgnoresImplausiblyFastJumpsButAcceptsModestOnes() throws Exception {
+        MockHttpSession admin = admin();
+        long streamingId = createdId(postJson("/api/admin/streaming", admin, """
+                {"title":"긴 강의","fileId":%d,"durationSeconds":1000,"completionRate":50}
+                """.formatted(upload(admin, "long.mp4"))).andExpect(status().isCreated()));
+
+        MockHttpSession member = member("learner2");
+        postJson("/api/streaming/" + streamingId + "/start", member, "{}");
+
+        // 최초 보고는 그대로 받아들인다(시작 이후 얼마나 지났는지 기준이 없어 신뢰한다).
+        postJson("/api/streaming/" + streamingId + "/progress", member, """
+                {"ranges":[{"start":0,"end":5}],"position":5}
+                """).andExpect(jsonPath("$.progressRate").value(0));
+
+        // 바로 이어서 900초를 더 봤다고 보고하면, 실제로 그 시간이 지날 수 없으므로 무시된다.
+        postJson("/api/streaming/" + streamingId + "/progress", member, """
+                {"ranges":[{"start":5,"end":900}],"position":900}
+                """).andExpect(jsonPath("$.progressRate").value(0));
+
+        // 같은 간격에서 적당한 증가량(초당 4배속 이내)은 그대로 반영된다.
+        postJson("/api/streaming/" + streamingId + "/progress", member, """
+                {"ranges":[{"start":5,"end":40}],"position":40}
+                """).andExpect(jsonPath("$.progressRate").value(4));
+    }
+
     private long upload(final MockHttpSession session, final String name) throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", name, "application/octet-stream", "0123456789".getBytes());
         return body(mockMvc.perform(multipart("/api/files").file(file).session(session).header("X-CMS-Zone", "admin").with(csrf()))

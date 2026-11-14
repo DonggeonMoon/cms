@@ -1,4 +1,5 @@
 import type {BillingCycle, CellKind, ContentStatus, FormFieldType, LedgerType, PaymentMethod, QueueStatus, ReservationType, SelectionMethod, SubmissionStatus, EnrollmentStatus, OrderReturnStatus, OrderReturnType, OrderStatus, PassUnit, ProductSaleType, PublishStatus, ReportStatus, ReservationStatus, StockMovementType} from '../api/domain';
+import type {AccessPeriodMode, CourseApplicationStatus, EnrollmentMode, RevealPolicy, ScorePolicy} from '../api/courses';
 
 export const ORDER_STATUS: Record<OrderStatus, string> = {
     QUOTE_REQUESTED: '견적 요청',
@@ -52,6 +53,36 @@ export const toOptions = (labels: Record<string, string>) =>
 export const ENROLLMENT_STATUS: Record<EnrollmentStatus, string> = {
     IN_PROGRESS: '수강 중',
     COMPLETED: '수강 완료',
+};
+
+export const COURSE_ENROLLMENT_MODE: Record<EnrollmentMode, string> = {
+    FREE: '자유 수강',
+    APPLY: '신청 후 수강',
+    APPROVAL: '승인제',
+};
+
+export const COURSE_APPLICATION_STATUS: Record<CourseApplicationStatus, string> = {
+    APPLIED: '신청',
+    APPROVED: '승인',
+    REJECTED: '반려',
+    CANCELED: '취소',
+};
+
+export const ACCESS_PERIOD_MODE: Record<AccessPeriodMode, string> = {
+    UNLIMITED: '무제한',
+    FIXED: '고정 기간',
+    DAYS_FROM_ENROLLMENT: '신청일 기준 N일',
+};
+
+export const REVEAL_POLICY: Record<RevealPolicy, string> = {
+    IMMEDIATELY: '제출 직후 공개',
+    AFTER_PASS: '통과 후 공개',
+    NEVER: '비공개',
+};
+
+export const SCORE_POLICY: Record<ScorePolicy, string> = {
+    HIGHEST: '최고 점수 인정',
+    LATEST: '최종 점수 인정',
 };
 
 export const SALE_TYPE: Record<ProductSaleType, string> = {

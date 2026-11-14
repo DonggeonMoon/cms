@@ -3,6 +3,7 @@ package com.dgmoonlabs.cms.domain.course.entity;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -40,4 +41,9 @@ public class QuizAttempt extends BaseEntity {
     @Column(nullable = false)
     @Comment("통과 여부")
     private boolean passed;
+
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    @Comment("응시에 걸린 시간(초)")
+    private int durationSeconds;
 }

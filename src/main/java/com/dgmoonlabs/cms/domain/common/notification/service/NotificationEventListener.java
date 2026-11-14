@@ -7,6 +7,12 @@ import com.dgmoonlabs.cms.domain.business.order.service.OrderRefundedEvent;
 import com.dgmoonlabs.cms.domain.common.notification.constant.NotificationType;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.domain.common.user.service.MemberJoinedEvent;
+import com.dgmoonlabs.cms.domain.course.entity.Course;
+import com.dgmoonlabs.cms.domain.course.repository.CourseRepository;
+import com.dgmoonlabs.cms.domain.course.service.CourseApplicationAppliedEvent;
+import com.dgmoonlabs.cms.domain.course.service.CourseApplicationApprovedEvent;
+import com.dgmoonlabs.cms.domain.course.service.CourseCompletedEvent;
+import com.dgmoonlabs.cms.domain.course.service.CourseLessonCommentRepliedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -15,6 +21,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class NotificationEventListener {
     private final OrderRepository orderRepository;
+    private final CourseRepository courseRepository;
     private final NotificationService notificationService;
     private final NotificationSettingService settingService;
 
@@ -46,5 +53,49 @@ public class NotificationEventListener {
             return;
         }
         notificationService.notifyAllChannels(event.memberId(), "가입을 환영합니다", "회원 가입이 완료되었습니다.", null);
+    }
+
+    @EventListener
+    public void onCourseApplied(final CourseApplicationAppliedEvent event) {
+        if (!settingService.isEnabled(NotificationType.COURSE_APPLIED)) {
+            return;
+        }
+        String title = courseTitle(event.courseId());
+        notificationService.notifyAllChannels(event.memberId(), "수강 신청이 접수되었습니다",
+                title + " 수강 신청이 접수되었습니다. 승인을 기다려 주세요.", "/courses/" + event.courseId());
+    }
+
+    @EventListener
+    public void onCourseApplicationApproved(final CourseApplicationApprovedEvent event) {
+        if (!settingService.isEnabled(NotificationType.COURSE_APPROVED)) {
+            return;
+        }
+        String title = courseTitle(event.courseId());
+        notificationService.notifyAllChannels(event.memberId(), "수강 신청이 승인되었습니다",
+                title + " 수강 신청이 승인되었습니다. 지금 수강을 시작할 수 있습니다.", "/courses/" + event.courseId());
+    }
+
+    @EventListener
+    public void onCourseCompleted(final CourseCompletedEvent event) {
+        if (!settingService.isEnabled(NotificationType.COURSE_COMPLETED)) {
+            return;
+        }
+        String title = courseTitle(event.courseId());
+        notificationService.notifyAllChannels(event.memberId(), "교육과정을 수료했습니다",
+                title + " 교육과정을 수료했습니다. 축하합니다!", "/courses/" + event.courseId());
+    }
+
+    @EventListener
+    public void onCourseLessonCommentReplied(final CourseLessonCommentRepliedEvent event) {
+        if (!settingService.isEnabled(NotificationType.COURSE_QUESTION_ANSWERED)) {
+            return;
+        }
+        String title = courseTitle(event.courseId());
+        notificationService.notifyAllChannels(event.questionAuthorId(), "질문에 답변이 등록되었습니다",
+                title + " 교육과정에 남긴 질문에 답변이 등록되었습니다.", "/courses/" + event.courseId());
+    }
+
+    private String courseTitle(final Long courseId) {
+        return courseRepository.findById(courseId).map(Course::getTitle).orElse("교육과정");
     }
 }

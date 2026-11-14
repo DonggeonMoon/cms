@@ -11,7 +11,7 @@ function respond(status: number, body?: unknown) {
 
 const lesson = (id: number, extra: object) => ({
     id, sequence: id, title: `차시 ${id}`, streamingId: null, streamingTitle: null, durationSeconds: null, quiz: [], passScore: null,
-    streamingCompleted: false, quizPassed: false, completed: false, locked: false, ...extra,
+    streamingCompleted: false, quizPassed: false, completed: false, locked: false, materials: [], ...extra,
 });
 
 const COURSE = {
@@ -32,6 +32,12 @@ describe('course pages', () => {
         vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
             if (url === '/api/auth/me') return respond(200, {id: 1, username: 'student1', name: '학생', userType: 'MEMBER'});
             if (url === '/api/courses/5') return respond(200, COURSE);
+            if (url === '/api/courses/5/lessons/2/quiz/start') {
+                return respond(200, {
+                    questions: COURSE.lessons[1].quiz,
+                    timeLimitMinutes: null, attemptsUsed: 0, attemptsAllowed: null, startedAt: '2026-11-01T00:00:00',
+                });
+            }
             if (url === '/api/courses/5/lessons/2/quiz') {
                 submitted.push(JSON.parse(String(init?.body)));
                 return respond(200, {score: 50, passScore: 100, passed: false, correct: [true, false], attempts: 1, myProgress: COURSE.myProgress});
@@ -43,7 +49,7 @@ describe('course pages', () => {
         }));
         render(<AuthProvider><RouterProvider router={createMemoryRouter(routes, {initialEntries: ['/courses/5']})}/></AuthProvider>);
 
-        expect(await screen.findByRole('link', {name: '1강 영상'})).toHaveAttribute('href', '/streaming/9');
+        expect(await screen.findByRole('link', {name: '1강 영상'})).toHaveAttribute('href', '/streaming/9?courseId=5&lessonId=1');
         expect(screen.getByText(/1 \/ 2차시 완료/)).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: '퀴즈 풀기'}));
         expect(screen.getByRole('button', {name: '제출'})).toBeDisabled();

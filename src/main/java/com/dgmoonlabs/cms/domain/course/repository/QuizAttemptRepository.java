@@ -12,4 +12,10 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
     List<Long> findPassedLessonIds(Long memberId, Collection<Long> lessonIds);
 
     long countByLessonIdAndMemberId(Long lessonId, Long memberId);
+
+    List<QuizAttempt> findAllByLessonIdInAndMemberIdOrderByIdDesc(Collection<Long> lessonIds, Long memberId);
+
+    List<QuizAttempt> findAllByLessonIdAndMemberIdOrderByIdDesc(Long lessonId, Long memberId);
+
+    List<QuizAttempt> findAllByLessonIdIn(Collection<Long> lessonIds);
 }

@@ -1,6 +1,7 @@
 import {won} from '../components/AdminCrudPage';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {Link, useParams, useSearchParams} from 'react-router';
+import {courseApi} from '../api/courses';
 import type {StreamingItem, StreamingProgress, MyStreaming} from '../api/domain';
 import {streamingApi} from '../api/endpoints';
 import type {MediaType, Page} from '../api/types';
@@ -90,13 +91,29 @@ export function StreamingListPage() {
 
 export function StreamingDetailPage() {
     const id = Number(useParams().id);
+    const [params] = useSearchParams();
+    const courseId = params.get('courseId') ? Number(params.get('courseId')) : null;
+    const lessonId = params.get('lessonId') ? Number(params.get('lessonId')) : null;
     const {user} = useAuth();
     const [item, setItem] = useState<StreamingItem | null>(null);
+    const [playbackLimits, setPlaybackLimits] = useState<{ maxPlaybackRate: number | null; preventSkipping: boolean }>({
+        maxPlaybackRate: null, preventSkipping: false,
+    });
     const [error, setError] = useState<unknown>(null);
 
     useEffect(() => {
         streamingApi.get(id).then(setItem).catch(setError);
     }, [id]);
+
+    useEffect(() => {
+        if (courseId == null) {
+            return;
+        }
+        courseApi.get(courseId).then((course) => {
+            const lesson = course.lessons?.find((l) => (lessonId != null ? l.id === lessonId : l.streamingId === id));
+            setPlaybackLimits({maxPlaybackRate: course.maxPlaybackRate, preventSkipping: lesson?.preventSkipping ?? course.preventSkipping});
+        }).catch(() => undefined);
+    }, [courseId, lessonId, id]);
 
     if (!item) {
         return error ? <ErrorBanner error={error}/> : <p className="muted">불러오는 중…</p>;
@@ -114,7 +131,8 @@ export function StreamingDetailPage() {
                         {item.paid && (
                             <p className="muted small">구매한 강의입니다.{item.accessExpiresAt && ` ${formatDateTime(item.accessExpiresAt)}까지 볼 수 있습니다.`}</p>
                         )}
-                        <StreamingPlayer item={item}/>
+                        <StreamingPlayer item={item} maxPlaybackRate={playbackLimits.maxPlaybackRate}
+                                         preventSkipping={playbackLimits.preventSkipping}/>
                     </>
                 ) : (
                     <div className="notice-box media-purchase">
@@ -129,7 +147,9 @@ export function StreamingDetailPage() {
     );
 }
 
-function StreamingPlayer({item}: { item: StreamingItem }) {
+function StreamingPlayer({item, maxPlaybackRate, preventSkipping}: {
+    item: StreamingItem; maxPlaybackRate?: number | null; preventSkipping?: boolean;
+}) {
     const mediaRef = useRef<HTMLVideoElement & HTMLAudioElement>(null);
     const [progress, setProgress] = useState<StreamingProgress | null>(item.myProgress);
     const [error, setError] = useState<unknown>(null);
@@ -137,6 +157,7 @@ function StreamingPlayer({item}: { item: StreamingItem }) {
     const segment = useRef<Range | null>(null);
     const pending = useRef<Range[]>([]);
     const lastTime = useRef(0);
+    const furthest = useRef(0);
 
     const closeSegment = () => {
         const current = segment.current;
@@ -198,6 +219,7 @@ function StreamingPlayer({item}: { item: StreamingItem }) {
     const handlePlaying = () => {
         const time = mediaRef.current?.currentTime ?? 0;
         lastTime.current = time;
+        furthest.current = Math.max(furthest.current, time);
         segment.current = {start: time, end: time};
     };
 
@@ -215,6 +237,7 @@ function StreamingPlayer({item}: { item: StreamingItem }) {
             segment.current = {start: time, end: time};
         }
         lastTime.current = time;
+        furthest.current = Math.max(furthest.current, time);
     };
 
     const handleStop = () => {
@@ -222,13 +245,34 @@ function StreamingPlayer({item}: { item: StreamingItem }) {
         report();
     };
 
+    // 건너뛰기 방지: 이미 본 지점보다 앞으로 이동하려 하면 그 지점으로 되돌린다. 뒤로 돌리는 건 항상 허용한다.
+    const handleSeeking = () => {
+        closeSegment();
+        const media = mediaRef.current;
+        if (preventSkipping && media && media.currentTime > furthest.current + 0.5) {
+            media.currentTime = furthest.current;
+        }
+    };
+
+    // 배속 제한: 네이티브 컨트롤의 배속 선택지를 직접 지울 수는 없어서, 설정값을 넘는 배속을 고르면 즉시 되돌린다.
+    const handleRateChange = () => {
+        const media = mediaRef.current;
+        if (media && maxPlaybackRate != null && media.playbackRate > maxPlaybackRate) {
+            media.playbackRate = maxPlaybackRate;
+        }
+    };
+
     const resumeAt = progress && progress.status !== 'COMPLETED' ? progress.lastPositionSeconds : 0;
     const handleLoadedMetadata = () => {
         const media = mediaRef.current;
+        if (media && maxPlaybackRate != null && media.playbackRate > maxPlaybackRate) {
+            media.playbackRate = maxPlaybackRate;
+        }
         if (media && resumeAt > 0 && resumeAt < media.duration - 3) {
             media.currentTime = resumeAt;
             lastTime.current = resumeAt;
         }
+        furthest.current = Math.max(furthest.current, resumeAt);
     };
 
     const mediaProps = {
@@ -240,7 +284,8 @@ function StreamingPlayer({item}: { item: StreamingItem }) {
         onPlay: handlePlay,
         onPlaying: handlePlaying,
         onTimeUpdate: handleTimeUpdate,
-        onSeeking: closeSegment,
+        onSeeking: handleSeeking,
+        onRateChange: handleRateChange,
         onPause: handleStop,
         onEnded: handleStop,
         onLoadedMetadata: handleLoadedMetadata,
@@ -260,6 +305,8 @@ function StreamingPlayer({item}: { item: StreamingItem }) {
                         {progress?.completedAt && <span className="muted small">완료 {formatDateTime(progress.completedAt)}</span>}
                     </div>
                     <p className="muted small">실제로 재생한 구간만 진도에 반영됩니다. 앞으로 건너뛴 구간은 들은 것으로 보지 않습니다.</p>
+                    {preventSkipping && <p className="muted small">이 교육과정은 건너뛰기 방지가 적용되어, 아직 보지 않은 구간으로는 이동할 수 없습니다.</p>}
+                    {maxPlaybackRate != null && <p className="muted small">이 교육과정은 최대 {maxPlaybackRate}배속까지만 재생할 수 있습니다.</p>}
                 </>
             )}
             <ErrorBanner error={error}/>

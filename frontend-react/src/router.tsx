@@ -33,7 +33,6 @@ import {ApplicationAdminPage} from './pages/admin/ApplicationAdminPage';
 import {RepairAdminPage} from './pages/admin/RepairAdminPage';
 import {VoteAdminPage} from './pages/admin/VoteAdminPage';
 import {MapAdminPage} from './pages/admin/MapAdminPage';
-import {StreamingAdminPage} from './pages/admin/StreamingAdminPage';
 import {ReportAdminPage, SatisfactionAdminPage} from './pages/admin/GovAdminPages';
 import {MemberDetailPage} from './pages/admin/MemberDetailPage';
 import {MemberJoinSettingPage} from './pages/admin/MemberJoinSettingPage';
@@ -313,7 +312,7 @@ export const routes = [
                             },
                             {
                                 element: <RequireFeature feature="MEDIA"/>,
-                                children: [{path: 'streaming', element: <StreamingAdminPage/>}, {path: 'courses', element: <CourseAdminPage/>}],
+                                children: [{path: 'streaming', element: <CourseAdminPage/>}, {path: 'courses', element: <CourseAdminPage/>}],
                             },
                             {
                                 element: <RequireFeature feature="APPLICATION"/>,

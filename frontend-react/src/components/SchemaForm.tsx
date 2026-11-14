@@ -4,16 +4,18 @@ import {fileApi} from '../api/files';
 import type {FileInfo} from '../api/types';
 import type {FormField, SpaceLayout} from '../api/domain';
 import {ErrorBanner} from './ErrorBanner';
+import {FilesField} from './FilesField';
 import type {CategoryAttribute} from '../api/categories';
 import {CategoryAttributesEditor} from './CategoryAttributesEditor';
 import type {LessonDraft} from '../api/courses';
 import {CourseLessonsEditor} from './CourseLessonsEditor';
+import {type QuestionDraft, QuizQuestionsEditor} from './QuizQuestionsEditor';
 import {FormFieldsEditor} from './FormFieldsEditor';
 import {LayoutEditor} from './LayoutEditor';
 import {StableLabel} from './StableLabel';
 import {type OptionSet, ProductOptionsEditor} from './ProductOptionsEditor';
 
-export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'date' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media' | 'time' | 'layout' | 'formFields' | 'productOptions' | 'categoryAttributes' | 'courseLessons';
+export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'date' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media' | 'time' | 'layout' | 'formFields' | 'productOptions' | 'categoryAttributes' | 'courseLessons' | 'quizQuestions';
 
 export interface FieldSpec {
     name: string;
@@ -79,13 +81,13 @@ export function SchemaForm({fields, initial, onSubmit, onCancel, submitLabel = '
         <div className="schema-grid">
             {specs.filter((field) => !field.visibleWhen || field.visibleWhen(values)).map((field) => (
                 <div key={field.name} className={[
-                    field.wide || ['html', 'textarea', 'files', 'media', 'layout', 'formFields', 'productOptions', 'categoryAttributes', 'courseLessons'].includes(field.type ?? '') ? 'wide' : '',
+                    field.wide || ['html', 'textarea', 'files', 'media', 'layout', 'formFields', 'productOptions', 'categoryAttributes', 'courseLessons', 'quizQuestions'].includes(field.type ?? '') ? 'wide' : '',
                     field.spaced ? 'spaced' : '',
                     field.newRow ? 'new-row' : '',
                     field.type === 'checkbox' && !field.wide ? 'inline-check' : '',
                 ].filter(Boolean).join(' ')}>
                     <FieldInput field={field} value={values[field.name]} onChange={(v) => set(field.name, v)}
-                                error={errorOf(field.name)}/>
+                                error={errorOf(field.name)} allValues={values}/>
                 </div>
             ))}
         </div>
@@ -139,9 +141,10 @@ interface FieldInputProps {
     value: unknown;
     onChange: (value: unknown) => void;
     error?: string;
+    allValues?: FormValues;
 }
 
-function FieldInput({field, value, onChange, error}: FieldInputProps) {
+function FieldInput({field, value, onChange, error, allValues}: FieldInputProps) {
     const id = `field-${field.name}`;
     const label = (
         <label htmlFor={id}>{field.label}{field.required && <span className="required"> *</span>}</label>
@@ -204,7 +207,8 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
             return (
                 <div className="field">
                     {label}
-                    <CourseLessonsEditor value={(value as LessonDraft[]) ?? []} onChange={onChange}/>
+                    <CourseLessonsEditor value={(value as LessonDraft[]) ?? []} onChange={onChange}
+                                         isCourse={Boolean(allValues?.isCourse)}/>
                     {help}
                 </div>
             );
@@ -234,6 +238,14 @@ function FieldInput({field, value, onChange, error}: FieldInputProps) {
             );
         case 'media':
             return <MediaField id={id} label={label} value={(value as MediaValue | null) ?? null} onChange={onChange} help={help}/>;
+        case 'quizQuestions':
+            return (
+                <div className="field">
+                    {label}
+                    <QuizQuestionsEditor value={(value as QuestionDraft[]) ?? []} onChange={onChange}/>
+                    {help}
+                </div>
+            );
         case 'files':
             return <FilesField label={label} value={(value as FileInfo[]) ?? []} onChange={onChange} help={help}/>;
         default:
@@ -432,7 +444,7 @@ function MediaField({id, label, value, onChange, help}: {
             }}/>
             {uploading && <p className="muted small">업로드 중…</p>}
             {value && (
-                <div className="row align-center">
+                <div className="field">
                     <label htmlFor={`${id}-duration`}>재생 시간(초)</label>
                     <input id={`${id}-duration`} type="number" min={1} required value={value.durationSeconds ?? ''}
                            onChange={(e) => onChange({...value, durationSeconds: e.target.value ? Number(e.target.value) : null})}/>
@@ -465,44 +477,3 @@ function MediaField({id, label, value, onChange, help}: {
     );
 }
 
-export function FilesField({label, value, onChange, help}: {
-    label: ReactNode; value: FileInfo[]; onChange: (v: FileInfo[]) => void; help?: ReactNode;
-}) {
-    const [error, setError] = useState<unknown>(null);
-    const [uploading, setUploading] = useState(false);
-    return (
-        <div className="field">
-            {label}
-            <ul className="file-list">
-                {value.map((file) => (
-                    <li key={file.id}>
-                        {file.originalName}
-                        <button type="button" className="link-button" onClick={() => onChange(value.filter((f) => f.id !== file.id))}>
-                            제거
-                        </button>
-                    </li>
-                ))}
-            </ul>
-            <input type="file" multiple aria-label="첨부파일 추가" disabled={uploading} onChange={async (e) => {
-                const files = Array.from(e.target.files ?? []);
-                e.target.value = '';
-                setUploading(true);
-                setError(null);
-                try {
-                    const uploaded: FileInfo[] = [];
-                    for (const file of files) {
-                        uploaded.push(await fileApi.upload(file));
-                    }
-                    onChange([...value, ...uploaded]);
-                } catch (err) {
-                    setError(err);
-                } finally {
-                    setUploading(false);
-                }
-            }}/>
-            {uploading && <p className="muted small">업로드 중…</p>}
-            <ErrorBanner error={error}/>
-            {help}
-        </div>
-    );
-}

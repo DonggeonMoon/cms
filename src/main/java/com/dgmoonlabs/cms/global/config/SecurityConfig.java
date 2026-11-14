@@ -42,7 +42,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/reports/me").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.GET, "/api/streaming/me", "/api/applications/me", "/api/courses/me",
                         "/api/applications/*/judging").hasRole("MEMBER")
-                .requestMatchers(HttpMethod.POST, "/api/courses/*/enroll", "/api/courses/*/lessons/*/quiz").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.POST, "/api/courses/*/enroll", "/api/courses/*/lessons/*/quiz",
+                        "/api/courses/*/lessons/*/quiz/start", "/api/courses/*/applications/cancel").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/applications/*/submissions", "/api/applications/submissions/*/withdraw",
                         "/api/applications/submissions/*/admission-payment", "/api/applications/submissions/*/score").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/streaming/*/start", "/api/streaming/*/progress").hasRole("MEMBER")

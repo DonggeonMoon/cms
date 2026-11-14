@@ -3,7 +3,7 @@ import type {CustomerMessage, Progress, ProgressStageTemplate, ProgressStageEven
 import {adminApi} from '../api/endpoints';
 import type {FileInfo} from '../api/types';
 import {ErrorBanner} from './ErrorBanner';
-import {FilesField} from './SchemaForm';
+import {FilesField} from './FilesField';
 import {formatDateTime} from './format';
 
 export function ProgressTemplateManager({targetType}: { targetType: ProgressTargetType }) {

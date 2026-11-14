@@ -79,8 +79,8 @@ export function StreamingAdminPage() {
                 {label: '제목', render: (l) => l.title},
                 {label: '종류', render: (l) => (l.mediaType === 'AUDIO' ? '음악' : '동영상')},
                 {label: '재생 시간', render: (l) => formatDuration(l.durationSeconds)},
-                {label: '진도 체크', render: (l) => (l.trackProgress ? `사용 (${l.completionRate}%)` : '사용 안 함')},
                 {label: '판매', render: (l) => (l.paid ? `유료 ${won(l.price ?? 0)}` : '무료')},
+                {label: '진도 체크', render: (l) => (l.trackProgress ? `사용 (${l.completionRate}%)` : '사용 안 함')},
                 {label: '공개', render: (l) => <YesNo value={l.isUsing}/>},
                 {label: '등록일', render: (l) => formatDateTime(l.createdAt)},
             ]}
