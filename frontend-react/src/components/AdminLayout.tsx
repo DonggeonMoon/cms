@@ -71,7 +71,6 @@ const MENU_GROUPS: { title: string; area?: AdminArea; items: MenuItem[] }[] = [
         items: [
             {to: '/admin/categories', label: '카테고리', features: ['PRODUCT', 'PROGRAM', 'APPLICATION', 'MEDIA']},
             {to: '/admin/products', label: '상품', features: ['PRODUCT']},
-            {to: '/admin/stock-movements', label: '재고 이력', sub: true, features: ['PRODUCT']},
             {to: '/admin/reservation-items', label: '예약 상품', features: ['PROGRAM']},
             {to: '/admin/streaming', label: '스트리밍/교육과정', features: ['MEDIA']},
             {to: '/admin/discounts', label: '할인', features: ['PRODUCT']},

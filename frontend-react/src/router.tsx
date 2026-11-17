@@ -47,7 +47,6 @@ import {ShippingPolicyPage} from './pages/admin/ShippingPolicyPage';
 import {TaxSettingPage} from './pages/admin/TaxSettingPage';
 import {ExchangeRateAdminPage} from './pages/admin/ExchangeRateAdminPage';
 import {MarketingAdminPage} from './pages/admin/MarketingAdminPage';
-import {StockMovementAdminPage} from './pages/admin/StockMovementAdminPage';
 import {AccountingAdminPage} from './pages/admin/AccountingAdminPage';
 import {
     DiscountAdminPage,
@@ -292,7 +291,6 @@ export const routes = [
                                     {path: 'marketing', element: <MarketingAdminPage/>},
                                     {path: 'orders', element: <OrdersAdminPage/>},
                                     {path: 'order-returns', element: <OrderReturnAdminPage/>},
-                                    {path: 'stock-movements', element: <StockMovementAdminPage/>},
                                     {path: 'accounting', element: <AccountingAdminPage/>},
                                 ],
                             },
