@@ -50,8 +50,7 @@ export function ReceptionQueueAdminPage() {
             {reservationItems?.length === 0 && <p className="muted">접수·대기를 켠 예약 상품이 없습니다. 예약 메뉴에서 상담 유형 예약 상품의 "접수·대기 사용"을 켜 주세요.</p>}
             {reservationItems != null && reservationItems.length > 0 && (
                 <div className="toolbar">
-                    <label>
-                        예약 상품
+                    <label>예약 상품{' '}
                         <select value={programId ?? ''} onChange={(e) => setProgramId(Number(e.target.value))}>
                             {reservationItems.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>

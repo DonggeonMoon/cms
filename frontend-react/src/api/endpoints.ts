@@ -31,6 +31,9 @@ export const siteApi = {
     contents: () => request<D.ContentSummary[]>('/api/contents'),
     content: (id: number) => request<D.Content>(`/api/contents/${id}`),
     map: () => request<D.PublicMap>('/api/map'),
+    postcode: () => request<D.PublicPostcode>('/api/postcode'),
+    postcodeSearch: (keyword: string, page = 1) =>
+        request<D.PostcodeSearchResult>('/api/postcode/search', {query: {keyword, page}}),
     policy: (type: D.PolicyType) => request<D.Policy>(`/api/policies/${type}`),
     trackVisit: (path: string, referrer: string) =>
         request<void>('/api/statistics/visits', {method: 'POST', body: {path, referrer}}),
@@ -47,6 +50,10 @@ export const adminApi = {
         settings: () => request<D.MapSetting>('/api/admin/map/settings'),
         updateSettings: (body: Body) => request<D.MapSetting>('/api/admin/map/settings', {method: 'PUT', body}),
         branches: resource<D.Branch>('/api/admin/map/branches'),
+    },
+    postcode: {
+        settings: () => request<D.PostcodeSetting>('/api/admin/postcode/settings'),
+        updateSettings: (body: Body) => request<D.PostcodeSetting>('/api/admin/postcode/settings', {method: 'PUT', body}),
     },
     reauthenticate: (password: string) => request<void>('/api/admin/reauthenticate', {method: 'POST', body: {password}}),
     configs: resource<D.Config>('/api/admin/configs'),

@@ -1138,6 +1138,29 @@ export interface MapSetting {
     office: Office;
 }
 
+export type PostcodeProvider = 'KAKAO' | 'JUSO';
+
+export interface PostcodeSetting {
+    provider: PostcodeProvider;
+    jusoApiKeyId: number | null;
+}
+
+export interface PublicPostcode {
+    provider: PostcodeProvider;
+}
+
+export interface PostcodeAddress {
+    zonecode: string;
+    address: string;
+    roadAddress: string;
+    jibunAddress: string;
+}
+
+export interface PostcodeSearchResult {
+    results: PostcodeAddress[];
+    totalCount: number;
+}
+
 export type PolicyType = 'PRIVACY_CONSENT' | 'PRIVACY_POLICY' | 'TERMS_OF_SERVICE' | 'OPERATION_POLICY'
     | 'YOUTH_PROTECTION_POLICY' | 'MAIL_RECEPTION' | 'SMS_RECEPTION' | 'MARKETING_USAGE';
 

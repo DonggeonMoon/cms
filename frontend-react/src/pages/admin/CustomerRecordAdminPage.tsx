@@ -31,14 +31,16 @@ export const toRecordBody = (values: FormValues) => {
 export function CustomerRecordAdminPage() {
     const [params] = useSearchParams();
     const memberId = params.get('memberId');
+    const reservationId = params.get('reservationId');
 
     return (
         <>
             {memberId && <Link to={`/admin/members/${memberId}`}>← 회원 상세로</Link>}
+            {reservationId && <Link to="/admin/reservations">← 예약 내역으로</Link>}
             <AdminCrudPage<CustomerRecord>
                 title="고객 기록"
                 description={<p>회원별 시술·상담 이력입니다. 새 기록은 예약 내역에서 "기록 남기기"로 남깁니다. 내용은 암호화되어 저장됩니다.</p>}
-                load={(query) => adminApi.customerRecords.search({...query, memberId: memberId ?? undefined})}
+                load={(query) => adminApi.customerRecords.search({...query, memberId: memberId ?? undefined, reservationId: reservationId ?? undefined})}
                 fields={RECORD_CONTENT_FIELDS}
                 toForm={(r) => ({...r, photos: photosOf(r)})}
                 columns={[

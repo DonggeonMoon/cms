@@ -140,6 +140,8 @@ public enum ErrorCode {
     SITE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사이트입니다."),
     MAP_LOCATION_REQUIRED(HttpStatus.BAD_REQUEST, "오시는 길을 사용하려면 본점 주소와 좌표(위도·경도)를 입력해야 합니다."),
     BRANCHES_DISABLED(HttpStatus.CONFLICT, "지점 안내가 사용 중지되어 있습니다. 지점 안내를 켠 뒤 등록해 주세요."),
+    POSTCODE_API_KEY_REQUIRED(HttpStatus.BAD_REQUEST, "행안부 우편번호 API를 사용하려면 API 키를 선택해야 합니다."),
+    POSTCODE_SEARCH_FAILED(HttpStatus.BAD_GATEWAY, "행안부 우편번호 API와 통신하지 못했습니다. 잠시 후 다시 시도해 주세요."),
     MENU_FEATURE_DISABLED(HttpStatus.CONFLICT, "사용 중지된 기능은 메뉴로 설정할 수 없습니다. 먼저 기능을 켜 주세요."),
 
     BOARD_PERMISSION_DENIED(HttpStatus.FORBIDDEN, "이 게시판에 대한 권한이 없습니다."),
@@ -168,7 +170,6 @@ public enum ErrorCode {
     INVALID_CATEGORY_PARENT(HttpStatus.BAD_REQUEST, "카테고리는 두 단계까지만 만들 수 있습니다. 최상위 카테고리만 상위로 고를 수 있습니다."),
     INVALID_CATEGORY_ATTRIBUTES(HttpStatus.BAD_REQUEST, "속성 키가 상위·하위 카테고리와 겹치거나, 선택형 속성에 선택지가 없습니다."),
     CATEGORY_IN_USE(HttpStatus.CONFLICT, "하위 카테고리나 사용 중인 항목이 있는 카테고리는 삭제할 수 없습니다."),
-    CATEGORY_DOMAIN_MISMATCH(HttpStatus.BAD_REQUEST, "해당 용도의 카테고리가 아닙니다."),
     DOWNLOAD_LIMIT_EXCEEDED(HttpStatus.FORBIDDEN, "내려받을 수 있는 횟수를 모두 썼습니다."),
     DOWNLOAD_EXPIRED(HttpStatus.FORBIDDEN, "내려받을 수 있는 기간이 지났습니다."),
     RETURN_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "반품·교환을 신청할 수 없는 주문 상태입니다."),

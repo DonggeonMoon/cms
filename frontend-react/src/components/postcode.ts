@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- the postcode SDK is loaded at runtime without types */
+import {siteApi} from '../api/endpoints';
+import type {PostcodeProvider} from '../api/domain';
+
 declare global {
     interface Window {
         daum?: any;
@@ -12,7 +15,22 @@ export interface PostcodeResult {
     jibunAddress: string;
 }
 
-const POSTCODE_SCRIPT = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+let providerPromise: Promise<PostcodeProvider> | null = null;
+
+/** 관리자 "우편번호 API" 설정을 따른다. 세션 중에는 한 번만 조회한다. */
+export function currentPostcodeProvider(): Promise<PostcodeProvider> {
+    if (!providerPromise) {
+        providerPromise = siteApi.postcode().then((setting) => setting.provider).catch(() => 'KAKAO');
+    }
+    return providerPromise;
+}
+
+export async function searchJusoAddress(keyword: string): Promise<PostcodeResult[]> {
+    const {results} = await siteApi.postcodeSearch(keyword);
+    return results;
+}
+
+const POSTCODE_SCRIPT = 'https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
 let loading: Promise<void> | null = null;
 
 function loadPostcodeScript(): Promise<void> {

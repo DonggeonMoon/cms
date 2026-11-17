@@ -127,6 +127,7 @@ const MENU_GROUPS: { title: string; area?: AdminArea; items: MenuItem[] }[] = [
             {to: '/admin/files', label: '파일'},
             {to: '/admin/audit-logs', label: '작업 로그'},
             {to: '/admin/identity-verification', label: '본인인증'},
+            {to: '/admin/postcode', label: '우편번호 API'},
         ],
     },
     {

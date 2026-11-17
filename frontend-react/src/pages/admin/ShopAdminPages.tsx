@@ -1,10 +1,10 @@
 import {fileApi} from '../../api/files';
 import {attributesToForm, categorySelectField, productCategoryFields, splitCategoryValues, useCategories} from '../../api/categories';
-import type {FileInfo} from '../../api/types';
+import type {FileInfo, Page} from '../../api/types';
 import {type FormEvent, useCallback, useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router';
 import type {Query} from '../../api/client';
-import type {Discount, MemberPass, Order, OrderReturn, OrderReturnStatus, OrderStatus, Payment, ProductSummary, ReservationItem, ReservationItemSession, Reservation, ReservationType, Review, ReviewTargetType, Subscription} from '../../api/domain';
+import type {Discount, MemberPass, Order, OrderReturn, OrderReturnStatus, OrderStatus, Payment, ProductSummary, ReservationItem, ReservationItemSession, Reservation, ReservationType, Review, ReviewTargetType, StockMovement, Subscription} from '../../api/domain';
 import {adminApi, shopApi} from '../../api/endpoints';
 import {statusApi, useStatusLabels} from '../../api/statuses';
 import {AdminCrudPage, won, YesNo} from '../../components/AdminCrudPage';
@@ -15,8 +15,9 @@ import {priceLabel} from '../../components/price';
 import {reservationUsage} from '../../components/reservationUsage';
 import {RegexBindingSelect} from '../../components/RegexBindingSelect';
 import {CustomStatusSelect, StatusManager} from '../../components/StatusManager';
-import {BILLING_CYCLE, ORDER_STATUS, PASS_UNIT, RESERVATION_STATUS, RESERVATION_TYPE, RESERVATION_TYPE_GROUPS, RETURN_STATUS, RETURN_TYPE, SALE_TYPE, toOptions} from '../../components/labels';
+import {BILLING_CYCLE, ORDER_STATUS, PASS_UNIT, RESERVATION_STATUS, RESERVATION_TYPE, RESERVATION_TYPE_GROUPS, RETURN_STATUS, RETURN_TYPE, SALE_TYPE, STOCK_MOVEMENT_TYPE, toOptions} from '../../components/labels';
 import {EMPTY_LAYOUT} from '../../components/LayoutEditor';
+import {Pagination} from '../../components/Pagination';
 import {type FieldSpec, type FormValues, SchemaForm} from '../../components/SchemaForm';
 import {RECORD_CONTENT_FIELDS, toRecordBody} from './CustomerRecordAdminPage';
 import {type Grade, gradeSelectField, useGrades, useWithGradeFields} from '../../api/grades';
@@ -158,11 +159,84 @@ function GradePriceEditor({productId, onClose}: { productId: number; onClose: ()
     );
 }
 
+function StockMovementPanel({productId, onClose}: { productId: number; onClose: () => void }) {
+    const [page, setPage] = useState(0);
+    const [data, setData] = useState<Page<StockMovement> | null>(null);
+    const [delta, setDelta] = useState('');
+    const [note, setNote] = useState('');
+    const [error, setError] = useState<unknown>(null);
+    const [busy, setBusy] = useState(false);
+
+    const reload = useCallback(() => {
+        adminApi.stockMovements.search(productId, page).then(setData).catch(setError);
+    }, [productId, page]);
+    useEffect(reload, [reload]);
+
+    const adjust = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!delta || !note.trim()) {
+            return;
+        }
+        setBusy(true);
+        setError(null);
+        try {
+            await adminApi.stockMovements.adjust(productId, null, Number(delta), note.trim());
+            setDelta('');
+            setNote('');
+            setPage(0);
+            reload();
+        } catch (err) {
+            setError(err);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <section className="card">
+            <h2>재고 이력</h2>
+            <p className="muted">주문·취소·반품 때마다 자동으로 쌓이는 재고 변동 이력입니다. 실사 결과와 다르면 아래에서 직접 보정할 수 있습니다.</p>
+            <ErrorBanner error={error}/>
+            <form onSubmit={adjust} className="inline-form">
+                <div className="toolbar">
+                    <input type="number" value={delta} onChange={(e) => setDelta(e.target.value)}
+                           placeholder="증감 수량 (입고는 +, 출고는 -)"/>
+                    <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="조정 이유 (예: 실사 보정)"/>
+                    <button type="submit" className="primary" disabled={busy}>조정하기</button>
+                </div>
+            </form>
+            <div className="table-wrap">
+                <table>
+                    <thead><tr><th>종류</th><th>수량</th><th>조정 후 재고</th><th>관련 주문</th><th>메모</th><th>시각</th></tr></thead>
+                    <tbody>
+                    {data?.content.map((m) => (
+                        <tr key={m.id}>
+                            <td>{STOCK_MOVEMENT_TYPE[m.type]}</td>
+                            <td>{m.type === 'IN' ? '+' : '-'}{m.quantity}</td>
+                            <td>{m.quantityAfter ?? '무제한'}</td>
+                            <td>{m.orderId ?? '-'}</td>
+                            <td>{m.note ?? '-'}</td>
+                            <td>{formatDateTime(m.createdAt)}</td>
+                        </tr>
+                    ))}
+                    {data?.content.length === 0 && <tr><td colSpan={6} className="muted">재고 변동 이력이 없습니다.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
+            <div className="toolbar form-actions">
+                <button type="button" onClick={onClose}>닫기</button>
+            </div>
+        </section>
+    );
+}
+
 export function ProductAdminPage() {
-    const categories = useCategories('PRODUCT');
+    const categories = useCategories();
     const [reservationItemChoices, setReservationItemChoices] = useState<{ value: string; label: string }[]>([]);
     const [fundingNotice, setFundingNotice] = useState<string | null>(null);
     const [gradePricing, setGradePricing] = useState<number | null>(null);
+    const [stockHistoryFor, setStockHistoryFor] = useState<number | null>(null);
     useEffect(() => {
         adminApi.reservationItems.search({size: 100}).then((page) => setReservationItemChoices(page.content.map((p) => ({value: String(p.id), label: p.name}))))
             .catch(() => setReservationItemChoices([]));
@@ -194,10 +268,18 @@ export function ProductAdminPage() {
                 {label: '상품명', render: (p) => <Link to={`/products/${p.id}`}>{p.name}</Link>},
                 {label: '판매 방식', render: (p) => <span className="badge">{SALE_TYPE[p.saleType]}</span>},
                 {label: '가격', render: (p) => priceLabel(p)},
-                {label: '재고', render: (p) => p.availableQuantity ?? '무제한'},
+                {label: '재고', render: (p) => (
+                    <button type="button" onClick={() => {
+                        setGradePricing(null);
+                        setStockHistoryFor(stockHistoryFor === p.id ? null : p.id);
+                    }}>{p.availableQuantity ?? '무제한'}</button>
+                )},
                 {label: '판매 중', render: (p) => <YesNo value={p.isEnabled}/>},
                 {label: '거래처 가격', render: (p) => (
-                    <button type="button" onClick={() => setGradePricing(gradePricing === p.id ? null : p.id)}>설정</button>
+                    <button type="button" onClick={() => {
+                        setStockHistoryFor(null);
+                        setGradePricing(gradePricing === p.id ? null : p.id);
+                    }}>설정</button>
                 )},
             ]}
             toForm={(p) => adminApi.products.get(p.id).then((full) => ({
@@ -220,8 +302,15 @@ export function ProductAdminPage() {
             create={(v) => adminApi.products.create(toProductBody(v))}
             update={(p, v) => adminApi.products.update(p.id, toProductBody(v))}
             remove={(p) => adminApi.products.remove(p.id)}
-            expandedRow={(p) => gradePricing === p.id
-                ? <GradePriceEditor productId={p.id} onClose={() => setGradePricing(null)}/> : null}
+            expandedRow={(p) => {
+                if (gradePricing === p.id) {
+                    return <GradePriceEditor productId={p.id} onClose={() => setGradePricing(null)}/>;
+                }
+                if (stockHistoryFor === p.id) {
+                    return <StockMovementPanel productId={p.id} onClose={() => setStockHistoryFor(null)}/>;
+                }
+                return null;
+            }}
         />
     );
 }
@@ -705,7 +794,7 @@ const toReservationItemBody = ({priceTiersText, categoryId, ...values}: FormValu
 const loadReservationItems = (query: Query) => adminApi.reservationItems.search(query);
 
 export function ReservationItemAdminPage() {
-    const categories = useCategories('RESERVATION_ITEM');
+    const categories = useCategories();
     const base = useMemo(() => {
         const at = RESERVATION_ITEM_FIELDS.findIndex((field) => field.name === 'description') + 1;
         return [...RESERVATION_ITEM_FIELDS.slice(0, at), ...categorySelectField(categories), ...RESERVATION_ITEM_FIELDS.slice(at)];
@@ -716,7 +805,10 @@ export function ReservationItemAdminPage() {
             title="예약"
             description={<>
                 <p>시간 예약(프로그램·상담·출장·방문·여행·투어), 공간 예약(대관·숙박·공연·식당 테이블), 물품 대여를 등록합니다. 예약 내역은 "예약" 메뉴에서 확인합니다.</p>
-                <p><Link to="/admin/check-in">체크인 →</Link> · <Link to="/admin/reception-queue">접수·대기 →</Link></p>
+                <p className="toolbar">
+                    <Link className="button" to="/admin/check-in">체크인</Link>
+                    <Link className="button" to="/admin/reception-queue">접수·대기</Link>
+                </p>
             </>}
             load={loadReservationItems}
             fields={fields}
@@ -863,7 +955,6 @@ export function ReservationAdminPage() {
             title="예약"
             description={<>
                 <p>관리자가 전화·현장 예약을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다. 예약번호나 예약 상품명으로 검색할 수 있습니다.</p>
-                <p><Link to="/admin/customer-records">고객 기록 보기 →</Link></p>
                 <RegexBindingSelect target="RESERVATION_NUMBER" label="예약번호 정규식"/>
                 <StatusManager domain="RESERVATION" statuses={statuses} onChange={reloadStatuses}/>
             </>}
@@ -910,9 +1001,8 @@ export function ReservationAdminPage() {
                 )},
             ]}
             actions={(r) => r.userType === 'MEMBER' && (
-                <button type="button" onClick={() => setRecordingFor(recordingFor === r.id ? null : r.id)}>
-                    {recordingFor === r.id ? '취소' : '기록 남기기'}
-                </button>
+                <RecordAction reservation={r} recording={recordingFor === r.id}
+                              onToggle={() => setRecordingFor(recordingFor === r.id ? null : r.id)}/>
             )}
             expandedRow={(r, reload) => recordingFor === r.id && (
                 <SchemaForm
@@ -928,6 +1018,23 @@ export function ReservationAdminPage() {
                 />
             )}
         />
+    );
+}
+
+function RecordAction({reservation, recording, onToggle}: { reservation: Reservation; recording: boolean; onToggle: () => void }) {
+    const [hasRecord, setHasRecord] = useState(false);
+    useEffect(() => {
+        adminApi.customerRecords.search({reservationId: reservation.id, size: 1})
+            .then((page) => setHasRecord(page.content.length > 0))
+            .catch(() => setHasRecord(false));
+    }, [reservation]);
+    if (hasRecord) {
+        return <Link to={`/admin/customer-records?reservationId=${reservation.id}`}>기록 보기</Link>;
+    }
+    return (
+        <button type="button" onClick={onToggle}>
+            {recording ? '취소' : '기록 남기기'}
+        </button>
     );
 }
 

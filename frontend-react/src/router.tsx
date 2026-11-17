@@ -10,6 +10,7 @@ import {ApiKeyPage} from './pages/admin/ApiKeyPage';
 import {AllowedIpPage} from './pages/admin/AllowedIpPage';
 import {LoginSecurityPage} from './pages/admin/LoginSecurityPage';
 import {IdentityVerificationSettingPage} from './pages/admin/IdentityVerificationSettingPage';
+import {PostcodeAdminPage} from './pages/admin/PostcodeAdminPage';
 import {CustomerRecordAdminPage} from './pages/admin/CustomerRecordAdminPage';
 import {CheckInAdminPage} from './pages/admin/CheckInAdminPage';
 import {ReceptionQueueAdminPage} from './pages/admin/ReceptionQueueAdminPage';
@@ -350,6 +351,7 @@ export const routes = [
                             {path: 'files', element: <FilePage/>},
                             {path: 'audit-logs', element: <AuditLogPage/>},
                             {path: 'identity-verification', element: <IdentityVerificationSettingPage/>},
+                            {path: 'postcode', element: <PostcodeAdminPage/>},
                             {path: 'password-hash', element: <PasswordHashPage/>},
                             {path: 'crypto-key', element: <CryptoKeyPage/>},
                             {path: 'api-keys', element: <ApiKeyPage/>},

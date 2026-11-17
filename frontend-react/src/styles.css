@@ -10,6 +10,7 @@
     --ok: #1b7f3b;
     --radius: 8px;
     --admin-header-height: 57px;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%231d2129' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     color-scheme: light;
     font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -27,6 +28,7 @@
         --primary: #5b80ff;
         --danger: #ef6b6b;
         --ok: #4cc27a;
+        --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23e6e8eb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
         color-scheme: dark;
     }
 }
@@ -40,6 +42,7 @@
     --primary: #5b80ff;
     --danger: #ef6b6b;
     --ok: #4cc27a;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23e6e8eb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     color-scheme: dark;
 }
 
@@ -247,8 +250,19 @@ input:not([type='checkbox']):not([type='file']), select {
     padding: 8px 10px;
     border: 1px solid var(--border);
     border-radius: 6px;
-    background: var(--surface);
+    background-color: var(--surface);
     color: var(--text);
+}
+
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 30px;
+    background-image: var(--select-arrow);
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 10px 6px;
 }
 
 input[aria-invalid='true'] {
@@ -1375,6 +1389,23 @@ h1 .badge {
     overflow: auto;
 }
 
+.postcode-results {
+    width: 420px;
+    max-width: 100%;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.postcode-results li + li {
+    margin-top: 4px;
+}
+
+.postcode-results button {
+    width: 100%;
+    text-align: left;
+}
+
 .popup p {
     margin: 0 0 8px;
 }
@@ -1861,10 +1892,14 @@ input:not([type='checkbox']):not([type='radio']):not([type='file']), select, tex
     border-radius: 10px;
     padding: 10px 14px;
     border: 1px solid var(--border);
-    background: var(--surface);
+    background-color: var(--surface);
     color: var(--text);
     font: inherit;
     transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+
+select {
+    padding-right: 30px;
 }
 
 input:not([type='checkbox']):not([type='radio']):not([type='file']):hover, select:hover, textarea:hover {
