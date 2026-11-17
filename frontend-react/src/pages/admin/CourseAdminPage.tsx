@@ -135,7 +135,7 @@ function CourseTabs() {
 }
 
 function CourseCrudPage({isCourse, title, description}: { isCourse: boolean; title: string; description: string }) {
-    const categories = useCategories('COURSE');
+    const categories = useCategories();
     const base = useMemo(() => {
         const at = FIELDS.findIndex((field) => field.name === 'description') + 1;
         return [...FIELDS.slice(0, at), ...categorySelectField(categories), ...FIELDS.slice(at)];

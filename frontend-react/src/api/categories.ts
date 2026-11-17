@@ -15,11 +15,8 @@ export interface CategoryAttribute {
     filterable: boolean;
 }
 
-export type CategoryDomain = 'PRODUCT' | 'RESERVATION_ITEM' | 'APPLICATION' | 'COURSE';
-
 export interface Category {
     id: number;
-    domain: CategoryDomain;
     name: string;
     parentId: number | null;
     sequence: number;
@@ -36,17 +33,18 @@ export interface Spec {
 }
 
 export const categoryApi = {
-    list: (domain: CategoryDomain) => request<Category[]>('/api/categories', {query: {domain}}),
+    list: () => request<Category[]>('/api/categories'),
     create: (body: unknown) => request<void>('/api/admin/categories', {method: 'POST', body}),
     update: (id: number, body: unknown) => request<void>(`/api/admin/categories/${id}`, {method: 'PUT', body}),
     remove: (id: number) => request<void>(`/api/admin/categories/${id}`, {method: 'DELETE'}),
 };
 
-export function useCategories(domain: CategoryDomain): Category[] {
+/** 상품·예약 상품·신청·지원·스트리밍/교육과정이 공용으로 쓰는 하나의 카테고리 목록. */
+export function useCategories(): Category[] {
     const [categories, setCategories] = useState<Category[]>([]);
     useEffect(() => {
-        categoryApi.list(domain).then((loaded) => setCategories(Array.isArray(loaded) ? loaded : [])).catch(() => setCategories([]));
-    }, [domain]);
+        categoryApi.list().then((loaded) => setCategories(Array.isArray(loaded) ? loaded : [])).catch(() => setCategories([]));
+    }, []);
     return categories;
 }
 

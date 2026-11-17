@@ -1,6 +1,5 @@
 package com.dgmoonlabs.cms.domain.business.category.entity;
 
-import com.dgmoonlabs.cms.domain.business.category.constant.CategoryDomain;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,11 +20,6 @@ public class Category extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, columnDefinition = "varchar(20)")
-    @Enumerated(EnumType.STRING)
-    @Comment("어디서 쓰는 카테고리인지 (상품·예약 상품·신청·지원·스트리밍/교육과정)")
-    private CategoryDomain domain;
-
     @Column(nullable = false, length = 50)
     @Comment("카테고리 이름")
     private String name;
@@ -39,7 +33,7 @@ public class Category extends BaseEntity {
     private int sequence;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Comment("상품 속성 정의 (하위 카테고리는 상위 속성을 물려받음, 상품 카테고리에서만 씀)")
+    @Comment("상품 속성 정의 (하위 카테고리는 상위 속성을 물려받음, 상품에만 씀)")
     private List<CategoryAttribute> attributes;
 
     public void update(final String name, final Long parentId, final int sequence, final List<CategoryAttribute> attributes) {

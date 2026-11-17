@@ -1,7 +1,6 @@
 package com.dgmoonlabs.cms.domain.business.reservation.service;
 
 import com.dgmoonlabs.cms.domain.business.BusinessNumbers;
-import com.dgmoonlabs.cms.domain.business.category.constant.CategoryDomain;
 import com.dgmoonlabs.cms.domain.business.category.service.CategoryService;
 import com.dgmoonlabs.cms.domain.business.discount.service.DiscountService;
 import com.dgmoonlabs.cms.domain.business.pass.entity.MemberPass;
@@ -201,7 +200,7 @@ public class ReservationService {
 
     private void changeCategory(final ReservationItem item, final ReservationItemSaveRequest request) {
         item.changeCategory(request.categoryId() == null ? null
-                : categoryService.findForDomain(request.categoryId(), CategoryDomain.RESERVATION_ITEM).getId());
+                : categoryService.find(request.categoryId()).getId());
     }
 
     @Transactional

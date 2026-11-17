@@ -1,7 +1,6 @@
 package com.dgmoonlabs.cms.domain.application.service;
 
 import com.dgmoonlabs.cms.domain.application.constant.FormFieldType;
-import com.dgmoonlabs.cms.domain.business.category.constant.CategoryDomain;
 import com.dgmoonlabs.cms.domain.business.category.service.CategoryService;
 import com.dgmoonlabs.cms.domain.application.constant.SubmissionStatus;
 import com.dgmoonlabs.cms.domain.application.dto.ApplicationDtos.*;
@@ -105,7 +104,7 @@ public class ApplicationService {
 
     private void changeCategory(final ApplicationForm form, final FormSaveRequest request) {
         form.changeCategory(request.categoryId() == null ? null
-                : categoryService.findForDomain(request.categoryId(), CategoryDomain.APPLICATION).getId());
+                : categoryService.find(request.categoryId()).getId());
     }
 
     @Transactional

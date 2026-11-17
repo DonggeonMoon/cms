@@ -63,7 +63,7 @@ export function ProductListPage() {
     const keyword = params.get('keyword') ?? '';
     const [data, setData] = useState<Page<ProductSummary> | null>(null);
     const [error, setError] = useState<unknown>(null);
-    const categories = useCategories('PRODUCT');
+    const categories = useCategories();
     const query = params.toString();
     const filtered = [...params.keys()].some((key) => key === 'categoryId' || /^(attr|min|max)\./.test(key));
 

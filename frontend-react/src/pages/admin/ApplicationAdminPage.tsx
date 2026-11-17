@@ -38,7 +38,7 @@ const toFormBody = (values: FormValues) => ({...values, categoryId: values.categ
 export function ApplicationAdminPage() {
     const [openId, setOpenId] = useState<number | null>(null);
     const [products, setProducts] = useState<{ value: string; label: string }[]>([]);
-    const categories = useCategories('APPLICATION');
+    const categories = useCategories();
     useEffect(() => {
         adminApi.products.search({size: 200})
             .then((page) => setProducts(page.content.map((p) => ({value: String(p.id), label: p.name}))))

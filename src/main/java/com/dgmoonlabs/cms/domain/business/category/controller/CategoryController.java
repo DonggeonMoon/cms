@@ -1,6 +1,5 @@
 package com.dgmoonlabs.cms.domain.business.category.controller;
 
-import com.dgmoonlabs.cms.domain.business.category.constant.CategoryDomain;
 import com.dgmoonlabs.cms.domain.business.category.dto.CategoryDtos.CategoryResponse;
 import com.dgmoonlabs.cms.domain.business.category.dto.CategoryDtos.CategorySaveRequest;
 import com.dgmoonlabs.cms.domain.business.category.service.CategoryService;
@@ -18,8 +17,8 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @GetMapping("/api/categories")
-    public ResponseEntity<List<CategoryResponse>> categories(@RequestParam final CategoryDomain domain) {
-        return ResponseEntity.ok(categoryService.getCategories(domain));
+    public ResponseEntity<List<CategoryResponse>> categories() {
+        return ResponseEntity.ok(categoryService.getCategories());
     }
 
     @PostMapping("/api/admin/categories")

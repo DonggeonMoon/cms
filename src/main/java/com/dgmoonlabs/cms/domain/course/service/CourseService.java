@@ -1,6 +1,5 @@
 package com.dgmoonlabs.cms.domain.course.service;
 
-import com.dgmoonlabs.cms.domain.business.category.constant.CategoryDomain;
 import com.dgmoonlabs.cms.domain.business.category.service.CategoryService;
 import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
 import com.dgmoonlabs.cms.domain.business.order.entity.Order;
@@ -175,7 +174,7 @@ public class CourseService {
 
     private void changeCategory(final Course course, final CourseSaveRequest request) {
         course.changeCategory(request.categoryId() == null ? null
-                : categoryService.findForDomain(request.categoryId(), CategoryDomain.COURSE).getId());
+                : categoryService.find(request.categoryId()).getId());
     }
 
     @Transactional
