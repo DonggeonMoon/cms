@@ -15,8 +15,6 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Getter
 public class Streaming extends BaseEntity {
-    public static final int DEFAULT_COMPLETION_RATE = 90;
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -44,16 +42,6 @@ public class Streaming extends BaseEntity {
     @Column(nullable = false)
     @Comment("재생 시간(초)")
     private int durationSeconds;
-
-    @Column(nullable = false)
-    @ColumnDefault("90")
-    @Comment("수강 완료 진도율(%)")
-    private int completionRate;
-
-    @Column(nullable = false)
-    @ColumnDefault("true")
-    @Comment("진도 체크·수강 완료 기능 사용 여부")
-    private boolean trackProgress;
 
     @Column(nullable = false)
     @ColumnDefault("true")
@@ -93,16 +81,13 @@ public class Streaming extends BaseEntity {
     }
 
     public void update(final String title, final String description, final Long fileId, final Long thumbnailFileId,
-                       final MediaType mediaType, final int durationSeconds, final int completionRate,
-                       final boolean trackProgress, final boolean isUsing) {
+                       final MediaType mediaType, final int durationSeconds, final boolean isUsing) {
         this.title = title;
         this.description = description;
         this.fileId = fileId;
         this.thumbnailFileId = thumbnailFileId;
         this.mediaType = mediaType;
         this.durationSeconds = durationSeconds;
-        this.completionRate = completionRate;
-        this.trackProgress = trackProgress;
         this.isUsing = isUsing;
     }
 }

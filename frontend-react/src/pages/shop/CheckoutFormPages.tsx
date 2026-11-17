@@ -1,16 +1,17 @@
 import {type FormEvent, useEffect, useState} from 'react';
 import {Link, useNavigate, useSearchParams} from 'react-router';
-import type {ProductDetail, ProductSaleType, ReservationItem} from '../../api/domain';
-import {EMPTY_STORE_CHOICE, type StoreChoice, StoreOrderFields} from './StoreOrderFields';
+import type {ExchangeRate, ProductDetail, ProductSaleType, ReservationItem, TaxSetting} from '../../api/domain';
 import {type DiscountChoice, DiscountSelector, NO_DISCOUNT} from './DiscountSelector';
 import {shopApi} from '../../api/endpoints';
 import {memberApi} from '../../api/members';
+import {couponApi, couponBenefit, type CouponIssue, couponDiscountFor, maxUsablePoints, type PointPolicy, pointApi} from '../../api/rewards';
 import {won} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {Field} from '../../components/Field';
 import {formatDate, formatDateTime} from '../../components/format';
 import {BILLING_CYCLE} from '../../components/labels';
 import {PostcodeButton} from '../../components/PostcodeButton';
+import {PriceNotice} from '../../components/PriceNotice';
 import {reservationUsage} from '../../components/reservationUsage';
 import {StableLabel} from '../../components/StableLabel';
 import {estimateReservation} from './ReservationPicker';
@@ -40,14 +41,16 @@ export function OrderFormPage() {
     const [requestMessage, setRequestMessage] = useState('');
     const [product, setProduct] = useState<ProductDetail | null>(null);
     const [rewards, setRewards] = useState<DiscountChoice>(NO_DISCOUNT);
-    const [storeChoice, setStoreChoice] = useState<StoreChoice>(EMPTY_STORE_CHOICE);
-    const [storeOpen, setStoreOpen] = useState(true);
     const [receiver, setReceiver] = useState({receiverName: '', phoneNumber: '', postalCode: '', address: '', detailAddress: '', country: ''});
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [tax, setTax] = useState<TaxSetting | null>(null);
+    const [rates, setRates] = useState<ExchangeRate[]>([]);
 
     useEffect(() => {
         shopApi.product(productId).then(setProduct).catch(setError);
+        shopApi.taxSetting().then((t) => setTax(t ?? null)).catch(() => setTax(null));
+        shopApi.exchangeRates().then((r) => setRates(r ?? [])).catch(() => setRates([]));
         memberApi.me().then((me) => setReceiver((current) => ({
             receiverName: current.receiverName || me.name || '',
             phoneNumber: current.phoneNumber || me.mobilePhoneNumber || me.telephoneNumber || '',
@@ -72,10 +75,8 @@ export function OrderFormPage() {
     const mode = MODES[product.saleType ?? 'PURCHASE'];
     const purchase = (product.saleType ?? 'PURCHASE') === 'PURCHASE';
     const shipsLikePurchase = product.saleType === 'PREORDER' || product.saleType === 'FUNDING';
-    const store = purchase && product.storeOrder;
-    const delivering = store && storeChoice.fulfillmentType === 'LOCAL_DELIVERY';
     const needsAddress = shipsLikePurchase ? product.requiresShipping !== false
-        : purchase && ((!store && product.requiresShipping !== false) || delivering);
+        : purchase && product.requiresShipping !== false;
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
@@ -87,11 +88,9 @@ export function OrderFormPage() {
                 productOptionId: option ? option.id : null,
                 discountId: discount ? discount.id : null,
                 quantity,
-                ...(product.saleType === 'DONATION' || (store && !delivering)
-                    ? {receiverName: receiver.receiverName, phoneNumber: receiver.phoneNumber} : receiver),
-                ...(store ? {...storeChoice, deliverySlotAt: storeChoice.deliverySlotAt ? `${storeChoice.deliverySlotAt}:00` : null} : {}),
+                ...(product.saleType === 'DONATION' ? {receiverName: receiver.receiverName, phoneNumber: receiver.phoneNumber} : receiver),
                 amount: product.saleType === 'DONATION' ? amount : null,
-                ...(store ? {} : {requestMessage: product.saleType === 'QUOTE' ? requestMessage : null}),
+                requestMessage: product.saleType === 'QUOTE' ? requestMessage : null,
                 ...(purchase ? rewards : {}),
             });
             navigate(product.saleType === 'QUOTE' ? '/mypage/orders' : `/checkout/ORDER/${created.id}`);
@@ -124,15 +123,14 @@ export function OrderFormPage() {
                                   onChange={(e) => setRequestMessage(e.target.value)}/>
                     </div>
                 )}
-                {store && <StoreOrderFields value={storeChoice} onChange={setStoreChoice} onAvailability={setStoreOpen}/>}
                 <fieldset>
-                    <legend>{store ? '주문자 정보' : mode.receiverLegend}</legend>
-                    <Field label={product.saleType === 'DONATION' ? '후원자 이름' : product.saleType === 'QUOTE' ? '담당자 이름' : store ? '주문자' : '수령인'}
+                    <legend>{mode.receiverLegend}</legend>
+                    <Field label={product.saleType === 'DONATION' ? '후원자 이름' : product.saleType === 'QUOTE' ? '담당자 이름' : '수령인'}
                            name="receiverName" required value={receiver.receiverName}
                            onChange={(e) => setReceiver({...receiver, receiverName: e.target.value})}/>
                     <Field label="연락처" name="phoneNumber" type="tel" required value={receiver.phoneNumber}
                            onChange={(e) => setReceiver({...receiver, phoneNumber: e.target.value})}/>
-                    {product.saleType !== 'DONATION' && (!store || delivering) && (
+                    {product.saleType !== 'DONATION' && (
                         <>
                             <div className="row align-end">
                                 <Field label="우편번호" name="postalCode" value={receiver.postalCode}
@@ -156,12 +154,17 @@ export function OrderFormPage() {
                             <DiscountSelector postalCode={needsAddress ? receiver.postalCode : null} value={rewards} onChange={setRewards}
                                               lines={[{productId, productOptionId: option ? option.id : null, quantity,
                                                   discountId: discount ? discount.id : null}]}/>
-                        ) : <p className="price align-right">{mode.totalLabel} {won(total)}</p>
+                        ) : (
+                            <div className="align-right">
+                                <p className="price">{mode.totalLabel} {won(total)}</p>
+                                <PriceNotice amount={total} tax={tax} rates={rates}/>
+                            </div>
+                        )
                     )}
                 <ErrorBanner error={error}/>
                 <div className="toolbar form-actions">
                     <button type="button" onClick={() => navigate(-1)}>이전</button>
-                    <button type="submit" className="primary" disabled={submitting || (store && !storeOpen)}>
+                    <button type="submit" className="primary" disabled={submitting}>
                         <StableLabel current={submitting ? '보내는 중…' : mode.submit} labels={['보내는 중…', mode.submit]}/>
                     </button>
                 </div>
@@ -186,13 +189,25 @@ export function ReservationFormPage() {
     const [visit, setVisit] = useState({visitPostalCode: '', visitAddress: '', visitDetailAddress: '', requestMemo: ''});
     const [error, setError] = useState<unknown>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [tax, setTax] = useState<TaxSetting | null>(null);
+    const [rates, setRates] = useState<ExchangeRate[]>([]);
+    const [coupons, setCoupons] = useState<CouponIssue[]>([]);
+    const [pointBalance, setPointBalance] = useState(0);
+    const [pointPolicy, setPointPolicy] = useState<PointPolicy | null>(null);
+    const [couponIssueId, setCouponIssueId] = useState<number | null>(null);
+    const [pointsText, setPointsText] = useState('');
 
     useEffect(() => {
         shopApi.reservationItem(reservationItemId).then(setItem).catch(setError);
+        shopApi.taxSetting().then((t) => setTax(t ?? null)).catch(() => setTax(null));
+        shopApi.exchangeRates().then((r) => setRates(r ?? [])).catch(() => setRates([]));
         memberApi.me().then((me) => setForm((current) => ({
             applicantName: current.applicantName || me.name || '',
             phoneNumber: current.phoneNumber || me.mobilePhoneNumber || me.telephoneNumber || '',
         }))).catch(() => undefined);
+        couponApi.mine().then((list) => setCoupons(list ?? [])).catch(() => setCoupons([]));
+        pointApi.mine().then((summary) => setPointBalance(summary?.balance ?? 0)).catch(() => setPointBalance(0));
+        pointApi.policy().then((p) => setPointPolicy(p ?? null)).catch(() => setPointPolicy(null));
     }, [reservationItemId]);
 
     if (error && !item) {
@@ -202,13 +217,27 @@ export function ReservationFormPage() {
         return <p className="muted">불러오는 중…</p>;
     }
 
+    const subtotal = passId ? 0 : item.reservationType === 'PROGRAM' ? Number(item.price) * quantity
+        : estimateReservation(item, selection);
+    const usableCoupons = coupons.filter((c) => c.status === 'AVAILABLE' && c.productId == null && c.discountType != null);
+    const chosenCoupon = usableCoupons.find((c) => c.id === couponIssueId) ?? null;
+    const couponDiscount = chosenCoupon
+        ? couponDiscountFor({discountType: chosenCoupon.discountType!, discountValue: chosenCoupon.discountValue!,
+            maxDiscountAmount: chosenCoupon.maxDiscountAmount, minOrderAmount: chosenCoupon.minOrderAmount}, subtotal)
+        : 0;
+    const afterCoupon = subtotal - couponDiscount;
+    const maxPoints = pointPolicy ? maxUsablePoints(pointPolicy, pointBalance, afterCoupon) : 0;
+    const usePoints = Math.min(Number(pointsText) || 0, maxPoints);
+    const total = passId ? 0 : Math.max(0, afterCoupon - usePoints);
+
     const submit = async (event: FormEvent) => {
         event.preventDefault();
         setSubmitting(true);
         setError(null);
         try {
             const reservation = await shopApi.reserve({reservationItemId, ...selection, quantity, sessionId, passId, partySize, ...form,
-                ...(item.reservationType === 'VISIT' ? visit : {})});
+                ...(item.reservationType === 'VISIT' ? visit : {}),
+                ...(passId ? {} : {couponIssueId, usePoints})});
             navigate(reservation.status === 'PENDING_PAYMENT' ? `/checkout/RESERVATION/${reservation.id}` : '/mypage/reservations');
         } catch (e) {
             setError(e);
@@ -277,9 +306,40 @@ export function ReservationFormPage() {
                         </div>
                     </fieldset>
                 )}
-                <p className="price align-right">결제 금액 {passId ? '이용권 사용 (0원)' : item.reservationType === 'PROGRAM'
-                    ? (Number(item.price) === 0 ? '무료' : won(Number(item.price) * quantity))
-                    : won(estimateReservation(item, selection))}</p>
+                {!passId && (usableCoupons.length > 0 || pointBalance > 0) && (
+                    <fieldset>
+                        <legend>쿠폰·포인트</legend>
+                        {usableCoupons.length > 0 && (
+                            <div className="field">
+                                <label htmlFor="couponIssueId">쿠폰</label>
+                                <select id="couponIssueId" value={couponIssueId ?? ''}
+                                        onChange={(e) => setCouponIssueId(e.target.value ? Number(e.target.value) : null)}>
+                                    <option value="">쿠폰 사용 안 함</option>
+                                    {usableCoupons.map((c) => (
+                                        <option key={c.id} value={c.id}>{c.couponName} ({couponBenefit(c)})</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        {pointBalance > 0 && (
+                            <div className="field">
+                                <label htmlFor="usePoints">포인트 (보유 {pointBalance.toLocaleString('ko-KR')}P)</label>
+                                <div className="toolbar">
+                                    <input id="usePoints" type="number" min={0} max={maxPoints} value={pointsText}
+                                           placeholder="0" onChange={(e) => setPointsText(e.target.value)}/>
+                                    <button type="button" onClick={() => setPointsText(String(maxPoints))}>최대 사용</button>
+                                </div>
+                                <p className="muted small">최대 {maxPoints.toLocaleString('ko-KR')}P 쓸 수 있습니다.</p>
+                            </div>
+                        )}
+                    </fieldset>
+                )}
+                <div className="align-right">
+                    <p className="price">결제 금액 {passId ? '이용권 사용 (0원)' : item.reservationType === 'PROGRAM'
+                        ? (Number(item.price) === 0 ? '무료' : won(total))
+                        : won(total)}</p>
+                    {!passId && <PriceNotice amount={total} tax={tax} rates={rates}/>}
+                </div>
                 <ErrorBanner error={error}/>
                 <div className="toolbar form-actions">
                     <button type="button" onClick={() => navigate(-1)}>이전</button>

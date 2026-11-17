@@ -7,6 +7,10 @@ import com.dgmoonlabs.cms.domain.common.file.service.FileService.DownloadableFil
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.domain.common.user.entity.member.Member;
 import com.dgmoonlabs.cms.domain.common.user.repository.MemberRepository;
+import com.dgmoonlabs.cms.domain.course.entity.Course;
+import com.dgmoonlabs.cms.domain.course.entity.CourseLesson;
+import com.dgmoonlabs.cms.domain.course.repository.CourseLessonRepository;
+import com.dgmoonlabs.cms.domain.course.repository.CourseRepository;
 import com.dgmoonlabs.cms.domain.streaming.dto.StreamingDtos;
 import com.dgmoonlabs.cms.domain.streaming.dto.StreamingDtos.*;
 import com.dgmoonlabs.cms.domain.streaming.entity.Streaming;
@@ -47,6 +51,8 @@ public class StreamingService {
     private final FileService fileService;
     private final StreamingAccessRepository accessRepository;
     private final StreamingSalesService salesService;
+    private final CourseLessonRepository courseLessonRepository;
+    private final CourseRepository courseRepository;
 
     @Transactional(readOnly = true)
     public Page<StreamingResponse> getStreamingList(final String keyword, final MediaType mediaType, final Pageable pageable) {
@@ -66,7 +72,7 @@ public class StreamingService {
         Streaming streaming = findPublic(id);
         gradeService.require(streaming.getAccessGradeId());
         requirePurchased(streaming, member.id());
-        if (!streaming.isTrackProgress()) {
+        if (!progressSettingsOf(id).trackProgress()) {
             return null;
         }
         StreamingEnrollment enrollment = enrollmentOf(streaming.getId(), member.id());
@@ -80,7 +86,8 @@ public class StreamingService {
         Streaming streaming = findPublic(id);
         gradeService.require(streaming.getAccessGradeId());
         requirePurchased(streaming, member.id());
-        if (!streaming.isTrackProgress()) {
+        ProgressSettings settings = progressSettingsOf(id);
+        if (!settings.trackProgress()) {
             return null;
         }
         StreamingEnrollment enrollment = enrollmentOf(streaming.getId(), member.id());
@@ -93,7 +100,7 @@ public class StreamingService {
             ranges = ranges.add((int) Math.round(range.start()), (int) Math.round(range.end()), duration);
         }
         progress.record(ranges, (int) Math.round(request.position()), duration, LocalDateTime.now());
-        if (progress.getProgressRate() >= streaming.getCompletionRate()) {
+        if (progress.getProgressRate() >= settings.completionRate()) {
             enrollment.complete();
         }
         progressRepository.flush();
@@ -150,8 +157,6 @@ public class StreamingService {
                 .thumbnailFileId(requireImage(request.thumbnailFileId()))
                 .mediaType(playableType(request.fileId()))
                 .durationSeconds(request.durationSeconds())
-                .completionRate(request.completionRateOrDefault())
-                .trackProgress(request.trackProgressOrDefault())
                 .isUsing(request.isUsingOrDefault())
                 .accessGradeId(gradeService.validGradeId(request.accessGradeId()))
                 .build());
@@ -165,8 +170,7 @@ public class StreamingService {
         Streaming streaming = findStreaming(id);
         streaming.update(request.title().trim(), request.description(), request.fileId(),
                 requireImage(request.thumbnailFileId()), playableType(request.fileId()),
-                request.durationSeconds(), request.completionRateOrDefault(), request.trackProgressOrDefault(),
-                request.isUsingOrDefault());
+                request.durationSeconds(), request.isUsingOrDefault());
         streaming.changeAccessGrade(gradeService.validGradeId(request.accessGradeId()));
         applySale(streaming, request);
     }
@@ -224,6 +228,7 @@ public class StreamingService {
         Map<Long, StreamingProgress> progresses = memberId == null ? Map.of() : byKey(
                 progressRepository.findAllByMemberIdAndStreamingIdIn(memberId, streamingIds), StreamingProgress::getStreamingId);
         Map<Long, FileResponse> files = filesOf(streamingItems);
+        Map<Long, ProgressSettings> settings = progressSettingsOf(streamingIds);
         LocalDateTime now = LocalDateTime.now();
         boolean admin = CurrentUser.isAdmin();
         Map<Long, LocalDateTime> purchased = new HashMap<>();
@@ -234,10 +239,35 @@ public class StreamingService {
         return streamingItems.stream().map(streaming -> {
             LocalDateTime until = purchased.get(streaming.getId());
             boolean playable = admin || !streaming.isPaid() || until != null;
+            ProgressSettings setting = settings.getOrDefault(streaming.getId(), ProgressSettings.NONE);
             return StreamingResponse.of(streaming, files.get(streaming.getFileId()),
                     MyProgress.of(enrollments.get(streaming.getId()), progresses.get(streaming.getId())), playable,
-                    until == null || until.equals(LocalDateTime.MAX) ? null : until);
+                    until == null || until.equals(LocalDateTime.MAX) ? null : until,
+                    setting.trackProgress(), setting.completionRate());
         }).toList();
+    }
+
+    /** 영상·음악 자체가 아니라, 그 영상을 차시로 쓰는 시리즈/교육과정의 진도 체크 설정을 따른다(차시로 쓰이지 않으면 체크하지 않음). */
+    private record ProgressSettings(boolean trackProgress, int completionRate) {
+        static final ProgressSettings NONE = new ProgressSettings(false, 90);
+    }
+
+    private ProgressSettings progressSettingsOf(final Long streamingId) {
+        return progressSettingsOf(List.of(streamingId)).getOrDefault(streamingId, ProgressSettings.NONE);
+    }
+
+    private Map<Long, ProgressSettings> progressSettingsOf(final Collection<Long> streamingIds) {
+        List<CourseLesson> lessons = courseLessonRepository.findAllByStreamingIdInAndDeletedAtIsNull(streamingIds);
+        Map<Long, Course> courses = byKey(courseRepository.findAllById(
+                lessons.stream().map(CourseLesson::getCourseId).distinct().toList()), Course::getId);
+        Map<Long, ProgressSettings> result = new HashMap<>();
+        for (CourseLesson lesson : lessons) {
+            Course course = courses.get(lesson.getCourseId());
+            if (course != null) {
+                result.put(lesson.getStreamingId(), new ProgressSettings(course.isTrackProgress(), course.getCompletionRate()));
+            }
+        }
+        return result;
     }
 
     private Map<Long, FileResponse> filesOf(final Collection<Streaming> streamingItems) {

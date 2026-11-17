@@ -13,33 +13,41 @@ import {ListSearch, pageParams} from '../components/ListSearch';
 import {MemberOnlyNotice} from '../components/MemberOnlyNotice';
 import {Pagination} from '../components/Pagination';
 
-export function CourseListPage() {
+function CourseOrSeriesListPage({isCourse, title, basePath}: { isCourse: boolean; title: string; basePath: string }) {
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
     const keyword = params.get('keyword') ?? '';
     const [data, setData] = useState<Page<Course> | null>(null);
     const [error, setError] = useState<unknown>(null);
     useEffect(() => {
-        courseApi.list(keyword, page).then(setData).catch(setError);
-    }, [keyword, page]);
+        courseApi.list(keyword, page, isCourse).then(setData).catch(setError);
+    }, [keyword, page, isCourse]);
     return (
         <section className="card">
-            <h1>시리즈/교육과정</h1>
-            <ListSearch label="시리즈/교육과정 검색" placeholder="이름 검색"/>
+            <h1>{title}</h1>
+            <ListSearch label={`${title} 검색`} placeholder="이름 검색"/>
             <ErrorBanner error={error}/>
             <ul className="list">
                 {data?.content.map((course) => (
                     <li key={course.id}>
-                        <Link to={`/courses/${course.id}`}><strong>{course.title}</strong></Link>
+                        <Link to={`${basePath}/${course.id}`}><strong>{course.title}</strong></Link>
                         <span className="muted small"> {course.lessonCount}차시</span>
                         {course.description && <p className="muted small">{course.description}</p>}
                     </li>
                 ))}
             </ul>
-            {data?.content.length === 0 && <p className="muted">{keyword ? '검색 결과가 없습니다.' : '열린 시리즈/교육과정이 없습니다.'}</p>}
+            {data?.content.length === 0 && <p className="muted">{keyword ? '검색 결과가 없습니다.' : `열린 ${title}이 없습니다.`}</p>}
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={(next) => setParams(pageParams(keyword, next))}/>}
         </section>
     );
+}
+
+export function CourseListPage() {
+    return <CourseOrSeriesListPage isCourse={true} title="교육과정" basePath="/courses"/>;
+}
+
+export function SeriesListPage() {
+    return <CourseOrSeriesListPage isCourse={false} title="시리즈" basePath="/series"/>;
 }
 
 export function CourseDetailPage() {
@@ -418,7 +426,9 @@ export function MyCoursesPage() {
                     <tbody>
                     {data?.content.map((course) => (
                         <tr key={course.id}>
-                            <td>{course.isUsing ? <Link to={`/courses/${course.id}`}>{course.title}</Link> : course.title}</td>
+                            <td>{course.isUsing
+                                ? <Link to={`${course.isCourse ? '/courses' : '/series'}/${course.id}`}>{course.title}</Link>
+                                : course.title}</td>
                             <td>{course.myProgress ? ENROLLMENT_STATUS[course.myProgress.status] : '-'}</td>
                             <td>{course.myProgress?.completedLessons ?? 0} / {course.lessonCount}차시</td>
                             <td className="small">{formatDateTime(course.myProgress?.enrolledAt)}</td>

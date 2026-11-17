@@ -1,5 +1,4 @@
 import type {Spec} from './categories';
-import type {FulfillmentType} from './store';
 import type {FileInfo, MediaType} from './types';
 
 export type MenuType = 'CONTENT' | 'BOARD' | 'ARCHIVE' | 'LINK' | 'FEATURE';
@@ -430,7 +429,6 @@ export interface ProductSummary {
     isEnabled: boolean;
     imageUrl: string | null;
     categoryId: number | null;
-    storeOrder: boolean;
     createdAt: string;
 }
 
@@ -732,22 +730,7 @@ export interface CustomerRecord {
 
 export type MyCustomerRecord = Pick<CustomerRecord, 'id' | 'reservationId' | 'recordedOn' | 'category' | 'title' | 'content' | 'photoUrls'>;
 
-export interface AttendanceRosterEntry {
-    subscriptionId: number;
-    memberId: number;
-    memberName: string | null;
-    present: boolean | null;
-    note: string | null;
-}
-
-export interface MyAttendance {
-    attendedOn: string;
-    present: boolean;
-    note: string | null;
-}
-
-export type OrderStatus = 'QUOTE_REQUESTED' | 'QUOTED' | 'PENDING_PAYMENT' | 'PAID' | 'SHIPPING' | 'DELIVERED' | 'PREPARING' | 'READY'
-    | 'COMPLETED' | 'CANCELED';
+export type OrderStatus = 'QUOTE_REQUESTED' | 'QUOTED' | 'PENDING_PAYMENT' | 'PAID' | 'SHIPPING' | 'DELIVERED' | 'CANCELED';
 
 export interface Order {
     id: number;
@@ -763,10 +746,6 @@ export interface Order {
     totalPrice: number | null;
     status: OrderStatus;
     customStatus: string | null;
-    fulfillmentType: FulfillmentType;
-    tableName: string | null;
-    pickupNumber: number | null;
-    deliverySlotAt: string | null;
     shipDate: string | null;
     requestMessage: string | null;
     quoteMessage: string | null;
@@ -837,7 +816,6 @@ export interface CartItem {
     amount: number;
     stock: number | null;
     requiresShipping: boolean;
-    storeOrder: boolean;
     available: boolean;
 }
 
@@ -926,6 +904,7 @@ export interface ReservationItem {
     description: string | null;
     imageFileId: number | null;
     imageUrl: string | null;
+    categoryId: number | null;
     price: number;
     reservationType: ReservationType;
     slotMinutes: number | null;
@@ -1024,6 +1003,11 @@ export interface Reservation {
     queueStatus: QueueStatus | null;
     partySize: number | null;
     partyBreakdown: Record<string, number> | null;
+    discountId: number | null;
+    couponIssueId: number | null;
+    couponDiscount: number | null;
+    pointsUsed: number;
+    pointsEarned: number;
 }
 
 export type PaymentTargetType = 'ORDER' | 'RESERVATION' | 'RESERVATION_EXTENSION';
@@ -1184,7 +1168,6 @@ export interface ReencryptResult {
 }
 
 export type FormFieldType = 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'DATE' | 'EMAIL' | 'PHONE' | 'SELECT' | 'RADIO' | 'CHECKBOX' | 'FILE';
-export type SelectionMethod = 'REVIEW' | 'LOTTERY' | 'CONTEST';
 export type SubmissionStatus = 'RECEIVED' | 'REVIEWING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
 
 export interface FormField {
@@ -1200,6 +1183,7 @@ export interface ApplicationForm {
     id: number;
     title: string;
     contentHtml: string | null;
+    categoryId: number | null;
     fields: FormField[];
     startDateTime: string | null;
     endDateTime: string | null;
@@ -1207,14 +1191,11 @@ export interface ApplicationForm {
     submissionCount: number;
     allowMultiple: boolean;
     isEnabled: boolean;
-    selectionMethod: SelectionMethod;
     winnerCount: number | null;
     drawnAt: string | null;
     isOpen: boolean;
     applied: boolean;
     admissionFeeProductId: number | null;
-    judgeUsernames: string[];
-    isJudge: boolean;
     createdAt: string;
 }
 
@@ -1257,25 +1238,6 @@ export interface Submission {
     resultMessage: string | null;
     adminMemo: string | null;
     admissionOrderId: number | null;
-    averageScore: number | null;
-    scoreCount: number | null;
-    createdAt: string;
-}
-
-export interface ScoreDetail {
-    judgeMemberId: number;
-    judgeUsername: string;
-    score: number;
-    comment: string | null;
-    updatedAt: string;
-}
-
-export interface JudgeSubmission {
-    id: number;
-    formId: number;
-    answers: Record<string, unknown>;
-    myScore: number | null;
-    myComment: string | null;
     createdAt: string;
 }
 

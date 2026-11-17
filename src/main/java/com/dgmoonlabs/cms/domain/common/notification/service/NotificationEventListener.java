@@ -60,9 +60,9 @@ public class NotificationEventListener {
         if (!settingService.isEnabled(NotificationType.COURSE_APPLIED)) {
             return;
         }
-        String title = courseTitle(event.courseId());
+        Course course = findCourse(event.courseId());
         notificationService.notifyAllChannels(event.memberId(), "수강 신청이 접수되었습니다",
-                title + " 수강 신청이 접수되었습니다. 승인을 기다려 주세요.", "/courses/" + event.courseId());
+                title(course) + " 수강 신청이 접수되었습니다. 승인을 기다려 주세요.", coursePath(course, event.courseId()));
     }
 
     @EventListener
@@ -70,9 +70,9 @@ public class NotificationEventListener {
         if (!settingService.isEnabled(NotificationType.COURSE_APPROVED)) {
             return;
         }
-        String title = courseTitle(event.courseId());
+        Course course = findCourse(event.courseId());
         notificationService.notifyAllChannels(event.memberId(), "수강 신청이 승인되었습니다",
-                title + " 수강 신청이 승인되었습니다. 지금 수강을 시작할 수 있습니다.", "/courses/" + event.courseId());
+                title(course) + " 수강 신청이 승인되었습니다. 지금 수강을 시작할 수 있습니다.", coursePath(course, event.courseId()));
     }
 
     @EventListener
@@ -80,9 +80,10 @@ public class NotificationEventListener {
         if (!settingService.isEnabled(NotificationType.COURSE_COMPLETED)) {
             return;
         }
-        String title = courseTitle(event.courseId());
-        notificationService.notifyAllChannels(event.memberId(), "교육과정을 수료했습니다",
-                title + " 교육과정을 수료했습니다. 축하합니다!", "/courses/" + event.courseId());
+        Course course = findCourse(event.courseId());
+        String noun = course != null && course.isCourse() ? "교육과정을 수료했습니다" : "시리즈를 다 봤습니다";
+        notificationService.notifyAllChannels(event.memberId(), noun, title(course) + " " + noun + ". 축하합니다!",
+                coursePath(course, event.courseId()));
     }
 
     @EventListener
@@ -90,12 +91,20 @@ public class NotificationEventListener {
         if (!settingService.isEnabled(NotificationType.COURSE_QUESTION_ANSWERED)) {
             return;
         }
-        String title = courseTitle(event.courseId());
+        Course course = findCourse(event.courseId());
         notificationService.notifyAllChannels(event.questionAuthorId(), "질문에 답변이 등록되었습니다",
-                title + " 교육과정에 남긴 질문에 답변이 등록되었습니다.", "/courses/" + event.courseId());
+                title(course) + "에 남긴 질문에 답변이 등록되었습니다.", coursePath(course, event.courseId()));
     }
 
-    private String courseTitle(final Long courseId) {
-        return courseRepository.findById(courseId).map(Course::getTitle).orElse("교육과정");
+    private Course findCourse(final Long courseId) {
+        return courseRepository.findById(courseId).orElse(null);
+    }
+
+    private static String title(final Course course) {
+        return course == null ? "교육과정" : course.getTitle();
+    }
+
+    private static String coursePath(final Course course, final Long courseId) {
+        return (course == null || course.isCourse() ? "/courses/" : "/series/") + courseId;
     }
 }

@@ -81,6 +81,7 @@ export interface Course {
     description: string | null;
     thumbnailFileId: number | null;
     thumbnailUrl: string | null;
+    categoryId: number | null;
     sequential: boolean;
     accessGradeId: number | null;
     isUsing: boolean;
@@ -104,6 +105,8 @@ export interface Course {
     price: number | null;
     productId: number | null;
     refundableProgressBelowPercent: number | null;
+    trackProgress: boolean;
+    completionRate: number;
     lessonCount: number;
     lessons: CourseLesson[] | null;
     materials: MaterialInfo[] | null;
@@ -192,6 +195,7 @@ export interface UnansweredQuestion {
     commentId: number;
     courseId: number | null;
     courseTitle: string;
+    isCourse: boolean;
     lessonId: number;
     lessonTitle: string;
     authorName: string | null;
@@ -251,7 +255,8 @@ export const quizAdminApi = {
 };
 
 export const courseApi = {
-    list: (keyword: string, page: number) => request<Page<Course>>('/api/courses', {query: {keyword, page}}),
+    list: (keyword: string, page: number, isCourse?: boolean) =>
+        request<Page<Course>>('/api/courses', {query: {keyword, page, isCourse}}),
     get: (id: number) => request<Course>(`/api/courses/${id}`),
     enroll: (id: number) => request<Course>(`/api/courses/${id}/enroll`, {method: 'POST'}),
     cancelApplication: (id: number) => request<void>(`/api/courses/${id}/applications/cancel`, {method: 'POST'}),

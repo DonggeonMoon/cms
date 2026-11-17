@@ -23,8 +23,6 @@ public final class StreamingDtos {
             @NotNull Long fileId,
             Long thumbnailFileId,
             @NotNull @Min(1) @Max(86_400) Integer durationSeconds,
-            @Min(1) @Max(100) Integer completionRate,
-            Boolean trackProgress,
             Boolean isUsing,
             Long accessGradeId,
             Boolean paid,
@@ -33,14 +31,6 @@ public final class StreamingDtos {
     ) {
         public boolean paidOrDefault() {
             return Boolean.TRUE.equals(paid);
-        }
-
-        public int completionRateOrDefault() {
-            return completionRate == null ? Streaming.DEFAULT_COMPLETION_RATE : completionRate;
-        }
-
-        public boolean trackProgressOrDefault() {
-            return trackProgress == null || trackProgress;
         }
 
         public boolean isUsingOrDefault() {
@@ -66,15 +56,19 @@ public final class StreamingDtos {
                                     boolean isUsing, LocalDateTime createdAt, MyProgress myProgress, Long accessGradeId,
                                     boolean paid, BigDecimal price, Integer accessDays, Long productId, boolean playable,
                                     LocalDateTime accessExpiresAt) {
-        /** 재생 주소는 권한을 확인하는 스트림 주소를 쓰고, 볼 수 없으면(유료 미구매) 비워 둔다. */
+        /**
+         * 재생 주소는 권한을 확인하는 스트림 주소를 쓰고, 볼 수 없으면(유료 미구매) 비워 둔다.
+         * 진도 체크 여부·완료 기준은 더 이상 영상 자체가 아니라, 이 영상을 차시로 쓰는 시리즈/교육과정의 설정을 따른다(없으면 체크하지 않음).
+         */
         public static StreamingResponse of(final Streaming streaming, final FileResponse file, final MyProgress myProgress,
-                                           final boolean playable, final LocalDateTime accessExpiresAt) {
+                                           final boolean playable, final LocalDateTime accessExpiresAt,
+                                           final boolean trackProgress, final int completionRate) {
             return new StreamingResponse(streaming.getId(), streaming.getTitle(), streaming.getDescription(), streaming.getFileId(),
                     file == null ? null : file.originalName(), streaming.getMediaType(),
                     playable ? "/api/streaming/" + streaming.getId() + "/stream" : null, streaming.getThumbnailFileId(),
                     StreamingDtos.thumbnailUrl(streaming), StreamingDtos.posterUrl(streaming), streaming.getDurationSeconds(),
-                    streaming.getCompletionRate(), streaming.isTrackProgress(), streaming.isUsing(), streaming.getCreatedAt(),
-                    streaming.isTrackProgress() ? myProgress : null, streaming.getAccessGradeId(), streaming.isPaid(),
+                    completionRate, trackProgress, streaming.isUsing(), streaming.getCreatedAt(),
+                    trackProgress ? myProgress : null, streaming.getAccessGradeId(), streaming.isPaid(),
                     streaming.getPrice(), streaming.getAccessDays(), streaming.getProductId(), playable, accessExpiresAt);
         }
     }

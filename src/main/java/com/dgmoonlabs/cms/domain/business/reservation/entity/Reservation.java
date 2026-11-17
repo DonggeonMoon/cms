@@ -77,6 +77,25 @@ public class Reservation extends BaseEntity {
     @Comment("할인 ID")
     private Long discountId;
 
+    @Comment("사용한 쿠폰 발급 ID")
+    private Long couponIssueId;
+
+    @Column(precision = 15, scale = 2)
+    @Comment("쿠폰 할인액")
+    private BigDecimal couponDiscount;
+
+    @Builder.Default
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    @Comment("사용한 포인트")
+    private long pointsUsed = 0;
+
+    @Builder.Default
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    @Comment("적립한 포인트")
+    private long pointsEarned = 0;
+
     @Column(precision = 15, scale = 2)
     @Comment("총 금액")
     private BigDecimal totalPrice;
@@ -381,5 +400,15 @@ public class Reservation extends BaseEntity {
 
     public void applyCustomStatus(final String code) {
         this.customStatus = code;
+    }
+
+    public void applyDiscounts(final Long couponIssueId, final BigDecimal couponDiscount, final long pointsUsed) {
+        this.couponIssueId = couponIssueId;
+        this.couponDiscount = couponDiscount;
+        this.pointsUsed = pointsUsed;
+    }
+
+    public void recordEarned(final long pointsEarned) {
+        this.pointsEarned = pointsEarned;
     }
 }

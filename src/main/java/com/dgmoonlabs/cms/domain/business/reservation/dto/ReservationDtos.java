@@ -30,6 +30,7 @@ public final class ReservationDtos {
             @NotBlank @Size(max = 200) String name,
             @Size(max = 500) String description,
             Long imageFileId,
+            Long categoryId,
             @NotNull @PositiveOrZero BigDecimal price,
             @Positive Integer maximumPerson,
             LocalDateTime startDateTime,
@@ -64,7 +65,7 @@ public final class ReservationDtos {
     }
 
     public record ReservationItemResponse(Long id, String name, String description, Long imageFileId, String imageUrl,
-                                          BigDecimal price, ReservationType reservationType, Integer slotMinutes,
+                                          Long categoryId, BigDecimal price, ReservationType reservationType, Integer slotMinutes,
                                           LocalTime openTime, LocalTime closeTime, SpaceLayout layout,
                                           Integer maximumPerson, Integer availablePerson,
                                           LocalDateTime startDateTime, LocalDateTime endDateTime,
@@ -84,7 +85,7 @@ public final class ReservationDtos {
             return new ReservationItemResponse(item.getId(), item.getName(), item.getDescription(),
                     item.getImageFileId(),
                     item.getImageFileId() == null ? null : "/api/files/" + item.getImageFileId() + "/view",
-                    item.getPrice(), item.getReservationType(), item.getSlotMinutes(), item.getOpenTime(),
+                    item.getCategoryId(), item.getPrice(), item.getReservationType(), item.getSlotMinutes(), item.getOpenTime(),
                     item.getCloseTime(), layout, item.getMaximumPerson(), item.getAvailablePerson(),
                     item.getStartDateTime(), item.getEndDateTime(), item.getApplicationStartDateTime(),
                     item.getApplicationEndDateTime(), item.getContentHtml(), item.isEnabled(), isOpen, averageRating,
@@ -156,7 +157,10 @@ public final class ReservationDtos {
             Long sessionId,
             Long passId,
             @Positive @Max(1000) Integer partySize,
-            Map<@NotBlank String, @Positive Integer> partyCounts
+            Map<@NotBlank String, @Positive Integer> partyCounts,
+            Long discountId,
+            Long couponIssueId,
+            @PositiveOrZero Long usePoints
     ) {
         public List<String> cellsOrEmpty() {
             return cells == null ? List.of() : cells;
@@ -179,7 +183,8 @@ public final class ReservationDtos {
                                       BigDecimal unpaidExtensionFee, BigDecimal outstandingAmount, Long pendingExtensionId,
                                       BigDecimal pendingExtensionFee, Long passId, String checkInCode, LocalDateTime checkedInAt,
                                       Integer queueNumber, QueueStatus queueStatus, Integer partySize,
-                                      Map<String, Integer> partyBreakdown) {
+                                      Map<String, Integer> partyBreakdown, Long discountId, Long couponIssueId,
+                                      BigDecimal couponDiscount, long pointsUsed, long pointsEarned) {
         public static ReservationResponse from(final Reservation reservation) {
             LocalDateTime now = LocalDateTime.now();
             return new ReservationResponse(reservation.getId(), reservation.getReservationNumber(),
@@ -202,7 +207,8 @@ public final class ReservationDtos {
                     reservation.getPendingExtensionId(), reservation.getPendingExtensionFee(), reservation.getPassId(),
                     reservation.getCheckInCode(), reservation.getCheckedInAt(),
                     reservation.getQueueNumber(), reservation.getQueueStatus(), reservation.getPartySize(),
-                    reservation.getPartyBreakdown());
+                    reservation.getPartyBreakdown(), reservation.getDiscountId(), reservation.getCouponIssueId(),
+                    reservation.getCouponDiscount(), reservation.getPointsUsed(), reservation.getPointsEarned());
         }
     }
 

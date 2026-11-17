@@ -1,4 +1,4 @@
-import type {BillingCycle, CellKind, ContentStatus, FormFieldType, LedgerType, PaymentMethod, QueueStatus, ReservationType, SelectionMethod, SubmissionStatus, EnrollmentStatus, OrderReturnStatus, OrderReturnType, OrderStatus, PassUnit, ProductSaleType, PublishStatus, ReportStatus, ReservationStatus, StockMovementType} from '../api/domain';
+import type {BillingCycle, CellKind, ContentStatus, FormFieldType, LedgerType, PaymentMethod, QueueStatus, ReservationType, SubmissionStatus, EnrollmentStatus, OrderReturnStatus, OrderReturnType, OrderStatus, PassUnit, ProductSaleType, PublishStatus, ReportStatus, ReservationStatus, StockMovementType} from '../api/domain';
 import type {AccessPeriodMode, CourseApplicationStatus, EnrollmentMode, RevealPolicy, ScorePolicy} from '../api/courses';
 
 export const ORDER_STATUS: Record<OrderStatus, string> = {
@@ -8,9 +8,6 @@ export const ORDER_STATUS: Record<OrderStatus, string> = {
     PAID: '결제 완료',
     SHIPPING: '배송 중',
     DELIVERED: '배송 완료',
-    PREPARING: '준비 중',
-    READY: '준비 완료',
-    COMPLETED: '전달 완료',
     CANCELED: '취소',
 };
 
@@ -166,12 +163,6 @@ export const CELL_KIND: Record<CellKind, string> = {
     AISLE: '통로',
     STAGE: '무대',
     EMPTY: '빈칸',
-};
-
-export const SELECTION_METHOD: Record<SelectionMethod, string> = {
-    REVIEW: '심사',
-    LOTTERY: '추첨',
-    CONTEST: '공모전',
 };
 
 export const SUBMISSION_STATUS: Record<SubmissionStatus, string> = {

@@ -35,6 +35,9 @@ public class Course extends BaseEntity {
     @Comment("썸네일 이미지 파일 ID")
     private Long thumbnailFileId;
 
+    @Comment("카테고리 ID")
+    private Long categoryId;
+
     @Column(nullable = false)
     @ColumnDefault("false")
     @Comment("차시를 순서대로만 들을 수 있는지")
@@ -113,6 +116,16 @@ public class Course extends BaseEntity {
     @Comment("환불 가능 진도율 기준(%) - 진도율이 이 값 미만이면 환불 가능(없으면 관리자 재량, 수강 시작 전만 허용하려면 작게 설정)")
     private Integer refundableProgressBelowPercent;
 
+    @Column(nullable = false)
+    @ColumnDefault("true")
+    @Comment("차시 영상·음악 진도 체크 사용 여부 (끄면 시청 진도·수강 완료를 기록하지 않음)")
+    private boolean trackProgress;
+
+    @Column(nullable = false)
+    @ColumnDefault("90")
+    @Comment("차시 하나를 다 봤다고 칠 시청 진도율(%)")
+    private int completionRate;
+
     public void changeSale(final boolean paid, final BigDecimal price) {
         this.paid = paid;
         this.price = paid ? price : null;
@@ -120,6 +133,10 @@ public class Course extends BaseEntity {
 
     public void linkProduct(final Long productId) {
         this.productId = productId;
+    }
+
+    public void changeCategory(final Long categoryId) {
+        this.categoryId = categoryId;
     }
 
     public void changeRefundPolicy(final Integer refundableProgressBelowPercent) {
@@ -131,7 +148,8 @@ public class Course extends BaseEntity {
                        final LocalDateTime applicationStartAt, final LocalDateTime applicationEndAt,
                        final AccessPeriodMode accessPeriodMode, final LocalDateTime accessStartAt, final LocalDateTime accessEndAt,
                        final Integer accessDays, final Double maxPlaybackRate, final boolean preventSkipping,
-                       final Integer completionThresholdPercent, final boolean attendanceRequired) {
+                       final Integer completionThresholdPercent, final boolean attendanceRequired,
+                       final boolean trackProgress, final int completionRate) {
         this.title = title;
         this.description = description;
         this.thumbnailFileId = thumbnailFileId;
@@ -150,6 +168,8 @@ public class Course extends BaseEntity {
         this.preventSkipping = isCourse && preventSkipping;
         this.completionThresholdPercent = isCourse ? completionThresholdPercent : null;
         this.attendanceRequired = isCourse && accessPeriodMode != AccessPeriodMode.UNLIMITED && attendanceRequired;
+        this.trackProgress = trackProgress;
+        this.completionRate = completionRate;
     }
 
     /** 교육과정으로 쓰지 않는 일반 시리즈는 항상 자유 수강으로 동작한다. */

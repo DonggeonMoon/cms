@@ -149,7 +149,7 @@ export function menuHref(menu: Menu): string {
         case 'ARCHIVE':
             return `/archives/${menu.targetId}`;
         case 'FEATURE':
-            return (menu.feature && FEATURE_PATHS[menu.feature]) ?? '#';
+            return menu.link || (menu.feature && FEATURE_PATHS[menu.feature]) || '#';
         default:
             return menu.link ?? '#';
     }

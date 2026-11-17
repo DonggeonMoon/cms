@@ -41,7 +41,7 @@ export function MyVotesPage() {
                     {item.description && <p className="pre-wrap">{item.description}</p>}
                     {!item.eligible && <p className="muted">투표할 수 있는 회원 등급이 아닙니다.</p>}
                     {item.eligible && item.myOptionIndex == null && item.open && (
-                        <div className="inline-form">
+                        <div className="inline-form toolbar">
                             {item.options.map((option, index) => (
                                 <button key={index} type="button" disabled={busy === item.id}
                                         onClick={() => vote(item.id, index)}>{option}</button>

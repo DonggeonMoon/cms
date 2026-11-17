@@ -39,7 +39,7 @@ export function CourseStatisticsPage() {
                     {data?.rows.map((row) => (
                         <tr key={row.courseId}>
                             <td>
-                                <Link to={`/courses/${row.courseId}`}>{row.title}</Link>
+                                <Link to={`${row.isCourse ? '/courses' : '/series'}/${row.courseId}`}>{row.title}</Link>
                                 {row.paid && <span className="badge"> 유료</span>}
                             </td>
                             <td>{row.totalEnrolled}건 (진행 {row.inProgress} · 완료 {row.completed} · 환불회수 {row.revoked})</td>

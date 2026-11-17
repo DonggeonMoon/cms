@@ -2874,6 +2874,20 @@ input[type='checkbox'], input[type='radio'] {
     margin: 4px 0;
 }
 
+.status-list > li {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.status-list ul li {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
 .language-select {
     padding: 4px 8px;
 }

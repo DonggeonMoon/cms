@@ -20,8 +20,13 @@ class StreamingApiTest extends ApiTestSupport {
         MockHttpSession admin = admin();
         long fileId = upload(admin, "spring.mp3");
         long streamingId = createdId(postJson("/api/admin/streaming", admin, """
-                {"title":"봄 노래","fileId":%d,"durationSeconds":100,"completionRate":80}
+                {"title":"봄 노래","fileId":%d,"durationSeconds":100}
                 """.formatted(fileId)).andExpect(status().isCreated()));
+        // 진도 체크 기준은 더 이상 영상 자체가 아니라 이 영상을 차시로 쓰는 시리즈/교육과정에서 정한다.
+        postJson("/api/admin/courses", admin, """
+                {"title":"봄 노래 모음","isUsing":true,"isCourse":false,"completionRate":80,
+                 "lessons":[{"title":"1화","streamingId":%d}]}
+                """.formatted(streamingId)).andExpect(status().isCreated());
         postJson("/api/admin/streaming", admin, """
                 {"title":"현장 영상","fileId":%d,"durationSeconds":60}
                 """.formatted(upload(admin, "field.mp4"))).andExpect(status().isCreated());
@@ -100,8 +105,12 @@ class StreamingApiTest extends ApiTestSupport {
     void progressIgnoresImplausiblyFastJumpsButAcceptsModestOnes() throws Exception {
         MockHttpSession admin = admin();
         long streamingId = createdId(postJson("/api/admin/streaming", admin, """
-                {"title":"긴 강의","fileId":%d,"durationSeconds":1000,"completionRate":50}
+                {"title":"긴 강의","fileId":%d,"durationSeconds":1000}
                 """.formatted(upload(admin, "long.mp4"))).andExpect(status().isCreated()));
+        postJson("/api/admin/courses", admin, """
+                {"title":"긴 강의 과정","isUsing":true,"isCourse":false,"completionRate":50,
+                 "lessons":[{"title":"1강","streamingId":%d}]}
+                """.formatted(streamingId)).andExpect(status().isCreated());
 
         MockHttpSession member = member("learner2");
         postJson("/api/streaming/" + streamingId + "/start", member, "{}");

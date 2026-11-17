@@ -115,7 +115,7 @@ export function AccountingAdminPage() {
 
             <h2>외상(미수금)</h2>
             <p className="muted">결제 없이 먼저 내준 뒤 나중에 받을 돈을 거래처(회원)별로 기록합니다.</p>
-            <form onSubmit={createReceivable} className="inline-form">
+            <form onSubmit={createReceivable} className="inline-form toolbar">
                 <input type="number" value={newMemberId} onChange={(e) => setNewMemberId(e.target.value)} placeholder="회원 ID"/>
                 <input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="외상 총액"/>
                 <input type="text" value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="메모"/>

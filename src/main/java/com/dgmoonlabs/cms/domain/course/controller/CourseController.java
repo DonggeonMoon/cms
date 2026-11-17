@@ -27,8 +27,9 @@ public class CourseController {
 
     @GetMapping("/api/courses")
     public ResponseEntity<PagedModel<CourseResponse>> courses(@RequestParam(required = false) final String keyword,
+                                                              @RequestParam(required = false) final Boolean isCourse,
                                                               @PageableDefault(size = 12) final Pageable pageable) {
-        return ResponseEntity.ok(new PagedModel<>(courseService.getCourses(keyword, null, pageable)));
+        return ResponseEntity.ok(new PagedModel<>(courseService.getCourses(keyword, isCourse, pageable)));
     }
 
     @GetMapping("/api/courses/{id:\\d+}")

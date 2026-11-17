@@ -1,6 +1,5 @@
 import {useEffect, useState} from 'react';
-import {useParams} from 'react-router';
-import type {MyAttendance, MyCustomerRecord} from '../../api/domain';
+import type {MyCustomerRecord} from '../../api/domain';
 import {shopApi} from '../../api/endpoints';
 import type {Page} from '../../api/types';
 import {ErrorBanner} from '../../components/ErrorBanner';
@@ -33,40 +32,6 @@ export function MyRecordsPage() {
                 </article>
             ))}
             {data?.content.length === 0 && <p className="muted">아직 받은 기록이 없습니다.</p>}
-            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
-        </section>
-    );
-}
-
-export function MyAttendancePage() {
-    const {subscriptionId} = useParams();
-    const [page, setPage] = useState(0);
-    const [data, setData] = useState<Page<MyAttendance> | null>(null);
-    const [error, setError] = useState<unknown>(null);
-    useEffect(() => {
-        shopApi.myAttendance(Number(subscriptionId), page).then(setData).catch(setError);
-    }, [subscriptionId, page]);
-
-    return (
-        <section className="card">
-            <h1>출결</h1>
-            <p className="muted">등록한 수업의 날짜별 출결입니다.</p>
-            <ErrorBanner error={error}/>
-            <div className="table-wrap">
-                <table>
-                    <thead><tr><th>날짜</th><th>상태</th><th>비고</th></tr></thead>
-                    <tbody>
-                    {data?.content.map((entry) => (
-                        <tr key={entry.attendedOn}>
-                            <td>{formatDate(entry.attendedOn)}</td>
-                            <td>{entry.present ? <span className="badge ok">출석</span> : <span className="badge">결석</span>}</td>
-                            <td>{entry.note || '-'}</td>
-                        </tr>
-                    ))}
-                    {data?.content.length === 0 && <tr><td colSpan={3} className="muted">출결 기록이 없습니다.</td></tr>}
-                    </tbody>
-                </table>
-            </div>
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
         </section>
     );

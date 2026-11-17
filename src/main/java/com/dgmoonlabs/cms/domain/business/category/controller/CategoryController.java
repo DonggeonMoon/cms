@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.business.category.controller;
 
+import com.dgmoonlabs.cms.domain.business.category.constant.CategoryDomain;
 import com.dgmoonlabs.cms.domain.business.category.dto.CategoryDtos.CategoryResponse;
 import com.dgmoonlabs.cms.domain.business.category.dto.CategoryDtos.CategorySaveRequest;
 import com.dgmoonlabs.cms.domain.business.category.service.CategoryService;
@@ -16,23 +17,23 @@ import java.util.List;
 public class CategoryController {
     private final CategoryService categoryService;
 
-    @GetMapping("/api/product-categories")
-    public ResponseEntity<List<CategoryResponse>> categories() {
-        return ResponseEntity.ok(categoryService.getCategories());
+    @GetMapping("/api/categories")
+    public ResponseEntity<List<CategoryResponse>> categories(@RequestParam final CategoryDomain domain) {
+        return ResponseEntity.ok(categoryService.getCategories(domain));
     }
 
-    @PostMapping("/api/admin/product-categories")
+    @PostMapping("/api/admin/categories")
     public ResponseEntity<Void> create(@RequestBody @Valid final CategorySaveRequest request) {
-        return ResponseEntity.created(URI.create("/api/product-categories/" + categoryService.create(request))).build();
+        return ResponseEntity.created(URI.create("/api/categories/" + categoryService.create(request))).build();
     }
 
-    @PutMapping("/api/admin/product-categories/{id}")
+    @PutMapping("/api/admin/categories/{id}")
     public ResponseEntity<Void> update(@PathVariable final Long id, @RequestBody @Valid final CategorySaveRequest request) {
         categoryService.update(id, request);
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/api/admin/product-categories/{id}")
+    @DeleteMapping("/api/admin/categories/{id}")
     public ResponseEntity<Void> delete(@PathVariable final Long id) {
         categoryService.delete(id);
         return ResponseEntity.noContent().build();

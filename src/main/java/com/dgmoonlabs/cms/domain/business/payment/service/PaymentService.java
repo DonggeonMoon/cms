@@ -23,6 +23,7 @@ import com.dgmoonlabs.cms.domain.business.order.service.OrderPaidEvent;
 import com.dgmoonlabs.cms.domain.business.payment.constant.PaymentMethod;
 import com.dgmoonlabs.cms.domain.business.wallet.constant.LedgerType;
 import com.dgmoonlabs.cms.domain.business.wallet.service.PrepaidService;
+import com.dgmoonlabs.cms.domain.common.point.service.PointService;
 import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -45,6 +46,7 @@ public class PaymentService {
     private final RegexService regexService;
     private final ApplicationEventPublisher events;
     private final PrepaidService prepaidService;
+    private final PointService pointService;
 
     @Transactional
     public PaymentResponse pay(final Long memberId, final PaymentRequest request) {
@@ -68,7 +70,14 @@ public class PaymentService {
             Reservation reservation = reservationRepository.findByIdAndUserTypeAndUserId(request.targetId(), UserType.MEMBER, memberId)
                     .orElseThrow(BusinessException::notFound);
             expected = reservation.getTotalPrice();
-            onApproved = reservation::confirm;
+            onApproved = () -> {
+                reservation.confirm();
+                long earned = pointService.earnFor(reservation.getTotalPrice());
+                if (earned > 0) {
+                    reservation.recordEarned(earned);
+                    pointService.earn(memberId, earned, reservation.getId());
+                }
+            };
         }
 
         if (expected == null) {

@@ -38,6 +38,7 @@ public final class CourseDtos {
             @NotBlank @Size(max = 200) String title,
             @Size(max = 1000) String description,
             Long thumbnailFileId,
+            Long categoryId,
             boolean sequential,
             Long accessGradeId,
             boolean isUsing,
@@ -57,10 +58,20 @@ public final class CourseDtos {
             boolean paid,
             @PositiveOrZero BigDecimal price,
             @Min(1) @Max(100) Integer refundableProgressBelowPercent,
+            Boolean trackProgress,
+            @Min(1) @Max(100) Integer completionRate,
             @NotEmpty @Size(max = 100) List<@Valid LessonRequest> lessons
     ) {
         public EnrollmentMode enrollmentModeOrDefault() {
             return enrollmentMode == null ? EnrollmentMode.FREE : enrollmentMode;
+        }
+
+        public boolean trackProgressOrDefault() {
+            return trackProgress == null || trackProgress;
+        }
+
+        public int completionRateOrDefault() {
+            return completionRate == null ? 90 : completionRate;
         }
 
         public AccessPeriodMode accessPeriodModeOrDefault() {
@@ -97,13 +108,14 @@ public final class CourseDtos {
     }
 
     public record CourseResponse(Long id, String title, String description, Long thumbnailFileId, String thumbnailUrl,
-                                 boolean sequential, Long accessGradeId, boolean isUsing, boolean isCourse,
+                                 Long categoryId, boolean sequential, Long accessGradeId, boolean isUsing, boolean isCourse,
                                  EnrollmentMode enrollmentMode, boolean applicationOpen, LocalDateTime applicationStartAt,
                                  LocalDateTime applicationEndAt, AccessPeriodMode accessPeriodMode, LocalDateTime accessStartAt,
                                  LocalDateTime accessEndAt, Integer accessDays, LocalDateTime myAccessUntil, Boolean myAccessOpen,
                                  Double maxPlaybackRate, boolean preventSkipping, int completionThresholdPercent,
                                  boolean attendanceRequired, Boolean myAttendanceOk, boolean paid, BigDecimal price, Long productId,
-                                 Integer refundableProgressBelowPercent, int lessonCount, List<LessonResponse> lessons,
+                                 Integer refundableProgressBelowPercent, boolean trackProgress, int completionRate,
+                                 int lessonCount, List<LessonResponse> lessons,
                                  List<MaterialResponse> materials, MyCourseProgress myProgress,
                                  CourseApplicationStatus myApplicationStatus, LocalDateTime createdAt) {
     }
@@ -156,8 +168,8 @@ public final class CourseDtos {
     public record LessonCommentEditRequest(@NotBlank @Size(max = 2000) String content) {
     }
 
-    public record UnansweredQuestionResponse(Long commentId, Long courseId, String courseTitle, Long lessonId, String lessonTitle,
-                                             String authorName, String content, LocalDateTime createdAt) {
+    public record UnansweredQuestionResponse(Long commentId, Long courseId, String courseTitle, boolean isCourse, Long lessonId,
+                                             String lessonTitle, String authorName, String content, LocalDateTime createdAt) {
     }
 
     public record LessonCommentResponse(Long id, Long parentId, int depth, String content, String authorName,

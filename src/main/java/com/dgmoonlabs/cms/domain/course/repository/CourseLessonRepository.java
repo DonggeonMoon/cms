@@ -17,4 +17,8 @@ public interface CourseLessonRepository extends JpaRepository<CourseLesson, Long
     boolean existsByQuizIdAndDeletedAtIsNull(Long quizId);
 
     List<CourseLesson> findAllByQuizIdInAndDeletedAtIsNull(Collection<Long> quizIds);
+
+    Optional<CourseLesson> findFirstByStreamingIdAndDeletedAtIsNull(Long streamingId);
+
+    List<CourseLesson> findAllByStreamingIdInAndDeletedAtIsNull(Collection<Long> streamingIds);
 }

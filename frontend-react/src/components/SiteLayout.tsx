@@ -136,11 +136,11 @@ function FeatureMenu({menu}: { menu: Menu }) {
     const {unlistedBoards, unlistedArchives} = useSite();
     const listings: Partial<Record<SiteFeature, { id: number; name: string }[]>> = {BOARD: unlistedBoards, ARCHIVE: unlistedArchives};
     const feature = menu.feature!;
-    const listingPath = FEATURE_LISTING_PATHS[feature];
+    const listingPath = menu.link ? undefined : FEATURE_LISTING_PATHS[feature];
     if (listingPath) {
         return <ListingMenu label={menu.name} basePath={listingPath} items={listings[feature] ?? []}/>;
     }
-    const path = FEATURE_PATHS[feature];
+    const path = menu.link || FEATURE_PATHS[feature];
     return path ? <NavLink to={path}>{menu.name}</NavLink> : null;
 }
 

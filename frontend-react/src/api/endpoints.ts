@@ -200,9 +200,6 @@ export const adminApi = {
             request<D.Submission>(`/api/admin/applications/submissions/${submissionId}`, {method: 'PUT', body}),
         draw: (id: number) => request<D.DrawResult>(`/api/admin/applications/${id}/draw`, {method: 'POST'}),
         summary: (id: number, query: Query) => request<D.SubmissionSummary>(`/api/admin/applications/${id}/summary`, {query}),
-        finalizeContest: (id: number) => request<D.DrawResult>(`/api/admin/applications/${id}/finalize-contest`, {method: 'POST'}),
-        scores: (submissionId: number) =>
-            request<D.ScoreDetail[]>(`/api/admin/applications/submissions/${submissionId}/scores`),
     },
     subscriptions: {
         search: (query: Query) => request<Page<D.Subscription>>('/api/admin/subscriptions', {query}),
@@ -249,12 +246,6 @@ export const adminApi = {
         create: (body: Body) => request<D.CustomerRecord>('/api/admin/customer-records', {method: 'POST', body}),
         update: (id: number, body: Body) => request<D.CustomerRecord>(`/api/admin/customer-records/${id}`, {method: 'PUT', body}),
         remove: (id: number) => request<void>(`/api/admin/customer-records/${id}`, {method: 'DELETE'}),
-    },
-    classAttendance: {
-        roster: (productId: number, date: string) =>
-            request<D.AttendanceRosterEntry[]>('/api/admin/class-attendance/roster', {query: {productId, date}}),
-        mark: (subscriptionId: number, attendedOn: string, present: boolean, note: string) =>
-            request<D.AttendanceRosterEntry>('/api/admin/class-attendance/mark', {method: 'POST', body: {subscriptionId, attendedOn, present, note}}),
     },
     passes: {
         search: (query: Query) => request<Page<D.MemberPass>>('/api/admin/passes', {query}),
@@ -425,8 +416,6 @@ export const shopApi = {
     myNotifications: (page: number) => request<Page<D.AppNotification>>('/api/members/me/notifications', {query: {page}}),
     unreadNotificationCount: () => request<number>('/api/members/me/notifications/unread-count'),
     markNotificationRead: (id: number) => request<void>(`/api/members/me/notifications/${id}/read`, {method: 'POST'}),
-    myAttendance: (subscriptionId: number, page: number) =>
-        request<Page<D.MyAttendance>>('/api/class-attendance/me', {query: {subscriptionId, page}}),
     myPasses: (page: number) => request<Page<D.MemberPass>>('/api/passes/me', {query: {page}}),
     usablePasses: (reservationItemId: number) => request<D.MemberPass[]>('/api/passes/usable', {query: {reservationItemId}}),
     wallet: {
@@ -502,11 +491,8 @@ export const applicationApi = {
         request<D.Submission>(`/api/applications/${id}/submissions`, {method: 'POST', body: {answers}}),
     mine: (page: number) => request<Page<D.Submission>>('/api/applications/me', {query: {page}}),
     withdraw: (id: number) => request<D.Submission>(`/api/applications/submissions/${id}/withdraw`, {method: 'POST'}),
-    payAdmission: (id: number) => request<D.Order>(`/api/applications/submissions/${id}/admission-payment`, {method: 'POST'}),
-    judging: (id: number, page: number) => request<Page<D.JudgeSubmission>>(`/api/applications/${id}/judging`, {query: {page}}),
-    score: (submissionId: number, score: number, comment: string) =>
-        request<{ submissionId: number; score: number; comment: string | null }>(`/api/applications/submissions/${submissionId}/score`,
-            {method: 'POST', body: {score, comment}}),
+    payAdmission: (id: number, body: { discountId?: number | null; couponIssueId?: number | null; usePoints?: number | null } = {}) =>
+        request<D.Order>(`/api/applications/submissions/${id}/admission-payment`, {method: 'POST', body}),
 };
 
 export const chatbotApi = {

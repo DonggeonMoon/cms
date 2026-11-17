@@ -42,7 +42,8 @@ export function CourseQnaAdminPage() {
                             <td>{question.content}</td>
                             <td className="small">{formatDateTime(question.createdAt)}</td>
                             <td>
-                                {question.courseId != null && <Link to={`/courses/${question.courseId}`}>보기</Link>}
+                                {question.courseId != null &&
+                                    <Link to={`${question.isCourse ? '/courses' : '/series'}/${question.courseId}`}>보기</Link>}
                             </td>
                         </tr>
                     ))}

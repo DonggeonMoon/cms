@@ -1,7 +1,7 @@
 import {type FormEvent, useCallback, useEffect, useState} from 'react';
 import {Link, useNavigate, useParams, useSearchParams} from 'react-router';
 import {ApiError} from '../api/client';
-import type {ApplicationForm, FormField, JudgeSubmission, Submission} from '../api/domain';
+import type {ApplicationForm, FormField, ProductDetail, Submission} from '../api/domain';
 import {applicationApi, shopApi} from '../api/endpoints';
 import {fileApi} from '../api/files';
 import type {Page} from '../api/types';
@@ -16,6 +16,7 @@ import {Pagination} from '../components/Pagination';
 import {ProgressAndMessages} from '../components/ProgressPanel';
 import {useFeatureMenuName} from '../components/SiteContext';
 import {StableLabel} from '../components/StableLabel';
+import {type DiscountChoice, DiscountSelector, NO_DISCOUNT} from './shop/DiscountSelector';
 
 const period = (form: ApplicationForm) =>
     form.startDateTime || form.endDateTime ? `${formatDateTime(form.startDateTime)} ~ ${formatDateTime(form.endDateTime)}` : '상시 접수';
@@ -71,16 +72,12 @@ export function ApplicationDetailPage() {
             <p className="muted">
                 접수 기간 {period(form)}
                 {form.maximumSubmissions && ` · 모집 ${form.maximumSubmissions}명 (접수 ${form.submissionCount}명)`}
-                {form.selectionMethod === 'LOTTERY' && ` · 추첨으로 ${form.winnerCount}명 선정`}
-                {form.selectionMethod === 'CONTEST' && ` · 심사위원 채점으로 ${form.winnerCount}명 선정`}
+                {form.winnerCount != null && ` · 마감 후 추첨으로 ${form.winnerCount}명 선정`}
             </p>
-            {form.isJudge && (
-                <p className="notice-box">심사위원으로 지정되었습니다. <Link to={`/applications/${form.id}/judging`}>접수작 채점하기</Link></p>
-            )}
             {form.contentHtml && <HtmlView html={form.contentHtml}/>}
             {form.drawnAt ? (
                 <p className="notice-box">
-                    {form.selectionMethod === 'CONTEST' ? '선정을' : '추첨을'} 마쳤습니다. 결과는 <Link to="/mypage/applications">신청 내역</Link>에서 확인하세요.
+                    추첨을 마쳤습니다. 결과는 <Link to="/mypage/applications">신청 내역</Link>에서 확인하세요.
                 </p>
             ) : !form.isOpen ? (
                 <p className="notice-box">지금은 신청을 받지 않습니다.</p>
@@ -243,88 +240,6 @@ function AnswerInput({field, value, onChange, error}: {
     }
 }
 
-export function ApplicationJudgingPage() {
-    const id = Number(useParams().id);
-    const [form, setForm] = useState<ApplicationForm | null>(null);
-    const [page, setPage] = useState(0);
-    const [data, setData] = useState<Page<JudgeSubmission> | null>(null);
-    const [error, setError] = useState<unknown>(null);
-    useEffect(() => {
-        applicationApi.get(id).then(setForm).catch(setError);
-    }, [id]);
-    const reload = useCallback(() => {
-        applicationApi.judging(id, page).then(setData).catch(setError);
-    }, [id, page]);
-    useEffect(reload, [reload]);
-
-    const answer = (submission: JudgeSubmission, field: FormField) => {
-        const value = submission.answers[field.key];
-        if (value == null) {
-            return '-';
-        }
-        if (field.type === 'FILE') {
-            return <a href={`/api/files/${value}/download`}>첨부 파일</a>;
-        }
-        return Array.isArray(value) ? value.join(', ') : value === true ? '예' : String(value);
-    };
-
-    if (!form) {
-        return error ? <ErrorBanner error={error}/> : <p className="muted">불러오는 중…</p>;
-    }
-    return (
-        <section className="card">
-            <h1>{form.title} - 접수작 채점</h1>
-            <ErrorBanner error={error}/>
-            <div className="table-wrap">
-                <table>
-                    <thead>
-                    <tr>
-                        {form.fields.map((f) => <th key={f.key}>{f.label}</th>)}
-                        <th>내 점수</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {data?.content.map((submission) => (
-                        <tr key={submission.id}>
-                            {form.fields.map((f) => <td key={f.key} className="small">{answer(submission, f)}</td>)}
-                            <td><JudgeScoreForm submission={submission} onSaved={reload}/></td>
-                        </tr>
-                    ))}
-                    {data?.content.length === 0 && <tr><td colSpan={form.fields.length + 1} className="muted">채점할 접수작이 없습니다.</td></tr>}
-                    </tbody>
-                </table>
-            </div>
-            {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
-        </section>
-    );
-}
-
-function JudgeScoreForm({submission, onSaved}: { submission: JudgeSubmission; onSaved: () => void }) {
-    const [score, setScore] = useState(submission.myScore == null ? '' : String(submission.myScore));
-    const [comment, setComment] = useState(submission.myComment ?? '');
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<unknown>(null);
-    const save = async () => {
-        setSaving(true);
-        setError(null);
-        try {
-            await applicationApi.score(submission.id, Number(score), comment);
-            onSaved();
-        } catch (e) {
-            setError(e);
-        } finally {
-            setSaving(false);
-        }
-    };
-    return (
-        <div className="review-cell">
-            <input aria-label="점수" type="number" min={0} max={100} value={score} onChange={(e) => setScore(e.target.value)}/>
-            <input aria-label="심사평" placeholder="심사평" value={comment} onChange={(e) => setComment(e.target.value)}/>
-            <button type="button" disabled={saving || score === ''} onClick={save}>저장</button>
-            <ErrorBanner error={error}/>
-        </div>
-    );
-}
 
 export function MyApplicationsPage() {
     const [page, setPage] = useState(0);
@@ -350,7 +265,7 @@ export function MyApplicationsPage() {
                             <td><span className={`badge${submission.status === 'ACCEPTED' ? ' ok' : submission.status === 'REJECTED' ? ' danger' : ''}`}>
                                 {SUBMISSION_STATUS[submission.status]}</span></td>
                             <td className="small">{submission.resultMessage ?? '-'}</td>
-                            <td><AdmissionFeeCell submission={submission} onPaid={reload}/></td>
+                            <td><AdmissionFeeCell submission={submission}/></td>
                             <td>
                                 <details>
                                     <summary>보기</summary>
@@ -381,11 +296,8 @@ export function MyApplicationsPage() {
     );
 }
 
-function AdmissionFeeCell({submission, onPaid}: { submission: Submission; onPaid: () => void }) {
-    const navigate = useNavigate();
+function AdmissionFeeCell({submission}: { submission: Submission }) {
     const [feeProductId, setFeeProductId] = useState<number | null>(null);
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState<unknown>(null);
     const needsCheck = submission.status === 'ACCEPTED' && !submission.admissionOrderId;
 
     useEffect(() => {
@@ -401,23 +313,66 @@ function AdmissionFeeCell({submission, onPaid}: { submission: Submission; onPaid
     if (!needsCheck || !feeProductId) {
         return <span className="muted">-</span>;
     }
+    return <Link className="button primary" to={`/applications/submissions/${submission.id}/pay?productId=${feeProductId}`}>입학금 결제하기</Link>;
+}
+
+export function AdmissionPaymentFormPage() {
+    const submissionId = Number(useParams().id);
+    const [params] = useSearchParams();
+    const productId = Number(params.get('productId'));
+    const navigate = useNavigate();
+    const [product, setProduct] = useState<ProductDetail | null>(null);
+    const [discountId, setDiscountId] = useState<number | null>(null);
+    const [rewards, setRewards] = useState<DiscountChoice>(NO_DISCOUNT);
+    const [error, setError] = useState<unknown>(null);
+    const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        shopApi.product(productId).then(setProduct).catch(setError);
+    }, [productId]);
+
+    if (error && !product) {
+        return <ErrorBanner error={error}/>;
+    }
+    if (!product) {
+        return <p className="muted">불러오는 중…</p>;
+    }
+
     const pay = async () => {
-        setBusy(true);
+        setSubmitting(true);
         setError(null);
         try {
-            const order = await applicationApi.payAdmission(submission.id);
-            onPaid();
+            const order = await applicationApi.payAdmission(submissionId,
+                {discountId, couponIssueId: rewards.couponIssueId, usePoints: rewards.usePoints});
             navigate(`/checkout/ORDER/${order.id}`);
         } catch (e) {
             setError(e);
         } finally {
-            setBusy(false);
+            setSubmitting(false);
         }
     };
+
     return (
-        <>
-            <button type="button" className="primary" disabled={busy} onClick={pay}>입학금 결제하기</button>
+        <section className="card narrow">
+            <h1>입학금·입회비 결제</h1>
+            <p>{product.name}</p>
+            {product.discounts.length > 0 && (
+                <div className="field">
+                    <label htmlFor="discountId">할인</label>
+                    <select id="discountId" value={discountId ?? ''}
+                            onChange={(e) => setDiscountId(e.target.value ? Number(e.target.value) : null)}>
+                        <option value="">할인 선택 안 함</option>
+                        {product.discounts.map((d) => <option key={d.id} value={d.id}>{d.name} ({d.rate}%)</option>)}
+                    </select>
+                </div>
+            )}
+            <DiscountSelector postalCode={null} value={rewards} onChange={setRewards}
+                               lines={[{productId, productOptionId: null, quantity: 1, discountId}]}/>
             <ErrorBanner error={error}/>
-        </>
+            <div className="toolbar form-actions">
+                <button type="button" onClick={() => navigate(-1)}>이전</button>
+                <button type="button" className="primary" disabled={submitting} onClick={pay}>결제 진행</button>
+            </div>
+        </section>
     );
 }

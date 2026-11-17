@@ -69,9 +69,8 @@ class ApplicationApiTest extends ApiTestSupport {
     @Test
     void lotteryPicksTheWinnerCountOnceAndClosesTheForm() throws Exception {
         MockHttpSession admin = admin();
-        String lottery = FORM.replace("\"maximumSubmissions\":2", "\"selectionMethod\":\"LOTTERY\"");
-        postJson("/api/admin/applications", admin, lottery).andExpect(jsonPath("$.code").value("WINNER_COUNT_REQUIRED"));
-        long formId = createdId(postJson("/api/admin/applications", admin, lottery.replace("\"LOTTERY\"", "\"LOTTERY\",\"winnerCount\":2"))
+        String lottery = FORM.replace("\"maximumSubmissions\":2", "\"winnerCount\":2");
+        long formId = createdId(postJson("/api/admin/applications", admin, lottery)
                 .andExpect(status().isCreated()));
         String answers = "{\"answers\":{\"company\":\"A\",\"stage\":\"예비 창업\",\"agree\":true}}";
         long withdrawnId = 0;
@@ -85,7 +84,7 @@ class ApplicationApiTest extends ApiTestSupport {
             }
         }
         long noticeOnly = createdId(postJson("/api/admin/applications", admin, FORM));
-        postJson("/api/admin/applications/%d/draw".formatted(noticeOnly), admin, "").andExpect(jsonPath("$.code").value("NOT_LOTTERY"));
+        postJson("/api/admin/applications/%d/draw".formatted(noticeOnly), admin, "").andExpect(jsonPath("$.code").value("WINNER_COUNT_REQUIRED"));
 
         postJson("/api/admin/applications/%d/draw".formatted(formId), admin, "")
                 .andExpect(jsonPath("$.candidates").value(3))

@@ -1,5 +1,7 @@
 package com.dgmoonlabs.cms.domain.course.service;
 
+import com.dgmoonlabs.cms.domain.business.category.constant.CategoryDomain;
+import com.dgmoonlabs.cms.domain.business.category.service.CategoryService;
 import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
 import com.dgmoonlabs.cms.domain.business.order.entity.Order;
 import com.dgmoonlabs.cms.domain.business.order.repository.OrderRepository;
@@ -80,6 +82,7 @@ public class CourseService {
     private final OrderService orderService;
     private final OrderRepository orderRepository;
     private final ApplicationEventPublisher events;
+    private final CategoryService categoryService;
 
     @Transactional(readOnly = true)
     public Page<CourseResponse> getCourses(final String keyword, final Boolean isCourse, final Pageable pageable) {
@@ -145,10 +148,13 @@ public class CourseService {
                 .preventSkipping(isCourse && request.preventSkipping())
                 .completionThresholdPercent(isCourse ? request.completionThresholdPercent() : null)
                 .attendanceRequired(isCourse && periodMode != AccessPeriodMode.UNLIMITED && request.attendanceRequired())
+                .trackProgress(request.trackProgressOrDefault())
+                .completionRate(request.completionRateOrDefault())
                 .build());
         syncLessons(course.getId(), request.lessons());
         syncMaterials(course.getId(), null, request.materialFileIdsOrEmpty());
         applySale(course, request);
+        changeCategory(course, request);
         return course.getId();
     }
 
@@ -160,10 +166,16 @@ public class CourseService {
                 gradeService.validGradeId(request.accessGradeId()), request.isUsing(), request.isCourse(), request.enrollmentModeOrDefault(),
                 request.applicationStartAt(), request.applicationEndAt(), request.accessPeriodModeOrDefault(),
                 request.accessStartAt(), request.accessEndAt(), request.accessDays(), request.maxPlaybackRate(), request.preventSkipping(),
-                request.completionThresholdPercent(), request.attendanceRequired());
+                request.completionThresholdPercent(), request.attendanceRequired(), request.trackProgressOrDefault(), request.completionRateOrDefault());
         syncLessons(id, request.lessons());
         syncMaterials(id, null, request.materialFileIdsOrEmpty());
         applySale(course, request);
+        changeCategory(course, request);
+    }
+
+    private void changeCategory(final Course course, final CourseSaveRequest request) {
+        course.changeCategory(request.categoryId() == null ? null
+                : categoryService.findForDomain(request.categoryId(), CategoryDomain.COURSE).getId());
     }
 
     @Transactional
@@ -489,7 +501,7 @@ public class CourseService {
             CourseLesson lesson = lessons.get(question.getLessonId());
             Course course = lesson == null ? null : courses.get(lesson.getCourseId());
             return new UnansweredQuestionResponse(question.getId(), course == null ? null : course.getId(),
-                    course == null ? "(삭제됨)" : course.getTitle(), question.getLessonId(),
+                    course == null ? "(삭제됨)" : course.getTitle(), course != null && course.isCourse(), question.getLessonId(),
                     lesson == null ? "(삭제됨)" : lesson.getTitle(), question.getAuthorName(), question.getContent(),
                     question.getCreatedAt());
         });
@@ -644,12 +656,13 @@ public class CourseService {
             boolean accessOpen = !enrollment.isRevoked()
                     && course.accessOpen(enrollment.getCreatedAt(), enrollment.getAccessExtendedUntil(), LocalDateTime.now());
             return new CourseResponse(summary.id(), summary.title(), summary.description(), summary.thumbnailFileId(),
-                    summary.thumbnailUrl(), summary.sequential(), summary.accessGradeId(), course.isPublic(), course.isCourse(),
+                    summary.thumbnailUrl(), summary.categoryId(), summary.sequential(), summary.accessGradeId(), course.isPublic(), course.isCourse(),
                     course.effectiveEnrollmentMode(), summary.applicationOpen(), summary.applicationStartAt(), summary.applicationEndAt(),
                     summary.accessPeriodMode(), summary.accessStartAt(), summary.accessEndAt(), summary.accessDays(),
                     accessUntil, accessOpen, course.effectiveMaxPlaybackRate(), course.effectivePreventSkipping(),
                     course.effectiveCompletionThresholdPercent(), course.isAttendanceRequired(), attendanceOk(course, enrollment),
                     course.isPaid(), course.getPrice(), course.getProductId(), course.getRefundableProgressBelowPercent(),
+                    course.isTrackProgress(), course.getCompletionRate(),
                     lessons.size(), null, null, mine, null, summary.createdAt());
         });
     }
@@ -745,12 +758,13 @@ public class CourseService {
 
     private CourseResponse summary(final Course course, final int lessonCount) {
         return new CourseResponse(course.getId(), course.getTitle(), course.getDescription(), course.getThumbnailFileId(),
-                thumbnailUrl(course), course.isSequential(), course.getAccessGradeId(), course.isUsing(), course.isCourse(),
+                thumbnailUrl(course), course.getCategoryId(), course.isSequential(), course.getAccessGradeId(), course.isUsing(), course.isCourse(),
                 course.effectiveEnrollmentMode(), course.applicationOpen(LocalDateTime.now()), course.getApplicationStartAt(),
                 course.getApplicationEndAt(), course.getAccessPeriodMode(), course.getAccessStartAt(), course.getAccessEndAt(),
                 course.getAccessDays(), null, null, course.effectiveMaxPlaybackRate(), course.effectivePreventSkipping(),
                 course.effectiveCompletionThresholdPercent(), course.isAttendanceRequired(), null,
                 course.isPaid(), course.getPrice(), course.getProductId(), course.getRefundableProgressBelowPercent(),
+                course.isTrackProgress(), course.getCompletionRate(),
                 lessonCount, null, null, null, null, course.getCreatedAt());
     }
 
@@ -822,12 +836,13 @@ public class CourseService {
             }
         }
         return new CourseResponse(course.getId(), course.getTitle(), course.getDescription(), course.getThumbnailFileId(),
-                thumbnailUrl(course), course.isSequential(), course.getAccessGradeId(), course.isUsing(), course.isCourse(),
+                thumbnailUrl(course), course.getCategoryId(), course.isSequential(), course.getAccessGradeId(), course.isUsing(), course.isCourse(),
                 course.effectiveEnrollmentMode(), course.applicationOpen(LocalDateTime.now()), course.getApplicationStartAt(),
                 course.getApplicationEndAt(), course.getAccessPeriodMode(), course.getAccessStartAt(), course.getAccessEndAt(),
                 course.getAccessDays(), myAccessUntil, myAccessOpen, course.effectiveMaxPlaybackRate(), course.effectivePreventSkipping(),
                 course.effectiveCompletionThresholdPercent(), course.isAttendanceRequired(), myAttendanceOk,
                 course.isPaid(), course.getPrice(), course.getProductId(), course.getRefundableProgressBelowPercent(),
+                course.isTrackProgress(), course.getCompletionRate(),
                 lessons.size(), responses, toMaterialResponses(course.getId(), courseMaterials, materialFiles), mine,
                 myApplicationStatus, course.getCreatedAt());
     }

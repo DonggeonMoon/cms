@@ -1,6 +1,6 @@
 import {type FormEvent, useCallback, useEffect, useMemo, useState} from 'react';
 import {Link, useNavigate, useParams, useSearchParams} from 'react-router';
-import type {GiftCard, MemberPass, MyLicenseKey, Order, OrderReturn, OrderReturnType, PaymentMethod, ProductDetail, ProductSaleType, ProductSummary, ReservationItem, Reservation, ReservationType, Review, ReviewTargetType, Subscription, WalletLedgerEntry} from '../../api/domain';
+import type {ExchangeRate, GiftCard, MemberPass, MyLicenseKey, Order, OrderReturn, OrderReturnType, PaymentMethod, ProductDetail, ProductSaleType, ProductSummary, ReservationItem, Reservation, ReservationType, Review, ReviewTargetType, Subscription, TaxSetting, WalletLedgerEntry} from '../../api/domain';
 import {shopApi} from '../../api/endpoints';
 import {useStatusLabels} from '../../api/statuses';
 import type {Page} from '../../api/types';
@@ -16,6 +16,7 @@ import {HtmlView} from '../../components/HtmlView';
 import {ListSearch, pageParams} from '../../components/ListSearch';
 import {BILLING_CYCLE, LEDGER_TYPE, ORDER_STATUS, PASS_UNIT, QUEUE_STATUS, RESERVATION_STATUS, RESERVATION_TYPE, RETURN_STATUS, RETURN_TYPE, SALE_TYPE} from '../../components/labels';
 import {Pagination} from '../../components/Pagination';
+import {PriceNotice} from '../../components/PriceNotice';
 import {Thumbnail} from '../../components/Thumbnail';
 import {StableLabel} from '../../components/StableLabel';
 import {useFeatureMenuName} from '../../components/SiteContext';
@@ -62,7 +63,7 @@ export function ProductListPage() {
     const keyword = params.get('keyword') ?? '';
     const [data, setData] = useState<Page<ProductSummary> | null>(null);
     const [error, setError] = useState<unknown>(null);
-    const categories = useCategories();
+    const categories = useCategories('PRODUCT');
     const query = params.toString();
     const filtered = [...params.keys()].some((key) => key === 'categoryId' || /^(attr|min|max)\./.test(key));
 
@@ -616,6 +617,13 @@ export function CheckoutPage() {
     const [method, setMethod] = useState<PaymentMethod>('CARD');
     const [error, setError] = useState<unknown>(null);
     const [paying, setPaying] = useState(false);
+    const [tax, setTax] = useState<TaxSetting | null>(null);
+    const [rates, setRates] = useState<ExchangeRate[]>([]);
+
+    useEffect(() => {
+        shopApi.taxSetting().then((t) => setTax(t ?? null)).catch(() => setTax(null));
+        shopApi.exchangeRates().then((r) => setRates(r ?? [])).catch(() => setRates([]));
+    }, []);
 
     useEffect(() => {
         if (type === 'ORDER') {
@@ -673,6 +681,7 @@ export function CheckoutPage() {
                 <>
                     <p>{target.title}</p>
                     <p className="price">{won(target.amount)}</p>
+                    <PriceNotice amount={target.amount} tax={tax} rates={rates}/>
                     {target.payable ? (
                         <>
                             <div className="field">
@@ -719,11 +728,7 @@ export function MyOrdersPage() {
                     <tbody>
                     {data?.content.map((order) => (
                         <tr key={order.id}>
-                            <td><code>{order.orderNumber}</code>
-                                {order.pickupNumber != null && (
-                                    <div className="small"><strong>{order.pickupNumber}번</strong> · {order.fulfillmentType === 'DINE_IN' ? `${order.tableName} 테이블` : '포장'}</div>
-                                )}
-                            </td>
+                            <td><code>{order.orderNumber}</code></td>
                             <td>
                                 {order.items.length > 1 ? order.productName
                                     : <><Link to={`/products/${order.productId}`}>{order.productName}</Link> × {order.quantity}</>}
@@ -771,7 +776,7 @@ export function MyOrdersPage() {
                                 )}
                             </td>
                             <td className="button-cell">
-                                {order.saleType === 'PURCHASE' && ['PAID', 'SHIPPING', 'PREPARING', 'READY', 'DELIVERED', 'COMPLETED'].includes(order.status) && (
+                                {order.saleType === 'PURCHASE' && ['PAID', 'SHIPPING', 'DELIVERED'].includes(order.status) && (
                                     <ReturnCell order={order} existing={returns.get(order.id)} onDone={reload}/>
                                 )}
                             </td>
@@ -1105,13 +1110,13 @@ export function MyWalletPage() {
             <p className="price">{won(balance)}</p>
 
             <h2>상품권 코드로 충전</h2>
-            <form onSubmit={redeem} className="inline-form">
+            <form onSubmit={redeem} className="inline-form toolbar">
                 <input value={redeemCode} onChange={(e) => setRedeemCode(e.target.value)} placeholder="상품권 코드" required/>
                 <button type="submit" className="primary" disabled={busy}>충전하기</button>
             </form>
 
             <h2>상품권 발급 (잔액에서 차감)</h2>
-            <form onSubmit={issueCode} className="inline-form">
+            <form onSubmit={issueCode} className="inline-form toolbar">
                 <input type="number" min={1} value={issueAmount} onChange={(e) => setIssueAmount(e.target.value)} placeholder="금액(원)" required/>
                 <button type="submit" className="primary" disabled={busy}>발급하기</button>
             </form>
@@ -1192,7 +1197,6 @@ export function MySubscriptionsPage() {
                             <td>{item.nextBillingDate ?? '-'}</td>
                             <td>{formatDateTime(item.startedAt)}</td>
                             <td className="button-cell">
-                                <Link to={`/mypage/attendance/${item.id}`}>출결 보기</Link>
                                 {item.status !== 'CANCELED' && <SubscriptionActions subscription={item} onDone={reload}/>}
                             </td>
                         </tr>

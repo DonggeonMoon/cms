@@ -113,6 +113,26 @@ export interface PreviewLine {
 
 export const won0 = (value: number | null | undefined) => `${Number(value ?? 0).toLocaleString('ko-KR')}`;
 
+/** 백엔드 Coupon.discountFor()·PointService.maxUsable()와 같은 계산. 실제 승인은 서버가 다시 검증한다. */
+export function couponDiscountFor(coupon: { discountType: DiscountType; discountValue: number; maxDiscountAmount: number | null; minOrderAmount: number | null }, base: number) {
+    if (base <= 0 || (coupon.minOrderAmount && base < coupon.minOrderAmount)) {
+        return 0;
+    }
+    let discount = coupon.discountType === 'AMOUNT' ? coupon.discountValue : Math.floor(base * coupon.discountValue / 100);
+    if (coupon.discountType === 'RATE' && coupon.maxDiscountAmount) {
+        discount = Math.min(discount, coupon.maxDiscountAmount);
+    }
+    return Math.min(discount, base);
+}
+
+export function maxUsablePoints(policy: PointPolicy, balance: number, afterCoupon: number) {
+    if (!policy.isEnabled) {
+        return 0;
+    }
+    const cap = Math.floor(afterCoupon * policy.maxUseRate / 100);
+    return Math.max(0, Math.min(balance, cap));
+}
+
 export function couponBenefit(coupon: { discountType: DiscountType | null; discountValue: number | null; maxDiscountAmount: number | null; minOrderAmount: number | null }) {
     if (!coupon.discountType) {
         return '-';

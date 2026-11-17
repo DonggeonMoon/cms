@@ -17,11 +17,6 @@ const FIELDS: FieldSpec[] = [
     {name: 'description', label: '설명', type: 'textarea'},
     {name: 'media', label: '동영상/음악 파일', type: 'media', required: true,
         help: 'mp4, webm, mov 동영상 또는 mp3, m4a, wav, ogg 음악. 올리면 재생 시간을 자동으로 읽고, 파일에 맞춰 동영상/음악으로 분류합니다. 동영상은 한 장면을 썸네일로 만들며, 다른 이미지로 바꿀 수 있습니다.'},
-    {name: 'trackProgress', label: '진도 체크 사용', type: 'checkbox', wide: true, group: '교육',
-        help: '끄면 시청 진도·수강 완료를 기록하지 않습니다. 강의가 아닌 일반 영상에 적합합니다.'},
-    {name: 'completionRate', label: '수강 완료 진도율(%)', type: 'number', required: true, min: 1, wide: true, group: '교육',
-        visibleWhen: (v) => Boolean(v.trackProgress),
-        help: '실제로 재생한 구간이 이 비율 이상이면 수강 완료로 기록합니다.'},
     {name: 'paid', label: '유료', type: 'checkbox',
         help: '켜면 결제한 회원만 볼 수 있습니다. 판매용 상품이 자동으로 만들어지고(상품 목록에는 나오지 않음) 쿠폰·포인트를 쓸 수 있습니다.'},
     {name: 'price', label: '가격(원)', type: 'number', min: 1, required: true, newRow: true, visibleWhen: (v) => Boolean(v.paid)},
@@ -48,7 +43,7 @@ export function StreamingAdminPage() {
     return (
         <AdminCrudPage<StreamingItem>
             title="스트리밍"
-            description={<p>회원이 재생하면 진도가 회원별로 저장되고, 완료 진도율을 넘기면 수강 완료로 기록됩니다.</p>}
+            description={<p>회원이 재생하면 진도가 회원별로 저장됩니다. 진도 체크 사용 여부·완료 기준은 이 영상을 차시로 쓰는 시리즈/교육과정에서 정합니다.</p>}
             load={loadStreaming}
             extraQuery={{mediaType}}
             filters={
@@ -59,12 +54,10 @@ export function StreamingAdminPage() {
                 </select>
             }
             fields={fields}
-            emptyForm={{completionRate: 90, trackProgress: true, isUsing: true, media: null}}
+            emptyForm={{isUsing: true, media: null}}
             toForm={(item) => ({
                 title: item.title,
                 description: item.description ?? '',
-                completionRate: item.completionRate,
-                trackProgress: item.trackProgress,
                 isUsing: item.isUsing,
                 accessGradeId: item.accessGradeId,
                 media: {id: item.fileId, name: item.fileName ?? `파일 #${item.fileId}`, durationSeconds: item.durationSeconds,
@@ -80,7 +73,7 @@ export function StreamingAdminPage() {
                 {label: '종류', render: (l) => (l.mediaType === 'AUDIO' ? '음악' : '동영상')},
                 {label: '재생 시간', render: (l) => formatDuration(l.durationSeconds)},
                 {label: '판매', render: (l) => (l.paid ? `유료 ${won(l.price ?? 0)}` : '무료')},
-                {label: '진도 체크', render: (l) => (l.trackProgress ? `사용 (${l.completionRate}%)` : '사용 안 함')},
+                {label: '진도 체크 (소속 시리즈/교육과정 설정)', render: (l) => (l.trackProgress ? `사용 (${l.completionRate}%)` : '사용 안 함')},
                 {label: '공개', render: (l) => <YesNo value={l.isUsing}/>},
                 {label: '등록일', render: (l) => formatDateTime(l.createdAt)},
             ]}

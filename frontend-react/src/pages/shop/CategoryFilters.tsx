@@ -1,9 +1,9 @@
 import {type FormEvent, useEffect, useState} from 'react';
 import {useSearchParams} from 'react-router';
-import type {CategoryAttribute, ProductCategory} from '../../api/categories';
+import type {Category, CategoryAttribute} from '../../api/categories';
 
 /** 카테고리와 속성 조건을 주소(쿼리)에 담아, 새로고침·뒤로가기·공유해도 같은 목록이 나오게 한다. */
-export function CategoryFilters({categories}: { categories: ProductCategory[] }) {
+export function CategoryFilters({categories}: { categories: Category[] }) {
     const [params, setParams] = useSearchParams();
     const selectedId = params.get('categoryId') ? Number(params.get('categoryId')) : null;
     const selected = categories.find((category) => category.id === selectedId) ?? null;

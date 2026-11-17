@@ -27,4 +27,6 @@ public interface ReservationItemRepository extends JpaRepository<ReservationItem
 
     Page<ReservationItem> findAllByIsEnabledTrueAndSiteIdAndDeletedAtIsNullAndNameContainingIgnoreCaseOrderByIdDesc(Long siteId, String keyword,
                                                                                                            Pageable pageable);
+
+    long countByCategoryIdAndDeletedAtIsNull(Long categoryId);
 }

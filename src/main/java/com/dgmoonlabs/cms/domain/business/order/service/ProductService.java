@@ -1,5 +1,6 @@
 package com.dgmoonlabs.cms.domain.business.order.service;
 
+import com.dgmoonlabs.cms.domain.business.category.constant.CategoryDomain;
 import com.dgmoonlabs.cms.domain.business.category.service.CategoryService;
 import com.dgmoonlabs.cms.domain.business.category.service.ProductAttributeService;
 import com.dgmoonlabs.cms.domain.business.discount.service.DiscountService;
@@ -126,7 +127,8 @@ public class ProductService {
     }
 
     private void changeCategory(final Product product, final ProductSaveRequest request) {
-        product.changeCategory(request.categoryId() == null ? null : categoryService.find(request.categoryId()).getId());
+        product.changeCategory(request.categoryId() == null ? null
+                : categoryService.findForDomain(request.categoryId(), CategoryDomain.PRODUCT).getId());
         attributeService.save(product, request.attributes());
     }
 
@@ -186,7 +188,6 @@ public class ProductService {
         product.changeGrades(gradeService.validGradeId(request.accessGradeId()),
                 gradeService.validGradeId(request.grantGradeId()), request.grantGradeDays());
         product.changeShipping(request.requiresShippingOrDefault());
-        product.changeStoreOrder(Boolean.TRUE.equals(request.storeOrder()));
         List<Long> digitalFileIds = request.digitalFileIdsOrEmpty();
         if (!digitalFileIds.isEmpty()) {
             fileService.requireFilesExist(digitalFileIds);

@@ -1,10 +1,15 @@
 package com.dgmoonlabs.cms.domain.business.reservation.service;
 
 import com.dgmoonlabs.cms.domain.business.BusinessNumbers;
+import com.dgmoonlabs.cms.domain.business.category.constant.CategoryDomain;
+import com.dgmoonlabs.cms.domain.business.category.service.CategoryService;
+import com.dgmoonlabs.cms.domain.business.discount.service.DiscountService;
 import com.dgmoonlabs.cms.domain.business.pass.entity.MemberPass;
 import com.dgmoonlabs.cms.domain.business.pass.service.PassService;
 import com.dgmoonlabs.cms.domain.business.payment.constant.PaymentTargetType;
 import com.dgmoonlabs.cms.domain.business.payment.service.PaymentService;
+import com.dgmoonlabs.cms.domain.common.coupon.service.CouponService;
+import com.dgmoonlabs.cms.domain.common.point.service.PointService;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.QueueStatus;
 import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.*;
@@ -60,6 +65,10 @@ public class ReservationService {
     private final ReservationItemSessionRepository sessionRepository;
     private final ReservationExtensionRepository extensionRepository;
     private final PassService passService;
+    private final DiscountService discountService;
+    private final CouponService couponService;
+    private final PointService pointService;
+    private final CategoryService categoryService;
 
     @Transactional(readOnly = true)
     public Page<ReservationItemResponse> getReservationItems(final String keyword, final Pageable pageable) {
@@ -170,6 +179,7 @@ public class ReservationService {
                 .build());
         applySettings(item, request);
         item.changeAccessGrade(gradeService.validGradeId(request.accessGradeId()));
+        changeCategory(item, request);
         return item.getId();
     }
 
@@ -186,6 +196,12 @@ public class ReservationService {
                         htmlSanitizer.toPlainText(html), request.isEnabled());
         applySettings(item, request);
         item.changeAccessGrade(gradeService.validGradeId(request.accessGradeId()));
+        changeCategory(item, request);
+    }
+
+    private void changeCategory(final ReservationItem item, final ReservationItemSaveRequest request) {
+        item.changeCategory(request.categoryId() == null ? null
+                : categoryService.findForDomain(request.categoryId(), CategoryDomain.RESERVATION_ITEM).getId());
     }
 
     @Transactional
@@ -248,7 +264,9 @@ public class ReservationService {
         };
         MemberPass usedPass = request.passId() == null ? null
                 : passService.consumeForMember(userId, request.passId(), item.getId(), booking.quantity());
-        BigDecimal totalPrice = usedPass == null ? booking.total() : BigDecimal.ZERO;
+        Long memberId = userType == UserType.MEMBER ? userId : null;
+        Pricing pricing = usedPass == null ? priceFor(memberId, booking.total(), request) : Pricing.zero();
+        BigDecimal totalPrice = pricing.total();
         ReservationStatus status = paid || totalPrice.signum() == 0 ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING_PAYMENT;
         Reservation reservation = reservationRepository.save(Reservation.builder()
                 .reservationNumber(regexService.requireNumberFormat(RegexTarget.RESERVATION_NUMBER,
@@ -263,6 +281,7 @@ public class ReservationService {
                 .endAt(booking.endAt())
                 .cells(booking.cells())
                 .quantity(booking.quantity())
+                .discountId(usedPass == null ? request.discountId() : null)
                 .totalPrice(totalPrice)
                 .depositAmount(booking.deposit())
                 .status(status)
@@ -278,7 +297,43 @@ public class ReservationService {
                 .partySize(item.getReservationType() == ReservationType.TABLE ? request.partySize() : null)
                 .partyBreakdown(item.getReservationType() == ReservationType.TOUR ? request.partyCounts() : null)
                 .build());
+        reservation.applyDiscounts(pricing.couponIssueId(), pricing.couponDiscount(), pricing.pointsUsed());
+        if (memberId != null) {
+            if (pricing.couponIssueId() != null) {
+                couponService.use(memberId, pricing.couponIssueId(), reservation.getId());
+            }
+            pointService.use(memberId, pricing.pointsUsed(), reservation.getId());
+            if (status == ReservationStatus.CONFIRMED) {
+                long earned = pointService.earnFor(totalPrice);
+                if (earned > 0) {
+                    reservation.recordEarned(earned);
+                    pointService.earn(memberId, earned, reservation.getId());
+                }
+            }
+        }
         return ReservationResponse.from(reservation);
+    }
+
+    /**
+     * 예약도 상품처럼 할인·쿠폰·포인트를 적용한다. 다만 특정 상품에 묶인 할인·쿠폰은 상품 ID 공간과 겹칠 수 있어
+     * 예약에는 쓸 수 없고, 전체 적용(상품 ID 없음)으로 등록된 것만 예약에 쓸 수 있다.
+     */
+    private Pricing priceFor(final Long memberId, final BigDecimal subtotal, final ReservationCreateRequest request) {
+        BigDecimal afterDiscount = discountService.applyTo(request.discountId(), null, subtotal);
+        CouponService.Evaluation coupon = memberId == null || request.couponIssueId() == null
+                ? new CouponService.Evaluation(BigDecimal.ZERO, List.of(BigDecimal.ZERO))
+                : couponService.evaluate(memberId, request.couponIssueId(), List.of(new CouponService.Line(null, afterDiscount)));
+        BigDecimal afterCoupon = afterDiscount.subtract(coupon.discount());
+        long points = memberId == null || request.usePoints() == null ? 0 : request.usePoints();
+        pointService.validateUse(memberId, points, afterCoupon);
+        Long couponIssueId = coupon.discount().signum() > 0 ? request.couponIssueId() : null;
+        return new Pricing(couponIssueId, coupon.discount(), points, afterCoupon.subtract(BigDecimal.valueOf(points)));
+    }
+
+    private record Pricing(Long couponIssueId, BigDecimal couponDiscount, long pointsUsed, BigDecimal total) {
+        static Pricing zero() {
+            return new Pricing(null, BigDecimal.ZERO, 0, BigDecimal.ZERO);
+        }
     }
 
     private record Booking(int quantity, BigDecimal total, LocalDateTime startAt, LocalDateTime endAt, String cells,
@@ -744,6 +799,12 @@ public class ReservationService {
         }
         if (reservation.getPassId() != null) {
             passService.restoreUsage(reservation.getPassId(), reservation.getQuantity());
+        }
+        if (reservation.getUserType() == UserType.MEMBER) {
+            Long memberId = reservation.getUserId();
+            pointService.restore(memberId, reservation.getPointsUsed(), reservation.getId());
+            pointService.revokeEarned(memberId, reservation.getPointsEarned(), reservation.getId());
+            couponService.restore(reservation.getCouponIssueId());
         }
         paymentService.refundIfPaid(PaymentTargetType.RESERVATION, reservation.getId());
         for (ReservationExtension extension : extensionRepository.findAllByReservationIdOrderByIdAsc(reservation.getId())) {

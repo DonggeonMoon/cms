@@ -68,7 +68,8 @@ public class SitemapService {
         if (siteService.isEnabled(SiteFeature.MEDIA)) {
             courseRepository.findAllByIsUsingTrueAndSiteIdAndDeletedAtIsNullOrderByIdAsc(siteService.currentSiteId()).stream()
                     .filter(course -> course.getAccessGradeId() == null)
-                    .forEach(course -> entries.add(new Entry("/courses/" + course.getId(), course.getModifiedAt())));
+                    .forEach(course -> entries.add(new Entry((course.isCourse() ? "/courses/" : "/series/") + course.getId(),
+                            course.getModifiedAt())));
             streamingRepository.findAllByIsUsingTrueAndDeletedAtIsNullOrderByIdAsc().stream()
                     .filter(streaming -> streaming.getAccessGradeId() == null)
                     .forEach(streaming -> entries.add(new Entry("/streaming/" + streaming.getId(), streaming.getModifiedAt())));

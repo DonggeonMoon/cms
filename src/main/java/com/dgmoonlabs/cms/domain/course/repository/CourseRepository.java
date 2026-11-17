@@ -25,4 +25,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             + "and c.deletedAt is null and lower(c.title) like lower(concat('%', :keyword, '%')) "
             + "and (:isCourse is null or c.isCourse = :isCourse) order by c.id desc")
     Page<Course> searchPublic(Long siteId, String keyword, Boolean isCourse, Pageable pageable);
+
+    long countByCategoryIdAndDeletedAtIsNull(Long categoryId);
 }

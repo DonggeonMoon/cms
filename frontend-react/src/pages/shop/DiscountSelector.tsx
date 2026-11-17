@@ -1,7 +1,10 @@
 import {useEffect, useState} from 'react';
+import type {ExchangeRate, TaxSetting} from '../../api/domain';
+import {shopApi} from '../../api/endpoints';
 import {type OrderPreview, previewOrder, type PreviewLine} from '../../api/rewards';
 import {won} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
+import {PriceNotice} from '../../components/PriceNotice';
 
 export interface DiscountChoice {
     couponIssueId: number | null;
@@ -20,7 +23,14 @@ export function DiscountSelector({lines, postalCode, value, onChange}: {
     const [preview, setPreview] = useState<OrderPreview | null>(null);
     const [error, setError] = useState<unknown>(null);
     const [pointsText, setPointsText] = useState(value.usePoints ? String(value.usePoints) : '');
+    const [tax, setTax] = useState<TaxSetting | null>(null);
+    const [rates, setRates] = useState<ExchangeRate[]>([]);
     const key = JSON.stringify(lines);
+
+    useEffect(() => {
+        shopApi.taxSetting().then((t) => setTax(t ?? null)).catch(() => setTax(null));
+        shopApi.exchangeRates().then((r) => setRates(r ?? [])).catch(() => setRates([]));
+    }, []);
 
     useEffect(() => {
         if (lines.length === 0) {
@@ -95,6 +105,7 @@ export function DiscountSelector({lines, postalCode, value, onChange}: {
                 <dd className="price">{won(preview.totalPrice)}</dd>
                 {preview.pointsToEarn > 0 && (<><dt>적립 예정</dt><dd>{preview.pointsToEarn.toLocaleString('ko-KR')}P</dd></>)}
             </dl>
+            <PriceNotice amount={preview.totalPrice} tax={tax} rates={rates}/>
         </div>
     );
 }

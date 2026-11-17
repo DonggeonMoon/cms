@@ -1,8 +1,11 @@
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {describe, expect, it, vi} from 'vitest';
+import {createMemoryRouter, RouterProvider} from 'react-router';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {Menu} from '../api/domain';
 import type {Page} from '../api/types';
+import {AuthProvider} from '../auth/AuthContext';
+import {routes} from '../router';
 import {AdminCrudPage} from './AdminCrudPage';
 import {CommentEditor} from './CommentEditor';
 import {Pagination} from './Pagination';
@@ -32,6 +35,34 @@ describe('menuHref', () => {
         expect(menuHref({...base, type: 'CONTENT', targetId: 3})).toBe('/contents/3?menuId=7');
         expect(menuHref({...base, type: 'BOARD', targetId: 2})).toBe('/boards/2');
         expect(menuHref({...base, link: 'https://example.com'})).toBe('https://example.com');
+    });
+});
+
+function respond(status: number, body?: unknown) {
+    return new Response(body === undefined ? null : JSON.stringify(body), {status});
+}
+
+describe('main navigation', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('sends a feature menu with its own link override there instead of the feature\'s default path', async () => {
+        const menus: Menu[] = [
+            {id: 20, parentId: null, name: '시리즈', type: 'FEATURE', depth: 0, sequence: 1, link: '/series', targetId: null, feature: 'MEDIA', isUsing: true, children: []},
+            {id: 21, parentId: null, name: '스트리밍', type: 'FEATURE', depth: 0, sequence: 2, link: null, targetId: null, feature: 'MEDIA', isUsing: true, children: []},
+        ];
+        vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+            if (url === '/api/auth/me') return respond(401);
+            if (url === '/api/site') return respond(200, {id: 1, name: '사이트', features: {}});
+            if (url === '/api/menus') return respond(200, menus);
+            if (url === '/api/configs') return respond(200, {});
+            return url.startsWith('/api/banners') || url.startsWith('/api/boards') || url.startsWith('/api/archives')
+                ? respond(200, []) : respond(204);
+        }));
+        render(<AuthProvider><RouterProvider router={createMemoryRouter(routes, {initialEntries: ['/']})}/></AuthProvider>);
+
+        // 자체 link가 있는 메뉴는 그 링크로, 없는 메뉴는 기능의 기본 경로(FEATURE_PATHS)로 간다.
+        expect(await screen.findByRole('link', {name: '시리즈'})).toHaveAttribute('href', '/series');
+        expect(screen.getByRole('link', {name: '스트리밍'})).toHaveAttribute('href', '/streaming');
     });
 });
 

@@ -33,7 +33,7 @@ public class SecurityConfig {
                         "/api/payments/**", "/api/payments", "/api/subscriptions/**", "/api/cart/**", "/api/cart",
                         "/api/wishlist/**", "/api/wishlist", "/api/customer-records/**", "/api/passes/**",
                         "/api/progress", "/api/messages", "/api/repairs/**", "/api/repairs", "/api/wallet/**",
-                        "/api/class-attendance/**", "/api/class-attendance", "/api/votes/**", "/api/votes").hasRole("MEMBER")
+                        "/api/votes/**", "/api/votes").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/coupons/*/download").hasRole("MEMBER")
                 .requestMatchers("/api/digital/**").hasRole("MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/products/*/reviews", "/api/reservation-items/*/reviews").hasRole("MEMBER")

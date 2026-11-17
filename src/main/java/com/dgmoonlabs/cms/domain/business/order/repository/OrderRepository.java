@@ -1,6 +1,5 @@
 package com.dgmoonlabs.cms.domain.business.order.repository;
 
-import com.dgmoonlabs.cms.domain.business.order.constant.FulfillmentType;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.domain.business.order.constant.OrderStatus;
 import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
@@ -19,11 +18,6 @@ import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByIdAndUserTypeAndUserId(Long id, UserType userType, Long userId);
-
-    @Query("select coalesce(max(o.pickupNumber), 0) from Order o where o.fulfillmentType <> :delivery and o.createdAt >= :since")
-    int maxPickupNumberSince(FulfillmentType delivery, LocalDateTime since);
-
-    List<Order> findAllByFulfillmentTypeInAndStatusInOrderByIdAsc(Collection<FulfillmentType> types, Collection<OrderStatus> statuses);
 
     Page<Order> findAllByUserTypeAndUserIdOrderByIdDesc(UserType userType, Long userId, Pageable pageable);
 

@@ -20,4 +20,6 @@ public interface ApplicationFormRepository extends JpaRepository<ApplicationForm
     Page<ApplicationForm> findAllByDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdDesc(String keyword, Pageable pageable);
 
     Page<ApplicationForm> findAllByIsEnabledTrueAndDeletedAtIsNullAndTitleContainingIgnoreCaseOrderByIdDesc(String keyword, Pageable pageable);
+
+    long countByCategoryIdAndDeletedAtIsNull(Long categoryId);
 }

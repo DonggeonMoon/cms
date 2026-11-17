@@ -43,7 +43,7 @@ export function ExchangeRateAdminPage() {
         <section className="card">
             <h1>환율(다통화 표시)</h1>
             <p className="muted">결제는 항상 원화로 이뤄집니다. 여기 등록한 환율은 상품가를 안내용으로 환산해서 보여줄 때만 씁니다.</p>
-            <form onSubmit={save} className="inline-form">
+            <form onSubmit={save} className="inline-form toolbar">
                 <input type="text" value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)} placeholder="통화 코드 (예: USD)"/>
                 <input type="number" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="1단위당 원화"/>
                 <button type="submit" className="primary" disabled={busy}>등록·수정</button>

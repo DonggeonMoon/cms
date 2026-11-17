@@ -1,6 +1,7 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router';
 import type {Query} from '../../api/client';
+import {categorySelectField, useCategories} from '../../api/categories';
 import {
     type Course, type CourseApplication, courseAdminApi, type CourseLearner, type LessonDraft, lessonBody, materialsToFileInfos, toLessonDrafts,
 } from '../../api/courses';
@@ -20,9 +21,15 @@ import {StreamingAdminPage} from './StreamingAdminPage';
 const FIELDS: FieldSpec[] = [
     {name: 'isUsing', label: '공개', type: 'checkbox'},
     {name: 'title', label: '이름', required: true, wide: true},
+    {name: 'description', label: '소개', type: 'textarea'},
     {name: 'sequential', label: '항목을 순서대로 듣기', type: 'checkbox', visibleWhen: (v) => Boolean(v.isCourse),
         help: '켜면 앞 항목을 마쳐야 다음 항목의 퀴즈를 풀 수 있습니다.'},
-    {name: 'enrollmentMode', label: '수강 신청 방식', type: 'select', visibleWhen: (v) => Boolean(v.isCourse),
+    {name: 'trackProgress', label: '진도 체크 사용', type: 'checkbox', wide: true, group: '진도 체크',
+        help: '끄면 차시 영상·음악의 시청 진도·수강 완료를 기록하지 않습니다.'},
+    {name: 'completionRate', label: '차시 완료로 칠 시청 진도율(%)', type: 'number', required: true, min: 1, wide: true, group: '진도 체크',
+        visibleWhen: (v) => Boolean(v.trackProgress),
+        help: '차시 영상·음악을 이 비율 이상 재생하면 그 차시를 완료로 기록합니다.'},
+    {name: 'enrollmentMode', label: '수강 신청 방식', type: 'select', newRow: true, visibleWhen: (v) => Boolean(v.isCourse),
         options: toOptions(COURSE_ENROLLMENT_MODE), required: true,
         help: '자유 수강은 신청 없이 바로 수강, 신청 후 수강은 신청하면 바로 수강, 승인제는 관리자가 승인해야 수강할 수 있습니다.'},
     {name: 'applicationStartAt', label: '신청 가능 기간(모집 기간) 시작', type: 'datetime', visibleWhen: (v) => Boolean(v.isCourse),
@@ -49,7 +56,6 @@ const FIELDS: FieldSpec[] = [
     {name: 'price', label: '가격(원)', type: 'number', min: 1, required: true, visibleWhen: (v) => Boolean(v.paid)},
     {name: 'refundableProgressBelowPercent', label: '환불 가능 진도율 기준(%)', type: 'number', min: 1, visibleWhen: (v) => Boolean(v.paid),
         help: '진도율이 이 값 미만이면 환불 처리할 수 있습니다. 비워두면 관리자 재량으로 언제든 환불할 수 있습니다. 수강 시작 전만 허용하려면 작게(예: 1) 설정하세요.'},
-    {name: 'description', label: '소개', type: 'textarea'},
     {name: 'thumbnailFileId', label: '썸네일', type: 'image', wide: true},
     {name: 'paid', label: '유료', type: 'checkbox',
         help: '켜면 결제한 회원만 수강할 수 있습니다. 판매용 상품이 자동으로 만들어지고(상품 목록에는 나오지 않음) 쿠폰·포인트를 쓸 수 있습니다. 결제가 끝나면 수강 신청 방식과 무관하게 바로 수강할 수 있습니다.'},
@@ -61,8 +67,9 @@ const FIELDS: FieldSpec[] = [
 
 const courseGradeFields = (grades: Grade[]) => [gradeSelectField('accessGradeId', '수강 가능 등급', grades, '이 등급 이상 회원만 수강할 수 있습니다.')];
 
-const toBody = ({lessons, materials, ...values}: FormValues) => ({
+const toBody = ({lessons, materials, categoryId, ...values}: FormValues) => ({
     ...values,
+    categoryId: categoryId ? Number(categoryId) : null,
     lessons: lessonBody((lessons as LessonDraft[]) ?? []),
     materialFileIds: ((materials as FileInfo[]) ?? []).map((file) => file.id),
 });
@@ -128,7 +135,12 @@ function CourseTabs() {
 }
 
 function CourseCrudPage({isCourse, title, description}: { isCourse: boolean; title: string; description: string }) {
-    const fields = useWithGradeFields(FIELDS, courseGradeFields);
+    const categories = useCategories('COURSE');
+    const base = useMemo(() => {
+        const at = FIELDS.findIndex((field) => field.name === 'description') + 1;
+        return [...FIELDS.slice(0, at), ...categorySelectField(categories), ...FIELDS.slice(at)];
+    }, [categories]);
+    const fields = useWithGradeFields(base, courseGradeFields);
     const [open, setOpen] = useState<{ id: number; panel: Panel } | null>(null);
     const toggle = (id: number, panel: Panel) =>
         setOpen(open?.id === id && open.panel === panel ? null : {id, panel});
@@ -141,7 +153,7 @@ function CourseCrudPage({isCourse, title, description}: { isCourse: boolean; tit
             extraQuery={{isCourse}}
             fields={fields}
             emptyForm={{isUsing: true, isCourse, sequential: true, enrollmentMode: 'FREE', accessPeriodMode: 'UNLIMITED',
-                attendanceRequired: false, preventSkipping: false, paid: false, materials: [],
+                attendanceRequired: false, preventSkipping: false, paid: false, trackProgress: true, completionRate: 90, materials: [],
                 lessons: [{id: null, title: '', unitName: '', streamingId: null, quizId: null, materials: [], mandatory: false, preventSkippingOverride: null}]}}
             toForm={(course) => courseAdminApi.get(course.id).then((full) => ({...full,
                 lessons: toLessonDrafts(full.lessons ?? []), materials: materialsToFileInfos(full.materials ?? [])}))}
@@ -150,7 +162,8 @@ function CourseCrudPage({isCourse, title, description}: { isCourse: boolean; tit
             remove={(course) => courseAdminApi.remove(course.id)}
             columns={[
                 {label: 'ID', render: (c) => c.id},
-                {label: '이름', render: (c) => <Link to={`/courses/${c.id}`}>{c.title}</Link>},
+                {label: '이름', render: (c) => <Link to={`${c.isCourse ? '/courses' : '/series'}/${c.id}`}>{c.title}</Link>},
+                {label: '카테고리', render: (c) => categories.find((cat) => cat.id === c.categoryId)?.name ?? '-'},
                 {label: '수강 신청', render: (c) => (c.isCourse ? COURSE_ENROLLMENT_MODE[c.enrollmentMode] : '-')},
                 {label: '항목', render: (c) => `${c.lessonCount}개`},
                 {label: '순서대로', render: (c) => <YesNo value={c.sequential}/>},

@@ -79,8 +79,7 @@ public final class ProductDtos {
             @Positive @Max(10_000) Integer downloadLimit,
             @Positive @Max(36_500) Integer downloadDays,
             Long categoryId,
-            @Size(max = 30) Map<String, Object> attributes,
-            Boolean storeOrder
+            @Size(max = 30) Map<String, Object> attributes
     ) {
         public List<Long> digitalFileIdsOrEmpty() {
             return digitalFileIds == null ? List.of() : digitalFileIds.stream().distinct().toList();
@@ -120,13 +119,13 @@ public final class ProductDtos {
                                  BillingCycle billingCycle, Integer commitmentMonths, Integer earlyTerminationFeeRate,
                                  Integer availableQuantity, boolean isEnabled, String imageUrl,
                                  Long accessGradeId, Long grantGradeId, Integer grantGradeDays, Long categoryId,
-                                 boolean storeOrder, LocalDateTime createdAt) {
+                                 LocalDateTime createdAt) {
         public static ProductSummary from(final Product product) {
             return new ProductSummary(product.getId(), product.getName(), product.getDescription(), product.getPrice(),
                     product.getSaleType(), product.getBillingCycle(), product.getCommitmentMonths(), product.getEarlyTerminationFeeRate(),
                     product.getAvailableQuantity(), product.isEnabled(),
                     toImageUrl(product.getImageFileId()), product.getAccessGradeId(), product.getGrantGradeId(),
-                    product.getGrantGradeDays(), product.getCategoryId(), product.isStoreOrder(), product.getCreatedAt());
+                    product.getGrantGradeDays(), product.getCategoryId(), product.getCreatedAt());
         }
     }
 
@@ -168,7 +167,7 @@ public final class ProductDtos {
                                 Long grantGradeId, Integer grantGradeDays, List<Product.OptionGroup> optionGroups,
                                 boolean requiresShipping, int digitalFileCount, Integer downloadLimit, Integer downloadDays,
                                 List<FileResponse> digitalFiles, Long categoryId, Map<String, Object> attributes,
-                                List<Spec> specs, boolean storeOrder) {
+                                List<Spec> specs) {
         /** yourPrice: 지금 보는 사람(로그인한 회원)의 등급별 가격. 기본가와 같으면 그대로지만 화면에서는 다를 때만 보여주면 된다. */
         public static ProductDetail of(final Product product, final List<OptionResponse> options,
                                        final List<DiscountResponse> discounts, final Double averageRating,
@@ -184,7 +183,7 @@ public final class ProductDtos {
                     product.getAccessGradeId(), product.getGrantGradeId(), product.getGrantGradeDays(),
                     product.getOptionGroups() == null ? List.of() : product.getOptionGroups(), product.isRequiresShipping(),
                     product.hasDigitalFiles() ? product.getDigitalFileIds().size() : 0, product.getDownloadLimit(),
-                    product.getDownloadDays(), digitalFiles, product.getCategoryId(), attributes, specs, product.isStoreOrder());
+                    product.getDownloadDays(), digitalFiles, product.getCategoryId(), attributes, specs);
         }
     }
 

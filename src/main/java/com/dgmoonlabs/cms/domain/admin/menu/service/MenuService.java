@@ -70,7 +70,7 @@ public class MenuService {
                 .type(request.type())
                 .sequence(request.sequence())
                 .targetId(request.type() == MenuType.FEATURE || request.type() == MenuType.LINK ? null : request.targetId())
-                .link(request.type() == MenuType.LINK ? request.link() : null)
+                .link(request.type() == MenuType.LINK || request.type() == MenuType.FEATURE ? request.link() : null)
                 .feature(request.type() == MenuType.FEATURE ? request.feature() : null)
                 .isUsing(request.isUsingOrDefault())
                 .build();

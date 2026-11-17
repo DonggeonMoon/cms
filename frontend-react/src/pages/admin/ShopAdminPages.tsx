@@ -1,5 +1,5 @@
 import {fileApi} from '../../api/files';
-import {attributesToForm, productCategoryFields, splitCategoryValues, useCategories} from '../../api/categories';
+import {attributesToForm, categorySelectField, productCategoryFields, splitCategoryValues, useCategories} from '../../api/categories';
 import type {FileInfo} from '../../api/types';
 import {type FormEvent, useCallback, useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router';
@@ -17,8 +17,8 @@ import {RegexBindingSelect} from '../../components/RegexBindingSelect';
 import {CustomStatusSelect, StatusManager} from '../../components/StatusManager';
 import {BILLING_CYCLE, ORDER_STATUS, PASS_UNIT, RESERVATION_STATUS, RESERVATION_TYPE, RESERVATION_TYPE_GROUPS, RETURN_STATUS, RETURN_TYPE, SALE_TYPE, toOptions} from '../../components/labels';
 import {EMPTY_LAYOUT} from '../../components/LayoutEditor';
-import type {FieldSpec, FormValues} from '../../components/SchemaForm';
-import {StoreOrderQueuePage} from './StoreAdminPages';
+import {type FieldSpec, type FormValues, SchemaForm} from '../../components/SchemaForm';
+import {RECORD_CONTENT_FIELDS, toRecordBody} from './CustomerRecordAdminPage';
 import {type Grade, gradeSelectField, useGrades, useWithGradeFields} from '../../api/grades';
 import type {GradePrice} from '../../api/domain';
 import {EMPTY_OPTION_SET, type OptionSet, optionSetBody, toOptionSet} from '../../components/ProductOptionsEditor';
@@ -65,9 +65,7 @@ const PRODUCT_FIELDS: FieldSpec[] = [
         help: '마감일까지 목표 금액을 못 채우면 결제된 주문을 모두 취소하고 환불합니다.',
         visibleWhen: (v) => v.saleType === 'FUNDING'},
     {name: 'availableQuantity', label: '재고', type: 'number', min: 0, help: '상품 전체 재고입니다. 비워두면 무제한이고, 옵션 조합별 재고는 아래에서 따로 정합니다.', wide: true},
-    {name: 'storeOrder', label: '매장 주문 전용 (포장·매장 식사)', type: 'checkbox', wide: true,
-        help: '켜면 배송 주문은 받지 않고, 매장 주문 설정에 따라 포장이나 매장 식사로만 주문받습니다.'},
-    {name: 'requiresShipping', label: '배송 상품', type: 'checkbox', wide: true, visibleWhen: (v) => !v.storeOrder,
+    {name: 'requiresShipping', label: '배송 상품', type: 'checkbox', wide: true,
         help: '디지털·서비스 상품은 끄세요. 배송 상품이 있는 주문에만 배송비를 받습니다.'},
     {name: 'isEnabled', label: '판매 중', type: 'checkbox', wide: true},
     {name: 'digitalFiles', label: '디지털 파일', type: 'files',
@@ -161,7 +159,7 @@ function GradePriceEditor({productId, onClose}: { productId: number; onClose: ()
 }
 
 export function ProductAdminPage() {
-    const categories = useCategories();
+    const categories = useCategories('PRODUCT');
     const [reservationItemChoices, setReservationItemChoices] = useState<{ value: string; label: string }[]>([]);
     const [fundingNotice, setFundingNotice] = useState<string | null>(null);
     const [gradePricing, setGradePricing] = useState<number | null>(null);
@@ -432,11 +430,11 @@ export function OrderAdminPage() {
                 {label: '금액', render: (o) => <OrderAmount order={o}/>},
                 {label: '수령인', render: (o) => `${o.receiverName} (${o.phoneNumber})`},
                 {label: '상태', render: (o, reload) => (
-                    <>
+                    <span className="row align-center">
                         {statusLabel(o.status, o.customStatus)}
                         <CustomStatusSelect statuses={statuses} status={o.status} customStatus={o.customStatus}
                                             onApply={(code) => void statusApi.applyToOrder(o.id, code).then(reload)}/>
-                    </>
+                    </span>
                 )},
                 {label: '주문일', render: (o) => formatDateTime(o.createdAt)},
                 {label: '상태 처리', className: 'button-cell', render: (o, reload) => (
@@ -622,12 +620,10 @@ export function PassAdminPage() {
     );
 }
 
-type OrdersTab = 'orders' | 'reservations' | 'store-orders' | 'subscriptions' | 'passes' | 'license-keys';
+type OrdersTab = 'orders' | 'subscriptions' | 'passes' | 'license-keys';
 
 const ORDERS_TABS: { value: OrdersTab; label: string }[] = [
     {value: 'orders', label: '주문'},
-    {value: 'reservations', label: '예약'},
-    {value: 'store-orders', label: '매장 주문'},
     {value: 'subscriptions', label: '구독'},
     {value: 'passes', label: '이용권'},
     {value: 'license-keys', label: '라이선스 키'},
@@ -637,7 +633,7 @@ export function OrdersAdminPage() {
     const [tab, setTab] = useState<OrdersTab>('orders');
     return (
         <>
-            <div className="tabs" role="tablist" aria-label="주문/예약 관리">
+            <div className="tabs" role="tablist" aria-label="주문 관리">
                 {ORDERS_TABS.map((t) => (
                     <button key={t.value} type="button" role="tab" aria-selected={tab === t.value}
                             className={tab === t.value ? 'tab active' : 'tab'} onClick={() => setTab(t.value)}>
@@ -646,8 +642,6 @@ export function OrdersAdminPage() {
                 ))}
             </div>
             {tab === 'orders' && <OrderAdminPage/>}
-            {tab === 'reservations' && <ReservationAdminPage/>}
-            {tab === 'store-orders' && <StoreOrderQueuePage/>}
             {tab === 'subscriptions' && <SubscriptionAdminPage/>}
             {tab === 'passes' && <PassAdminPage/>}
             {tab === 'license-keys' && <LicenseKeyAdminPage/>}
@@ -697,8 +691,9 @@ const reservationItemGradeFields = (grades: Grade[]) => [
     gradeSelectField('accessGradeId', '예약 가능 등급', grades, '이 등급 이상 회원만 예약할 수 있습니다.'),
 ];
 
-const toReservationItemBody = ({priceTiersText, ...values}: FormValues) => ({
+const toReservationItemBody = ({priceTiersText, categoryId, ...values}: FormValues) => ({
     ...values,
+    categoryId: categoryId ? Number(categoryId) : null,
     priceTiers: values.reservationType === 'TOUR'
         ? String(priceTiersText ?? '').split(',').map((part) => part.trim()).filter(Boolean).map((part) => {
             const [name, price] = part.split(':');
@@ -710,11 +705,19 @@ const toReservationItemBody = ({priceTiersText, ...values}: FormValues) => ({
 const loadReservationItems = (query: Query) => adminApi.reservationItems.search(query);
 
 export function ReservationItemAdminPage() {
-    const fields = useWithGradeFields(RESERVATION_ITEM_FIELDS, reservationItemGradeFields);
+    const categories = useCategories('RESERVATION_ITEM');
+    const base = useMemo(() => {
+        const at = RESERVATION_ITEM_FIELDS.findIndex((field) => field.name === 'description') + 1;
+        return [...RESERVATION_ITEM_FIELDS.slice(0, at), ...categorySelectField(categories), ...RESERVATION_ITEM_FIELDS.slice(at)];
+    }, [categories]);
+    const fields = useWithGradeFields(base, reservationItemGradeFields);
     return (
         <AdminCrudPage<ReservationItem>
             title="예약"
-            description="시간 예약(프로그램·상담·출장·방문·여행·투어), 공간 예약(대관·숙박·공연·식당 테이블), 물품 대여를 등록합니다. 예약 내역은 하위 메뉴에서 확인합니다."
+            description={<>
+                <p>시간 예약(프로그램·상담·출장·방문·여행·투어), 공간 예약(대관·숙박·공연·식당 테이블), 물품 대여를 등록합니다. 예약 내역은 "예약" 메뉴에서 확인합니다.</p>
+                <p><Link to="/admin/check-in">체크인 →</Link> · <Link to="/admin/reception-queue">접수·대기 →</Link></p>
+            </>}
             load={loadReservationItems}
             fields={fields}
             emptyForm={{reservationType: 'PROGRAM', isEnabled: true, price: 0, contentHtml: '', layout: EMPTY_LAYOUT}}
@@ -722,6 +725,7 @@ export function ReservationItemAdminPage() {
                 {label: 'ID', render: (p) => p.id},
                 {label: '유형', render: (p) => <span className="badge">{RESERVATION_TYPE[p.reservationType]}</span>},
                 {label: '이름', render: (p) => <Link to={`/reservation-items/${p.id}`}>{p.name}</Link>},
+                {label: '카테고리', render: (p) => categories.find((c) => c.id === p.categoryId)?.name ?? '-'},
                 {label: '기본 가격', render: (p) => won(p.price)},
                 {label: '잔여/정원', render: (p) => (p.reservationType !== 'PROGRAM' ? '-' : p.maximumPerson ? `${p.availablePerson}/${p.maximumPerson}` : '제한 없음')},
                 {label: '신청 기간', render: (p) => `${formatDateTime(p.applicationStartDateTime)} ~ ${formatDateTime(p.applicationEndDateTime)}`},
@@ -845,6 +849,7 @@ export function ReservationAdminPage() {
     const {statuses, label: statusLabel, reload: reloadStatuses} = useStatusLabels('RESERVATION', RESERVATION_STATUS);
     const [status, setStatus] = useState('');
     const [reservationItemChoices, setReservationItemChoices] = useState<{ value: string; label: string }[]>([]);
+    const [recordingFor, setRecordingFor] = useState<number | null>(null);
     useEffect(() => {
         adminApi.reservationItems.search({size: 100})
             .then((page) => setReservationItemChoices(page.content.map((p) => ({
@@ -858,6 +863,7 @@ export function ReservationAdminPage() {
             title="예약"
             description={<>
                 <p>관리자가 전화·현장 예약을 직접 등록할 수 있습니다. 관리자 명의로 저장되며 회원 마이페이지에는 보이지 않습니다. 예약번호나 예약 상품명으로 검색할 수 있습니다.</p>
+                <p><Link to="/admin/customer-records">고객 기록 보기 →</Link></p>
                 <RegexBindingSelect target="RESERVATION_NUMBER" label="예약번호 정규식"/>
                 <StatusManager domain="RESERVATION" statuses={statuses} onChange={reloadStatuses}/>
             </>}
@@ -880,11 +886,11 @@ export function ReservationAdminPage() {
                 {label: '금액', render: (r) => won(r.totalPrice)},
                 {label: '신청자', render: (r) => `${r.applicantName} (${r.phoneNumber})`},
                 {label: '상태', render: (r, reload) => (
-                    <>
+                    <span className="row align-center">
                         {statusLabel(r.status, r.customStatus)}
                         <CustomStatusSelect statuses={statuses} status={r.status} customStatus={r.customStatus}
                                             onApply={(code) => void statusApi.applyToReservation(r.id, code).then(reload)}/>
-                    </>
+                    </span>
                 )},
                 {label: '반납·방문', render: (r, reload) => r.reservationType === 'ITEM_RENTAL' ? <ReturnCell reservation={r} onDone={reload}/>
                         : r.reservationType === 'VISIT' && <VisitCell reservation={r} onDone={reload}/>},
@@ -904,7 +910,22 @@ export function ReservationAdminPage() {
                 )},
             ]}
             actions={(r) => r.userType === 'MEMBER' && (
-                <Link to={`/admin/customer-records?memberId=${r.userId}&reservationId=${r.id}`}>기록 남기기</Link>
+                <button type="button" onClick={() => setRecordingFor(recordingFor === r.id ? null : r.id)}>
+                    {recordingFor === r.id ? '취소' : '기록 남기기'}
+                </button>
+            )}
+            expandedRow={(r, reload) => recordingFor === r.id && (
+                <SchemaForm
+                    title="고객 기록 남기기"
+                    fields={RECORD_CONTENT_FIELDS}
+                    initial={{recordedOn: new Date().toISOString().slice(0, 10), sharedWithMember: false, photos: []}}
+                    onCancel={() => setRecordingFor(null)}
+                    onSubmit={async (values) => {
+                        await adminApi.customerRecords.create({...toRecordBody(values), memberId: r.userId, reservationId: r.id});
+                        setRecordingFor(null);
+                        reload();
+                    }}
+                />
             )}
         />
     );

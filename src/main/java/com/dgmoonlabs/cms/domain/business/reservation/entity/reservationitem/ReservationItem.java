@@ -37,6 +37,9 @@ public class ReservationItem extends BaseEntity {
     @Comment("대표 이미지 파일 ID")
     private Long imageFileId;
 
+    @Comment("카테고리 ID")
+    private Long categoryId;
+
     @Column(nullable = false, precision = 15, scale = 2)
     @Comment("참가비 (1인)")
     private BigDecimal price;
@@ -150,6 +153,10 @@ public class ReservationItem extends BaseEntity {
 
     public void changeAccessGrade(final Long accessGradeId) {
         this.accessGradeId = accessGradeId;
+    }
+
+    public void changeCategory(final Long categoryId) {
+        this.categoryId = categoryId;
     }
 
     public void changeReservationSettings(final ReservationType reservationType, final Integer slotMinutes,

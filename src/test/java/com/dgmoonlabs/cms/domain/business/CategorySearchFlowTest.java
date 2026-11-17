@@ -12,20 +12,20 @@ class CategorySearchFlowTest extends ApiTestSupport {
     @Test
     void productsAreFilteredByCategoryTreeAndAttributes() throws Exception {
         MockHttpSession admin = admin();
-        long electronics = createdId(postJson("/api/admin/product-categories", admin, """
-                {"name":"가전","attributes":[{"key":"brand","label":"브랜드","type":"SELECT","options":["가나","다라"],"filterable":true}]}
+        long electronics = createdId(postJson("/api/admin/categories", admin, """
+                {"domain":"PRODUCT","name":"가전","attributes":[{"key":"brand","label":"브랜드","type":"SELECT","options":["가나","다라"],"filterable":true}]}
                 """));
-        postJson("/api/admin/product-categories", admin, """
-                {"name":"노트북","parentId":%d,"attributes":[{"key":"brand","label":"제조사","type":"TEXT"}]}
+        postJson("/api/admin/categories", admin, """
+                {"domain":"PRODUCT","name":"노트북","parentId":%d,"attributes":[{"key":"brand","label":"제조사","type":"TEXT"}]}
                 """.formatted(electronics)).andExpect(jsonPath("$.code").value("INVALID_CATEGORY_ATTRIBUTES"));
-        long laptop = createdId(postJson("/api/admin/product-categories", admin, """
-                {"name":"노트북","parentId":%d,"attributes":[
+        long laptop = createdId(postJson("/api/admin/categories", admin, """
+                {"domain":"PRODUCT","name":"노트북","parentId":%d,"attributes":[
                   {"key":"weight","label":"무게","type":"NUMBER","unit":"kg","filterable":true},
                   {"key":"cpu","label":"CPU","type":"TEXT"}]}
                 """.formatted(electronics)));
-        postJson("/api/admin/product-categories", admin, "{\"name\":\"손자\",\"parentId\":%d}".formatted(laptop))
+        postJson("/api/admin/categories", admin, "{\"domain\":\"PRODUCT\",\"name\":\"손자\",\"parentId\":%d}".formatted(laptop))
                 .andExpect(jsonPath("$.code").value("INVALID_CATEGORY_PARENT"));
-        long tv = createdId(postJson("/api/admin/product-categories", admin, "{\"name\":\"TV\",\"parentId\":%d}".formatted(electronics)));
+        long tv = createdId(postJson("/api/admin/categories", admin, "{\"domain\":\"PRODUCT\",\"name\":\"TV\",\"parentId\":%d}".formatted(electronics)));
 
         String laptopProduct = """
                 {"name":"%s","price":1000000,"isEnabled":true,"categoryId":%d,"attributes":{"brand":"%s","weight":%s,"cpu":"i7","ghost":"x"}}
@@ -51,10 +51,10 @@ class CategorySearchFlowTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.content[*].name", containsInAnyOrder("무거운 노트북")));
         getJson("/api/products?min.weight=abc", null).andExpect(status().isBadRequest());
 
-        getJson("/api/product-categories", null)
+        getJson("/api/categories?domain=PRODUCT", null)
                 .andExpect(jsonPath("$[?(@.id == %d)].effectiveAttributes.length()".formatted(laptop)).value(3))
-                .andExpect(jsonPath("$[?(@.id == %d)].productCount".formatted(laptop)).value(2));
-        deleteJson("/api/admin/product-categories/" + electronics, admin, null).andExpect(jsonPath("$.code").value("CATEGORY_IN_USE"));
+                .andExpect(jsonPath("$[?(@.id == %d)].itemCount".formatted(laptop)).value(2));
+        deleteJson("/api/admin/categories/" + electronics, admin, null).andExpect(jsonPath("$.code").value("CATEGORY_IN_USE"));
         postJson("/api/admin/products", admin, laptopProduct.formatted("잘못", laptop, "없는 브랜드", "1.2"))
                 .andExpect(jsonPath("$.fieldErrors[0].field").value("attributes.brand"));
     }

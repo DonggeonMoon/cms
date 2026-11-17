@@ -69,10 +69,12 @@ export function StockMovementAdminPage() {
                 <>
                     <form onSubmit={adjust} className="inline-form">
                         <h2>수동 조정</h2>
-                        <input type="number" value={delta} onChange={(e) => setDelta(e.target.value)}
-                               placeholder="증감 수량 (입고는 +, 출고는 -)"/>
-                        <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="조정 이유 (예: 실사 보정)"/>
-                        <button type="submit" className="primary" disabled={busy}>조정하기</button>
+                        <div className="toolbar">
+                            <input type="number" value={delta} onChange={(e) => setDelta(e.target.value)}
+                                   placeholder="증감 수량 (입고는 +, 출고는 -)"/>
+                            <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="조정 이유 (예: 실사 보정)"/>
+                            <button type="submit" className="primary" disabled={busy}>조정하기</button>
+                        </div>
                     </form>
                     <div className="table-wrap">
                         <table>

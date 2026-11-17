@@ -248,9 +248,11 @@ interface MenuKind {
     label: string;
     type: Menu['type'];
     feature?: SiteFeature;
+    link?: string;
 }
 
-const featureKind = (feature: SiteFeature, label: string): MenuKind => ({value: `FEATURE:${feature}`, label, type: 'FEATURE', feature});
+const featureKind = (feature: SiteFeature, label: string, link?: string): MenuKind =>
+    ({value: `FEATURE:${feature}:${link ?? ''}`, label, type: 'FEATURE', feature, link});
 
 const MENU_KINDS: MenuKind[] = [
     {value: 'CONTENT', label: '컨텐츠', type: 'CONTENT', feature: 'CONTENT'},
@@ -261,15 +263,18 @@ const MENU_KINDS: MenuKind[] = [
     featureKind('QNA', '질문답변'),
     featureKind('MAP', '지도'),
     featureKind('PRODUCT', '상품'),
-    featureKind('MEDIA', '스트리밍'),
+    featureKind('MEDIA', '스트리밍', '/streaming'),
+    featureKind('MEDIA', '시리즈', '/series'),
+    featureKind('MEDIA', '교육과정', '/courses'),
     featureKind('PROGRAM', '예약 상품'),
     featureKind('APPLICATION', '신청·지원'),
     featureKind('REPORT', '신고'),
     {value: 'LINK', label: '링크', type: 'LINK'},
 ];
 
-const kindOf = (menu: Pick<Menu, 'type' | 'feature'>) => menu.type === 'FEATURE' ? `FEATURE:${menu.feature}` : menu.type;
-const findKind = (menu: Pick<Menu, 'type' | 'feature'>) => MENU_KINDS.find((kind) => kind.value === kindOf(menu));
+const kindOf = (menu: Pick<Menu, 'type' | 'feature' | 'link'>) =>
+    menu.type === 'FEATURE' ? `FEATURE:${menu.feature}:${menu.link ?? ''}` : menu.type;
+const findKind = (menu: Pick<Menu, 'type' | 'feature' | 'link'>) => MENU_KINDS.find((kind) => kind.value === kindOf(menu));
 
 const menuFields = (allowedKinds: MenuKind[]): FieldSpec[] => [
     {name: 'isUsing', label: '사용', type: 'checkbox', wide: true, spaced: true},
@@ -277,13 +282,14 @@ const menuFields = (allowedKinds: MenuKind[]): FieldSpec[] => [
     {name: 'kind', label: '종류', type: 'select', required: true, options: allowedKinds.map(({value, label}) => ({value, label})),
         help: allowedKinds.length < MENU_KINDS.length ? '사용 중지된 기능은 메뉴 종류로 선택할 수 없습니다.' : undefined},
     {name: 'targetId', label: '연결 대상 ID', type: 'number', min: 0, help: '컨텐츠는 컨텐츠 ID, 게시판·아카이브 (하나 지정)는 게시판·아카이브 ID'},
-    {name: 'link', label: '링크', help: '링크 메뉴일 때 이동할 주소'},
+    {name: 'link', label: '링크', help: '링크 메뉴일 때 이동할 주소', visibleWhen: (v) => v.kind === 'LINK'},
     {name: 'sequence', label: '순서', type: 'number', required: true, min: 1},
 ];
 
 const toMenuBody = ({kind, ...values}: FormValues, parentId: number | null) => {
     const selected = MENU_KINDS.find((k) => k.value === kind);
-    return {...values, parentId, type: selected?.type, feature: selected?.type === 'FEATURE' ? selected.feature : null};
+    return {...values, parentId, type: selected?.type, feature: selected?.type === 'FEATURE' ? selected.feature : null,
+        link: selected?.type === 'LINK' ? values.link : selected?.link ?? null};
 };
 
 const LISTING_FEATURES: SiteFeature[] = ['BOARD', 'ARCHIVE'];

@@ -74,7 +74,7 @@ public class Menu extends BaseEntity {
         this.isUsing = request.isUsingOrDefault();
         this.type = request.type();
         this.feature = request.type() == MenuType.FEATURE ? request.feature() : null;
-        this.link = request.type() == MenuType.LINK ? request.link() : null;
+        this.link = request.type() == MenuType.LINK || request.type() == MenuType.FEATURE ? request.link() : null;
         this.targetId = request.type() == MenuType.FEATURE || request.type() == MenuType.LINK ? null : request.targetId();
     }
 }
