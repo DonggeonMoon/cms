@@ -7,6 +7,7 @@ import {won} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatDateTime, formatTime} from '../../components/format';
 import {SpaceGrid} from '../../components/SpaceGrid';
+import {useI18n} from '../../api/i18n';
 
 export interface ReservationSelection {
     startAt: string | null;
@@ -50,6 +51,7 @@ export function estimateReservation(item: ReservationItem, selection: Reservatio
 }
 
 export function ReservationPicker({item}: { item: ReservationItem }) {
+    const {t} = useI18n();
     const navigate = useNavigate();
     const {user} = useAuth();
     const firstDay = [today(), dateOf(item.startDateTime)].sort().at(-1)!;
@@ -75,7 +77,7 @@ export function ReservationPicker({item}: { item: ReservationItem }) {
 
     useEffect(() => {
         if (type === 'TOUR') {
-            setPartyCounts(Object.fromEntries((item.priceTiers ?? []).map((t) => [t.name, 0])));
+            setPartyCounts(Object.fromEntries((item.priceTiers ?? []).map((tier) => [tier.name, 0])));
         }
     }, [item.id, type, item.priceTiers]);
 
@@ -148,16 +150,16 @@ export function ReservationPicker({item}: { item: ReservationItem }) {
         <form className="reservation-picker" onSubmit={submit}>
             {hasEventSessions && (
                 <div className="field">
-                    <label htmlFor="sessionId">회차 선택</label>
+                    <label htmlFor="sessionId">{t('shop.reservationPicker.selectSession', '회차 선택')}</label>
                     <select id="sessionId" required value={sessionId} onChange={(e) => {
                         setSessionId(e.target.value);
                         setCells([]);
                     }}>
-                        <option value="">선택</option>
+                        <option value="">{t('shop.reservationPicker.select', '선택')}</option>
                         {eventSessions.map((s) => (
                             <option key={s.id} value={s.id} disabled={s.remaining === 0}>
                                 {s.name ? `${s.name} · ` : ''}{formatDateTime(s.startAt)}
-                                {s.remaining != null && ` (잔여 ${s.remaining}석)`}{s.remaining === 0 && ' 마감'}
+                                {s.remaining != null && t('shop.reservationPicker.remainingSeats', ' (잔여 {count}석)', {count: String(s.remaining)})}{s.remaining === 0 && t('shop.reservationPicker.closed', ' 마감')}
                             </option>
                         ))}
                     </select>
@@ -165,13 +167,13 @@ export function ReservationPicker({item}: { item: ReservationItem }) {
             )}
             {hasTourSessions && (
                 <div className="field">
-                    <label htmlFor="sessionId">출발일 선택</label>
+                    <label htmlFor="sessionId">{t('shop.reservationPicker.selectDeparture', '출발일 선택')}</label>
                     <select id="sessionId" required value={sessionId} onChange={(e) => setSessionId(e.target.value)}>
-                        <option value="">선택</option>
+                        <option value="">{t('shop.reservationPicker.select', '선택')}</option>
                         {tourSessions.map((s) => (
                             <option key={s.id} value={s.id} disabled={s.remaining === 0}>
                                 {s.name ? `${s.name} · ` : ''}{formatDateTime(s.startAt)}
-                                {s.remaining != null && ` (잔여 ${s.remaining}명)`}{s.remaining === 0 && ' 마감'}
+                                {s.remaining != null && t('shop.reservationPicker.remainingPeople', ' (잔여 {count}명)', {count: String(s.remaining)})}{s.remaining === 0 && t('shop.reservationPicker.closed', ' 마감')}
                             </option>
                         ))}
                     </select>
@@ -189,7 +191,7 @@ export function ReservationPicker({item}: { item: ReservationItem }) {
             )}
             {(type === 'CONSULTATION' || type === 'VISIT' || type === 'RENTAL' || type === 'TABLE' || byDates) && (
                 <div className="row align-center">
-                    <label>{type === 'LODGING' ? '체크인' : type === 'ITEM_RENTAL' ? '대여일' : '날짜'}{' '}
+                    <label>{type === 'LODGING' ? t('shop.reservationPicker.checkIn', '체크인') : type === 'ITEM_RENTAL' ? t('shop.reservationPicker.rentalDate', '대여일') : t('shop.reservationPicker.date', '날짜')}{' '}
                         <input type="date" value={date} min={firstDay} max={dateOf(item.endDateTime) || undefined}
                                onChange={(e) => {
                                    setDate(e.target.value);
@@ -198,12 +200,12 @@ export function ReservationPicker({item}: { item: ReservationItem }) {
                                }}/>
                     </label>
                     {byDates && (
-                        <label>{type === 'ITEM_RENTAL' ? '반납일' : '체크아웃'}{' '}
+                        <label>{type === 'ITEM_RENTAL' ? t('shop.reservationPicker.returnDate', '반납일') : t('shop.reservationPicker.checkOut', '체크아웃')}{' '}
                             <input type="date" value={checkOut} min={date} onChange={(e) => setCheckOut(e.target.value)}/>
                         </label>
                     )}
                     {type === 'ITEM_RENTAL' && (
-                        <label>수량{' '}
+                        <label>{t('shop.reservationPicker.quantity', '수량')}{' '}
                             <input type="number" min={1} max={remaining ?? undefined} value={quantity}
                                    onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}/>
                         </label>
@@ -211,7 +213,7 @@ export function ReservationPicker({item}: { item: ReservationItem }) {
                 </div>
             )}
             {(type === 'CONSULTATION' || type === 'VISIT') && (
-                <div className="slot-list" role="radiogroup" aria-label={type === 'VISIT' ? '방문 시간' : '상담 시간'}>
+                <div className="slot-list" role="radiogroup" aria-label={type === 'VISIT' ? t('shop.reservationPicker.visitTime', '방문 시간') : t('shop.reservationPicker.consultationTime', '상담 시간')}>
                     {slots.map((slot) => (
                         <button key={slot.startAt} type="button" role="radio" aria-checked={startAt === slot.startAt}
                                 className={startAt === slot.startAt ? 'primary' : ''} disabled={slot.remaining <= 0}
@@ -219,30 +221,30 @@ export function ReservationPicker({item}: { item: ReservationItem }) {
                                     setStartAt(slot.startAt);
                                     setEndAt(slot.endAt);
                                 }}>
-                            {formatTime(slot.startAt)}{slot.remaining <= 0 && ' 마감'}
+                            {formatTime(slot.startAt)}{slot.remaining <= 0 && t('shop.reservationPicker.closed', ' 마감')}
                         </button>
                     ))}
-                    {slots.length === 0 && <p className="muted">이 날은 예약할 수 있는 시간이 없습니다.</p>}
+                    {slots.length === 0 && <p className="muted">{t('shop.reservationPicker.noSlotsToday', '이 날은 예약할 수 있는 시간이 없습니다.')}</p>}
                 </div>
             )}
             {(type === 'RENTAL' || type === 'TABLE') && (
                 <div className="row align-center">
-                    <label>시작{' '}
+                    <label>{t('shop.reservationPicker.start', '시작')}{' '}
                         <select value={startAt ?? ''} onChange={(e) => setStartAt(e.target.value || null)}>
-                            <option value="">선택</option>
+                            <option value="">{t('shop.reservationPicker.select', '선택')}</option>
                             {slots.map((slot) => <option key={slot.startAt} value={slot.startAt}>{formatTime(slot.startAt)}</option>)}
                         </select>
                     </label>
-                    <label>종료{' '}
+                    <label>{t('shop.reservationPicker.end', '종료')}{' '}
                         <select value={endAt ?? ''} onChange={(e) => setEndAt(e.target.value || null)}>
-                            <option value="">선택</option>
+                            <option value="">{t('shop.reservationPicker.select', '선택')}</option>
                             {slots.filter((slot) => !startAt || slot.endAt > startAt).map((slot) => (
                                 <option key={slot.endAt} value={slot.endAt}>{formatTime(slot.endAt)}</option>
                             ))}
                         </select>
                     </label>
                     {type === 'TABLE' && (
-                        <label>인원{' '}
+                        <label>{t('shop.reservationPicker.partySize', '인원')}{' '}
                             <input type="number" min={1} value={partySize}
                                    onChange={(e) => setPartySize(Math.max(1, Number(e.target.value)))}/>
                         </label>
@@ -254,37 +256,38 @@ export function ReservationPicker({item}: { item: ReservationItem }) {
                 <>
                     <SpaceGrid layout={item.layout} taken={availability?.takenCells ?? []} selected={cells}
                                onCellClick={(cell) => cell && toggleCell(cell.key)}/>
-                    <p className="muted small">회색 칸은 이미 예약되었습니다. {cells.length > 0 && `선택: ${cells.map((key) =>
-                        item.layout?.cells.find((c) => c.key === key)?.label ?? key).join(', ')}`}</p>
+                    <p className="muted small">{t('shop.reservationPicker.grayTaken', '회색 칸은 이미 예약되었습니다.')} {cells.length > 0 && t('shop.reservationPicker.selectedCells', '선택: {labels}', {
+                        labels: cells.map((key) => item.layout?.cells.find((c) => c.key === key)?.label ?? key).join(', '),
+                    })}</p>
                 </>
             )}
             {type === 'ITEM_RENTAL' && (
                 <p className="muted small">
-                    {remaining != null && `이 기간에 ${remaining}개를 빌릴 수 있습니다. `}
-                    {item.maxRentalDays != null && `최대 ${item.maxRentalDays}일까지 빌릴 수 있습니다. `}
-                    {rentalDays > 0 && `${rentalDays}일 대여. `}
-                    {Number(item.depositAmount ?? 0) > 0 && `보증금 1개당 ${won(item.depositAmount!)}이 포함되며, 반납하면 돌려받습니다.`}
+                    {remaining != null && t('shop.reservationPicker.canRentCount', '이 기간에 {count}개를 빌릴 수 있습니다. ', {count: String(remaining)})}
+                    {item.maxRentalDays != null && t('shop.reservationPicker.maxRentalDays', '최대 {days}일까지 빌릴 수 있습니다. ', {days: String(item.maxRentalDays)})}
+                    {rentalDays > 0 && t('shop.reservationPicker.rentalDaysCount', '{days}일 대여. ', {days: String(rentalDays)})}
+                    {Number(item.depositAmount ?? 0) > 0 && t('shop.reservationPicker.deposit', '보증금 1개당 {amount}이 포함되며, 반납하면 돌려받습니다.', {amount: won(item.depositAmount!)})}
                 </p>
             )}
             {passes.length > 0 && (
                 <div className="field">
-                    <label htmlFor="passId">이용권으로 신청</label>
+                    <label htmlFor="passId">{t('shop.reservationPicker.applyWithPass', '이용권으로 신청')}</label>
                     <select id="passId" value={passId} onChange={(e) => setPassId(e.target.value)}>
-                        <option value="">결제로 신청</option>
+                        <option value="">{t('shop.reservationPicker.applyWithPayment', '결제로 신청')}</option>
                         {passes.map((pass) => (
                             <option key={pass.id} value={pass.id}>
-                                {pass.productName}{pass.unit === 'COUNT' ? ` (잔여 ${pass.remainingCount}회)` : ''}
+                                {pass.productName}{pass.unit === 'COUNT' ? t('shop.reservationPicker.remainingUses', ' (잔여 {count}회)', {count: String(pass.remainingCount)}) : ''}
                             </option>
                         ))}
                     </select>
                 </div>
             )}
-            <p className="price align-right">예상 금액 {passId ? '이용권 사용 (0원)'
+            <p className="price align-right">{t('shop.reservationPicker.estimatedAmount', '예상 금액')} {passId ? t('shop.reservationPicker.usePass', '이용권 사용 (0원)')
                 : Number(item.price) === 0 && type !== 'RENTAL' && type !== 'LODGING' && type !== 'EVENT' && type !== 'TABLE' && type !== 'TOUR'
-                ? '무료' : won(estimateReservation(item, selection))}</p>
+                ? t('shop.reservationPicker.free', '무료') : won(estimateReservation(item, selection))}</p>
             <ErrorBanner error={error}/>
             <div className="toolbar form-actions">
-                <button type="submit" className="primary" disabled={!ready}>예약하기</button>
+                <button type="submit" className="primary" disabled={!ready}>{t('shop.reservationPicker.reserve', '예약하기')}</button>
             </div>
         </form>
     );

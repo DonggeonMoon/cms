@@ -9,6 +9,9 @@ import {Checkbox, Field} from '../../components/Field';
 import {geocode} from '../../components/map/mapSdk';
 import {MapView} from '../../components/map/MapView';
 import {Pagination} from '../../components/Pagination';
+import {useI18n} from '../../api/i18n';
+
+type T = (key: string, fallback: string, values?: Record<string, string>) => string;
 
 type Tab = 'directions' | 'branches';
 
@@ -50,19 +53,20 @@ const toNumber = (value: string) => (value.trim() === '' ? null : Number(value))
 
 const KEY_FIELDS = {KAKAO: 'kakaoApiKeyId', NAVER: 'naverApiKeyId', GOOGLE: 'googleApiKeyId'} as const;
 
-const KEY_LABELS: Record<MapProvider, string> = {
-    KAKAO: '카카오맵 JavaScript 키',
-    NAVER: '네이버 지도 Client ID (ncpKeyId)',
-    GOOGLE: '구글 지도 API 키',
-};
+const keyLabels = (t: T): Record<MapProvider, string> => ({
+    KAKAO: t('admin.map.keyLabel.kakao', '카카오맵 JavaScript 키'),
+    NAVER: t('admin.map.keyLabel.naver', '네이버 지도 Client ID (ncpKeyId)'),
+    GOOGLE: t('admin.map.keyLabel.google', '구글 지도 API 키'),
+});
 
-const KEY_HELP: Record<MapProvider, string> = {
-    KAKAO: 'Kakao Developers에서 앱을 만들고 JavaScript 키를 발급받으세요. 플랫폼 > Web 에 사이트 도메인을 등록해야 지도가 표시됩니다.',
-    NAVER: '네이버 클라우드 플랫폼 Maps에서 Application을 만들고 Client ID를 발급받으세요. 서비스 URL 등록과 Dynamic Map·Geocoding 사용 설정이 필요합니다.',
-    GOOGLE: 'Google Cloud 콘솔에서 Maps JavaScript API와 Geocoding API를 사용 설정하고 API 키를 만드세요. 키 제한(HTTP 리퍼러)에 사이트 도메인을 등록하고 결제 계정을 연결해야 지도가 표시됩니다.',
-};
+const keyHelp = (t: T): Record<MapProvider, string> => ({
+    KAKAO: t('admin.map.keyHelp.kakao', 'Kakao Developers에서 앱을 만들고 JavaScript 키를 발급받으세요. 플랫폼 > Web 에 사이트 도메인을 등록해야 지도가 표시됩니다.'),
+    NAVER: t('admin.map.keyHelp.naver', '네이버 클라우드 플랫폼 Maps에서 Application을 만들고 Client ID를 발급받으세요. 서비스 URL 등록과 Dynamic Map·Geocoding 사용 설정이 필요합니다.'),
+    GOOGLE: t('admin.map.keyHelp.google', 'Google Cloud 콘솔에서 Maps JavaScript API와 Geocoding API를 사용 설정하고 API 키를 만드세요. 키 제한(HTTP 리퍼러)에 사이트 도메인을 등록하고 결제 계정을 연결해야 지도가 표시됩니다.'),
+});
 
 export function MapAdminPage() {
+    const {t} = useI18n();
     const [saved, setSaved] = useState<MapSetting | null>(null);
     const [form, setForm] = useState<SettingForm | null>(null);
     const [apiKeys, setApiKeys] = useState<ApiKeyOption[]>([]);
@@ -79,7 +83,7 @@ export function MapAdminPage() {
     }, []);
 
     if (!form || !saved) {
-        return error ? <ErrorBanner error={error}/> : <p className="muted">불러오는 중…</p>;
+        return error ? <ErrorBanner error={error}/> : <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
 
     const set = <K extends keyof SettingForm>(key: K, value: SettingForm[K]) => setForm({...form, [key]: value});
@@ -103,7 +107,7 @@ export function MapAdminPage() {
             });
             setSaved(updated);
             setForm(toForm(updated));
-            setMessage('저장했습니다.');
+            setMessage(t('common.saved', '저장했습니다.'));
         } catch (e) {
             setError(e);
         }
@@ -111,66 +115,66 @@ export function MapAdminPage() {
 
     return (
         <section className="card">
-            <h1>지도</h1>
-            <p className="muted page-description">사용자 화면의 지도 페이지(/map)에 표시됩니다. 켜진 탭만 사용자에게 보입니다.</p>
+            <h1>{t('admin.menuKind.map', '지도')}</h1>
+            <p className="muted page-description">{t('admin.map.pageDescription', '사용자 화면의 지도 페이지(/map)에 표시됩니다. 켜진 탭만 사용자에게 보입니다.')}</p>
 
             <form className="inline-form" onSubmit={save}>
-                <h2>지도 설정</h2>
+                <h2>{t('admin.map.settingsTitle', '지도 설정')}</h2>
                 <div className="field">
-                    <label htmlFor="provider">지도 제공자</label>
+                    <label htmlFor="provider">{t('admin.map.provider', '지도 제공자')}</label>
                     <select id="provider" value={form.provider} onChange={(e) => set('provider', e.target.value as MapProvider)}>
-                        <option value="KAKAO">카카오맵</option>
-                        <option value="NAVER">네이버 지도</option>
-                        <option value="GOOGLE">구글 지도</option>
+                        <option value="KAKAO">{t('admin.map.provider.kakao', '카카오맵')}</option>
+                        <option value="NAVER">{t('admin.map.provider.naver', '네이버 지도')}</option>
+                        <option value="GOOGLE">{t('admin.map.provider.google', '구글 지도')}</option>
                     </select>
                 </div>
                 <div className="field">
                     <label htmlFor={keyField}>
-                        {KEY_LABELS[form.provider]}
+                        {keyLabels(t)[form.provider]}
                     </label>
                     <select id={keyField} value={form[keyField]} onChange={(e) => set(keyField, e.target.value)}>
-                        <option value="">사용 안 함</option>
+                        <option value="">{t('admin.map.keyNotUsed', '사용 안 함')}</option>
                         {apiKeys.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
                     </select>
                 </div>
                 <p className="muted small">
-                    {KEY_HELP[form.provider]}
-                    {' '}키는 <Link to="/admin/api-keys">API 키 관리</Link>에서 먼저 등록한 뒤 이름으로 고릅니다.
-                    키를 고르지 않으면 사용자 화면에는 지도 대신 지도 앱 링크가 표시됩니다.
+                    {keyHelp(t)[form.provider]}
+                    {' '}{t('admin.map.keyRegisterNotice1', '키는')} <Link to="/admin/api-keys">{t('admin.nav.apiKeys', 'API 키 관리')}</Link>{t('admin.map.keyRegisterNotice2', '에서 먼저 등록한 뒤 이름으로 고릅니다.')}
+                    {' '}{t('admin.map.keyRegisterNotice3', '키를 고르지 않으면 사용자 화면에는 지도 대신 지도 앱 링크가 표시됩니다.')}
                 </p>
                 <div className="toolbar form-actions">
-                    <button type="submit" className="primary">저장</button>
+                    <button type="submit" className="primary">{t('common.save', '저장')}</button>
                 </div>
             </form>
 
-            <div className="tabs" role="tablist" aria-label="지도 메뉴">
-                {([['directions', '오시는 길'], ['branches', '지점 안내']] as const).map(([value, label]) => (
+            <div className="tabs" role="tablist" aria-label={t('admin.map.tabsLabel', '지도 메뉴')}>
+                {([['directions', t('admin.map.tab.directions', '오시는 길')], ['branches', t('admin.map.tab.branches', '지점 안내')]] as const).map(([value, label]) => (
                     <button key={value} type="button" role="tab" aria-selected={tab === value}
                             className={tab === value ? 'tab active' : 'tab'} onClick={() => setTab(value)}>
                         {label}{' '}
                         {(value === 'directions' ? saved.directionsEnabled : saved.branchesEnabled)
-                            ? <span className="badge ok">사용 중</span>
-                            : <span className="badge">사용 안 함</span>}
+                            ? <span className="badge ok">{t('admin.map.inUse', '사용 중')}</span>
+                            : <span className="badge">{t('admin.map.keyNotUsed', '사용 안 함')}</span>}
                     </button>
                 ))}
             </div>
 
             {tab === 'directions' && (
                 <form onSubmit={save}>
-                    <Checkbox label="오시는 길 사용" name="directionsEnabled" checked={form.directionsEnabled}
+                    <Checkbox label={t('admin.map.directionsEnabled', '오시는 길 사용')} name="directionsEnabled" checked={form.directionsEnabled}
                               onChange={(e) => set('directionsEnabled', e.target.checked)}/>
-                    <p className="muted small">켜면 사용자 지도 페이지에 본점 위치 지도가 표시됩니다. 주소와 좌표가 필요합니다.</p>
+                    <p className="muted small">{t('admin.map.directionsHelp', '켜면 사용자 지도 페이지에 본점 위치 지도가 표시됩니다. 주소와 좌표가 필요합니다.')}</p>
                     <div className="row">
-                        <Field label="본점 이름" name="officeName" value={form.officeName} onChange={(e) => set('officeName', e.target.value)}/>
-                        <Field label="연락처" name="officePhoneNumber" value={form.officePhoneNumber}
+                        <Field label={t('admin.map.officeName', '본점 이름')} name="officeName" value={form.officeName} onChange={(e) => set('officeName', e.target.value)}/>
+                        <Field label={t('admin.order.field.phoneNumber', '연락처')} name="officePhoneNumber" value={form.officePhoneNumber}
                                onChange={(e) => set('officePhoneNumber', e.target.value)}/>
-                        <Field label="운영 시간" name="officeBusinessHours" value={form.officeBusinessHours} placeholder="평일 09:00~18:00"
+                        <Field label={t('admin.map.businessHours', '운영 시간')} name="officeBusinessHours" value={form.officeBusinessHours} placeholder="평일 09:00~18:00"
                                onChange={(e) => set('officeBusinessHours', e.target.value)}/>
                     </div>
                     <LocationEditor
                         provider={form.provider}
                         apiKey={apiKey}
-                        name={form.officeName || '본점'}
+                        name={form.officeName || t('admin.map.defaultOfficeName', '본점')}
                         address={form.officeAddress}
                         detailAddress={form.officeDetailAddress}
                         latitude={form.officeLatitude}
@@ -184,7 +188,7 @@ export function MapAdminPage() {
                         })}
                     />
                     <div className="field">
-                        <label htmlFor="officeDescription">찾아오시는 방법</label>
+                        <label htmlFor="officeDescription">{t('admin.map.directionsDescription', '찾아오시는 방법')}</label>
                         <textarea id="officeDescription" rows={4} value={form.officeDescription}
                                   placeholder="지하철 1호선 시청역 4번 출구에서 도보 3분"
                                   onChange={(e) => set('officeDescription', e.target.value)}/>
@@ -192,7 +196,7 @@ export function MapAdminPage() {
                     <ErrorBanner error={error}/>
                     {message && <p className="ok">{message}</p>}
                     <div className="toolbar form-actions">
-                        <button type="submit" className="primary">저장</button>
+                        <button type="submit" className="primary">{t('common.save', '저장')}</button>
                     </div>
                 </form>
             )}
@@ -200,15 +204,15 @@ export function MapAdminPage() {
             {tab === 'branches' && (
                 <>
                     <form onSubmit={save} className="row align-center settings-bar">
-                        <Checkbox label="지점 안내 사용" name="branchesEnabled" checked={form.branchesEnabled}
+                        <Checkbox label={t('admin.map.branchesEnabled', '지점 안내 사용')} name="branchesEnabled" checked={form.branchesEnabled}
                                   onChange={(e) => set('branchesEnabled', e.target.checked)}/>
-                        <button type="submit" className="primary push-right">저장</button>
+                        <button type="submit" className="primary push-right">{t('common.save', '저장')}</button>
                     </form>
                     <ErrorBanner error={error}/>
                     {message && <p className="ok">{message}</p>}
                     {saved.branchesEnabled
                         ? <BranchManager provider={form.provider} apiKey={apiKey}/>
-                        : <p className="notice-box">지점 안내를 켜고 저장하면 지점을 등록할 수 있습니다.</p>}
+                        : <p className="notice-box">{t('admin.map.enableBranchesNotice', '지점 안내를 켜고 저장하면 지점을 등록할 수 있습니다.')}</p>}
                 </>
             )}
         </section>
@@ -228,6 +232,7 @@ function LocationEditor({provider, apiKey, name, onChange, ...location}: Locatio
     name: string;
     onChange: (next: Location) => void;
 }) {
+    const {t} = useI18n();
     const [error, setError] = useState('');
     const lat = toNumber(location.latitude);
     const lng = toNumber(location.longitude);
@@ -236,38 +241,38 @@ function LocationEditor({provider, apiKey, name, onChange, ...location}: Locatio
     const findCoordinates = async () => {
         setError('');
         if (!apiKey) {
-            setError('지도 키를 먼저 고르고 저장해야 주소로 좌표를 찾을 수 있습니다. 위도·경도를 직접 입력해도 됩니다.');
+            setError(t('admin.map.noKeyError', '지도 키를 먼저 고르고 저장해야 주소로 좌표를 찾을 수 있습니다. 위도·경도를 직접 입력해도 됩니다.'));
             return;
         }
         try {
             const found = await geocode(provider, apiKey, location.address);
             if (!found) {
-                setError('주소로 위치를 찾지 못했습니다. 도로명 주소로 다시 시도하거나 지도를 클릭해 위치를 지정하세요.');
+                setError(t('admin.map.notFoundError', '주소로 위치를 찾지 못했습니다. 도로명 주소로 다시 시도하거나 지도를 클릭해 위치를 지정하세요.'));
                 return;
             }
             onChange({...location, latitude: found.lat.toFixed(7), longitude: found.lng.toFixed(7)});
         } catch {
-            setError('지도 서비스를 불러오지 못했습니다. 키와 등록된 도메인을 확인하세요.');
+            setError(t('admin.map.loadError', '지도 서비스를 불러오지 못했습니다. 키와 등록된 도메인을 확인하세요.'));
         }
     };
 
     return (
         <div className="location-editor">
             <div className="row align-end">
-                <Field label="주소" name="address" value={location.address} placeholder="서울 중구 세종대로 110"
+                <Field label={t('admin.order.field.address', '주소')} name="address" value={location.address} placeholder="서울 중구 세종대로 110"
                        onChange={(e) => onChange({...location, address: e.target.value})}/>
-                <button type="button" onClick={findCoordinates} disabled={!location.address.trim()}>주소로 좌표 찾기</button>
+                <button type="button" onClick={findCoordinates} disabled={!location.address.trim()}>{t('admin.map.findCoordinates', '주소로 좌표 찾기')}</button>
             </div>
-            <Field label="상세 주소" name="detailAddress" value={location.detailAddress}
+            <Field label={t('admin.order.field.detailAddress', '상세 주소')} name="detailAddress" value={location.detailAddress}
                    onChange={(e) => onChange({...location, detailAddress: e.target.value})}/>
             <div className="row">
-                <Field label="위도" name="latitude" value={location.latitude} placeholder="37.5666103"
+                <Field label={t('admin.map.latitude', '위도')} name="latitude" value={location.latitude} placeholder="37.5666103"
                        onChange={(e) => onChange({...location, latitude: e.target.value})}/>
-                <Field label="경도" name="longitude" value={location.longitude} placeholder="126.9783882"
+                <Field label={t('admin.map.longitude', '경도')} name="longitude" value={location.longitude} placeholder="126.9783882"
                        onChange={(e) => onChange({...location, longitude: e.target.value})}/>
             </div>
             {error && <p className="field-error">{error}</p>}
-            {apiKey && <p className="muted small">지도를 클릭하면 그 위치의 좌표가 입력됩니다.</p>}
+            {apiKey && <p className="muted small">{t('admin.map.clickToPick', '지도를 클릭하면 그 위치의 좌표가 입력됩니다.')}</p>}
             <MapView
                 provider={provider}
                 apiKey={apiKey}
@@ -275,7 +280,7 @@ function LocationEditor({provider, apiKey, name, onChange, ...location}: Locatio
                 places={hasPosition ? [{name, address: location.address, latitude: lat, longitude: lng}] : []}
                 focus={hasPosition ? {lat, lng} : null}
                 onPick={(position) => onChange({...location, latitude: position.lat.toFixed(7), longitude: position.lng.toFixed(7)})}
-                missingKeyMessage="지도 키를 고르고 저장하면 여기서 위치를 미리 보고 클릭으로 지정할 수 있습니다."
+                missingKeyMessage={t('admin.map.missingKeyPreview', '지도 키를 고르고 저장하면 여기서 위치를 미리 보고 클릭으로 지정할 수 있습니다.')}
             />
         </div>
     );
@@ -309,6 +314,7 @@ const branchToForm = (branch: Branch): BranchForm => ({
 });
 
 function BranchManager({provider, apiKey}: { provider: MapProvider; apiKey: string | null }) {
+    const {t} = useI18n();
     const [page, setPage] = useState(0);
     const [result, setResult] = useState<Page<Branch> | null>(null);
     const [editing, setEditing] = useState<{ id: number | null; form: BranchForm } | null>(null);
@@ -341,7 +347,7 @@ function BranchManager({provider, apiKey}: { provider: MapProvider; apiKey: stri
     };
 
     const remove = async (branch: Branch) => {
-        if (!window.confirm(`'${branch.name}' 지점을 삭제할까요?`)) {
+        if (!window.confirm(t('admin.map.confirmDeleteBranch', "'{name}' 지점을 삭제할까요?", {name: branch.name}))) {
             return;
         }
         try {
@@ -359,41 +365,41 @@ function BranchManager({provider, apiKey}: { provider: MapProvider; apiKey: stri
     return (
         <>
             <div className="toolbar list-toolbar">
-                <span className="muted">총 {result?.page.totalElements ?? 0}개 지점</span>
+                <span className="muted">{t('admin.map.totalBranches', '총 {count}개 지점', {count: String(result?.page.totalElements ?? 0)})}</span>
                 <button type="button" className="primary push-right" onClick={() => setEditing({id: null, form: EMPTY_BRANCH})}>
-                    지점 등록
+                    {t('admin.map.registerBranch', '지점 등록')}
                 </button>
             </div>
             {editing && (
                 <form className="inline-form" onSubmit={submit}>
-                    <h2>{editing.id ? '지점 수정' : '지점 등록'}</h2>
+                    <h2>{editing.id ? t('admin.map.editBranch', '지점 수정') : t('admin.map.registerBranch', '지점 등록')}</h2>
                     <div className="row">
-                        <Field label="지점명" name="name" required value={editing.form.name} onChange={(e) => setField('name', e.target.value)}/>
-                        <Field label="연락처" name="phoneNumber" value={editing.form.phoneNumber}
+                        <Field label={t('admin.map.branchName', '지점명')} name="name" required value={editing.form.name} onChange={(e) => setField('name', e.target.value)}/>
+                        <Field label={t('admin.order.field.phoneNumber', '연락처')} name="phoneNumber" value={editing.form.phoneNumber}
                                onChange={(e) => setField('phoneNumber', e.target.value)}/>
-                        <Field label="운영 시간" name="businessHours" value={editing.form.businessHours}
+                        <Field label={t('admin.map.businessHours', '운영 시간')} name="businessHours" value={editing.form.businessHours}
                                onChange={(e) => setField('businessHours', e.target.value)}/>
-                        <Field label="표시 순서" name="sequence" type="number" min={1} value={editing.form.sequence}
+                        <Field label={t('admin.map.displayOrder', '표시 순서')} name="sequence" type="number" min={1} value={editing.form.sequence}
                                onChange={(e) => setField('sequence', e.target.value)}/>
                     </div>
                     <LocationEditor
                         provider={provider}
                         apiKey={apiKey}
-                        name={editing.form.name || '지점'}
+                        name={editing.form.name || t('admin.map.defaultBranchName', '지점')}
                         address={editing.form.address}
                         detailAddress={editing.form.detailAddress}
                         latitude={editing.form.latitude}
                         longitude={editing.form.longitude}
                         onChange={(next) => setEditing({...editing, form: {...editing.form, ...next}})}
                     />
-                    <Field label="안내" name="description" value={editing.form.description}
+                    <Field label={t('admin.map.guide', '안내')} name="description" value={editing.form.description}
                            onChange={(e) => setField('description', e.target.value)}/>
-                    <Checkbox label="사용자 화면에 노출" name="isUsing" checked={editing.form.isUsing}
+                    <Checkbox label={t('admin.map.exposeToUsers', '사용자 화면에 노출')} name="isUsing" checked={editing.form.isUsing}
                               onChange={(e) => setField('isUsing', e.target.checked)}/>
                     <ErrorBanner error={error}/>
                     <div className="toolbar form-actions">
-                        <button type="submit" className="primary">저장</button>
-                        <button type="button" onClick={() => setEditing(null)}>취소</button>
+                        <button type="submit" className="primary">{t('common.save', '저장')}</button>
+                        <button type="button" onClick={() => setEditing(null)}>{t('common.cancel', '취소')}</button>
                     </div>
                 </form>
             )}
@@ -403,12 +409,16 @@ function BranchManager({provider, apiKey}: { provider: MapProvider; apiKey: stri
                          places={branches.filter((b) => b.isUsing).map((b) => ({
                              name: b.name, address: b.address, latitude: Number(b.latitude), longitude: Number(b.longitude),
                          }))}
-                         missingKeyMessage="지도 키를 고르고 저장하면 지점 위치를 지도에서 확인할 수 있습니다."/>
+                         missingKeyMessage={t('admin.map.missingKeyBranches', '지도 키를 고르고 저장하면 지점 위치를 지도에서 확인할 수 있습니다.')}/>
             )}
             <div className="table-wrap">
                 <table>
                     <thead>
-                    <tr><th>순서</th><th>지점명</th><th>주소</th><th>연락처</th><th>노출</th><th/></tr>
+                    <tr>
+                        <th>{t('admin.map.sequence', '순서')}</th><th>{t('admin.map.branchName', '지점명')}</th>
+                        <th>{t('admin.order.field.address', '주소')}</th><th>{t('admin.order.field.phoneNumber', '연락처')}</th>
+                        <th>{t('admin.map.exposed', '노출')}</th><th/>
+                    </tr>
                     </thead>
                     <tbody>
                     {branches.map((branch) => (
@@ -419,12 +429,12 @@ function BranchManager({provider, apiKey}: { provider: MapProvider; apiKey: stri
                             <td>{branch.phoneNumber ?? '-'}</td>
                             <td><YesNo value={branch.isUsing}/></td>
                             <td className="actions">
-                                <button type="button" onClick={() => setEditing({id: branch.id, form: branchToForm(branch)})}>수정</button>
-                                <button type="button" className="danger" onClick={() => remove(branch)}>삭제</button>
+                                <button type="button" onClick={() => setEditing({id: branch.id, form: branchToForm(branch)})}>{t('common.edit', '수정')}</button>
+                                <button type="button" className="danger" onClick={() => remove(branch)}>{t('common.delete', '삭제')}</button>
                             </td>
                         </tr>
                     ))}
-                    {branches.length === 0 && <tr><td colSpan={6} className="muted">등록된 지점이 없습니다.</td></tr>}
+                    {branches.length === 0 && <tr><td colSpan={6} className="muted">{t('admin.map.noBranches', '등록된 지점이 없습니다.')}</td></tr>}
                     </tbody>
                 </table>
             </div>

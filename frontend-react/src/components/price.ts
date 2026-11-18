@@ -1,17 +1,17 @@
 import type {ProductSummary} from '../api/domain';
 import {won} from './AdminCrudPage';
-import {BILLING_CYCLE} from './labels';
+import {billingCycle, type T} from './labels';
 
-export function priceLabel(product: Pick<ProductSummary, 'saleType' | 'price' | 'billingCycle'>): string {
+export function priceLabel(product: Pick<ProductSummary, 'saleType' | 'price' | 'billingCycle'>, t: T): string {
     switch (product.saleType) {
         case 'SUBSCRIPTION':
-            return `${product.billingCycle ? BILLING_CYCLE[product.billingCycle] : ''} ${won(product.price)}`.trim();
+            return `${product.billingCycle ? billingCycle(t)[product.billingCycle] : ''} ${won(product.price)}`.trim();
         case 'DONATION':
-            return `${won(product.price)}부터`;
+            return t('label.priceLabel.donationFrom', '{price}부터', {price: won(product.price)});
         case 'QUOTE':
-            return '견적 문의';
+            return t('label.priceLabel.quote', '견적 문의');
         case 'INQUIRY':
-            return '문의만';
+            return t('label.priceLabel.inquiry', '문의만');
         default:
             return won(product.price);
     }

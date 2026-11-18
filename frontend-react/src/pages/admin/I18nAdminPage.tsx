@@ -1,5 +1,5 @@
 import {Fragment, type FormEvent, useCallback, useEffect, useState} from 'react';
-import {DEFAULT_MESSAGES, defaultMessageFor, i18nApi, type I18nSetting, LANGUAGE_NAMES, type Translation} from '../../api/i18n';
+import {DEFAULT_MESSAGES, defaultMessageFor, i18nApi, type I18nSetting, LANGUAGE_NAMES, type Translation, useI18n} from '../../api/i18n';
 import {adminApi} from '../../api/endpoints';
 import type {Menu} from '../../api/domain';
 import {ErrorBanner} from '../../components/ErrorBanner';
@@ -19,6 +19,7 @@ function baseEntries(menus: Menu[], siteName: string | null, language: string): 
 }
 
 export function I18nAdminPage() {
+    const {t} = useI18n();
     const [setting, setSetting] = useState<I18nSetting | null>(null);
     const [tab, setTab] = useState('');
     const [notice, setNotice] = useState<string | null>(null);
@@ -32,7 +33,7 @@ export function I18nAdminPage() {
     }, []);
 
     if (!setting) {
-        return <section className="card"><h1>국제화</h1>{error ? <ErrorBanner error={error}/> : <p className="muted">불러오는 중…</p>}</section>;
+        return <section className="card"><h1>{t('admin.nav.i18n', '국제화')}</h1>{error ? <ErrorBanner error={error}/> : <p className="muted">{t('common.loading', '불러오는 중…')}</p>}</section>;
     }
 
     const toggle = (code: string, on: boolean) => {
@@ -46,7 +47,7 @@ export function I18nAdminPage() {
         try {
             const saved = await i18nApi.updateSetting(setting);
             setSetting(saved);
-            setNotice('언어 설정을 저장했습니다.');
+            setNotice(t('admin.i18n.savedNotice', '언어 설정을 저장했습니다.'));
         } catch (e) {
             setError(e);
         }
@@ -54,14 +55,18 @@ export function I18nAdminPage() {
 
     return (
         <section className="card">
-            <h1>국제화</h1>
+            <h1>{t('admin.nav.i18n', '국제화')}</h1>
             <div className="muted page-description">
-                <p>사용자 화면에서 쓸 언어를 고르고 언어별 번역을 넣습니다. 언어가 둘 이상이면 사용자 화면 상단에 언어 선택이 나타납니다.</p>
-                <p>번역은 키 하나씩 등록·수정·삭제합니다. 메뉴는 <code>menu.메뉴ID</code>, 사이트 이름은 <code>site.name</code>,
-                    하단 문구는 <code>site.footer</code> 키를 씁니다. 번역이 없는 키는 원래 문구가 그대로 보입니다.</p>
+                <p>{t('admin.i18n.description1', '사용자 화면에서 쓸 언어를 고르고 언어별 번역을 넣습니다. 언어가 둘 이상이면 사용자 화면 상단에 언어 선택이 나타납니다.')}</p>
+                <p>
+                    {t('admin.i18n.description2a', '번역은 키 하나씩 등록·수정·삭제합니다. 메뉴는')} <code>menu.메뉴ID</code>
+                    {t('admin.i18n.description2b', ', 사이트 이름은')} <code>site.name</code>
+                    {t('admin.i18n.description2c', ', 하단 문구는')} <code>site.footer</code>
+                    {t('admin.i18n.description2d', ' 키를 씁니다. 번역이 없는 키는 원래 문구가 그대로 보입니다.')}
+                </p>
             </div>
             <fieldset>
-                <legend>사용 언어</legend>
+                <legend>{t('admin.i18n.languagesInUse', '사용 언어')}</legend>
                 <div className="row align-center wrap">
                     {Object.entries(LANGUAGE_NAMES).map(([code, name]) => (
                         <label key={code} className="checkbox">
@@ -71,17 +76,17 @@ export function I18nAdminPage() {
                     ))}
                 </div>
                 <div className="row align-center">
-                    <label htmlFor="defaultLanguage">기본 언어</label>
+                    <label htmlFor="defaultLanguage">{t('admin.i18n.defaultLanguage', '기본 언어')}</label>
                     <select id="defaultLanguage" value={setting.defaultLanguage}
                             onChange={(e) => setSetting({...setting, defaultLanguage: e.target.value})}>
                         {setting.languages.map((code) => <option key={code} value={code}>{LANGUAGE_NAMES[code] ?? code}</option>)}
                     </select>
-                    <button type="button" className="primary" onClick={save}>저장</button>
+                    <button type="button" className="primary" onClick={save}>{t('common.save', '저장')}</button>
                     {notice && <span className="ok">{notice}</span>}
                 </div>
             </fieldset>
             <ErrorBanner error={error}/>
-            <div className="tabs" role="tablist" aria-label="번역 언어">
+            <div className="tabs" role="tablist" aria-label={t('admin.i18n.translationLanguage', '번역 언어')}>
                 {setting.languages.map((code) => (
                     <button key={code} type="button" role="tab" aria-selected={tab === code} className={tab === code ? 'tab active' : 'tab'}
                             onClick={() => setTab(code)}>{LANGUAGE_NAMES[code] ?? code}</button>
@@ -93,6 +98,7 @@ export function I18nAdminPage() {
 }
 
 function TranslationEditor({language}: { language: string }) {
+    const {t} = useI18n();
     const [translations, setTranslations] = useState<Translation[] | null>(null);
     const [adding, setAdding] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -105,7 +111,7 @@ function TranslationEditor({language}: { language: string }) {
     useEffect(reload, [reload]);
 
     const remove = async (translation: Translation) => {
-        if (!window.confirm(`'${translation.key}' 번역을 삭제할까요?`)) {
+        if (!window.confirm(t('admin.i18n.confirmDelete', "'{key}' 번역을 삭제할까요?", {key: translation.key}))) {
             return;
         }
         setError(null);
@@ -129,8 +135,9 @@ function TranslationEditor({language}: { language: string }) {
             }
             const translated = missing.filter(([key]) => key in DEFAULT_MESSAGES).length;
             setNotice(missing.length
-                ? `키 ${missing.length}개를 추가했습니다${translated ? ` (번역 ${translated}개 포함)` : ''}. 메뉴·사이트 이름처럼 미리 번역할 수 없는 키는 한국어 원문이 들어가니 번역으로 바꿔 주세요.`
-                : '빠진 키가 없습니다.');
+                ? t('admin.i18n.filledKeys', '키 {count}개를 추가했습니다{translated}. 메뉴·사이트 이름처럼 미리 번역할 수 없는 키는 한국어 원문이 들어가니 번역으로 바꿔 주세요.',
+                    {count: String(missing.length), translated: translated ? t('admin.i18n.includingTranslated', ' (번역 {count}개 포함)', {count: String(translated)}) : ''})
+                : t('admin.i18n.noMissingKeys', '빠진 키가 없습니다.'));
             reload();
         } catch (e) {
             setError(e);
@@ -140,9 +147,9 @@ function TranslationEditor({language}: { language: string }) {
     return (
         <div className="translation-editor">
             <div className="toolbar list-toolbar">
-                <span className="muted small">저장된 번역 {translations?.length ?? 0}개</span>
-                <button type="button" onClick={fillMissing}>기본 키 채우기</button>
-                <button type="button" className="primary push-right" onClick={() => setAdding(true)}>번역 추가</button>
+                <span className="muted small">{t('admin.i18n.savedTranslations', '저장된 번역 {count}개', {count: String(translations?.length ?? 0)})}</span>
+                <button type="button" onClick={fillMissing}>{t('admin.i18n.fillBaseKeys', '기본 키 채우기')}</button>
+                <button type="button" className="primary push-right" onClick={() => setAdding(true)}>{t('admin.i18n.addTranslation', '번역 추가')}</button>
             </div>
             {adding && (
                 <TranslationForm onCancel={() => setAdding(false)}
@@ -156,7 +163,7 @@ function TranslationEditor({language}: { language: string }) {
             {translations && (
                 <div className="table-wrap">
                     <table>
-                        <thead><tr><th>키</th><th>번역</th><th/></tr></thead>
+                        <thead><tr><th>{t('admin.i18n.key', '키')}</th><th>{t('admin.i18n.translation', '번역')}</th><th/></tr></thead>
                         <tbody>
                         {translations.map((translation) => (
                             <Fragment key={translation.id}>
@@ -165,9 +172,9 @@ function TranslationEditor({language}: { language: string }) {
                                     <td>{translation.message}</td>
                                     <td className="actions">
                                         <button type="button" onClick={() => setEditingId(editingId === translation.id ? null : translation.id)}>
-                                            {editingId === translation.id ? '닫기' : '수정'}
+                                            {editingId === translation.id ? t('common.close', '닫기') : t('common.edit', '수정')}
                                         </button>
-                                        <button type="button" className="danger" onClick={() => remove(translation)}>삭제</button>
+                                        <button type="button" className="danger" onClick={() => remove(translation)}>{t('common.delete', '삭제')}</button>
                                     </td>
                                 </tr>
                                 {editingId === translation.id && (
@@ -184,7 +191,7 @@ function TranslationEditor({language}: { language: string }) {
                                 )}
                             </Fragment>
                         ))}
-                        {translations.length === 0 && <tr><td colSpan={3} className="muted">등록된 번역이 없습니다.</td></tr>}
+                        {translations.length === 0 && <tr><td colSpan={3} className="muted">{t('admin.i18n.noTranslations', '등록된 번역이 없습니다.')}</td></tr>}
                         </tbody>
                     </table>
                 </div>
@@ -196,6 +203,7 @@ function TranslationEditor({language}: { language: string }) {
 function TranslationForm({initialKey = '', initialMessage = '', onSave, onCancel}: {
     initialKey?: string; initialMessage?: string; onSave: (key: string, message: string) => Promise<unknown>; onCancel: () => void;
 }) {
+    const {t} = useI18n();
     const [key, setKey] = useState(initialKey);
     const [message, setMessage] = useState(initialMessage);
     const [error, setError] = useState<unknown>(null);
@@ -212,14 +220,14 @@ function TranslationForm({initialKey = '', initialMessage = '', onSave, onCancel
 
     return (
         <form className="inline-form" onSubmit={submit}>
-            <Field label="키" name="translation-key" required value={key} placeholder="nav.login"
+            <Field label={t('admin.i18n.key', '키')} name="translation-key" required value={key} placeholder="nav.login"
                    onChange={(e) => setKey(e.target.value)}/>
-            <Field label="번역" name="translation-message" required value={message}
+            <Field label={t('admin.i18n.translation', '번역')} name="translation-message" required value={message}
                    onChange={(e) => setMessage(e.target.value)}/>
             <ErrorBanner error={error}/>
             <div className="toolbar form-actions">
-                <button type="submit" className="primary">저장</button>
-                <button type="button" onClick={onCancel}>취소</button>
+                <button type="submit" className="primary">{t('common.save', '저장')}</button>
+                <button type="button" onClick={onCancel}>{t('common.cancel', '취소')}</button>
             </div>
         </form>
     );

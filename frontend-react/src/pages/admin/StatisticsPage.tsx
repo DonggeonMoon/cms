@@ -3,21 +3,24 @@ import type {DailyVisits, PeriodUnit} from '../../api/domain';
 import {adminApi} from '../../api/endpoints';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {VisitBars} from './DashboardPage';
+import {useI18n} from '../../api/i18n';
+
+type T = (key: string, fallback: string, values?: Record<string, string>) => string;
 
 const pad = (value: number) => String(value).padStart(2, '0');
 const isoDate = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
-const DIMENSIONS = [
-    {value: 'URL', label: '페이지'},
-    {value: 'BROWSER', label: '브라우저'},
-    {value: 'OS', label: '운영체제'},
-    {value: 'NATION', label: '국가'},
+const dimensions = (t: T) => [
+    {value: 'URL', label: t('admin.statistics.dimension.url', '페이지')},
+    {value: 'BROWSER', label: t('admin.statistics.dimension.browser', '브라우저')},
+    {value: 'OS', label: t('admin.statistics.dimension.os', '운영체제')},
+    {value: 'NATION', label: t('admin.statistics.dimension.nation', '국가')},
 ] as const;
 
-const PERIODS: { value: PeriodUnit; label: string; unitLabel: string; formatLabel: (date: string) => string }[] = [
-    {value: 'DAY', label: '일간', unitLabel: '일별', formatLabel: (date) => date.slice(5)},
-    {value: 'WEEK', label: '주간', unitLabel: '주별', formatLabel: (date) => `${date.slice(5)}~`},
-    {value: 'MONTH', label: '월간', unitLabel: '월별', formatLabel: (date) => date.slice(0, 7)},
+const periods = (t: T): { value: PeriodUnit; label: string; unitLabel: string; formatLabel: (date: string) => string }[] => [
+    {value: 'DAY', label: t('admin.statistics.period.day', '일간'), unitLabel: t('admin.statistics.period.dayUnit', '일별'), formatLabel: (date) => date.slice(5)},
+    {value: 'WEEK', label: t('admin.statistics.period.week', '주간'), unitLabel: t('admin.statistics.period.weekUnit', '주별'), formatLabel: (date) => `${date.slice(5)}~`},
+    {value: 'MONTH', label: t('admin.statistics.period.month', '월간'), unitLabel: t('admin.statistics.period.monthUnit', '월별'), formatLabel: (date) => date.slice(0, 7)},
 ];
 
 function defaultRange(unit: PeriodUnit): { from: string; to: string } {
@@ -35,6 +38,7 @@ function defaultRange(unit: PeriodUnit): { from: string; to: string } {
 }
 
 export function StatisticsPage() {
+    const {t} = useI18n();
     const [unit, setUnit] = useState<PeriodUnit>('DAY');
     const [{from, to}, setRange] = useState(() => defaultRange('DAY'));
     const [dimension, setDimension] = useState<'URL' | 'BROWSER' | 'OS' | 'NATION'>('URL');
@@ -57,13 +61,15 @@ export function StatisticsPage() {
         setRange(defaultRange(next));
     };
 
+    const PERIODS = periods(t);
+    const DIMENSIONS = dimensions(t);
     const period = PERIODS.find((p) => p.value === unit)!;
     const total = series.reduce((sum, row) => sum + row.visits, 0);
 
     return (
         <section className="card">
-            <h1>방문 통계</h1>
-            <div className="tabs" role="tablist" aria-label="집계 단위">
+            <h1>{t('admin.statistics.title', '방문 통계')}</h1>
+            <div className="tabs" role="tablist" aria-label={t('admin.statistics.unit', '집계 단위')}>
                 {PERIODS.map((p) => (
                     <button key={p.value} type="button" role="tab" aria-selected={unit === p.value}
                             className={unit === p.value ? 'tab active' : 'tab'} onClick={() => changeUnit(p.value)}>
@@ -72,16 +78,17 @@ export function StatisticsPage() {
                 ))}
             </div>
             <div className="toolbar date-range">
-                <input type="date" aria-label="시작일" value={from} max={to}
+                <input type="date" aria-label={t('admin.statistics.from', '시작일')} value={from} max={to}
                        onChange={(e) => setRange({from: e.target.value, to})}/>
                 <span aria-hidden="true">~</span>
-                <input type="date" aria-label="종료일" value={to} min={from}
+                <input type="date" aria-label={t('admin.statistics.to', '종료일')} value={to} min={from}
                        onChange={(e) => setRange({from, to: e.target.value})}/>
             </div>
-            <p className="muted">기간 합계 {total.toLocaleString('ko-KR')}회</p>
+            <p className="muted">{t('admin.statistics.total', '기간 합계 {count}회', {count: total.toLocaleString('ko-KR')})}</p>
             <ErrorBanner error={error}/>
-            <VisitBars data={series} formatLabel={period.formatLabel} ariaLabel={`${period.unitLabel} 방문 수 막대 그래프`}/>
-            <h2>항목별</h2>
+            <VisitBars data={series} formatLabel={period.formatLabel}
+                       ariaLabel={t('admin.statistics.chart', '{unit} 방문 수 막대 그래프', {unit: period.unitLabel})}/>
+            <h2>{t('admin.statistics.byItem', '항목별')}</h2>
             <div className="toolbar">
                 {DIMENSIONS.map((d) => (
                     <button key={d.value} type="button" className={dimension === d.value ? 'primary' : ''}
@@ -93,8 +100,8 @@ export function StatisticsPage() {
                     <thead>
                     <tr>
                         <th>{DIMENSIONS.find((d) => d.value === dimension)?.label}</th>
-                        <th>방문</th>
-                        <th>비율</th>
+                        <th>{t('admin.statistics.visits', '방문')}</th>
+                        <th>{t('admin.statistics.ratio', '비율')}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -105,7 +112,7 @@ export function StatisticsPage() {
                             <td>{total ? `${((row.visits / total) * 100).toFixed(1)}%` : '-'}</td>
                         </tr>
                     ))}
-                    {breakdown.length === 0 && <tr><td colSpan={3} className="muted">데이터가 없습니다.</td></tr>}
+                    {breakdown.length === 0 && <tr><td colSpan={3} className="muted">{t('common.noData', '데이터가 없습니다.')}</td></tr>}
                     </tbody>
                 </table>
             </div>

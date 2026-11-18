@@ -20,9 +20,13 @@ export interface MyGrade {
 
 export type GradeChangeReason = 'MANUAL' | 'PURCHASE' | 'SUBSCRIPTION' | 'EXPIRED' | 'REFUNDED';
 
-export const GRADE_CHANGE_REASON: Record<GradeChangeReason, string> = {
-    MANUAL: '관리자 지정', PURCHASE: '구매', SUBSCRIPTION: '구독', EXPIRED: '기간 만료', REFUNDED: '주문 취소',
-};
+type TFunc = (key: string, fallback: string, values?: Record<string, string>) => string;
+
+export const gradeChangeReason = (t: TFunc): Record<GradeChangeReason, string> => ({
+    MANUAL: t('label.gradeChangeReason.MANUAL', '관리자 지정'), PURCHASE: t('label.gradeChangeReason.PURCHASE', '구매'),
+    SUBSCRIPTION: t('label.gradeChangeReason.SUBSCRIPTION', '구독'), EXPIRED: t('label.gradeChangeReason.EXPIRED', '기간 만료'),
+    REFUNDED: t('label.gradeChangeReason.REFUNDED', '주문 취소'),
+});
 
 export interface GradeHistory {
     id: number;
@@ -59,10 +63,10 @@ export function gradeNameOf(grades: Grade[], gradeId: number | null | undefined)
     return gradeId == null ? null : grades.find((grade) => grade.id === gradeId)?.name ?? null;
 }
 
-export function gradeSelectField(name: string, label: string, grades: Grade[], help?: string): FieldSpec {
+export function gradeSelectField(name: string, label: string, grades: Grade[], help: string | undefined, t: TFunc): FieldSpec {
     return {
         name, label, type: 'select', wide: true, help,
-        options: grades.map((grade) => ({value: String(grade.id), label: `${grade.name} 이상`})),
+        options: grades.map((grade) => ({value: String(grade.id), label: t('label.gradeAndAbove', '{name} 이상', {name: grade.name})})),
     };
 }
 

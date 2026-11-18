@@ -5,6 +5,7 @@ import type {Code, CodeSaveRequest, Page} from '../../api/types';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {Checkbox, Field} from '../../components/Field';
 import {Pagination} from '../../components/Pagination';
+import {useI18n} from '../../api/i18n';
 
 const EMPTY_FORM: Omit<CodeSaveRequest, 'parentId'> = {
     order: 1,
@@ -15,6 +16,7 @@ const EMPTY_FORM: Omit<CodeSaveRequest, 'parentId'> = {
 };
 
 export function CodePage() {
+    const {t} = useI18n();
     const [trail, setTrail] = useState<Code[]>([]);
     const [page, setPage] = useState(0);
     const [result, setResult] = useState<Page<Code> | null>(null);
@@ -43,7 +45,7 @@ export function CodePage() {
     };
 
     const remove = async (code: Code) => {
-        if (!window.confirm(`'${code.name}' 코드를 삭제할까요?`)) {
+        if (!window.confirm(t('admin.code.confirmDelete', "'{name}' 코드를 삭제할까요?", {name: code.name}))) {
             return;
         }
         setError(null);
@@ -57,16 +59,14 @@ export function CodePage() {
 
     return (
         <section className="card">
-            <h1>공통 코드</h1>
+            <h1>{t('admin.code.title', '공통 코드')}</h1>
             <div className="muted page-description">
-                <p>분류·목록용 코드를 직접 만들어 여러 단계(최상위 → 하위)로 묶어 관리합니다. 이름을 누르면 그 코드의 하위 코드로 들어갑니다.
-                    사용 중인 코드만 공개 API(<code>GET /api/codes?parentId=</code>)로 내려가므로, 웹사이트나 외부 연동에서
-                    고정되지 않은 선택 목록(지역, 분류 등)이 필요할 때 여기서 코드를 만들어 가져다 쓸 수 있습니다.</p>
+                <p>{t('admin.code.description', '분류·목록용 코드를 직접 만들어 여러 단계(최상위 → 하위)로 묶어 관리합니다. 이름을 누르면 그 코드의 하위 코드로 들어갑니다. 사용 중인 코드만 공개 API(')}<code>GET /api/codes?parentId=</code>{t('admin.code.description2', ')로 내려가므로, 웹사이트나 외부 연동에서 고정되지 않은 선택 목록(지역, 분류 등)이 필요할 때 여기서 코드를 만들어 가져다 쓸 수 있습니다.')}</p>
             </div>
             <div className="toolbar list-toolbar">
                 {trail.length > 0 && (
-                    <nav className="breadcrumb" aria-label="코드 경로">
-                        <button type="button" className="link-button" onClick={() => goTo(0)}>최상위</button>
+                    <nav className="breadcrumb" aria-label={t('admin.code.path', '코드 경로')}>
+                        <button type="button" className="link-button" onClick={() => goTo(0)}>{t('admin.code.root', '최상위')}</button>
                         {trail.map((code, index) => (
                             <span key={code.id}>
                                 {' › '}
@@ -76,7 +76,7 @@ export function CodePage() {
                     </nav>
                 )}
                 <button type="button" className="primary push-right" onClick={() => setEditing('new')}>
-                    {parent ? `'${parent.name}' 하위 코드 추가` : '최상위 코드 추가'}
+                    {parent ? t('admin.code.addChildOf', "'{name}' 하위 코드 추가", {name: parent.name}) : t('admin.code.addRoot', '최상위 코드 추가')}
                 </button>
             </div>
             <ErrorBanner error={error}/>
@@ -93,11 +93,11 @@ export function CodePage() {
                     <table>
                         <thead>
                         <tr>
-                            <th>순서</th>
-                            <th>이름</th>
-                            <th>영문 이름</th>
-                            <th>설명</th>
-                            <th>사용 여부</th>
+                            <th>{t('admin.code.order', '순서')}</th>
+                            <th>{t('admin.board.column.name', '이름')}</th>
+                            <th>{t('admin.code.englishName', '영문 이름')}</th>
+                            <th>{t('admin.board.field.description', '설명')}</th>
+                            <th>{t('admin.code.isUsing', '사용 여부')}</th>
                             <th/>
                         </tr>
                         </thead>
@@ -112,16 +112,16 @@ export function CodePage() {
                                 </td>
                                 <td>{code.englishName ?? '-'}</td>
                                 <td>{code.description ?? '-'}</td>
-                                <td>{code.isUsing ? '사용' : <span className="badge">미사용</span>}</td>
+                                <td>{code.isUsing ? t('admin.board.field.isUsing', '사용') : <span className="badge">{t('admin.code.notUsing', '미사용')}</span>}</td>
                                 <td className="actions">
-                                    <button type="button" onClick={() => setEditing(code)}>수정</button>
-                                    <button type="button" className="danger" onClick={() => remove(code)}>삭제</button>
+                                    <button type="button" onClick={() => setEditing(code)}>{t('common.edit', '수정')}</button>
+                                    <button type="button" className="danger" onClick={() => remove(code)}>{t('common.delete', '삭제')}</button>
                                 </td>
                             </tr>
                         ))}
                         {result.content.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="muted">코드가 없습니다.</td>
+                                <td colSpan={6} className="muted">{t('admin.code.none', '코드가 없습니다.')}</td>
                             </tr>
                         )}
                         </tbody>
@@ -141,6 +141,7 @@ interface CodeFormProps {
 }
 
 function CodeForm({parentId, code, onDone, onCancel}: CodeFormProps) {
+    const {t} = useI18n();
     const [form, setForm] = useState(code ? {
         order: code.order,
         name: code.name,
@@ -165,23 +166,23 @@ function CodeForm({parentId, code, onDone, onCancel}: CodeFormProps) {
 
     return (
         <form className="inline-form" onSubmit={handleSubmit}>
-            <h2>{code ? '코드 수정' : '코드 추가'}</h2>
-            <Checkbox label="사용" name="isUsing" checked={form.isUsing}
+            <h2>{code ? t('admin.code.editCode', '코드 수정') : t('admin.code.addCode', '코드 추가')}</h2>
+            <Checkbox label={t('admin.board.field.isUsing', '사용')} name="isUsing" checked={form.isUsing}
                       onChange={(e) => setForm({...form, isUsing: e.target.checked})}/>
             <div className="row">
-                <Field label="이름" name="name" required value={form.name} error={errorOf('name')}
+                <Field label={t('admin.board.column.name', '이름')} name="name" required value={form.name} error={errorOf('name')}
                        onChange={(e) => setForm({...form, name: e.target.value})}/>
-                <Field label="영문 이름" name="englishName" value={form.englishName} error={errorOf('englishName')}
+                <Field label={t('admin.code.englishName', '영문 이름')} name="englishName" value={form.englishName} error={errorOf('englishName')}
                        onChange={(e) => setForm({...form, englishName: e.target.value})}/>
-                <Field label="순서" name="order" type="number" min={1} value={form.order} error={errorOf('order')}
+                <Field label={t('admin.code.order', '순서')} name="order" type="number" min={1} value={form.order} error={errorOf('order')}
                        onChange={(e) => setForm({...form, order: Number(e.target.value)})}/>
             </div>
-            <Field label="설명" name="description" value={form.description} error={errorOf('description')}
+            <Field label={t('admin.board.field.description', '설명')} name="description" value={form.description} error={errorOf('description')}
                    onChange={(e) => setForm({...form, description: e.target.value})}/>
             <ErrorBanner error={error}/>
             <div className="toolbar form-actions">
-                <button type="submit" className="primary">저장</button>
-                <button type="button" onClick={onCancel}>취소</button>
+                <button type="submit" className="primary">{t('common.save', '저장')}</button>
+                <button type="button" onClick={onCancel}>{t('common.cancel', '취소')}</button>
             </div>
         </form>
     );

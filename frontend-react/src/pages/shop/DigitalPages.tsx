@@ -6,18 +6,22 @@ import type {Page} from '../../api/types';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatBytes, formatDateTime} from '../../components/format';
 import {Pagination} from '../../components/Pagination';
+import {useI18n} from '../../api/i18n';
 
-const reason = (access: DigitalAccess) => {
+type T = (key: string, fallback: string, values?: Record<string, string>) => string;
+
+const reason = (access: DigitalAccess, t: T) => {
     if (access.revokedAt) {
-        return '주문이 취소되었습니다';
+        return t('shop.digital.orderCancelled', '주문이 취소되었습니다');
     }
     if (access.remainingDownloads === 0) {
-        return '내려받기 횟수를 모두 썼습니다';
+        return t('shop.digital.limitExhausted', '내려받기 횟수를 모두 썼습니다');
     }
-    return '내려받기 기간이 지났습니다';
+    return t('shop.digital.periodExpired', '내려받기 기간이 지났습니다');
 };
 
 export function MyDownloadsPage() {
+    const {t} = useI18n();
     const [page, setPage] = useState(0);
     const [data, setData] = useState<Page<DigitalAccess> | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -31,19 +35,19 @@ export function MyDownloadsPage() {
 
     return (
         <section className="card">
-            <h1>내려받기</h1>
+            <h1>{t('shop.digital.title', '내려받기')}</h1>
             <ErrorBanner error={error}/>
             <ul className="list digital-list">
                 {data?.content.map((access) => (
                     <li key={access.id}>
                         <div>
                             <strong>{access.productName}</strong>{' '}
-                            <Link className="muted small" to="/mypage/orders">주문 {access.orderId}</Link>
+                            <Link className="muted small" to="/mypage/orders">{t('shop.digital.order', '주문 {id}', {id: String(access.orderId)})}</Link>
                         </div>
                         <p className="muted small">
-                            {access.remainingDownloads == null ? '횟수 제한 없음' : `남은 횟수 ${access.remainingDownloads} / ${access.downloadLimit}`}
+                            {access.remainingDownloads == null ? t('shop.digital.noLimitCount', '횟수 제한 없음') : t('shop.digital.remainingCount', '남은 횟수 {remaining} / {limit}', {remaining: String(access.remainingDownloads), limit: String(access.downloadLimit)})}
                             {' · '}
-                            {access.expiresAt ? `${formatDateTime(access.expiresAt)}까지` : '기간 제한 없음'}
+                            {access.expiresAt ? t('shop.digital.until', '{date}까지', {date: formatDateTime(access.expiresAt)}) : t('shop.digital.noLimitPeriod', '기간 제한 없음')}
                         </p>
                         {access.usable ? (
                             <ul className="digital-files">
@@ -55,12 +59,12 @@ export function MyDownloadsPage() {
                                 ))}
                             </ul>
                         ) : (
-                            <p className="notice-box">{reason(access)}.</p>
+                            <p className="notice-box">{reason(access, t)}.</p>
                         )}
                     </li>
                 ))}
             </ul>
-            {data?.content.length === 0 && <p className="muted">내려받을 수 있는 파일이 없습니다.</p>}
+            {data?.content.length === 0 && <p className="muted">{t('shop.digital.noFiles', '내려받을 수 있는 파일이 없습니다.')}</p>}
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
         </section>
     );

@@ -291,6 +291,9 @@ export const adminApi = {
             request<D.ReencryptResult>('/api/admin/crypto-key/algorithm', {method: 'PUT', body: {algorithm}}),
     },
     reviews: (query: Query) => request<Page<D.Review>>('/api/admin/reviews', {query}),
+    reviewPolicy: {
+        save: (body: Body) => request<D.ReviewPolicy>('/api/admin/review-policy', {method: 'PUT', body}),
+    },
     reports: {
         search: (query: Query) => request<Page<D.ReportSummary>>('/api/admin/reports', {query}),
         setGuestPosting: (body: D.GuestPostingPolicy) =>
@@ -390,6 +393,7 @@ export const shopApi = {
     reviews: (id: number, page: number) => request<Page<D.Review>>(`/api/products/${id}/reviews`, {query: {page}}),
     addReview: (id: number, body: Body) => request<void>(`/api/products/${id}/reviews`, {method: 'POST', body}),
     removeReview: (id: number) => request<void>(`/api/reviews/${id}`, {method: 'DELETE'}),
+    reviewPolicy: () => request<D.ReviewPolicy>('/api/review-policy'),
     order: (body: Body) => request<D.Order>('/api/orders', {method: 'POST', body}),
     myOrders: (page: number) => request<Page<D.Order>>('/api/orders/me', {query: {page}}),
     myOrder: (id: number) => request<D.Order>(`/api/orders/${id}`),

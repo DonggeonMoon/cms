@@ -1,6 +1,7 @@
 import {type FormEvent, useState} from 'react';
 import {currentPostcodeProvider, openPostcodeSearch, searchJusoAddress, type PostcodeResult} from './postcode';
 import {ErrorBanner} from './ErrorBanner';
+import {useI18n} from '../api/i18n';
 
 interface Props {
     onFound: (result: PostcodeResult) => void;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function PostcodeButton({onFound, onError}: Props) {
+    const {t} = useI18n();
     const [searching, setSearching] = useState(false);
     return (
         <>
@@ -16,13 +18,13 @@ export function PostcodeButton({onFound, onError}: Props) {
                     if (await currentPostcodeProvider() === 'JUSO') {
                         setSearching(true);
                     } else {
-                        onFound(await openPostcodeSearch());
+                        onFound(await openPostcodeSearch(t));
                     }
                 } catch (e) {
                     onError?.(e);
                 }
             }}>
-                우편번호 찾기
+                {t('shop.postcode.find', '우편번호 찾기')}
             </button>
             {searching && (
                 <JusoSearchModal
@@ -38,6 +40,7 @@ export function PostcodeButton({onFound, onError}: Props) {
 }
 
 function JusoSearchModal({onPick, onClose}: { onPick: (result: PostcodeResult) => void; onClose: () => void }) {
+    const {t} = useI18n();
     const [keyword, setKeyword] = useState('');
     const [results, setResults] = useState<PostcodeResult[] | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -50,18 +53,18 @@ function JusoSearchModal({onPick, onClose}: { onPick: (result: PostcodeResult) =
 
     return (
         <div className="modal-backdrop" onClick={onClose}>
-            <div className="popup modal-popup" role="dialog" aria-modal="true" aria-label="주소 검색"
+            <div className="popup modal-popup" role="dialog" aria-modal="true" aria-label={t('shop.postcode.search', '주소 검색')}
                  onClick={(e) => e.stopPropagation()}>
-                <h2>주소 검색</h2>
+                <h2>{t('shop.postcode.search', '주소 검색')}</h2>
                 <form className="toolbar" onSubmit={search}>
-                    <input autoFocus aria-label="검색어" placeholder="도로명, 지번, 건물명 등" value={keyword}
+                    <input autoFocus aria-label={t('common.searchKeyword', '검색어')} placeholder={t('shop.postcode.searchPlaceholder', '도로명, 지번, 건물명 등')} value={keyword}
                            onChange={(e) => setKeyword(e.target.value)}/>
-                    <button type="submit" className="primary" disabled={!keyword.trim()}>검색</button>
-                    <button type="button" onClick={onClose}>닫기</button>
+                    <button type="submit" className="primary" disabled={!keyword.trim()}>{t('common.search', '검색')}</button>
+                    <button type="button" onClick={onClose}>{t('common.close', '닫기')}</button>
                 </form>
                 <ErrorBanner error={error}/>
                 {results != null && (
-                    results.length === 0 ? <p className="muted">검색 결과가 없습니다.</p> : (
+                    results.length === 0 ? <p className="muted">{t('shop.common.noSearchResults', '검색 결과가 없습니다.')}</p> : (
                         <ul className="postcode-results">
                             {results.map((result, i) => (
                                 <li key={i}>

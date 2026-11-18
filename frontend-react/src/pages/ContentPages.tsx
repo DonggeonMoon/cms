@@ -12,8 +12,12 @@ import {HtmlView} from '../components/HtmlView';
 import {ListSearch, pageParams} from '../components/ListSearch';
 import {Pagination} from '../components/Pagination';
 import {AttachmentList} from './board/BoardPages';
+import {useI18n} from '../api/i18n';
+
+type T = (key: string, fallback: string, values?: Record<string, string>) => string;
 
 export function ContentPage() {
+    const {t} = useI18n();
     const id = Number(useParams().id);
     const menuId = Number(useSearchParams()[0].get('menuId')) || null;
     const {isEnabled} = useSite();
@@ -28,14 +32,14 @@ export function ContentPage() {
         return <ErrorBanner error={error}/>;
     }
     if (!content) {
-        return <p className="muted">불러오는 중…</p>;
+        return <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
     return (
         <>
             <article className="card">
                 <h1>{content.title}</h1>
                 <HtmlView html={content.contentHtml}/>
-                <p className="muted small align-right">최종 수정 {formatDateTime(content.modifiedAt)}</p>
+                <p className="muted small align-right">{t('shop.policy.lastModified', '최종 수정 {date}', {date: formatDateTime(content.modifiedAt)})}</p>
             </article>
             {menuId && isEnabled('SATISFACTION') && <SatisfactionWidget menuId={menuId}/>}
         </>
@@ -43,9 +47,14 @@ export function ContentPage() {
 }
 
 const SCORES = [5, 4, 3, 2, 1];
-const SCORE_LABELS: Record<number, string> = {5: '매우 만족', 4: '만족', 3: '보통', 2: '불만족', 1: '매우 불만족'};
+const scoreLabels = (t: T): Record<number, string> => ({
+    5: t('shop.satisfaction.veryGood', '매우 만족'), 4: t('shop.satisfaction.good', '만족'), 3: t('shop.satisfaction.neutral', '보통'),
+    2: t('shop.satisfaction.bad', '불만족'), 1: t('shop.satisfaction.veryBad', '매우 불만족'),
+});
 
 export function SatisfactionWidget({menuId}: { menuId: number }) {
+    const {t} = useI18n();
+    const SCORE_LABELS = scoreLabels(t);
     const {user} = useAuth();
     const [data, setData] = useState<Satisfaction | null>(null);
     const [score, setScore] = useState(5);
@@ -68,10 +77,10 @@ export function SatisfactionWidget({menuId}: { menuId: number }) {
 
     return (
         <section className="card satisfaction">
-            <h2>이 페이지에 만족하셨나요?</h2>
-            {data && <p className="muted">평균 {data.average.toFixed(2)}점 · {data.total}명 참여</p>}
+            <h2>{t('shop.satisfaction.question', '이 페이지에 만족하셨나요?')}</h2>
+            {data && <p className="muted">{t('shop.satisfaction.summary', '평균 {average}점 · {total}명 참여', {average: data.average.toFixed(2), total: String(data.total)})}</p>}
             {data?.myScore != null ? (
-                <p className="ok">참여해 주셔서 감사합니다. ({SCORE_LABELS[data.myScore]})</p>
+                <p className="ok">{t('shop.satisfaction.thanks', '참여해 주셔서 감사합니다. ({score})', {score: SCORE_LABELS[data.myScore]})}</p>
             ) : user?.userType === 'MEMBER' ? (
                 <form onSubmit={submit}>
                     <div className="row">
@@ -82,11 +91,11 @@ export function SatisfactionWidget({menuId}: { menuId: number }) {
                             </label>
                         ))}
                     </div>
-                    <input aria-label="의견" placeholder="의견 (선택)" value={opinion} onChange={(e) => setOpinion(e.target.value)}/>
-                    <button type="submit" className="primary">평가하기</button>
+                    <input aria-label={t('shop.satisfaction.opinion', '의견')} placeholder={t('shop.satisfaction.opinionPlaceholder', '의견 (선택)')} value={opinion} onChange={(e) => setOpinion(e.target.value)}/>
+                    <button type="submit" className="primary">{t('shop.satisfaction.submit', '평가하기')}</button>
                 </form>
             ) : (
-                <p className="muted"><Link to="/login">로그인</Link> 후 참여할 수 있습니다.</p>
+                <p className="muted"><Link to="/login">{t('nav.login', '로그인')}</Link> {t('shop.satisfaction.loginNotice', '후 참여할 수 있습니다.')}</p>
             )}
             <ErrorBanner error={error}/>
         </section>
@@ -94,6 +103,7 @@ export function SatisfactionWidget({menuId}: { menuId: number }) {
 }
 
 export function ArchiveListPage() {
+    const {t} = useI18n();
     const archiveId = Number(useParams().archiveId);
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
@@ -111,7 +121,7 @@ export function ArchiveListPage() {
 
     return (
         <section className="card">
-            <h1>{archive?.name ?? '아카이브'}</h1>
+            <h1>{archive?.name ?? t('shop.archive.title', '아카이브')}</h1>
             {archive?.description && <p className="muted">{archive.description}</p>}
             <ErrorBanner error={error}/>
             {data && (
@@ -119,7 +129,7 @@ export function ArchiveListPage() {
                     <div className="gallery">
                         {data.content.map((article) => (
                             <Link key={article.id} to={`/archives/${archiveId}/articles/${article.id}`} className="gallery-item">
-                                {article.thumbnailUrl ? <img src={article.thumbnailUrl} alt={article.title}/> : <div className="gallery-empty">이미지 없음</div>}
+                                {article.thumbnailUrl ? <img src={article.thumbnailUrl} alt={article.title}/> : <div className="gallery-empty">{t('shop.archive.noImage', '이미지 없음')}</div>}
                                 <span>{article.title}</span>
                             </Link>
                         ))}
@@ -129,10 +139,10 @@ export function ArchiveListPage() {
                         <table className="post-table">
                             <thead>
                             <tr>
-                                <th className="col-no">순번</th>
-                                <th>제목</th>
-                                <th className="col-fit">작성자</th>
-                                <th className="col-fit">작성일</th>
+                                <th className="col-no">{t('admin.board.column.rowNumber', '순번')}</th>
+                                <th>{t('admin.board.column.title', '제목')}</th>
+                                <th className="col-fit">{t('shop.board.author', '작성자')}</th>
+                                <th className="col-fit">{t('shop.board.createdAt', '작성일')}</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -141,14 +151,14 @@ export function ArchiveListPage() {
                                     <td className="col-no">{rowNumber(data.page, index)}</td>
                                     <td className="col-title">
                                         <Link to={`/archives/${archiveId}/articles/${article.id}`}>{article.title}</Link>
-                                        {article.status === 'DRAFT' && <span className="badge">임시 저장</span>}
+                                        {article.status === 'DRAFT' && <span className="badge">{t('shop.archive.draft', '임시 저장')}</span>}
                                     </td>
                                     <td className="col-fit">{article.authorName}</td>
                                     <td className="col-fit">{formatDate(article.createdAt)}</td>
                                 </tr>
                             ))}
                             {data.content.length === 0 && (
-                                <tr><td colSpan={4} className="muted">{keyword ? '검색 결과가 없습니다.' : '게시물이 없습니다.'}</td></tr>
+                                <tr><td colSpan={4} className="muted">{keyword ? t('shop.common.noSearchResults', '검색 결과가 없습니다.') : t('shop.archive.noArticles', '게시물이 없습니다.')}</td></tr>
                             )}
                             </tbody>
                         </table>
@@ -156,12 +166,13 @@ export function ArchiveListPage() {
                 )
             )}
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={(next) => setParams(pageParams(keyword, next))}/>}
-            <ListSearch label={`${archive?.name ?? '아카이브'} 검색`} placeholder="제목 검색" placement="bottom"/>
+            <ListSearch label={t('shop.course.searchLabel', '{title} 검색', {title: archive?.name ?? t('shop.archive.title', '아카이브')})} placeholder={t('shop.application.searchPlaceholder', '제목 검색')} placement="bottom"/>
         </section>
     );
 }
 
 export function ArchiveArticlePage() {
+    const {t} = useI18n();
     const params = useParams();
     const archiveId = Number(params.archiveId);
     const articleId = Number(params.articleId);
@@ -188,21 +199,21 @@ export function ArchiveArticlePage() {
         return <ErrorBanner error={error}/>;
     }
     if (!article) {
-        return <p className="muted">불러오는 중…</p>;
+        return <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
     return (
         <>
             <article className="card">
-                <Link to={`/archives/${archiveId}`} className="muted">← {archive?.name ?? '목록'}</Link>
+                <Link to={`/archives/${archiveId}`} className="muted">← {archive?.name ?? t('shop.archive.list', '목록')}</Link>
                 <h1>{article.title}</h1>
-                <p className="muted small align-right">{article.authorName} · {formatDateTime(article.createdAt)} · 조회 {article.hit}</p>
+                <p className="muted small align-right">{t('shop.archive.meta', '{author} · {date} · 조회 {hit}', {author: article.authorName, date: formatDateTime(article.createdAt), hit: String(article.hit)})}</p>
                 <HtmlView html={article.contentHtml}/>
                 <AttachmentList files={article.files}/>
                 {archive?.supportsLike && (
                     <div className="toolbar form-actions">
                         {user?.userType === 'MEMBER'
-                            ? <button type="button" onClick={like}>👍 추천 {article.likes}</button>
-                            : <span className="muted small">👍 추천 {article.likes} · <Link to="/login">로그인</Link> 후 추천할 수 있습니다.</span>}
+                            ? <button type="button" onClick={like}>{t('shop.archive.like', '👍 추천 {count}', {count: String(article.likes)})}</button>
+                            : <span className="muted small">{t('shop.archive.like', '👍 추천 {count}', {count: String(article.likes)})} · <Link to="/login">{t('nav.login', '로그인')}</Link> {t('shop.archive.loginToLike', '후 추천할 수 있습니다.')}</span>}
                     </div>
                 )}
             </article>
@@ -216,6 +227,7 @@ export function ArchiveArticlePage() {
 function ArchiveComments({archiveId, articleId, guestCommentable}: {
     archiveId: number; articleId: number; guestCommentable: boolean;
 }) {
+    const {t} = useI18n();
     const {user} = useAuth();
     const [comments, setComments] = useState<ArchiveComment[]>([]);
     const [editing, setEditing] = useState<number | null>(null);
@@ -229,7 +241,7 @@ function ArchiveComments({archiveId, articleId, guestCommentable}: {
     const canWrite = guestCommentable || Boolean(user);
 
     const remove = async (comment: ArchiveComment) => {
-        const password = comment.authorType === 'GUEST' && !user ? window.prompt('댓글 비밀번호를 입력하세요') ?? undefined : undefined;
+        const password = comment.authorType === 'GUEST' && !user ? window.prompt(t('shop.archive.commentPasswordPrompt', '댓글 비밀번호를 입력하세요')) ?? undefined : undefined;
         try {
             await archiveApi.removeComment(archiveId, articleId, comment.id, password);
             reload();
@@ -240,7 +252,7 @@ function ArchiveComments({archiveId, articleId, guestCommentable}: {
 
     return (
         <section className="card">
-            <h2>댓글 {comments.filter((c) => !c.deleted).length}</h2>
+            <h2>{t('shop.archive.commentsCount', '댓글 {count}', {count: String(comments.filter((c) => !c.deleted).length)})}</h2>
             <ErrorBanner error={error}/>
             <ul className="comments">
                 {comments.map((comment) => (
@@ -263,13 +275,13 @@ function ArchiveComments({archiveId, articleId, guestCommentable}: {
                                 <p className={comment.deleted ? 'muted' : ''}>{comment.content}</p>
                                 <div className="toolbar comment-actions">
                                     {canWrite && comment.depth === 0 && !comment.deleted && (
-                                        <button type="button" className="link-button" onClick={() => setReplyTo(comment.id)}>답글</button>
+                                        <button type="button" className="link-button" onClick={() => setReplyTo(comment.id)}>{t('shop.archive.reply', '답글')}</button>
                                     )}
                                     {comment.canEdit && (
-                                        <button type="button" className="link-button" onClick={() => setEditing(comment.id)}>수정</button>
+                                        <button type="button" className="link-button" onClick={() => setEditing(comment.id)}>{t('common.edit', '수정')}</button>
                                     )}
                                     {comment.canDelete && (
-                                        <button type="button" className="link-button" onClick={() => remove(comment)}>삭제</button>
+                                        <button type="button" className="link-button" onClick={() => remove(comment)}>{t('common.delete', '삭제')}</button>
                                     )}
                                 </div>
                             </>
@@ -287,7 +299,7 @@ function ArchiveComments({archiveId, articleId, guestCommentable}: {
             </ul>
             {canWrite
                 ? <ArchiveCommentForm archiveId={archiveId} articleId={articleId} parentId={null} onDone={reload}/>
-                : <p className="muted"><Link to="/login">로그인</Link> 후 댓글을 남길 수 있습니다.</p>}
+                : <p className="muted"><Link to="/login">{t('nav.login', '로그인')}</Link> {t('shop.archive.loginToComment', '후 댓글을 남길 수 있습니다.')}</p>}
         </section>
     );
 }
@@ -295,6 +307,7 @@ function ArchiveComments({archiveId, articleId, guestCommentable}: {
 function ArchiveCommentForm({archiveId, articleId, parentId, onDone, onCancel}: {
     archiveId: number; articleId: number; parentId: number | null; onDone: () => void; onCancel?: () => void;
 }) {
+    const {t} = useI18n();
     const {user} = useAuth();
     const [content, setContent] = useState('');
     const [authorName, setAuthorName] = useState('');
@@ -314,17 +327,17 @@ function ArchiveCommentForm({archiveId, articleId, parentId, onDone, onCancel}: 
         }}>
             {!user && (
                 <>
-                    <input aria-label="이름" placeholder="이름" value={authorName} onChange={(e) => setAuthorName(e.target.value)}/>
-                    <input aria-label="비밀번호" type="password" placeholder="비밀번호" value={password}
+                    <input aria-label={t('shop.board.name', '이름')} placeholder={t('shop.board.name', '이름')} value={authorName} onChange={(e) => setAuthorName(e.target.value)}/>
+                    <input aria-label={t('admin.memberJoin.password', '비밀번호')} type="password" placeholder={t('admin.memberJoin.password', '비밀번호')} value={password}
                            onChange={(e) => setPassword(e.target.value)}/>
                 </>
             )}
-            <textarea aria-label="댓글 내용" rows={3} required value={content}
-                      placeholder={parentId ? '답글을 입력하세요' : '댓글을 입력하세요'} onChange={(e) => setContent(e.target.value)}/>
+            <textarea aria-label={t('shop.archive.commentContent', '댓글 내용')} rows={3} required value={content}
+                      placeholder={parentId ? t('shop.archive.replyPlaceholder', '답글을 입력하세요') : t('shop.archive.commentPlaceholder', '댓글을 입력하세요')} onChange={(e) => setContent(e.target.value)}/>
             <ErrorBanner error={error}/>
             <div className="toolbar form-actions">
-                <button type="submit" className="primary">{parentId ? '답글 등록' : '댓글 등록'}</button>
-                {onCancel && <button type="button" onClick={onCancel}>취소</button>}
+                <button type="submit" className="primary">{parentId ? t('shop.archive.submitReply', '답글 등록') : t('shop.archive.submitComment', '댓글 등록')}</button>
+                {onCancel && <button type="button" onClick={onCancel}>{t('common.cancel', '취소')}</button>}
             </div>
         </form>
     );

@@ -1,8 +1,10 @@
 import {useEffect, useState} from 'react';
+import {useI18n} from '../api/i18n';
 
 export type ColorMode = 'system' | 'light' | 'dark';
 
-const LABEL: Record<ColorMode, string> = {system: '시스템', light: '라이트', dark: '다크'};
+const label = (t: (key: string, fallback: string) => string): Record<ColorMode, string> =>
+    ({system: t('shop.colorMode.system', '시스템'), light: t('shop.colorMode.light', '라이트'), dark: t('shop.colorMode.dark', '다크')});
 const ICON: Record<ColorMode, string> = {system: '◐', light: '☀', dark: '☾'};
 const NEXT: Record<ColorMode, ColorMode> = {system: 'light', light: 'dark', dark: 'system'};
 
@@ -47,9 +49,12 @@ export function useColorMode(storageKey: string, allowDark = true): [ColorMode, 
 }
 
 export function ColorModeToggle({mode, onChange}: { mode: ColorMode; onChange: (mode: ColorMode) => void }) {
+    const {t} = useI18n();
+    const LABEL = label(t);
     return (
-        <button type="button" className="color-mode-toggle" aria-label={`화면 모드: ${LABEL[mode]} (눌러서 ${LABEL[NEXT[mode]]}로 바꾸기)`}
-                title={`화면 모드: ${LABEL[mode]}`} onClick={() => onChange(NEXT[mode])}>
+        <button type="button" className="color-mode-toggle"
+                aria-label={t('shop.colorMode.ariaLabel', '화면 모드: {current} (눌러서 {next}로 바꾸기)', {current: LABEL[mode], next: LABEL[NEXT[mode]]})}
+                title={t('shop.colorMode.title', '화면 모드: {current}', {current: LABEL[mode]})} onClick={() => onChange(NEXT[mode])}>
             <span aria-hidden="true">{ICON[mode]}</span> {LABEL[mode]}
         </button>
     );

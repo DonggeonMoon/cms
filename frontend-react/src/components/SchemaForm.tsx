@@ -12,10 +12,12 @@ import {CourseLessonsEditor} from './CourseLessonsEditor';
 import {type QuestionDraft, QuizQuestionsEditor} from './QuizQuestionsEditor';
 import {FormFieldsEditor} from './FormFieldsEditor';
 import {LayoutEditor} from './LayoutEditor';
+import {PostcodeButton} from './PostcodeButton';
 import {StableLabel} from './StableLabel';
 import {type OptionSet, ProductOptionsEditor} from './ProductOptionsEditor';
+import {useI18n} from '../api/i18n';
 
-export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'date' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media' | 'time' | 'layout' | 'formFields' | 'productOptions' | 'categoryAttributes' | 'courseLessons' | 'quizQuestions';
+export type FieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'datetime' | 'date' | 'textarea' | 'html' | 'image' | 'files' | 'color' | 'media' | 'time' | 'layout' | 'formFields' | 'productOptions' | 'categoryAttributes' | 'courseLessons' | 'quizQuestions' | 'postcode';
 
 export interface FieldSpec {
     name: string;
@@ -33,6 +35,8 @@ export interface FieldSpec {
     group?: string;
     subgroup?: string;
     visibleWhen?: (values: FormValues) => boolean;
+    /** type: 'postcode' 전용. 우편번호 검색 결과의 도로명 주소를 채울 필드 이름 (기본값 'address'). */
+    addressField?: string;
 }
 
 export type FormValues = Record<string, unknown>;
@@ -69,7 +73,9 @@ export function normalizeValues(fields: FieldSpec[], values: FormValues): FormVa
     return result;
 }
 
-export function SchemaForm({fields, initial, onSubmit, onCancel, submitLabel = '저장', title, footer}: Props) {
+export function SchemaForm({fields, initial, onSubmit, onCancel, submitLabel, title, footer}: Props) {
+    const {t} = useI18n();
+    const resolvedSubmitLabel = submitLabel ?? t('common.save', '저장');
     const [values, setValues] = useState<FormValues>(initial);
     const [error, setError] = useState<unknown>(null);
     const [saving, setSaving] = useState(false);
@@ -87,7 +93,8 @@ export function SchemaForm({fields, initial, onSubmit, onCancel, submitLabel = '
                     field.type === 'checkbox' && !field.wide ? 'inline-check' : '',
                 ].filter(Boolean).join(' ')}>
                     <FieldInput field={field} value={values[field.name]} onChange={(v) => set(field.name, v)}
-                                error={errorOf(field.name)} allValues={values}/>
+                                error={errorOf(field.name)} allValues={values} t={t}
+                                onPatch={(patch) => setValues((prev) => ({...prev, ...patch}))}/>
                 </div>
             ))}
         </div>
@@ -129,12 +136,16 @@ export function SchemaForm({fields, initial, onSubmit, onCancel, submitLabel = '
             <ErrorBanner error={error}/>
             {footer}
             <div className="toolbar form-actions">
-                <button type="submit" className="primary" disabled={saving}><StableLabel current={saving ? '저장 중…' : submitLabel} labels={['저장 중…', submitLabel]}/></button>
-                {onCancel && <button type="button" onClick={onCancel}>취소</button>}
+                <button type="submit" className="primary" disabled={saving}>
+                    <StableLabel current={saving ? t('admin.memberJoin.saving', '저장 중…') : resolvedSubmitLabel} labels={[t('admin.memberJoin.saving', '저장 중…'), resolvedSubmitLabel]}/>
+                </button>
+                {onCancel && <button type="button" onClick={onCancel}>{t('common.cancel', '취소')}</button>}
             </div>
         </form>
     );
 }
+
+type T = (key: string, fallback: string, values?: Record<string, string>) => string;
 
 interface FieldInputProps {
     field: FieldSpec;
@@ -142,9 +153,11 @@ interface FieldInputProps {
     onChange: (value: unknown) => void;
     error?: string;
     allValues?: FormValues;
+    onPatch?: (patch: FormValues) => void;
+    t: T;
 }
 
-function FieldInput({field, value, onChange, error, allValues}: FieldInputProps) {
+function FieldInput({field, value, onChange, error, allValues, onPatch, t}: FieldInputProps) {
     const id = `field-${field.name}`;
     const label = (
         <label htmlFor={id}>{field.label}{field.required && <span className="required"> *</span>}</label>
@@ -170,7 +183,7 @@ function FieldInput({field, value, onChange, error, allValues}: FieldInputProps)
                     {label}
                     <select id={id} value={value == null ? '' : String(value)} required={field.required}
                             onChange={(e) => onChange(e.target.value)}>
-                        {!field.required && <option value="">{field.emptyOptionLabel ?? '선택 안 함'}</option>}
+                        {!field.required && <option value="">{field.emptyOptionLabel ?? t('admin.social.notSelected', '선택 안 함')}</option>}
                         {field.options?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
                     {help}
@@ -192,9 +205,9 @@ function FieldInput({field, value, onChange, error, allValues}: FieldInputProps)
         case 'time':
             return <TimeField id={id} label={label} value={value as string | null} field={field} error={error} onChange={onChange} help={help}/>;
         case 'html':
-            return <HtmlField id={id} label={label} labelText={field.label} value={(value as string) ?? ''} onChange={onChange} help={help}/>;
+            return <HtmlField id={id} label={label} labelText={field.label} value={(value as string) ?? ''} onChange={onChange} help={help} t={t}/>;
         case 'image':
-            return <ImageField id={id} label={label} value={value as number | null} onChange={onChange} help={help}/>;
+            return <ImageField id={id} label={label} value={value as number | null} onChange={onChange} help={help} t={t}/>;
         case 'formFields':
             return (
                 <div className="field">
@@ -237,7 +250,7 @@ function FieldInput({field, value, onChange, error, allValues}: FieldInputProps)
                 </div>
             );
         case 'media':
-            return <MediaField id={id} label={label} value={(value as MediaValue | null) ?? null} onChange={onChange} help={help}/>;
+            return <MediaField id={id} label={label} value={(value as MediaValue | null) ?? null} onChange={onChange} help={help} t={t}/>;
         case 'quizQuestions':
             return (
                 <div className="field">
@@ -248,6 +261,9 @@ function FieldInput({field, value, onChange, error, allValues}: FieldInputProps)
             );
         case 'files':
             return <FilesField label={label} value={(value as FileInfo[]) ?? []} onChange={onChange} help={help}/>;
+        case 'postcode':
+            return <PostcodeField id={id} label={label} value={value as string | null} field={field} error={error}
+                                  onChange={onChange} onPatch={onPatch} help={help}/>;
         default:
             return (
                 <div className="field">
@@ -266,16 +282,16 @@ function FieldInput({field, value, onChange, error, allValues}: FieldInputProps)
 
 const RichTextEditor = lazy(() => import('./RichTextEditor').then((module) => ({default: module.RichTextEditor})));
 
-function HtmlField({id, label, labelText, value, onChange, help}: {
-    id: string; label: ReactNode; labelText: string; value: string; onChange: (v: unknown) => void; help: ReactNode;
+function HtmlField({id, label, labelText, value, onChange, help, t}: {
+    id: string; label: ReactNode; labelText: string; value: string; onChange: (v: unknown) => void; help: ReactNode; t: T;
 }) {
     return (
         <div className="field">
             {label}
-            <Suspense fallback={<p className="muted">편집기를 불러오는 중…</p>}>
+            <Suspense fallback={<p className="muted">{t('schemaForm.loadingEditor', '편집기를 불러오는 중…')}</p>}>
                 <RichTextEditor id={id} label={labelText} value={value} onChange={onChange}/>
             </Suspense>
-            <p className="muted small">저장할 때 허용되지 않은 태그와 스크립트는 제거됩니다.</p>
+            <p className="muted small">{t('schemaForm.htmlSanitizedNotice', '저장할 때 허용되지 않은 태그와 스크립트는 제거됩니다.')}</p>
             {help}
         </div>
     );
@@ -333,8 +349,28 @@ function TimeField({id, label, value, field, error, onChange, help}: {
     );
 }
 
-function ImageField({id, label, value, onChange, help}: {
-    id: string; label: ReactNode; value: number | null; onChange: (v: unknown) => void; help: ReactNode;
+function PostcodeField({id, label, value, field, error, onChange, onPatch, help}: {
+    id: string; label: ReactNode; value: string | null; field: FieldSpec; error?: string;
+    onChange: (v: unknown) => void; onPatch?: (patch: FormValues) => void; help: ReactNode;
+}) {
+    return (
+        <div className="field">
+            {label}
+            <div className="row align-center">
+                <input id={id} type="text" value={value ?? ''} required={field.required} placeholder={field.placeholder}
+                       aria-invalid={Boolean(error)} onChange={(e) => onChange(e.target.value)}/>
+                <PostcodeButton onFound={(result) => {
+                    onChange(result.zonecode);
+                    onPatch?.({[field.addressField ?? 'address']: result.roadAddress || result.jibunAddress});
+                }}/>
+            </div>
+            {help}
+        </div>
+    );
+}
+
+function ImageField({id, label, value, onChange, help, t}: {
+    id: string; label: ReactNode; value: number | null; onChange: (v: unknown) => void; help: ReactNode; t: T;
 }) {
     const [error, setError] = useState<unknown>(null);
     return (
@@ -354,7 +390,7 @@ function ImageField({id, label, value, onChange, help}: {
                         setError(err);
                     }
                 }}/>
-                {value && <button type="button" onClick={() => onChange(null)}>이미지 제거</button>}
+                {value && <button type="button" onClick={() => onChange(null)}>{t('schemaForm.removeImage', '이미지 제거')}</button>}
             </div>
             <ErrorBanner error={error}/>
             {help}
@@ -408,8 +444,8 @@ function readMediaInfo(file: File): Promise<MediaInfo> {
     });
 }
 
-function MediaField({id, label, value, onChange, help}: {
-    id: string; label: ReactNode; value: MediaValue | null; onChange: (v: unknown) => void; help: ReactNode;
+function MediaField({id, label, value, onChange, help, t}: {
+    id: string; label: ReactNode; value: MediaValue | null; onChange: (v: unknown) => void; help: ReactNode; t: T;
 }) {
     const [error, setError] = useState<unknown>(null);
     const [uploading, setUploading] = useState(false);
@@ -436,29 +472,29 @@ function MediaField({id, label, value, onChange, help}: {
                 if (file) {
                     void run(async () => {
                         const [uploaded, info] = await Promise.all([fileApi.upload(file), readMediaInfo(file)]);
-                        const thumbnail = info.frame ? await fileApi.upload(info.frame, `${uploaded.originalName} 썸네일`) : null;
+                        const thumbnail = info.frame ? await fileApi.upload(info.frame, t('schemaForm.autoThumbnailName', '{name} 썸네일', {name: uploaded.originalName})) : null;
                         onChange({id: uploaded.id, name: uploaded.originalName, durationSeconds: info.durationSeconds,
                             thumbnailId: thumbnail?.id ?? null});
                     });
                 }
             }}/>
-            {uploading && <p className="muted small">업로드 중…</p>}
+            {uploading && <p className="muted small">{t('schemaForm.uploading', '업로드 중…')}</p>}
             {value && (
                 <div className="field">
-                    <label htmlFor={`${id}-duration`}>재생 시간(초)</label>
+                    <label htmlFor={`${id}-duration`}>{t('schemaForm.durationSeconds', '재생 시간(초)')}</label>
                     <input id={`${id}-duration`} type="number" min={1} required value={value.durationSeconds ?? ''}
                            onChange={(e) => onChange({...value, durationSeconds: e.target.value ? Number(e.target.value) : null})}/>
                 </div>
             )}
             {value && value.durationSeconds == null && (
-                <p className="muted small">이 브라우저에서 재생 시간을 읽지 못했습니다. 직접 입력해 주세요.</p>
+                <p className="muted small">{t('schemaForm.durationNotDetected', '이 브라우저에서 재생 시간을 읽지 못했습니다. 직접 입력해 주세요.')}</p>
             )}
             {value && (
                 <div className="media-thumbnail-field">
-                    <label htmlFor={`${id}-thumbnail`}>썸네일</label>
+                    <label htmlFor={`${id}-thumbnail`}>{t('schemaForm.thumbnail', '썸네일')}</label>
                     {value.thumbnailId
-                        ? <img className="preview-image" src={`/api/files/${value.thumbnailId}/view`} alt="썸네일 미리보기"/>
-                        : <p className="muted small">썸네일이 없습니다. 동영상은 올릴 때 화면 한 장면을 자동으로 썸네일로 만듭니다.</p>}
+                        ? <img className="preview-image" src={`/api/files/${value.thumbnailId}/view`} alt={t('schemaForm.thumbnailPreviewAlt', '썸네일 미리보기')}/>
+                        : <p className="muted small">{t('schemaForm.noThumbnail', '썸네일이 없습니다. 동영상은 올릴 때 화면 한 장면을 자동으로 썸네일로 만듭니다.')}</p>}
                     <div className="row align-center">
                         <input id={`${id}-thumbnail`} type="file" accept="image/*" disabled={uploading} onChange={(e) => {
                             const image = e.target.files?.[0];
@@ -467,7 +503,7 @@ function MediaField({id, label, value, onChange, help}: {
                                 void run(async () => onChange({...value, thumbnailId: (await fileApi.upload(image)).id}));
                             }
                         }}/>
-                        {value.thumbnailId && <button type="button" onClick={() => onChange({...value, thumbnailId: null})}>썸네일 제거</button>}
+                        {value.thumbnailId && <button type="button" onClick={() => onChange({...value, thumbnailId: null})}>{t('schemaForm.removeThumbnail', '썸네일 제거')}</button>}
                     </div>
                 </div>
             )}

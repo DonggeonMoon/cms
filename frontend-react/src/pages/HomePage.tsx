@@ -4,8 +4,9 @@ import {Link} from 'react-router';
 import type {Banner} from '../api/domain';
 import {siteApi} from '../api/endpoints';
 import {dismissForDays, dismissLabel, isDismissed} from '../components/dismissal';
-import {Greeting, HOME_BLOCKS, LatestPosts, NewProducts, OpenReservationItems, ProductSearch, Shortcuts} from '../components/HomeBlocks';
+import {Greeting, homeBlocks, LatestPosts, NewProducts, OpenReservationItems, ProductSearch, Shortcuts} from '../components/HomeBlocks';
 import {useSite} from '../components/SiteContext';
+import {useI18n} from '../api/i18n';
 
 export function HomePage() {
     const {site, siteLoaded, isEnabled} = useSite();
@@ -55,20 +56,22 @@ function DefaultHome() {
 }
 
 function LandingContent({html}: { html: string }) {
+    const {t} = useI18n();
+    const blocks = homeBlocks(t);
     const ref = useRef<HTMLDivElement>(null);
     const [slots, setSlots] = useState<{ element: Element; name: string }[]>([]);
 
     useLayoutEffect(() => {
         const found = Array.from(ref.current?.querySelectorAll('[data-block]') ?? [])
             .map((element) => ({element, name: element.getAttribute('data-block') ?? ''}))
-            .filter((slot) => slot.name in HOME_BLOCKS);
+            .filter((slot) => slot.name in blocks);
         setSlots(found);
     }, [html]);
 
     return (
         <>
             <div ref={ref} className="html-content landing" dangerouslySetInnerHTML={{__html: html}}/>
-            {slots.map((slot, index) => createPortal(HOME_BLOCKS[slot.name].render(), slot.element, `${slot.name}-${index}`))}
+            {slots.map((slot, index) => createPortal(blocks[slot.name].render(), slot.element, `${slot.name}-${index}`))}
         </>
     );
 }
@@ -138,21 +141,23 @@ function PopupBody({popup}: { popup: Banner }) {
 }
 
 function PopupActions({dismissDays, onClose}: { dismissDays: number; onClose: (dismiss: boolean) => void }) {
+    const {t} = useI18n();
     return (
         <div className="toolbar space-between">
             {dismissDays > 0
-                ? <button type="button" className="link-button" onClick={() => onClose(true)}>{dismissLabel(dismissDays)}</button>
+                ? <button type="button" className="link-button" onClick={() => onClose(true)}>{dismissLabel(dismissDays, t)}</button>
                 : <span/>}
-            <button type="button" onClick={() => onClose(false)}>닫기</button>
+            <button type="button" onClick={() => onClose(false)}>{t('common.close', '닫기')}</button>
         </div>
     );
 }
 
 export function NotFoundPage() {
+    const {t} = useI18n();
     return (
         <section className="card">
-            <h1>페이지를 찾을 수 없습니다</h1>
-            <Link to="/">홈으로</Link>
+            <h1>{t('shop.notFound.title', '페이지를 찾을 수 없습니다')}</h1>
+            <Link to="/">{t('shop.notFound.home', '홈으로')}</Link>
         </section>
     );
 }

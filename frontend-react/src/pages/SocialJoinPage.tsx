@@ -9,8 +9,10 @@ import {Field} from '../components/Field';
 import {StableLabel} from '../components/StableLabel';
 import {ConsentStep, JoinTitle} from './JoinPage';
 import {EMPTY_PROFILE, normalizeProfile, ProfileFields} from './ProfileFields';
+import {useI18n} from '../api/i18n';
 
 export function SocialJoinPage() {
+    const {t} = useI18n();
     const [pending, setPending] = useState<PendingSocialSignup | null>(null);
     const [settings, setSettings] = useState<JoinSettings | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -30,12 +32,12 @@ export function SocialJoinPage() {
             <section className="card form-page">
                 <JoinTitle/>
                 <ErrorBanner error={error}/>
-                <p><a href="/login">로그인 화면으로</a></p>
+                <p><a href="/login">{t('shop.socialJoin.toLogin', '로그인 화면으로')}</a></p>
             </section>
         );
     }
     if (!pending || !settings) {
-        return <p className="muted">불러오는 중…</p>;
+        return <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
     if (!agreed) {
         return <ConsentStep social={false} onAgree={() => setAgreed(true)}/>;
@@ -44,6 +46,7 @@ export function SocialJoinPage() {
 }
 
 function SocialJoinForm({pending, settings}: { pending: PendingSocialSignup; settings: JoinSettings }) {
+    const {t} = useI18n();
     const hints = useRegexHints();
     const [form, setForm] = useState<SocialJoinRequest>({
         ...EMPTY_PROFILE,
@@ -75,18 +78,19 @@ function SocialJoinForm({pending, settings}: { pending: PendingSocialSignup; set
     return (
         <section className="card form-page">
             <JoinTitle/>
-            <p className="notice-box">{pending.label} 계정으로 가입합니다. 다음부터는 {pending.label} 로그인 버튼으로 바로 로그인할 수 있습니다.</p>
+            <p className="notice-box">{t('shop.socialJoin.notice', '{label} 계정으로 가입합니다. 다음부터는 {label} 로그인 버튼으로 바로 로그인할 수 있습니다.', {label: pending.label})}</p>
             <form onSubmit={handleSubmit}>
                 <fieldset>
-                    <legend>계정</legend>
-                    <Field label="아이디" name="username" required value={form.username} autoComplete="username"
+                    <legend>{t('shop.join.account', '계정')}</legend>
+                    <Field label={t('admin.memberJoin.username', '아이디')} name="username" required value={form.username} autoComplete="username"
                            error={errorOf('username')} placeholder={hints.USERNAME}
                            onChange={(e) => setForm({...form, username: e.target.value})}/>
                 </fieldset>
                 <ProfileFields value={form} onChange={setForm} errorOf={errorOf} settings={settings}/>
                 <ErrorBanner error={error}/>
                 <button type="submit" className="primary" disabled={submitting}>
-                    <StableLabel current={submitting ? '가입 중…' : '가입하기'} labels={['가입 중…', '가입하기']}/>
+                    <StableLabel current={submitting ? t('shop.join.joining', '가입 중…') : t('shop.join.submit', '가입하기')}
+                                 labels={[t('shop.join.joining', '가입 중…'), t('shop.join.submit', '가입하기')]}/>
                 </button>
             </form>
         </section>

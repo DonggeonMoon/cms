@@ -5,6 +5,7 @@ import {type OrderPreview, previewOrder, type PreviewLine} from '../../api/rewar
 import {won} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {PriceNotice} from '../../components/PriceNotice';
+import {useI18n} from '../../api/i18n';
 
 export interface DiscountChoice {
     couponIssueId: number | null;
@@ -20,6 +21,7 @@ export function DiscountSelector({lines, postalCode, value, onChange}: {
     value: DiscountChoice;
     onChange: (choice: DiscountChoice) => void;
 }) {
+    const {t} = useI18n();
     const [preview, setPreview] = useState<OrderPreview | null>(null);
     const [error, setError] = useState<unknown>(null);
     const [pointsText, setPointsText] = useState(value.usePoints ? String(value.usePoints) : '');
@@ -28,7 +30,7 @@ export function DiscountSelector({lines, postalCode, value, onChange}: {
     const key = JSON.stringify(lines);
 
     useEffect(() => {
-        shopApi.taxSetting().then((t) => setTax(t ?? null)).catch(() => setTax(null));
+        shopApi.taxSetting().then((setting) => setTax(setting ?? null)).catch(() => setTax(null));
         shopApi.exchangeRates().then((r) => setRates(r ?? [])).catch(() => setRates([]));
     }, []);
 
@@ -55,7 +57,7 @@ export function DiscountSelector({lines, postalCode, value, onChange}: {
     }, [key, value.couponIssueId, value.usePoints, postalCode]);
 
     if (!preview) {
-        return error ? <ErrorBanner error={error}/> : <p className="muted">금액을 계산하는 중…</p>;
+        return error ? <ErrorBanner error={error}/> : <p className="muted">{t('shop.discountSelector.calculating', '금액을 계산하는 중…')}</p>;
     }
     const setPoints = (points: number) => {
         const clamped = Math.max(0, Math.min(points, preview.maxUsablePoints));
@@ -66,13 +68,13 @@ export function DiscountSelector({lines, postalCode, value, onChange}: {
         <div className="discount-selector">
             {preview.coupons.length > 0 && (
                 <div className="field">
-                    <label htmlFor="coupon">쿠폰</label>
+                    <label htmlFor="coupon">{t('shop.discountSelector.coupon', '쿠폰')}</label>
                     <select id="coupon" value={value.couponIssueId ?? ''}
                             onChange={(e) => onChange({couponIssueId: e.target.value ? Number(e.target.value) : null, usePoints: 0})}>
-                        <option value="">쿠폰 사용 안 함</option>
+                        <option value="">{t('shop.discountSelector.noCoupon', '쿠폰 사용 안 함')}</option>
                         {preview.coupons.map((coupon) => (
                             <option key={coupon.issueId} value={coupon.issueId} disabled={!coupon.applicable}>
-                                {coupon.name} {coupon.applicable ? `(-${won(coupon.discount)})` : '· 조건 미달'}
+                                {coupon.name} {coupon.applicable ? `(-${won(coupon.discount)})` : t('shop.discountSelector.notEligible', '· 조건 미달')}
                             </option>
                         ))}
                     </select>
@@ -80,30 +82,30 @@ export function DiscountSelector({lines, postalCode, value, onChange}: {
             )}
             {preview.pointBalance > 0 && (
                 <div className="field">
-                    <label htmlFor="usePoints">포인트 (보유 {preview.pointBalance.toLocaleString('ko-KR')}P)</label>
+                    <label htmlFor="usePoints">{t('shop.discountSelector.pointsBalance', '포인트 (보유 {balance}P)', {balance: preview.pointBalance.toLocaleString('ko-KR')})}</label>
                     <div className="toolbar">
                         <input id="usePoints" type="number" min={0} max={preview.maxUsablePoints} value={pointsText}
                                placeholder="0" onChange={(e) => setPointsText(e.target.value)}
                                onBlur={() => setPoints(Number(pointsText) || 0)}/>
-                        <button type="button" onClick={() => setPoints(preview.maxUsablePoints)}>최대 사용</button>
+                        <button type="button" onClick={() => setPoints(preview.maxUsablePoints)}>{t('shop.discountSelector.useMax', '최대 사용')}</button>
                     </div>
                     <p className="muted small">
-                        이번 주문에 최대 {preview.maxUsablePoints.toLocaleString('ko-KR')}P
-                        {preview.minUsePoints > 0 && ` · ${preview.minUsePoints.toLocaleString('ko-KR')}P 이상부터`} 쓸 수 있습니다.
+                        {t('shop.discountSelector.maxUsable', '이번 주문에 최대 {max}P', {max: preview.maxUsablePoints.toLocaleString('ko-KR')})}
+                        {preview.minUsePoints > 0 && t('shop.discountSelector.minUsable', ' · {min}P 이상부터', {min: preview.minUsePoints.toLocaleString('ko-KR')})} {t('shop.discountSelector.canUse', '쓸 수 있습니다.')}
                     </p>
                 </div>
             )}
             <ErrorBanner error={error}/>
             <dl className="meta summary">
-                <dt>상품 금액</dt>
+                <dt>{t('shop.cart.itemsAmount', '상품 금액')}</dt>
                 <dd>{won(preview.itemsAmount)}</dd>
-                <dt>배송비</dt>
+                <dt>{t('shop.cart.shippingFee', '배송비')}</dt>
                 <dd>{won(preview.shippingFee)}</dd>
-                {Number(preview.couponDiscount) > 0 && (<><dt>쿠폰 할인</dt><dd>-{won(preview.couponDiscount)}</dd></>)}
-                {preview.pointsUsed > 0 && (<><dt>포인트 사용</dt><dd>-{won(preview.pointsUsed)}</dd></>)}
-                <dt>결제 예정 금액</dt>
+                {Number(preview.couponDiscount) > 0 && (<><dt>{t('shop.discountSelector.couponDiscount', '쿠폰 할인')}</dt><dd>-{won(preview.couponDiscount)}</dd></>)}
+                {preview.pointsUsed > 0 && (<><dt>{t('shop.discountSelector.pointsUsed', '포인트 사용')}</dt><dd>-{won(preview.pointsUsed)}</dd></>)}
+                <dt>{t('shop.checkoutForm.purchase.totalLabel', '결제 예정 금액')}</dt>
                 <dd className="price">{won(preview.totalPrice)}</dd>
-                {preview.pointsToEarn > 0 && (<><dt>적립 예정</dt><dd>{preview.pointsToEarn.toLocaleString('ko-KR')}P</dd></>)}
+                {preview.pointsToEarn > 0 && (<><dt>{t('shop.discountSelector.pointsToEarn', '적립 예정')}</dt><dd>{preview.pointsToEarn.toLocaleString('ko-KR')}P</dd></>)}
             </dl>
             <PriceNotice amount={preview.totalPrice} tax={tax} rates={rates}/>
         </div>

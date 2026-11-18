@@ -62,6 +62,25 @@ export const DEFAULT_MESSAGES: Record<string, string> = {
     'footer.operationPolicy': '운영정책',
     'footer.youthProtection': '청소년보호정책',
     'language.label': '언어',
+    'common.search': '검색',
+    'common.searchKeyword': '검색어',
+    'common.addNew': '새로 등록',
+    'common.cancel': '취소',
+    'common.edit': '수정',
+    'common.delete': '삭제',
+    'common.noData': '데이터가 없습니다.',
+    'common.totalCount': '총 {count}건',
+    'common.yes': '예',
+    'common.no': '아니오',
+    'common.page': '페이지',
+    'common.prevPages': '이전 {count}페이지',
+    'common.nextPages': '다음 {count}페이지',
+    'common.unknownError': '알 수 없는 오류가 발생했습니다.',
+    'common.close': '닫기',
+    'common.confirmDelete': '삭제할까요?',
+    'common.save': '저장',
+    'common.loading': '불러오는 중…',
+    'common.saved': '저장했습니다.',
 };
 
 /**
@@ -198,6 +217,85 @@ export const DEFAULT_TRANSLATIONS: Record<string, Partial<Record<string, string>
         en: 'Language', ja: '言語', zh: '语言', vi: 'Ngôn ngữ', th: 'ภาษา', id: 'Bahasa',
         es: 'Idioma', fr: 'Langue', de: 'Sprache', ru: 'Язык',
     },
+    'common.search': {
+        en: 'Search', ja: '検索', zh: '搜索', vi: 'Tìm kiếm', th: 'ค้นหา', id: 'Cari',
+        es: 'Buscar', fr: 'Rechercher', de: 'Suchen', ru: 'Поиск',
+    },
+    'common.searchKeyword': {
+        en: 'Search term', ja: '検索語', zh: '搜索词', vi: 'Từ khóa tìm kiếm', th: 'คำค้นหา', id: 'Kata kunci pencarian',
+        es: 'Término de búsqueda', fr: 'Terme de recherche', de: 'Suchbegriff', ru: 'Поисковый запрос',
+    },
+    'common.addNew': {
+        en: 'Add New', ja: '新規登録', zh: '新增', vi: 'Thêm mới', th: 'เพิ่มใหม่', id: 'Tambah Baru',
+        es: 'Agregar nuevo', fr: 'Ajouter', de: 'Neu hinzufügen', ru: 'Добавить',
+    },
+    'common.cancel': {
+        en: 'Cancel', ja: 'キャンセル', zh: '取消', vi: 'Hủy', th: 'ยกเลิก', id: 'Batal',
+        es: 'Cancelar', fr: 'Annuler', de: 'Abbrechen', ru: 'Отмена',
+    },
+    'common.edit': {
+        en: 'Edit', ja: '編集', zh: '编辑', vi: 'Chỉnh sửa', th: 'แก้ไข', id: 'Ubah',
+        es: 'Editar', fr: 'Modifier', de: 'Bearbeiten', ru: 'Изменить',
+    },
+    'common.delete': {
+        en: 'Delete', ja: '削除', zh: '删除', vi: 'Xóa', th: 'ลบ', id: 'Hapus',
+        es: 'Eliminar', fr: 'Supprimer', de: 'Löschen', ru: 'Удалить',
+    },
+    'common.noData': {
+        en: 'No data.', ja: 'データがありません。', zh: '没有数据。', vi: 'Không có dữ liệu.', th: 'ไม่มีข้อมูล', id: 'Tidak ada data.',
+        es: 'No hay datos.', fr: 'Aucune donnée.', de: 'Keine Daten.', ru: 'Нет данных.',
+    },
+    'common.totalCount': {
+        en: '{count} total', ja: '全{count}件', zh: '共{count}条', vi: 'Tổng {count} mục', th: 'รวม {count} รายการ', id: 'Total {count} item',
+        es: 'Total {count}', fr: 'Total : {count}', de: 'Insgesamt {count}', ru: 'Всего {count}',
+    },
+    'common.yes': {
+        en: 'Yes', ja: 'はい', zh: '是', vi: 'Có', th: 'ใช่', id: 'Ya',
+        es: 'Sí', fr: 'Oui', de: 'Ja', ru: 'Да',
+    },
+    'common.no': {
+        en: 'No', ja: 'いいえ', zh: '否', vi: 'Không', th: 'ไม่', id: 'Tidak',
+        es: 'No', fr: 'Non', de: 'Nein', ru: 'Нет',
+    },
+    'common.page': {
+        en: 'Page', ja: 'ページ', zh: '页面', vi: 'Trang', th: 'หน้า', id: 'Halaman',
+        es: 'Página', fr: 'Page', de: 'Seite', ru: 'Страница',
+    },
+    'common.prevPages': {
+        en: 'Previous {count} pages', ja: '前の{count}ページ', zh: '上{count}页', vi: '{count} trang trước', th: '{count} หน้าก่อนหน้า',
+        id: '{count} halaman sebelumnya', es: '{count} páginas anteriores', fr: '{count} pages précédentes',
+        de: 'Vorherige {count} Seiten', ru: 'Предыдущие {count} страниц',
+    },
+    'common.nextPages': {
+        en: 'Next {count} pages', ja: '次の{count}ページ', zh: '下{count}页', vi: '{count} trang tiếp theo', th: '{count} หน้าถัดไป',
+        id: '{count} halaman berikutnya', es: '{count} páginas siguientes', fr: '{count} pages suivantes',
+        de: 'Nächste {count} Seiten', ru: 'Следующие {count} страниц',
+    },
+    'common.unknownError': {
+        en: 'An unknown error occurred.', ja: '不明なエラーが発生しました。', zh: '发生了未知错误。', vi: 'Đã xảy ra lỗi không xác định.',
+        th: 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ', id: 'Terjadi kesalahan yang tidak diketahui.', es: 'Se produjo un error desconocido.',
+        fr: "Une erreur inconnue s'est produite.", de: 'Ein unbekannter Fehler ist aufgetreten.', ru: 'Произошла неизвестная ошибка.',
+    },
+    'common.close': {
+        en: 'Close', ja: '閉じる', zh: '关闭', vi: 'Đóng', th: 'ปิด', id: 'Tutup',
+        es: 'Cerrar', fr: 'Fermer', de: 'Schließen', ru: 'Закрыть',
+    },
+    'common.confirmDelete': {
+        en: 'Delete this?', ja: '削除しますか?', zh: '要删除吗?', vi: 'Bạn có muốn xóa không?', th: 'ต้องการลบหรือไม่?', id: 'Hapus ini?',
+        es: '¿Eliminar esto?', fr: 'Supprimer ceci ?', de: 'Dies löschen?', ru: 'Удалить это?',
+    },
+    'common.save': {
+        en: 'Save', ja: '保存', zh: '保存', vi: 'Lưu', th: 'บันทึก', id: 'Simpan',
+        es: 'Guardar', fr: 'Enregistrer', de: 'Speichern', ru: 'Сохранить',
+    },
+    'common.loading': {
+        en: 'Loading…', ja: '読み込み中…', zh: '加载中…', vi: 'Đang tải…', th: 'กำลังโหลด…', id: 'Memuat…',
+        es: 'Cargando…', fr: 'Chargement…', de: 'Wird geladen…', ru: 'Загрузка…',
+    },
+    'common.saved': {
+        en: 'Saved.', ja: '保存しました。', zh: '已保存。', vi: 'Đã lưu.', th: 'บันทึกแล้ว', id: 'Tersimpan.',
+        es: 'Guardado.', fr: 'Enregistré.', de: 'Gespeichert.', ru: 'Сохранено.',
+    },
 };
 
 /** 기본 키 하나를 특정 언어로 번역한 문구. 번역이 없으면 한국어 원문으로 돌아간다. */
@@ -212,7 +310,7 @@ interface I18nState {
     t: (key: string, fallback: string, values?: Record<string, string>) => string;
 }
 
-const STORAGE_KEY = 'cms.language';
+const DEFAULT_STORAGE_KEY = 'cms.language';
 
 const format = (text: string, values?: Record<string, string>) =>
     values ? text.replace(/\{(\w+)}/g, (match, name: string) => values[name] ?? match) : text;
@@ -224,17 +322,18 @@ const I18nContext = createContext<I18nState>({
     t: (_key, fallback, values) => format(fallback, values),
 });
 
-function stored(): string | null {
+function stored(storageKey: string): string | null {
     try {
-        return localStorage.getItem(STORAGE_KEY);
+        return localStorage.getItem(storageKey);
     } catch {
         return null;
     }
 }
 
-export function I18nProvider({children}: { children: ReactNode }) {
+/** storageKey를 다르게 주면 같은 브라우저에서도 언어 선택이 서로 안 겹친다(예: 쇼핑몰 방문자 vs 관리자). */
+export function I18nProvider({children, storageKey = DEFAULT_STORAGE_KEY}: { children: ReactNode; storageKey?: string }) {
     const [setting, setSetting] = useState<I18nSetting>({languages: ['ko'], defaultLanguage: 'ko'});
-    const [language, setLanguageState] = useState<string>(stored() ?? 'ko');
+    const [language, setLanguageState] = useState<string>(() => stored(storageKey) ?? 'ko');
     const [messages, setMessages] = useState<Record<string, string>>({});
 
     useEffect(() => {
@@ -254,11 +353,11 @@ export function I18nProvider({children}: { children: ReactNode }) {
     const setLanguage = useCallback((next: string) => {
         setLanguageState(next);
         try {
-            localStorage.setItem(STORAGE_KEY, next);
+            localStorage.setItem(storageKey, next);
         } catch {
             // 저장할 수 없으면 이번 화면에서만 바뀐다.
         }
-    }, []);
+    }, [storageKey]);
 
     const value = useMemo<I18nState>(() => ({
         language,

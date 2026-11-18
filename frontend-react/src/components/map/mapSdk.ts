@@ -89,21 +89,23 @@ export interface Place {
     longitude: number;
 }
 
-export function externalLinks(provider: MapProvider, place: Place): { label: string; href: string }[] {
+type TFunc = (key: string, fallback: string, values?: Record<string, string>) => string;
+
+export function externalLinks(provider: MapProvider, place: Place, t: TFunc): { label: string; href: string }[] {
     const name = encodeURIComponent(place.name);
     if (provider === 'KAKAO') {
         return [
-            {label: '카카오맵에서 보기', href: `https://map.kakao.com/link/map/${name},${place.latitude},${place.longitude}`},
-            {label: '카카오맵 길찾기', href: `https://map.kakao.com/link/to/${name},${place.latitude},${place.longitude}`},
+            {label: t('shop.map.kakaoView', '카카오맵에서 보기'), href: `https://map.kakao.com/link/map/${name},${place.latitude},${place.longitude}`},
+            {label: t('shop.map.kakaoDirections', '카카오맵 길찾기'), href: `https://map.kakao.com/link/to/${name},${place.latitude},${place.longitude}`},
         ];
     }
     if (provider === 'GOOGLE') {
         const position = `${place.latitude},${place.longitude}`;
         return [
-            {label: '구글 지도에서 보기', href: `https://www.google.com/maps/search/?api=1&query=${position}`},
-            {label: '구글 지도 길찾기', href: `https://www.google.com/maps/dir/?api=1&destination=${position}`},
+            {label: t('shop.map.googleView', '구글 지도에서 보기'), href: `https://www.google.com/maps/search/?api=1&query=${position}`},
+            {label: t('shop.map.googleDirections', '구글 지도 길찾기'), href: `https://www.google.com/maps/dir/?api=1&destination=${position}`},
         ];
     }
     const query = encodeURIComponent(place.address || place.name);
-    return [{label: '네이버 지도에서 보기', href: `https://map.naver.com/p/search/${query}`}];
+    return [{label: t('shop.map.naverView', '네이버 지도에서 보기'), href: `https://map.naver.com/p/search/${query}`}];
 }

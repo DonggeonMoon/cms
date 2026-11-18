@@ -5,11 +5,13 @@ import {ErrorBanner} from '../components/ErrorBanner';
 import {externalLinks, type LatLng} from '../components/map/mapSdk';
 import {MapView} from '../components/map/MapView';
 import {useFeatureMenuName} from '../components/SiteContext';
+import {useI18n} from '../api/i18n';
 
 type Tab = 'directions' | 'branches';
 
 export function MapPage() {
-    const title = useFeatureMenuName('MAP', '지도');
+    const {t} = useI18n();
+    const title = useFeatureMenuName('MAP', t('admin.nav.map', '지도'));
     const [map, setMap] = useState<PublicMap | null>(null);
     const [tab, setTab] = useState<Tab | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -25,24 +27,24 @@ export function MapPage() {
         return <ErrorBanner error={error}/>;
     }
     if (!map) {
-        return <p className="muted">불러오는 중…</p>;
+        return <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
 
     const tabs: { value: Tab; label: string }[] = [
-        ...(map.directions ? [{value: 'directions' as const, label: '오시는 길'}] : []),
-        ...(map.branches ? [{value: 'branches' as const, label: '지점 안내'}] : []),
+        ...(map.directions ? [{value: 'directions' as const, label: t('shop.mapPage.directions', '오시는 길')}] : []),
+        ...(map.branches ? [{value: 'branches' as const, label: t('shop.mapPage.branches', '지점 안내')}] : []),
     ];
 
     return (
         <section className="card">
             <h1>{title}</h1>
-            {tabs.length === 0 && <p className="muted">준비 중입니다.</p>}
+            {tabs.length === 0 && <p className="muted">{t('shop.mapPage.inPreparation', '준비 중입니다.')}</p>}
             {tabs.length > 1 && (
-                <div className="tabs" role="tablist" aria-label="지도 안내">
-                    {tabs.map((t) => (
-                        <button key={t.value} type="button" role="tab" aria-selected={tab === t.value}
-                                className={tab === t.value ? 'tab active' : 'tab'} onClick={() => setTab(t.value)}>
-                            {t.label}
+                <div className="tabs" role="tablist" aria-label={t('shop.mapPage.tabsLabel', '지도 안내')}>
+                    {tabs.map((item) => (
+                        <button key={item.value} type="button" role="tab" aria-selected={tab === item.value}
+                                className={tab === item.value ? 'tab active' : 'tab'} onClick={() => setTab(item.value)}>
+                            {item.label}
                         </button>
                     ))}
                 </div>
@@ -54,25 +56,26 @@ export function MapPage() {
 }
 
 function Directions({map, office}: { map: PublicMap; office: Office }) {
+    const {t} = useI18n();
     const place = {
-        name: office.name || '본점',
+        name: office.name || t('shop.mapPage.headOffice', '본점'),
         address: office.address,
         latitude: Number(office.latitude),
         longitude: Number(office.longitude),
     };
     return (
         <>
-            {tabsTitle('오시는 길')}
+            {tabsTitle(t('shop.mapPage.directions', '오시는 길'))}
             <MapView provider={map.provider} apiKey={map.apiKey} places={[place]}/>
             <dl className="meta map-info">
-                <dt>주소</dt>
+                <dt>{t('admin.order.field.address', '주소')}</dt>
                 <dd>{[office.address, office.detailAddress].filter(Boolean).join(' ')}</dd>
-                {office.phoneNumber && (<><dt>연락처</dt><dd><a href={`tel:${office.phoneNumber}`}>{office.phoneNumber}</a></dd></>)}
-                {office.businessHours && (<><dt>운영 시간</dt><dd>{office.businessHours}</dd></>)}
+                {office.phoneNumber && (<><dt>{t('admin.guestPosting.phone', '연락처')}</dt><dd><a href={`tel:${office.phoneNumber}`}>{office.phoneNumber}</a></dd></>)}
+                {office.businessHours && (<><dt>{t('shop.mapPage.businessHours', '운영 시간')}</dt><dd>{office.businessHours}</dd></>)}
             </dl>
             {office.description && <p className="pre-line">{office.description}</p>}
             <div className="toolbar">
-                {externalLinks(map.provider, place).map((link) => (
+                {externalLinks(map.provider, place, t).map((link) => (
                     <a key={link.href} className="button" href={link.href} target="_blank" rel="noreferrer">{link.label}</a>
                 ))}
             </div>
@@ -81,14 +84,15 @@ function Directions({map, office}: { map: PublicMap; office: Office }) {
 }
 
 function Branches({map, branches}: { map: PublicMap; branches: Branch[] }) {
+    const {t} = useI18n();
     const [focus, setFocus] = useState<LatLng | null>(null);
     if (branches.length === 0) {
-        return <p className="muted">등록된 지점이 없습니다.</p>;
+        return <p className="muted">{t('shop.mapPage.noBranches', '등록된 지점이 없습니다.')}</p>;
     }
     const places = branches.map((b) => ({name: b.name, address: b.address, latitude: Number(b.latitude), longitude: Number(b.longitude)}));
     return (
         <>
-            {tabsTitle('지점 안내')}
+            {tabsTitle(t('shop.mapPage.branches', '지점 안내'))}
             <MapView provider={map.provider} apiKey={map.apiKey} places={places} focus={focus}/>
             <ul className="branch-list">
                 {branches.map((branch, index) => (
@@ -101,7 +105,7 @@ function Branches({map, branches}: { map: PublicMap; branches: Branch[] }) {
                         {branch.businessHours && <div className="small">{branch.businessHours}</div>}
                         {branch.description && <div className="small pre-line">{branch.description}</div>}
                         <div className="small">
-                            {externalLinks(map.provider, places[index]).map((link) => (
+                            {externalLinks(map.provider, places[index], t).map((link) => (
                                 <a key={link.href} href={link.href} target="_blank" rel="noreferrer"> {link.label}</a>
                             ))}
                         </div>

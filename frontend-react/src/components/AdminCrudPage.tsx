@@ -1,5 +1,6 @@
 import {type FormEvent, Fragment, type ReactNode, useCallback, useEffect, useState} from 'react';
 import type {Query} from '../api/client';
+import {useI18n} from '../api/i18n';
 import type {Page} from '../api/types';
 import {ErrorBanner} from './ErrorBanner';
 import {Pagination} from './Pagination';
@@ -38,6 +39,7 @@ function asPage<T>(result: Page<T> | T[]): Page<T> {
 export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
     const {title, columns, fields, load, emptyForm, toForm, create, update, remove, searchable = true,
         extraQuery, filters, actions, expandedRow, description} = props;
+    const {t} = useI18n();
     const [keyword, setKeyword] = useState('');
     const [input, setInput] = useState('');
     const [page, setPage] = useState(0);
@@ -64,7 +66,7 @@ export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
     };
 
     const handleRemove = async (item: T) => {
-        if (!remove || !window.confirm('삭제할까요?')) {
+        if (!remove || !window.confirm(t('common.confirmDelete', '삭제할까요?'))) {
             return;
         }
         try {
@@ -88,22 +90,23 @@ export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
             <div className="toolbar list-toolbar">
                 {searchable && (
                     <form className="toolbar inline" onSubmit={handleSearch}>
-                        <input aria-label="검색어" placeholder="검색어" value={input} onChange={(e) => setInput(e.target.value)}/>
-                        <button type="submit">검색</button>
+                        <input aria-label={t('common.searchKeyword', '검색어')} placeholder={t('common.searchKeyword', '검색어')}
+                               value={input} onChange={(e) => setInput(e.target.value)}/>
+                        <button type="submit">{t('common.search', '검색')}</button>
                     </form>
                 )}
                 {filters}
                 {create && fields && (
                     <button type="button" className="primary push-right"
                             onClick={() => setEditing({item: null, values: {...emptyForm}})}>
-                        새로 등록
+                        {t('common.addNew', '새로 등록')}
                     </button>
                 )}
             </div>
             {editing && editing.item === null && fields && (
                 <SchemaForm
                     key="new"
-                    title="새로 등록"
+                    title={t('common.addNew', '새로 등록')}
                     fields={fields}
                     initial={editing.values}
                     onCancel={() => setEditing(null)}
@@ -117,7 +120,7 @@ export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
             <ErrorBanner error={error}/>
             {result && (
                 <>
-                    <p className="muted">총 {result.page.totalElements}건</p>
+                    <p className="muted">{t('common.totalCount', '총 {count}건', {count: String(result.page.totalElements)})}</p>
                     <div className="table-wrap">
                         <table>
                             <thead>
@@ -138,10 +141,10 @@ export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
                                                 {actions?.(item, reload)}
                                                 {update && fields && (
                                                     <button type="button" onClick={() => (isEditing ? setEditing(null) : startEdit(item))}>
-                                                        {isEditing ? '취소' : '수정'}
+                                                        {isEditing ? t('common.cancel', '취소') : t('common.edit', '수정')}
                                                     </button>
                                                 )}
-                                                {remove && <button type="button" className="danger" onClick={() => handleRemove(item)}>삭제</button>}
+                                                {remove && <button type="button" className="danger" onClick={() => handleRemove(item)}>{t('common.delete', '삭제')}</button>}
                                             </td>
                                         </tr>
                                         {isEditing && fields && (
@@ -149,7 +152,7 @@ export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
                                                 <td colSpan={columns.length + 1}>
                                                     <SchemaForm
                                                         key={item.id}
-                                                        title="수정"
+                                                        title={t('common.edit', '수정')}
                                                         fields={fields}
                                                         initial={editing.values}
                                                         onCancel={() => setEditing(null)}
@@ -172,7 +175,7 @@ export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
                             })}
                             {result.content.length === 0 && (
                                 <tr>
-                                    <td colSpan={columns.length + 1} className="muted">데이터가 없습니다.</td>
+                                    <td colSpan={columns.length + 1} className="muted">{t('common.noData', '데이터가 없습니다.')}</td>
                                 </tr>
                             )}
                             </tbody>
@@ -186,7 +189,8 @@ export function AdminCrudPage<T extends { id: number }>(props: Props<T>) {
 }
 
 export function YesNo({value}: { value: boolean }) {
-    return value ? <span className="badge ok">예</span> : <span className="badge">아니오</span>;
+    const {t} = useI18n();
+    return value ? <span className="badge ok">{t('common.yes', '예')}</span> : <span className="badge">{t('common.no', '아니오')}</span>;
 }
 
 export const won = (value: number | null | undefined) =>

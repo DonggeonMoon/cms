@@ -5,8 +5,10 @@ import type {Page} from '../../api/types';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatDate} from '../../components/format';
 import {Pagination} from '../../components/Pagination';
+import {useI18n} from '../../api/i18n';
 
 export function MyRecordsPage() {
+    const {t} = useI18n();
     const [page, setPage] = useState(0);
     const [data, setData] = useState<Page<MyCustomerRecord> | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -16,8 +18,8 @@ export function MyRecordsPage() {
 
     return (
         <section className="card">
-            <h1>이용 기록</h1>
-            <p className="muted">시술·상담을 받은 뒤 담당자가 남겨 준 기록입니다.</p>
+            <h1>{t('shop.record.title', '이용 기록')}</h1>
+            <p className="muted">{t('shop.record.description', '시술·상담을 받은 뒤 담당자가 남겨 준 기록입니다.')}</p>
             <ErrorBanner error={error}/>
             {data?.content.map((record) => (
                 <article key={record.id} className="card record-card">
@@ -26,12 +28,12 @@ export function MyRecordsPage() {
                     {record.content && <p className="pre-wrap">{record.content}</p>}
                     {record.photoUrls.length > 0 && (
                         <div className="work-photos">
-                            {record.photoUrls.map((url, i) => <a key={url} href={url}><img src={url} alt={`기록 사진 ${i + 1}`}/></a>)}
+                            {record.photoUrls.map((url, i) => <a key={url} href={url}><img src={url} alt={t('shop.record.photoOf', '기록 사진 {index}', {index: String(i + 1)})}/></a>)}
                         </div>
                     )}
                 </article>
             ))}
-            {data?.content.length === 0 && <p className="muted">아직 받은 기록이 없습니다.</p>}
+            {data?.content.length === 0 && <p className="muted">{t('shop.record.none', '아직 받은 기록이 없습니다.')}</p>}
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={setPage}/>}
         </section>
     );

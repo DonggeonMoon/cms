@@ -4,8 +4,10 @@ import {adminApi} from '../../api/endpoints';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatDateTime} from '../../components/format';
 import {reservationUsage} from '../../components/reservationUsage';
+import {useI18n} from '../../api/i18n';
 
 export function CheckInAdminPage() {
+    const {t} = useI18n();
     const [code, setCode] = useState('');
     const [result, setResult] = useState<Reservation | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -30,19 +32,19 @@ export function CheckInAdminPage() {
 
     return (
         <section className="card">
-            <h1>체크인</h1>
-            <p className="muted">회원이 보여 준 체크인 코드나 QR의 코드 값을 입력하거나 스캐너로 찍어 넣으세요.</p>
+            <h1>{t('admin.checkIn.title', '체크인')}</h1>
+            <p className="muted">{t('admin.checkIn.description', '회원이 보여 준 체크인 코드나 QR의 코드 값을 입력하거나 스캐너로 찍어 넣으세요.')}</p>
             <form className="toolbar" onSubmit={submit}>
-                <input ref={inputRef} autoFocus aria-label="체크인 코드" placeholder="체크인 코드" value={code}
+                <input ref={inputRef} autoFocus aria-label={t('admin.checkIn.code', '체크인 코드')} placeholder={t('admin.checkIn.code', '체크인 코드')} value={code}
                        onChange={(e) => setCode(e.target.value)}/>
-                <button type="submit" className="primary">체크인</button>
+                <button type="submit" className="primary">{t('admin.checkIn.title', '체크인')}</button>
             </form>
             <ErrorBanner error={error}/>
             {result && (
                 <div className="card">
-                    <p className="price">체크인 완료 · {formatDateTime(result.checkedInAt)}</p>
+                    <p className="price">{t('admin.checkIn.completed', '체크인 완료 · {date}', {date: formatDateTime(result.checkedInAt)})}</p>
                     <p>{result.applicantName} ({result.phoneNumber})</p>
-                    <p className="muted">{result.reservationItemName} · {reservationUsage(result)}</p>
+                    <p className="muted">{result.reservationItemName} · {reservationUsage(result, t)}</p>
                 </div>
             )}
         </section>

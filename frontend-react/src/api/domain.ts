@@ -19,20 +19,18 @@ export interface Menu {
 
 export type SiteFeature = 'CONTENT' | 'BOARD' | 'ARCHIVE' | 'QNA' | 'MAP' | 'PRODUCT' | 'PROGRAM' | 'REPORT' | 'SATISFACTION' | 'APPLICATION' | 'MEDIA' | 'CHATBOT';
 
-export const SITE_FEATURES: { value: SiteFeature; label: string }[] = [
-    {value: 'CONTENT', label: '소개 페이지(컨텐츠)'},
-    {value: 'BOARD', label: '게시판'},
-    {value: 'ARCHIVE', label: '아카이브'},
-    {value: 'QNA', label: '질문답변'},
-    {value: 'MAP', label: '지도'},
-    {value: 'PRODUCT', label: '상품'},
-    {value: 'MEDIA', label: '스트리밍'},
-    {value: 'PROGRAM', label: '예약 상품'},
-    {value: 'APPLICATION', label: '신청·지원'},
-    {value: 'REPORT', label: '신고'},
-    {value: 'SATISFACTION', label: '만족도 조사'},
-    {value: 'CHATBOT', label: '챗봇'},
-];
+type TFunc = (key: string, fallback: string, values?: Record<string, string>) => string;
+
+export const SITE_FEATURE_VALUES: SiteFeature[] = ['CONTENT', 'BOARD', 'ARCHIVE', 'QNA', 'MAP', 'PRODUCT', 'MEDIA', 'PROGRAM', 'APPLICATION', 'REPORT', 'SATISFACTION', 'CHATBOT'];
+
+const SITE_FEATURE_FALLBACKS: Record<SiteFeature, string> = {
+    CONTENT: '소개 페이지(컨텐츠)', BOARD: '게시판', ARCHIVE: '아카이브', QNA: '질문답변', MAP: '지도',
+    PRODUCT: '상품', MEDIA: '스트리밍', PROGRAM: '예약 상품', APPLICATION: '신청·지원', REPORT: '신고',
+    SATISFACTION: '만족도 조사', CHATBOT: '챗봇',
+};
+
+export const siteFeatures = (t: TFunc): { value: SiteFeature; label: string }[] =>
+    SITE_FEATURE_VALUES.map((value) => ({value, label: t(`label.siteFeature.${value}`, SITE_FEATURE_FALLBACKS[value])}));
 
 export type EnrollmentStatus = 'IN_PROGRESS' | 'COMPLETED';
 
@@ -1041,6 +1039,10 @@ export interface Review {
     authorName: string;
     canDelete: boolean;
     createdAt: string;
+}
+
+export interface ReviewPolicy {
+    minimumContentLength: number;
 }
 
 export type ReportStatus = 'RECEIVED' | 'IN_PROGRESS' | 'ANSWERED' | 'CLOSED';

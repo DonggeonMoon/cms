@@ -5,8 +5,10 @@ import type {FileInfo} from '../api/types';
 import {ErrorBanner} from './ErrorBanner';
 import {FilesField} from './FilesField';
 import {formatDateTime} from './format';
+import {useI18n} from '../api/i18n';
 
 export function ProgressTemplateManager({targetType}: { targetType: ProgressTargetType }) {
+    const {t} = useI18n();
     const [open, setOpen] = useState(false);
     const [templates, setTemplates] = useState<ProgressStageTemplate[]>([]);
     const [draft, setDraft] = useState({code: '', label: ''});
@@ -37,31 +39,31 @@ export function ProgressTemplateManager({targetType}: { targetType: ProgressTarg
 
     return (
         <div className="status-manager">
-            <button type="button" onClick={() => setOpen(!open)}>{open ? '진행 단계 설정 닫기' : '진행 단계 설정'}</button>
+            <button type="button" onClick={() => setOpen(!open)}>{open ? t('admin.progress.closeSettings', '진행 단계 설정 닫기') : t('admin.progress.settings', '진행 단계 설정')}</button>
             {open && (
                 <>
-                    <p className="muted small">주문마다 거칠 수 있는 진행 단계를 정합니다(예: 시안 확인, 제작 중, 출고 완료).</p>
+                    <p className="muted small">{t('admin.progress.description', '주문마다 거칠 수 있는 진행 단계를 정합니다(예: 시안 확인, 제작 중, 출고 완료).')}</p>
                     <ul className="stage-template-list">
-                        {templates.map((t) => (
-                            <li key={t.id}>
-                                <span className="stage-template-sequence">{t.sequence}</span>
-                                <span className="stage-template-label">{t.label}</span>
-                                <code className="small">{t.code}</code>
+                        {templates.map((template) => (
+                            <li key={template.id}>
+                                <span className="stage-template-sequence">{template.sequence}</span>
+                                <span className="stage-template-label">{template.label}</span>
+                                <code className="small">{template.code}</code>
                                 <button type="button" className="link-button" onClick={() => {
-                                    if (window.confirm(`'${t.label}' 단계를 지울까요?`)) {
-                                        void adminApi.progress.removeTemplate(t.id).then(reload);
+                                    if (window.confirm(t('admin.progress.confirmRemoveStage', "'{label}' 단계를 지울까요?", {label: template.label}))) {
+                                        void adminApi.progress.removeTemplate(template.id).then(reload);
                                     }
-                                }}>삭제</button>
+                                }}>{t('common.delete', '삭제')}</button>
                             </li>
                         ))}
-                        {templates.length === 0 && <li className="muted small">아직 정한 단계가 없습니다.</li>}
+                        {templates.length === 0 && <li className="muted small">{t('admin.progress.noStages', '아직 정한 단계가 없습니다.')}</li>}
                     </ul>
                     <div className="toolbar">
-                        <input aria-label="단계 코드" placeholder="코드 (예: DESIGN_CONFIRM)" value={draft.code}
+                        <input aria-label={t('admin.progress.stageCode', '단계 코드')} placeholder={t('admin.progress.stageCodePlaceholder', '코드 (예: DESIGN_CONFIRM)')} value={draft.code}
                                onChange={(e) => setDraft({...draft, code: e.target.value})}/>
-                        <input aria-label="단계 이름" placeholder="이름 (예: 시안 확인)" value={draft.label}
+                        <input aria-label={t('admin.progress.stageName', '단계 이름')} placeholder={t('admin.progress.stageNamePlaceholder', '이름 (예: 시안 확인)')} value={draft.label}
                                onChange={(e) => setDraft({...draft, label: e.target.value})}/>
-                        <button type="button" onClick={add}>단계 추가</button>
+                        <button type="button" onClick={add}>{t('admin.progress.addStage', '단계 추가')}</button>
                     </div>
                     <ErrorBanner error={error}/>
                 </>
@@ -78,6 +80,7 @@ interface Props {
 }
 
 export function ProgressAndMessages({getProgress, advance, listMessages, postMessage}: Props) {
+    const {t} = useI18n();
     const [progress, setProgress] = useState<Progress | null>(null);
     const [stageCode, setStageCode] = useState('');
     const [memo, setMemo] = useState('');
@@ -126,10 +129,10 @@ export function ProgressAndMessages({getProgress, advance, listMessages, postMes
 
     return (
         <div className="progress-panel">
-            <h3>진행 단계</h3>
+            <h3>{t('admin.progress.title', '진행 단계')}</h3>
             {progress && (
                 <>
-                    {progress.history.length === 0 && <p className="muted small">아직 진행 단계가 없습니다.</p>}
+                    {progress.history.length === 0 && <p className="muted small">{t('admin.progress.noHistory', '아직 진행 단계가 없습니다.')}</p>}
                     <ol className="progress-history">
                         {progress.history.map((event) => (
                             <li key={event.id}>
@@ -141,18 +144,18 @@ export function ProgressAndMessages({getProgress, advance, listMessages, postMes
                     </ol>
                     {advance && progress.templates.length > 0 && (
                         <div className="toolbar">
-                            <select aria-label="다음 단계" value={stageCode} onChange={(e) => setStageCode(e.target.value)}>
-                                <option value="">단계 선택</option>
-                                {progress.templates.map((t) => <option key={t.code} value={t.code}>{t.label}</option>)}
+                            <select aria-label={t('admin.progress.nextStage', '다음 단계')} value={stageCode} onChange={(e) => setStageCode(e.target.value)}>
+                                <option value="">{t('admin.progress.selectStage', '단계 선택')}</option>
+                                {progress.templates.map((template) => <option key={template.code} value={template.code}>{template.label}</option>)}
                             </select>
-                            <input aria-label="메모" placeholder="메모(선택)" value={memo} onChange={(e) => setMemo(e.target.value)}/>
-                            <button type="button" disabled={!stageCode} onClick={submitAdvance}>단계 변경</button>
+                            <input aria-label={t('admin.progress.memo', '메모')} placeholder={t('admin.progress.memoPlaceholder', '메모(선택)')} value={memo} onChange={(e) => setMemo(e.target.value)}/>
+                            <button type="button" disabled={!stageCode} onClick={submitAdvance}>{t('admin.progress.changeStage', '단계 변경')}</button>
                         </div>
                     )}
                 </>
             )}
 
-            <h3>메시지</h3>
+            <h3>{t('admin.progress.messages', '메시지')}</h3>
             <ul className="message-thread">
                 {messages?.map((message) => (
                     <li key={message.id} className={message.senderType === 'ADMIN' ? 'from-admin' : 'from-member'}>
@@ -160,19 +163,19 @@ export function ProgressAndMessages({getProgress, advance, listMessages, postMes
                         <p className="pre-wrap">{message.content}</p>
                         {message.fileUrls.length > 0 && (
                             <div className="work-photos">
-                                {message.fileUrls.map((url, i) => <a key={url} href={url} target="_blank" rel="noreferrer">첨부 {i + 1}</a>)}
+                                {message.fileUrls.map((url, i) => <a key={url} href={url} target="_blank" rel="noreferrer">{t('admin.progress.attachmentOf', '첨부 {index}', {index: String(i + 1)})}</a>)}
                             </div>
                         )}
                     </li>
                 ))}
-                {messages?.length === 0 && <li className="muted small">아직 메시지가 없습니다.</li>}
+                {messages?.length === 0 && <li className="muted small">{t('admin.progress.noMessages', '아직 메시지가 없습니다.')}</li>}
             </ul>
             <div className="field">
-                <label htmlFor="message-content">메시지 보내기</label>
+                <label htmlFor="message-content">{t('admin.progress.sendMessage', '메시지 보내기')}</label>
                 <textarea id="message-content" rows={3} value={content} onChange={(e) => setContent(e.target.value)}/>
             </div>
-            <FilesField label="첨부 파일" value={files} onChange={setFiles}/>
-            <button type="button" className="primary" disabled={!content.trim()} onClick={submitMessage}>보내기</button>
+            <FilesField label={t('admin.progress.attachments', '첨부 파일')} value={files} onChange={setFiles}/>
+            <button type="button" className="primary" disabled={!content.trim()} onClick={submitMessage}>{t('shop.checkoutForm.send', '보내기')}</button>
             <ErrorBanner error={error}/>
         </div>
     );

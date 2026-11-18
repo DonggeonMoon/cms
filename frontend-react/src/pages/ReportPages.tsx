@@ -9,12 +9,14 @@ import {ErrorBanner} from '../components/ErrorBanner';
 import {formatDateTime} from '../components/format';
 import {HtmlView} from '../components/HtmlView';
 import {MemberOnlyNotice} from '../components/MemberOnlyNotice';
-import {REPORT_STATUS} from '../components/labels';
+import {reportStatus} from '../components/labels';
 import {type FieldSpec, SchemaForm} from '../components/SchemaForm';
 import {useFeatureMenuName} from '../components/SiteContext';
+import {useI18n} from '../api/i18n';
 
 export function ReportWritePage() {
-    const title = useFeatureMenuName('REPORT', '신고 접수');
+    const {t} = useI18n();
+    const title = useFeatureMenuName('REPORT', t('shop.report.title', '신고 접수'));
     const {user} = useAuth();
     const [guest, setGuest] = useState<GuestPostingPolicy>({allowed: true, collectPhone: true, collectEmail: false});
     useEffect(() => {
@@ -24,49 +26,49 @@ export function ReportWritePage() {
     const [lookup, setLookup] = useState('');
     const fields: FieldSpec[] = [
         ...(!user ? [
-            {name: 'reporterName', label: '이름', required: true, wide: true},
-            {name: 'password', label: '조회 비밀번호', type: 'password', required: true, wide: true, help: '처리 결과를 확인할 때 필요합니다.'},
-            {name: 'passwordCheck', label: '조회 비밀번호 확인', type: 'password', required: true, wide: true},
-            ...(guest.collectPhone ? [{name: 'phoneNumber', label: '연락처', required: true, wide: true}] : []),
-            ...(guest.collectEmail ? [{name: 'email', label: '이메일', required: true, wide: true}] : []),
+            {name: 'reporterName', label: t('shop.board.name', '이름'), required: true, wide: true},
+            {name: 'password', label: t('shop.report.lookupPassword', '조회 비밀번호'), type: 'password', required: true, wide: true, help: t('shop.report.lookupPasswordHelp', '처리 결과를 확인할 때 필요합니다.')},
+            {name: 'passwordCheck', label: t('shop.report.lookupPasswordCheck', '조회 비밀번호 확인'), type: 'password', required: true, wide: true},
+            ...(guest.collectPhone ? [{name: 'phoneNumber', label: t('admin.guestPosting.phone', '연락처'), required: true, wide: true}] : []),
+            ...(guest.collectEmail ? [{name: 'email', label: t('admin.guestPosting.email', '이메일'), required: true, wide: true}] : []),
         ] as FieldSpec[] : []),
-        {name: 'title', label: '제목', required: true, wide: true},
-        {name: 'contentHtml', label: '내용', type: 'html'},
+        {name: 'title', label: t('admin.board.column.title', '제목'), required: true, wide: true},
+        {name: 'contentHtml', label: t('shop.report.content', '내용'), type: 'html'},
     ];
 
     return (
         <>
             <section className="card">
                 <h1>{title}</h1>
-                <p className="muted">접수된 내용은 담당자 확인 후 답변드립니다. 개인정보는 처리 목적 외에 사용하지 않습니다.</p>
+                <p className="muted">{t('shop.report.description', '접수된 내용은 담당자 확인 후 답변드립니다. 개인정보는 처리 목적 외에 사용하지 않습니다.')}</p>
                 {!user && !guest.allowed
-                    ? <MemberOnlyNotice message="신고는 회원만 접수할 수 있습니다."/>
+                    ? <MemberOnlyNotice message={t('shop.report.memberOnly', '신고는 회원만 접수할 수 있습니다.')}/>
                     : (
-                    <SchemaForm fields={fields} initial={{contentHtml: ''}} submitLabel="접수하기"
+                    <SchemaForm fields={fields} initial={{contentHtml: ''}} submitLabel={t('shop.report.submit', '접수하기')}
                                 onSubmit={async ({passwordCheck, ...values}) => {
                                     if (!user && values.password !== passwordCheck) {
-                                        throw new Error('조회 비밀번호 확인이 일치하지 않습니다.');
+                                        throw new Error(t('shop.report.passwordMismatch', '조회 비밀번호 확인이 일치하지 않습니다.'));
                                     }
                                     const {id} = await govApi.createReport(values);
                                     if (user) {
                                         navigate('/mypage/reports');
                                     } else {
-                                        window.alert(`접수되었습니다. 접수 번호는 ${id}번입니다.\n접수 번호와 비밀번호로 처리 결과를 확인할 수 있습니다.`);
+                                        window.alert(t('shop.report.submittedAlert', '접수되었습니다. 접수 번호는 {id}번입니다.\n접수 번호와 비밀번호로 처리 결과를 확인할 수 있습니다.', {id: String(id)}));
                                         navigate(`/reports/${id}`);
                                     }
                                 }}/>
                     )}
             </section>
             <section className="card">
-                <h2>접수 결과 확인</h2>
+                <h2>{t('shop.report.checkResult', '접수 결과 확인')}</h2>
                 <form className="toolbar" onSubmit={(e) => {
                     e.preventDefault();
                     if (lookup) {
                         navigate(`/reports/${lookup}`);
                     }
                 }}>
-                    <input aria-label="접수 번호" placeholder="접수 번호" value={lookup} onChange={(e) => setLookup(e.target.value)}/>
-                    <button type="submit">확인</button>
+                    <input aria-label={t('shop.report.caseNumber', '접수 번호')} placeholder={t('shop.report.caseNumber', '접수 번호')} value={lookup} onChange={(e) => setLookup(e.target.value)}/>
+                    <button type="submit">{t('admin.reauth.confirm', '확인')}</button>
                 </form>
             </section>
         </>
@@ -74,6 +76,7 @@ export function ReportWritePage() {
 }
 
 export function ReportDetailPage() {
+    const {t} = useI18n();
     const id = Number(useParams().id);
     const [report, setReport] = useState<ReportDetail | null>(null);
     const [needsPassword, setNeedsPassword] = useState(false);
@@ -104,11 +107,11 @@ export function ReportDetailPage() {
     if (needsPassword) {
         return (
             <section className="card narrow">
-                <h1>접수 #{id} 확인</h1>
+                <h1>{t('shop.report.unlockTitle', '접수 #{id} 확인', {id: String(id)})}</h1>
                 <form onSubmit={unlock}>
-                    <input type="password" aria-label="조회 비밀번호" value={password} onChange={(e) => setPassword(e.target.value)}/>
+                    <input type="password" aria-label={t('shop.report.lookupPassword', '조회 비밀번호')} value={password} onChange={(e) => setPassword(e.target.value)}/>
                     <ErrorBanner error={error}/>
-                    <button type="submit" className="primary">확인</button>
+                    <button type="submit" className="primary">{t('admin.reauth.confirm', '확인')}</button>
                 </form>
             </section>
         );
@@ -117,15 +120,15 @@ export function ReportDetailPage() {
         return <ErrorBanner error={error}/>;
     }
     if (!report) {
-        return <p className="muted">불러오는 중…</p>;
+        return <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
     return (
         <article className="card">
             <h1>#{report.id} {report.title}</h1>
-            <p><span className="badge">{REPORT_STATUS[report.status]}</span> <span className="muted small">{formatDateTime(report.createdAt)}</span></p>
+            <p><span className="badge">{reportStatus(t)[report.status]}</span> <span className="muted small">{formatDateTime(report.createdAt)}</span></p>
             <HtmlView html={report.contentHtml}/>
-            <h2>답변</h2>
-            {report.answers.length === 0 && <p className="muted">아직 답변이 없습니다.</p>}
+            <h2>{t('shop.report.answer', '답변')}</h2>
+            {report.answers.length === 0 && <p className="muted">{t('shop.report.noAnswers', '아직 답변이 없습니다.')}</p>}
             {report.answers.map((answer) => (
                 <div key={answer.id} className="answer">
                     <strong>{answer.title}</strong>
@@ -138,6 +141,7 @@ export function ReportDetailPage() {
 }
 
 export function MyReportsPage() {
+    const {t} = useI18n();
     const [data, setData] = useState<Page<ReportSummary> | null>(null);
     const [error, setError] = useState<unknown>(null);
     useEffect(() => {
@@ -145,19 +149,19 @@ export function MyReportsPage() {
     }, []);
     return (
         <section className="card">
-            <h1>나의 신고</h1>
+            <h1>{t('shop.report.myReports', '나의 신고')}</h1>
             <ErrorBanner error={error}/>
             <ul className="list">
                 {data?.content.map((report) => (
                     <li key={report.id}>
                         <Link to={`/reports/${report.id}`}>#{report.id} {report.title}</Link>
-                        <span className="badge">{REPORT_STATUS[report.status]}</span>
+                        <span className="badge">{reportStatus(t)[report.status]}</span>
                         <span className="muted small"> {formatDateTime(report.createdAt)}</span>
                     </li>
                 ))}
-                {data?.content.length === 0 && <li className="muted">접수 내역이 없습니다.</li>}
+                {data?.content.length === 0 && <li className="muted">{t('shop.report.noneSubmitted', '접수 내역이 없습니다.')}</li>}
             </ul>
-            <Link className="button primary" to="/reports/new">새로 접수</Link>
+            <Link className="button primary" to="/reports/new">{t('shop.report.newReport', '새로 접수')}</Link>
         </section>
     );
 }

@@ -3,9 +3,15 @@ import {request} from './client';
 
 export type AdminArea = 'STATUS' | 'SITE' | 'CONTENT' | 'BUSINESS' | 'CS' | 'PUBLIC' | 'MEMBER' | 'COMMON' | 'SECURITY';
 
-export const ADMIN_AREA: Record<AdminArea, string> = {
-    STATUS: '현황', SITE: '사이트', CONTENT: '컨텐츠', BUSINESS: '비즈니스', CS: 'CS', PUBLIC: '공공', MEMBER: '회원', COMMON: '공통 설정', SECURITY: '보안',
-};
+export const ADMIN_AREA_VALUES: AdminArea[] = ['STATUS', 'SITE', 'CONTENT', 'BUSINESS', 'CS', 'PUBLIC', 'MEMBER', 'COMMON', 'SECURITY'];
+
+type TFunc = (key: string, fallback: string, values?: Record<string, string>) => string;
+
+export const adminArea = (t: TFunc): Record<AdminArea, string> => ({
+    STATUS: t('label.adminArea.STATUS', '현황'), SITE: t('label.adminArea.SITE', '사이트'), CONTENT: t('label.adminArea.CONTENT', '컨텐츠'),
+    BUSINESS: t('label.adminArea.BUSINESS', '비즈니스'), CS: 'CS', PUBLIC: t('label.adminArea.PUBLIC', '공공'),
+    MEMBER: t('label.adminArea.MEMBER', '회원'), COMMON: t('label.adminArea.COMMON', '공통 설정'), SECURITY: t('label.adminArea.SECURITY', '보안'),
+});
 
 export interface AdminGrade {
     id: number;

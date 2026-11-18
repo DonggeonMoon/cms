@@ -4,10 +4,12 @@ import type {UserType} from '../api/types';
 import {useAuth} from '../auth/AuthContext';
 import {ErrorBanner} from '../components/ErrorBanner';
 import {Field} from '../components/Field';
-import {SOCIAL_ERRORS, SocialLoginButtons} from '../components/SocialLoginButtons';
+import {socialErrors, SocialLoginButtons} from '../components/SocialLoginButtons';
 import {StableLabel} from '../components/StableLabel';
+import {useI18n} from '../api/i18n';
 
 export function LoginPage({userType}: { userType: UserType }) {
+    const {t} = useI18n();
     const {login} = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -35,22 +37,24 @@ export function LoginPage({userType}: { userType: UserType }) {
         }
     };
 
+    const errors = socialErrors(t);
     return (
         <section className="card narrow">
-            <h1>{isAdmin ? '관리자 로그인' : '로그인'}</h1>
+            <h1>{isAdmin ? t('admin.login.title', '관리자 로그인') : t('nav.login', '로그인')}</h1>
             <form onSubmit={handleSubmit}>
-                <Field label="아이디" name="username" value={username} autoComplete="username" required
+                <Field label={t('admin.memberJoin.username', '아이디')} name="username" value={username} autoComplete="username" required
                        onChange={(e) => setUsername(e.target.value)}/>
-                <Field label="비밀번호" name="password" type="password" value={password}
+                <Field label={t('admin.memberJoin.password', '비밀번호')} name="password" type="password" value={password}
                        autoComplete="current-password" required onChange={(e) => setPassword(e.target.value)}/>
                 <ErrorBanner error={error}/>
                 <button type="submit" className="primary" disabled={submitting}>
-                    <StableLabel current={submitting ? '로그인 중…' : '로그인'} labels={['로그인 중…', '로그인']}/>
+                    <StableLabel current={submitting ? t('shop.login.loggingIn', '로그인 중…') : t('nav.login', '로그인')}
+                                 labels={[t('shop.login.loggingIn', '로그인 중…'), t('nav.login', '로그인')]}/>
                 </button>
             </form>
-            {!isAdmin && socialError && <p className="field-error">{SOCIAL_ERRORS[socialError] ?? SOCIAL_ERRORS.failed}</p>}
+            {!isAdmin && socialError && <p className="field-error">{errors[socialError] ?? errors.failed}</p>}
             {!isAdmin && <SocialLoginButtons redirect={redirectTo}/>}
-            {!isAdmin && <p className="muted">계정이 없으신가요? <Link to="/join">회원가입</Link></p>}
+            {!isAdmin && <p className="muted">{t('shop.login.noAccount', '계정이 없으신가요?')} <Link to="/join">{t('shop.common.join', '회원가입')}</Link></p>}
         </section>
     );
 }

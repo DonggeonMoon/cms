@@ -5,10 +5,16 @@ import {ErrorBanner} from '../../components/ErrorBanner';
 import {formatBytes, formatDateTime} from '../../components/format';
 import {Pagination} from '../../components/Pagination';
 import {StableLabel} from '../../components/StableLabel';
+import {useI18n} from '../../api/i18n';
 
-const MEDIA_LABELS: Record<MediaType, string> = {DOCUMENT: '문서', IMAGE: '이미지', VIDEO: '영상', AUDIO: '오디오', ETC: '기타'};
+const mediaLabels = (t: (key: string, fallback: string) => string): Record<MediaType, string> => ({
+    DOCUMENT: t('admin.file.media.document', '문서'), IMAGE: t('admin.file.media.image', '이미지'),
+    VIDEO: t('admin.file.media.video', '영상'), AUDIO: t('admin.file.media.audio', '오디오'), ETC: t('admin.file.media.etc', '기타'),
+});
 
 export function FilePage() {
+    const {t} = useI18n();
+    const MEDIA_LABELS = mediaLabels(t);
     const [uploadOpen, setUploadOpen] = useState(false);
     const [keyword, setKeyword] = useState('');
     const [mediaType, setMediaType] = useState<MediaType | ''>('');
@@ -23,7 +29,7 @@ export function FilePage() {
     useEffect(load, [load]);
 
     const remove = async (file: FileInfo) => {
-        if (!window.confirm(`'${file.originalName}' 파일을 삭제할까요?`)) {
+        if (!window.confirm(t('admin.file.confirmDelete', "'{name}' 파일을 삭제할까요?", {name: file.originalName}))) {
             return;
         }
         try {
@@ -36,7 +42,7 @@ export function FilePage() {
 
     return (
         <section className="card">
-            <h1>파일</h1>
+            <h1>{t('admin.nav.files', '파일')}</h1>
             {uploadOpen && (
                 <UploadForm onCancel={() => setUploadOpen(false)} onUploaded={() => {
                     setUploadOpen(false);
@@ -45,23 +51,23 @@ export function FilePage() {
                 }}/>
             )}
             <div className="toolbar list-toolbar">
-                <input aria-label="파일명 검색" placeholder="파일명" value={keyword}
+                <input aria-label={t('admin.file.searchByName', '파일명 검색')} placeholder={t('admin.file.fileName', '파일명')} value={keyword}
                        onChange={(e) => {
                            setKeyword(e.target.value);
                            setPage(0);
                        }}/>
-                <select aria-label="미디어 종류" value={mediaType}
+                <select aria-label={t('admin.file.mediaType', '미디어 종류')} value={mediaType}
                         onChange={(e) => {
                             setMediaType(e.target.value as MediaType | '');
                             setPage(0);
                         }}>
-                    <option value="">전체</option>
+                    <option value="">{t('admin.account.allAreas', '전체')}</option>
                     {Object.entries(MEDIA_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>{label}</option>
                     ))}
                 </select>
                 {!uploadOpen && (
-                    <button type="button" className="primary push-right" onClick={() => setUploadOpen(true)}>업로드</button>
+                    <button type="button" className="primary push-right" onClick={() => setUploadOpen(true)}>{t('admin.file.upload', '업로드')}</button>
                 )}
             </div>
             <ErrorBanner error={error}/>
@@ -70,12 +76,12 @@ export function FilePage() {
                     <table>
                         <thead>
                         <tr>
-                            <th>미리보기</th>
-                            <th>파일명</th>
-                            <th>종류</th>
-                            <th>크기</th>
-                            <th>다운로드</th>
-                            <th>업로드일</th>
+                            <th>{t('admin.file.preview', '미리보기')}</th>
+                            <th>{t('admin.file.fileName', '파일명')}</th>
+                            <th>{t('admin.file.kind', '종류')}</th>
+                            <th>{t('admin.file.size', '크기')}</th>
+                            <th>{t('admin.file.downloadCount', '다운로드')}</th>
+                            <th>{t('admin.file.uploadedAt', '업로드일')}</th>
                             <th/>
                         </tr>
                         </thead>
@@ -93,13 +99,13 @@ export function FilePage() {
                                 <td>{file.downloadCount}</td>
                                 <td>{formatDateTime(file.createdAt)}</td>
                                 <td className="actions">
-                                    <button type="button" className="danger" onClick={() => remove(file)}>삭제</button>
+                                    <button type="button" className="danger" onClick={() => remove(file)}>{t('common.delete', '삭제')}</button>
                                 </td>
                             </tr>
                         ))}
                         {result.content.length === 0 && (
                             <tr>
-                                <td colSpan={7} className="muted">파일이 없습니다.</td>
+                                <td colSpan={7} className="muted">{t('admin.file.none', '파일이 없습니다.')}</td>
                             </tr>
                         )}
                         </tbody>
@@ -112,6 +118,7 @@ export function FilePage() {
 }
 
 function UploadForm({onUploaded, onCancel}: { onUploaded: () => void; onCancel: () => void }) {
+    const {t} = useI18n();
     const inputRef = useRef<HTMLInputElement>(null);
     const [alternativeText, setAlternativeText] = useState('');
     const [error, setError] = useState<unknown>(null);
@@ -141,20 +148,21 @@ function UploadForm({onUploaded, onCancel}: { onUploaded: () => void; onCancel: 
 
     return (
         <form className="inline-form" onSubmit={handleSubmit}>
-            <h2>파일 업로드</h2>
+            <h2>{t('admin.file.uploadTitle', '파일 업로드')}</h2>
             <div className="field">
-                <input ref={inputRef} type="file" aria-label="업로드할 파일" required/>
+                <input ref={inputRef} type="file" aria-label={t('admin.file.fileToUpload', '업로드할 파일')} required/>
             </div>
             <div className="field">
-                <input aria-label="대체 텍스트" placeholder="대체 텍스트 (이미지)" value={alternativeText}
+                <input aria-label={t('admin.file.altText', '대체 텍스트')} placeholder={t('admin.file.altTextPlaceholder', '대체 텍스트 (이미지)')} value={alternativeText}
                        onChange={(e) => setAlternativeText(e.target.value)}/>
             </div>
             <ErrorBanner error={error}/>
             <div className="toolbar form-actions">
                 <button type="submit" className="primary" disabled={uploading}>
-                    <StableLabel current={uploading ? '업로드 중…' : '업로드'} labels={['업로드 중…', '업로드']}/>
+                    <StableLabel current={uploading ? t('admin.file.uploading', '업로드 중…') : t('admin.file.upload', '업로드')}
+                                 labels={[t('admin.file.uploading', '업로드 중…'), t('admin.file.upload', '업로드')]}/>
                 </button>
-                <button type="button" onClick={onCancel}>취소</button>
+                <button type="button" onClick={onCancel}>{t('common.cancel', '취소')}</button>
             </div>
         </form>
     );

@@ -1,9 +1,10 @@
 import {type FormEvent, useEffect, useState} from 'react';
 import {useSearchParams} from 'react-router';
 import type {Category, CategoryAttribute} from '../../api/categories';
+import {useI18n} from '../../api/i18n';
 
-/** 카테고리와 속성 조건을 주소(쿼리)에 담아, 새로고침·뒤로가기·공유해도 같은 목록이 나오게 한다. */
 export function CategoryFilters({categories}: { categories: Category[] }) {
+    const {t} = useI18n();
     const [params, setParams] = useSearchParams();
     const selectedId = params.get('categoryId') ? Number(params.get('categoryId')) : null;
     const selected = categories.find((category) => category.id === selectedId) ?? null;
@@ -29,16 +30,16 @@ export function CategoryFilters({categories}: { categories: Category[] }) {
 
     return (
         <div className="category-filters">
-            <nav className="toolbar" aria-label="카테고리">
+            <nav className="toolbar" aria-label={t('shop.categoryFilters.category', '카테고리')}>
                 <button type="button" className={selectedId == null ? 'primary' : ''} aria-pressed={selectedId == null}
-                        onClick={() => selectCategory(null)}>전체</button>
+                        onClick={() => selectCategory(null)}>{t('admin.account.allAreas', '전체')}</button>
                 {tops.map((category) => (
                     <button key={category.id} type="button" className={topId === category.id ? 'primary' : ''}
                             aria-pressed={selectedId === category.id} onClick={() => selectCategory(category.id)}>{category.name}</button>
                 ))}
             </nav>
             {children.length > 0 && (
-                <nav className="toolbar sub-categories" aria-label="하위 카테고리">
+                <nav className="toolbar sub-categories" aria-label={t('shop.categoryFilters.subCategory', '하위 카테고리')}>
                     {children.map((category) => (
                         <button key={category.id} type="button" className={selectedId === category.id ? 'primary' : ''}
                                 aria-pressed={selectedId === category.id} onClick={() => selectCategory(category.id)}>{category.name}</button>
@@ -83,6 +84,7 @@ function ChoiceFilter({attribute, params, update}: FilterProps) {
 }
 
 function RangeFilter({attribute, params, update}: FilterProps) {
+    const {t} = useI18n();
     const minName = `min.${attribute.key}`;
     const maxName = `max.${attribute.key}`;
     const [min, setMin] = useState(params.get(minName) ?? '');
@@ -103,12 +105,12 @@ function RangeFilter({attribute, params, update}: FilterProps) {
         <form className="attribute-filter" onSubmit={apply}>
             <fieldset>
                 <legend>{attribute.label}{unit}</legend>
-                <input type="number" step="any" aria-label={`${attribute.label} 최소`} placeholder="최소" value={min}
+                <input type="number" step="any" aria-label={t('shop.categoryFilters.minOf', '{label} 최소', {label: attribute.label})} placeholder={t('shop.categoryFilters.min', '최소')} value={min}
                        onChange={(e) => setMin(e.target.value)}/>
                 <span aria-hidden="true"> ~ </span>
-                <input type="number" step="any" aria-label={`${attribute.label} 최대`} placeholder="최대" value={max}
+                <input type="number" step="any" aria-label={t('shop.categoryFilters.maxOf', '{label} 최대', {label: attribute.label})} placeholder={t('shop.categoryFilters.max', '최대')} value={max}
                        onChange={(e) => setMax(e.target.value)}/>
-                <button type="submit">적용</button>
+                <button type="submit">{t('shop.categoryFilters.apply', '적용')}</button>
             </fieldset>
         </form>
     );

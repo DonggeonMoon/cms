@@ -6,13 +6,15 @@ import {type ReactNode, useRef, useState} from 'react';
 import {fileApi} from '../api/files';
 import {ErrorBanner} from './ErrorBanner';
 import {HtmlView} from './HtmlView';
+import {useI18n} from '../api/i18n';
 
 type Mode = 'visual' | 'html' | 'preview';
+type T = (key: string, fallback: string, values?: Record<string, string>) => string;
 
-const MODES: { value: Mode; label: string }[] = [
-    {value: 'visual', label: '편집기'},
+const modes = (t: T): { value: Mode; label: string }[] => [
+    {value: 'visual', label: t('admin.richText.editor', '편집기')},
     {value: 'html', label: 'HTML'},
-    {value: 'preview', label: '미리보기'},
+    {value: 'preview', label: t('admin.richText.preview', '미리보기')},
 ];
 
 const EDITOR_TAGS = new Set([
@@ -48,6 +50,7 @@ export function RichTextEditor({id, label, value, onChange}: {
     value: string;
     onChange: (html: string) => void;
 }) {
+    const {t} = useI18n();
     const [mode, setMode] = useState<Mode>(() => (fitsVisualEditor(value) ? 'visual' : 'html'));
     const editor = useEditor({
         extensions: [
@@ -64,7 +67,7 @@ export function RichTextEditor({id, label, value, onChange}: {
     const changeMode = (next: Mode) => {
         if (next === 'visual' && mode !== 'visual') {
             if (!fitsVisualEditor(value)
-                && !window.confirm('편집기에서 지원하지 않는 HTML 구조(레이아웃, class, 블록 등)가 있습니다. 편집기로 바꾸면 그 부분이 사라질 수 있습니다. 계속할까요?')) {
+                && !window.confirm(t('admin.richText.confirmSwitchToVisual', '편집기에서 지원하지 않는 HTML 구조(레이아웃, class, 블록 등)가 있습니다. 편집기로 바꾸면 그 부분이 사라질 수 있습니다. 계속할까요?'))) {
                 return;
             }
             editor?.commands.setContent(value, {emitUpdate: false});
@@ -74,8 +77,8 @@ export function RichTextEditor({id, label, value, onChange}: {
 
     return (
         <div className="rich-text">
-            <div className="rich-text-modes" role="group" aria-label={`${label} 편집 방식`}>
-                {MODES.map((m) => (
+            <div className="rich-text-modes" role="group" aria-label={t('admin.richText.modeOf', '{label} 편집 방식', {label})}>
+                {modes(t).map((m) => (
                     <button key={m.value} type="button" aria-pressed={mode === m.value}
                             className={mode === m.value ? 'active' : undefined} onClick={() => changeMode(m.value)}>
                         {m.label}
@@ -90,7 +93,7 @@ export function RichTextEditor({id, label, value, onChange}: {
             )}
             {mode === 'html' && (
                 <textarea id={id} rows={12} className="mono" value={value} aria-label={label}
-                          placeholder="<p>내용을 입력하세요</p>" onChange={(e) => onChange(e.target.value)}/>
+                          placeholder={t('admin.richText.htmlPlaceholder', '<p>내용을 입력하세요</p>')} onChange={(e) => onChange(e.target.value)}/>
             )}
             {mode === 'preview' && <div className="html-preview"><HtmlView html={value}/></div>}
         </div>
@@ -98,13 +101,14 @@ export function RichTextEditor({id, label, value, onChange}: {
 }
 
 function Toolbar({editor}: { editor: Editor }) {
+    const {t} = useI18n();
     const fileInput = useRef<HTMLInputElement>(null);
     const [error, setError] = useState<unknown>(null);
     const chain = () => editor.chain().focus();
 
     const setLink = () => {
         const previous = editor.getAttributes('link').href as string | undefined;
-        const href = window.prompt('링크 주소를 입력하세요. 비우면 링크를 지웁니다.', previous ?? 'https://');
+        const href = window.prompt(t('admin.richText.linkPrompt', '링크 주소를 입력하세요. 비우면 링크를 지웁니다.'), previous ?? 'https://');
         if (href === null) {
             return;
         }
@@ -134,35 +138,35 @@ function Toolbar({editor}: { editor: Editor }) {
 
     return (
         <>
-            <div className="rich-text-toolbar" role="toolbar" aria-label="서식">
-                {tool('B', '굵게', editor.isActive('bold'), () => chain().toggleBold().run())}
-                {tool('I', '기울임', editor.isActive('italic'), () => chain().toggleItalic().run())}
-                {tool('U', '밑줄', editor.isActive('underline'), () => chain().toggleUnderline().run())}
-                {tool('S', '취소선', editor.isActive('strike'), () => chain().toggleStrike().run())}
+            <div className="rich-text-toolbar" role="toolbar" aria-label={t('admin.richText.formatting', '서식')}>
+                {tool('B', t('admin.richText.bold', '굵게'), editor.isActive('bold'), () => chain().toggleBold().run())}
+                {tool('I', t('admin.richText.italic', '기울임'), editor.isActive('italic'), () => chain().toggleItalic().run())}
+                {tool('U', t('admin.richText.underline', '밑줄'), editor.isActive('underline'), () => chain().toggleUnderline().run())}
+                {tool('S', t('admin.richText.strike', '취소선'), editor.isActive('strike'), () => chain().toggleStrike().run())}
                 <span className="rich-text-divider" aria-hidden="true"/>
-                {tool('H2', '제목', editor.isActive('heading', {level: 2}), () => chain().toggleHeading({level: 2}).run())}
-                {tool('H3', '소제목', editor.isActive('heading', {level: 3}), () => chain().toggleHeading({level: 3}).run())}
-                {tool('•', '글머리 목록', editor.isActive('bulletList'), () => chain().toggleBulletList().run())}
-                {tool('1.', '번호 목록', editor.isActive('orderedList'), () => chain().toggleOrderedList().run())}
-                {tool('❝', '인용', editor.isActive('blockquote'), () => chain().toggleBlockquote().run())}
-                {tool('―', '구분선', false, () => chain().setHorizontalRule().run())}
+                {tool('H2', t('admin.richText.heading', '제목'), editor.isActive('heading', {level: 2}), () => chain().toggleHeading({level: 2}).run())}
+                {tool('H3', t('admin.richText.subheading', '소제목'), editor.isActive('heading', {level: 3}), () => chain().toggleHeading({level: 3}).run())}
+                {tool('•', t('admin.richText.bulletList', '글머리 목록'), editor.isActive('bulletList'), () => chain().toggleBulletList().run())}
+                {tool('1.', t('admin.richText.orderedList', '번호 목록'), editor.isActive('orderedList'), () => chain().toggleOrderedList().run())}
+                {tool('❝', t('admin.richText.blockquote', '인용'), editor.isActive('blockquote'), () => chain().toggleBlockquote().run())}
+                {tool('―', t('admin.richText.horizontalRule', '구분선'), false, () => chain().setHorizontalRule().run())}
                 <span className="rich-text-divider" aria-hidden="true"/>
-                {tool('링크', '링크', editor.isActive('link'), setLink)}
-                {tool('이미지', '이미지 올리기', false, () => fileInput.current?.click())}
-                {tool('표', '표 넣기', editor.isActive('table'),
+                {tool(t('admin.richText.link', '링크'), t('admin.richText.link', '링크'), editor.isActive('link'), setLink)}
+                {tool(t('admin.richText.image', '이미지'), t('admin.richText.imageUpload', '이미지 올리기'), false, () => fileInput.current?.click())}
+                {tool(t('admin.richText.table', '표'), t('admin.richText.insertTable', '표 넣기'), editor.isActive('table'),
                     () => chain().insertTable({rows: 3, cols: 3, withHeaderRow: true}).run(), editor.isActive('table'))}
                 {editor.isActive('table') && (
                     <>
-                        {tool('+행', '아래에 행 추가', false, () => chain().addRowAfter().run())}
-                        {tool('+열', '오른쪽에 열 추가', false, () => chain().addColumnAfter().run())}
-                        {tool('−행', '행 삭제', false, () => chain().deleteRow().run())}
-                        {tool('−열', '열 삭제', false, () => chain().deleteColumn().run())}
-                        {tool('표 삭제', '표 삭제', false, () => chain().deleteTable().run())}
+                        {tool(t('admin.richText.addRow', '+행'), t('admin.richText.addRowBelow', '아래에 행 추가'), false, () => chain().addRowAfter().run())}
+                        {tool(t('admin.richText.addColumn', '+열'), t('admin.richText.addColumnRight', '오른쪽에 열 추가'), false, () => chain().addColumnAfter().run())}
+                        {tool(t('admin.richText.removeRow', '−행'), t('admin.richText.deleteRow', '행 삭제'), false, () => chain().deleteRow().run())}
+                        {tool(t('admin.richText.removeColumn', '−열'), t('admin.richText.deleteColumn', '열 삭제'), false, () => chain().deleteColumn().run())}
+                        {tool(t('admin.richText.deleteTable', '표 삭제'), t('admin.richText.deleteTable', '표 삭제'), false, () => chain().deleteTable().run())}
                     </>
                 )}
                 <span className="rich-text-divider" aria-hidden="true"/>
-                {tool('↶', '실행 취소', false, () => chain().undo().run(), !editor.can().undo())}
-                {tool('↷', '다시 실행', false, () => chain().redo().run(), !editor.can().redo())}
+                {tool('↶', t('admin.richText.undo', '실행 취소'), false, () => chain().undo().run(), !editor.can().undo())}
+                {tool('↷', t('admin.richText.redo', '다시 실행'), false, () => chain().redo().run(), !editor.can().redo())}
                 <input ref={fileInput} type="file" accept="image/*" hidden onChange={(e) => {
                     const file = e.target.files?.[0];
                     e.target.value = '';

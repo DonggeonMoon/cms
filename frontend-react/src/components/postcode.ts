@@ -30,10 +30,12 @@ export async function searchJusoAddress(keyword: string): Promise<PostcodeResult
     return results;
 }
 
+type TFunc = (key: string, fallback: string, values?: Record<string, string>) => string;
+
 const POSTCODE_SCRIPT = 'https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
 let loading: Promise<void> | null = null;
 
-function loadPostcodeScript(): Promise<void> {
+function loadPostcodeScript(t: TFunc): Promise<void> {
     if (window.daum?.Postcode) {
         return Promise.resolve();
     }
@@ -43,7 +45,7 @@ function loadPostcodeScript(): Promise<void> {
             script.src = POSTCODE_SCRIPT;
             script.async = true;
             script.onload = () => resolve();
-            script.onerror = () => reject(new Error('우편번호 검색 스크립트를 불러오지 못했습니다.'));
+            script.onerror = () => reject(new Error(t('shop.postcode.scriptLoadFailed', '우편번호 검색 스크립트를 불러오지 못했습니다.')));
             document.head.appendChild(script);
         });
         loading.catch(() => {
@@ -54,8 +56,8 @@ function loadPostcodeScript(): Promise<void> {
 }
 
 /** 다음(카카오) 우편번호 검색 팝업을 연다. 다른 서드파티로 바꾸려면 이 함수만 바꾸면 된다. */
-export async function openPostcodeSearch(): Promise<PostcodeResult> {
-    await loadPostcodeScript();
+export async function openPostcodeSearch(t: TFunc): Promise<PostcodeResult> {
+    await loadPostcodeScript(t);
     return new Promise((resolve) => {
         new window.daum.Postcode({
             oncomplete: (data: PostcodeResult) => resolve(data),

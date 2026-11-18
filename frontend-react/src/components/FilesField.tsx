@@ -2,10 +2,12 @@ import {type ReactNode, useState} from 'react';
 import {fileApi} from '../api/files';
 import type {FileInfo} from '../api/types';
 import {ErrorBanner} from './ErrorBanner';
+import {useI18n} from '../api/i18n';
 
 export function FilesField({label, value, onChange, help}: {
     label: ReactNode; value: FileInfo[]; onChange: (v: FileInfo[]) => void; help?: ReactNode;
 }) {
+    const {t} = useI18n();
     const [error, setError] = useState<unknown>(null);
     const [uploading, setUploading] = useState(false);
     return (
@@ -16,12 +18,12 @@ export function FilesField({label, value, onChange, help}: {
                     <li key={file.id}>
                         {file.originalName}
                         <button type="button" className="link-button" onClick={() => onChange(value.filter((f) => f.id !== file.id))}>
-                            제거
+                            {t('admin.filesField.remove', '제거')}
                         </button>
                     </li>
                 ))}
             </ul>
-            <input type="file" multiple aria-label="첨부파일 추가" disabled={uploading} onChange={async (e) => {
+            <input type="file" multiple aria-label={t('admin.filesField.add', '첨부파일 추가')} disabled={uploading} onChange={async (e) => {
                 const files = Array.from(e.target.files ?? []);
                 e.target.value = '';
                 setUploading(true);
@@ -38,7 +40,7 @@ export function FilesField({label, value, onChange, help}: {
                     setUploading(false);
                 }
             }}/>
-            {uploading && <p className="muted small">업로드 중…</p>}
+            {uploading && <p className="muted small">{t('admin.filesField.uploading', '업로드 중…')}</p>}
             <ErrorBanner error={error}/>
             {help}
         </div>

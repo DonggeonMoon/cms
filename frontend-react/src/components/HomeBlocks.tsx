@@ -6,17 +6,21 @@ import {useAuth} from '../auth/AuthContext';
 import {ProductCard} from '../pages/shop/ShopPages';
 import {formatDateTime} from './format';
 import {useSite} from './SiteContext';
+import {useI18n} from '../api/i18n';
 
-export const HOME_BLOCKS: Record<string, { label: string; render: () => ReactNode }> = {
-    'product-search': {label: '상품 검색창', render: () => <ProductSearch/>},
-    'greeting': {label: '로그인 안내·환영 문구', render: () => <Greeting/>},
-    'shortcuts': {label: '바로가기 버튼', render: () => <Shortcuts/>},
-    'new-products': {label: '새로 들어온 상품 8개', render: () => <NewProducts/>},
-    'open-programs': {label: '모집 중인 프로그램', render: () => <OpenReservationItems/>},
-    'latest-posts': {label: '첫 번째 아카이브(없으면 게시판)의 최근 글', render: () => <LatestPosts/>},
-};
+type T = (key: string, fallback: string, values?: Record<string, string>) => string;
+
+export const homeBlocks = (t: T): Record<string, { label: string; render: () => ReactNode }> => ({
+    'product-search': {label: t('shop.homeBlocks.productSearch', '상품 검색창'), render: () => <ProductSearch/>},
+    'greeting': {label: t('shop.homeBlocks.greeting', '로그인 안내·환영 문구'), render: () => <Greeting/>},
+    'shortcuts': {label: t('shop.homeBlocks.shortcuts', '바로가기 버튼'), render: () => <Shortcuts/>},
+    'new-products': {label: t('shop.homeBlocks.newProducts', '새로 들어온 상품 8개'), render: () => <NewProducts/>},
+    'open-programs': {label: t('shop.homeBlocks.openPrograms', '모집 중인 프로그램'), render: () => <OpenReservationItems/>},
+    'latest-posts': {label: t('shop.homeBlocks.latestPosts', '첫 번째 아카이브(없으면 게시판)의 최근 글'), render: () => <LatestPosts/>},
+});
 
 export function ProductSearch() {
+    const {t} = useI18n();
     const {isEnabled} = useSite();
     const navigate = useNavigate();
     const [keyword, setKeyword] = useState('');
@@ -29,23 +33,29 @@ export function ProductSearch() {
     };
     return (
         <form className="hero-search" role="search" onSubmit={search}>
-            <input aria-label="상품 검색" placeholder="어떤 물건을 찾고 계세요?" value={keyword}
+            <input aria-label={t('shop.homeBlocks.productSearchLabel', '상품 검색')} placeholder={t('shop.homeBlocks.productSearchPlaceholder', '어떤 물건을 찾고 계세요?')} value={keyword}
                    onChange={(e) => setKeyword(e.target.value)}/>
-            <button type="submit" className="primary">검색</button>
+            <button type="submit" className="primary">{t('common.search', '검색')}</button>
         </form>
     );
 }
 
 export function Greeting() {
+    const {t} = useI18n();
     const {user} = useAuth();
     return (
         <p className="hero-greeting">
-            {user ? `${user.name}님, 환영합니다.` : <><Link to="/login">로그인</Link>하거나 <Link to="/join">회원가입</Link>하세요.</>}
+            {user ? t('shop.homeBlocks.welcome', '{name}님, 환영합니다.', {name: user.name}) : (
+                <>
+                    <Link to="/login">{t('nav.login', '로그인')}</Link>{t('shop.homeBlocks.orJoin1', '하거나')} <Link to="/join">{t('shop.common.join', '회원가입')}</Link>{t('shop.homeBlocks.orJoin2', '하세요.')}
+                </>
+            )}
         </p>
     );
 }
 
 export function Shortcuts() {
+    const {t} = useI18n();
     const {isEnabled} = useSite();
     const [boards, setBoards] = useState<Board[]>([]);
     useEffect(() => {
@@ -54,23 +64,24 @@ export function Shortcuts() {
 
     const shortcuts = [
         ...(isEnabled('BOARD') ? boards.map((board) => ({to: `/boards/${board.id}`, label: board.name})) : []),
-        ...(isEnabled('PRODUCT') ? [{to: '/products', label: '상품'}] : []),
-        ...(isEnabled('PROGRAM') ? [{to: '/reservation-items', label: '프로그램 신청'}] : []),
-        ...(isEnabled('QNA') ? [{to: '/qna', label: '질문답변'}] : []),
-        ...(isEnabled('REPORT') ? [{to: '/reports/new', label: '신고'}] : []),
-        ...(isEnabled('MAP') ? [{to: '/map', label: '오시는 길·지점 안내'}] : []),
+        ...(isEnabled('PRODUCT') ? [{to: '/products', label: t('shop.homeBlocks.product', '상품')}] : []),
+        ...(isEnabled('PROGRAM') ? [{to: '/reservation-items', label: t('shop.homeBlocks.programApply', '프로그램 신청')}] : []),
+        ...(isEnabled('QNA') ? [{to: '/qna', label: t('shop.homeBlocks.qna', '질문답변')}] : []),
+        ...(isEnabled('REPORT') ? [{to: '/reports/new', label: t('shop.homeBlocks.report', '신고')}] : []),
+        ...(isEnabled('MAP') ? [{to: '/map', label: t('shop.homeBlocks.map', '오시는 길·지점 안내')}] : []),
     ];
     if (shortcuts.length === 0) {
         return null;
     }
     return (
-        <nav className="chip-row" aria-label="바로가기">
+        <nav className="chip-row" aria-label={t('shop.homeBlocks.shortcuts', '바로가기')}>
             {shortcuts.map((shortcut) => <Link key={shortcut.to} to={shortcut.to} className="chip">{shortcut.label}</Link>)}
         </nav>
     );
 }
 
 export function NewProducts() {
+    const {t} = useI18n();
     const {isEnabled} = useSite();
     const enabled = isEnabled('PRODUCT');
     const [products, setProducts] = useState<ProductSummary[]>([]);
@@ -86,8 +97,8 @@ export function NewProducts() {
     return (
         <section className="home-section">
             <div className="section-head">
-                <h2>새로 들어온 상품</h2>
-                <Link to="/products">전체 보기</Link>
+                <h2>{t('shop.homeBlocks.newProductsTitle', '새로 들어온 상품')}</h2>
+                <Link to="/products">{t('shop.homeBlocks.viewAll', '전체 보기')}</Link>
             </div>
             <div className="product-grid">
                 {products.map((product) => <ProductCard key={product.id} product={product}/>)}
@@ -97,6 +108,7 @@ export function NewProducts() {
 }
 
 export function OpenReservationItems() {
+    const {t} = useI18n();
     const {isEnabled} = useSite();
     const enabled = isEnabled('PROGRAM');
     const [items, setItems] = useState<ReservationItem[]>([]);
@@ -113,8 +125,8 @@ export function OpenReservationItems() {
     return (
         <section className="home-section">
             <div className="section-head">
-                <h2>모집 중인 프로그램</h2>
-                <Link to="/reservation-items">전체 보기</Link>
+                <h2>{t('shop.homeBlocks.openProgramsTitle', '모집 중인 프로그램')}</h2>
+                <Link to="/reservation-items">{t('shop.homeBlocks.viewAll', '전체 보기')}</Link>
             </div>
             <ul className="list home-list">
                 {items.map((item) => (
@@ -136,6 +148,7 @@ interface LatestPost {
 }
 
 export function LatestPosts() {
+    const {t} = useI18n();
     const {isEnabled} = useSite();
     const [boards, setBoards] = useState<Board[]>([]);
     const [archives, setArchives] = useState<Archive[]>([]);
@@ -168,13 +181,13 @@ export function LatestPosts() {
         <section className="home-section">
             <div className="section-head">
                 <h2>{news.name}</h2>
-                <Link to={news.path}>전체 보기</Link>
+                <Link to={news.path}>{t('shop.homeBlocks.viewAll', '전체 보기')}</Link>
             </div>
             <ul className="list home-list">
                 {posts.map((post) => (
                     <li key={post.id}>
                         <Link to={`${news.path}/articles/${post.id}`}>
-                            {post.isNotice && <span className="badge">공지</span>} {post.title}
+                            {post.isNotice && <span className="badge">{t('shop.board.notice', '공지')}</span>} {post.title}
                         </Link>
                         <span className="muted small">{post.createdAt.slice(0, 10)}</span>
                     </li>

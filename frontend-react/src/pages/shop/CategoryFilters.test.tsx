@@ -12,8 +12,8 @@ function respond(status: number, body?: unknown) {
 const brand = {key: 'brand', label: '브랜드', type: 'SELECT', options: ['가나', '다라'], unit: null, filterable: true};
 const weight = {key: 'weight', label: '무게', type: 'NUMBER', options: null, unit: 'kg', filterable: true};
 const CATEGORIES = [
-    {id: 1, name: '가전', parentId: null, sequence: 0, attributes: [brand], effectiveAttributes: [brand], productCount: 0},
-    {id: 2, name: '노트북', parentId: 1, sequence: 0, attributes: [weight], effectiveAttributes: [brand, weight], productCount: 1},
+    {id: 1, name: '가전', parentId: null, sequence: 0, attributes: [brand], effectiveAttributes: [brand], itemCount: 0},
+    {id: 2, name: '노트북', parentId: 1, sequence: 0, attributes: [weight], effectiveAttributes: [brand, weight], itemCount: 1},
 ];
 
 describe('product category filters', () => {
@@ -23,7 +23,7 @@ describe('product category filters', () => {
         const searched: string[] = [];
         vi.stubGlobal('fetch', vi.fn(async (url: string) => {
             if (url === '/api/auth/me') return respond(401, {code: 'UNAUTHORIZED', message: ''});
-            if (url === '/api/product-categories') return respond(200, CATEGORIES);
+            if (url === '/api/categories') return respond(200, CATEGORIES);
             if (url.startsWith('/api/products')) {
                 searched.push(decodeURIComponent(url));
                 return respond(200, {content: [], page: {size: 12, number: 0, totalElements: 0, totalPages: 0}});

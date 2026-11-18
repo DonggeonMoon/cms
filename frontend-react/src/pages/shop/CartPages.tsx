@@ -10,26 +10,28 @@ import {PriceNotice} from '../../components/PriceNotice';
 import {estimateShipping} from '../../components/shipping';
 import {Thumbnail} from '../../components/Thumbnail';
 import {type DiscountChoice, DiscountSelector, NO_DISCOUNT} from './DiscountSelector';
+import {useI18n} from '../../api/i18n';
 
 function ShippingLine({policy, tax, rates, items, postalCode}: {
     policy: ShippingPolicy | null; tax: TaxSetting | null; rates: ExchangeRate[]; items: CartItem[]; postalCode?: string | null;
 }) {
+    const {t} = useI18n();
     const shippable = items.filter((item) => item.requiresShipping);
     const subtotal = shippable.reduce((sum, item) => sum + Number(item.amount), 0);
     const shipping = estimateShipping(policy, shippable.length > 0, subtotal, postalCode);
     const itemsAmount = items.reduce((sum, item) => sum + Number(item.amount), 0);
     return (
         <dl className="meta summary">
-            <dt>상품 금액</dt>
+            <dt>{t('shop.cart.itemsAmount', '상품 금액')}</dt>
             <dd>{won(itemsAmount)}</dd>
-            <dt>배송비</dt>
+            <dt>{t('shop.cart.shippingFee', '배송비')}</dt>
             <dd>
-                {won(shipping.fee)}{shipping.regionName && <span className="muted small"> ({shipping.regionName} 추가 포함)</span>}
+                {won(shipping.fee)}{shipping.regionName && <span className="muted small"> {t('shop.cart.regionFeeIncluded', '({region} 추가 포함)', {region: shipping.regionName})}</span>}
                 {shipping.remainingForFree != null && shipping.remainingForFree > 0 && (
-                    <div className="muted small">{won(shipping.remainingForFree)} 더 담으면 기본 배송비가 무료입니다.</div>
+                    <div className="muted small">{t('shop.cart.freeShippingRemaining', '{amount} 더 담으면 기본 배송비가 무료입니다.', {amount: won(shipping.remainingForFree)})}</div>
                 )}
             </dd>
-            <dt>결제 예정 금액</dt>
+            <dt>{t('shop.checkoutForm.purchase.totalLabel', '결제 예정 금액')}</dt>
             <dd className="price">{won(itemsAmount + shipping.fee)}</dd>
             <PriceNotice amount={itemsAmount + shipping.fee} tax={tax} rates={rates}/>
         </dl>
@@ -37,6 +39,7 @@ function ShippingLine({policy, tax, rates, items, postalCode}: {
 }
 
 export function CartPage() {
+    const {t} = useI18n();
     const navigate = useNavigate();
     const [cart, setCart] = useState<Cart | null>(null);
     const [policy, setPolicy] = useState<ShippingPolicy | null>(null);
@@ -53,7 +56,7 @@ export function CartPage() {
     useEffect(() => {
         apply(shopApi.cart());
         shopApi.shippingPolicy().then(setPolicy).catch(() => setPolicy(null));
-        shopApi.taxSetting().then((t) => setTax(t ?? null)).catch(() => setTax(null));
+        shopApi.taxSetting().then((setting) => setTax(setting ?? null)).catch(() => setTax(null));
         shopApi.exchangeRates().then((r) => setRates(r ?? [])).catch(() => setRates([]));
         memberApi.me().then((me) => setPostalCode(me.postalCode ?? null)).catch(() => undefined);
     }, [apply]);
@@ -70,33 +73,33 @@ export function CartPage() {
     });
 
     if (!cart) {
-        return error ? <ErrorBanner error={error}/> : <p className="muted">불러오는 중…</p>;
+        return error ? <ErrorBanner error={error}/> : <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
     return (
         <section className="card">
-            <h1>장바구니</h1>
+            <h1>{t('shop.cart.title', '장바구니')}</h1>
             <ErrorBanner error={error}/>
             {cart.items.length === 0 ? (
-                <p className="muted">장바구니가 비어 있습니다. <Link to="/products">상품 보러 가기</Link></p>
+                <p className="muted">{t('shop.cart.empty', '장바구니가 비어 있습니다.')} <Link to="/products">{t('shop.cart.goShopping', '상품 보러 가기')}</Link></p>
             ) : (
                 <>
                     <ul className="cart-list">
                         {cart.items.map((item) => (
                             <li key={item.id} className={item.available ? undefined : 'unavailable'}>
-                                <input type="checkbox" aria-label={`${item.productName} 선택`} disabled={!item.available}
+                                <input type="checkbox" aria-label={t('shop.cart.selectItem', '{name} 선택', {name: item.productName})} disabled={!item.available}
                                        checked={item.available && !unselected.has(item.id)} onChange={() => toggle(item.id)}/>
                                 <Thumbnail src={item.imageUrl} name={item.productName}/>
                                 <div className="cart-item-info">
                                     <Link to={`/products/${item.productId}`}>{item.productName}</Link>
                                     {item.optionName && <span className="muted small">{item.optionName}</span>}
                                     <span className="muted small">{won(item.unitPrice)}</span>
-                                    {!item.available && <span className="badge danger">주문 불가 (판매 중지·품절)</span>}
+                                    {!item.available && <span className="badge danger">{t('shop.cart.unavailable', '주문 불가 (판매 중지·품절)')}</span>}
                                 </div>
-                                <input type="number" aria-label={`${item.productName} 수량`} min={1} max={item.stock ?? 999}
+                                <input type="number" aria-label={t('shop.cart.quantityOf', '{name} 수량', {name: item.productName})} min={1} max={item.stock ?? 999}
                                        value={item.quantity}
                                        onChange={(e) => apply(shopApi.changeCartQuantity(item.id, Math.max(1, Number(e.target.value) || 1)))}/>
                                 <strong>{won(item.amount)}</strong>
-                                <button type="button" className="danger" onClick={() => apply(shopApi.removeFromCart(item.id))}>삭제</button>
+                                <button type="button" className="danger" onClick={() => apply(shopApi.removeFromCart(item.id))}>{t('common.delete', '삭제')}</button>
                             </li>
                         ))}
                     </ul>
@@ -104,7 +107,7 @@ export function CartPage() {
                     <div className="toolbar form-actions">
                         <button type="button" className="primary" disabled={selected.length === 0}
                                 onClick={() => navigate(`/orders/cart?items=${selected.map((item) => item.id).join(',')}`)}>
-                            선택 상품 주문하기 ({selected.length})
+                            {t('shop.cart.orderSelected', '선택 상품 주문하기 ({count})', {count: String(selected.length)})}
                         </button>
                     </div>
                 </>
@@ -114,6 +117,7 @@ export function CartPage() {
 }
 
 export function CartOrderPage() {
+    const {t} = useI18n();
     const [params] = useSearchParams();
     const navigate = useNavigate();
     const ids = useMemo(() => (params.get('items') ?? '').split(',').map(Number).filter(Boolean), [params]);
@@ -136,7 +140,7 @@ export function CartOrderPage() {
     }, [ids]);
 
     if (!items) {
-        return error ? <ErrorBanner error={error}/> : <p className="muted">불러오는 중…</p>;
+        return error ? <ErrorBanner error={error}/> : <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
     const needsAddress = items.some((item) => item.requiresShipping);
     const previewLines = items.map((item) => ({productId: item.productId, productOptionId: item.productOptionId, quantity: item.quantity}));
@@ -156,8 +160,8 @@ export function CartOrderPage() {
 
     return (
         <section className="card">
-            <h1>주문 정보 입력</h1>
-            {items.length === 0 ? <p className="muted">주문할 상품이 없습니다. <Link to="/cart">장바구니로</Link></p> : (
+            <h1>{t('shop.checkoutForm.purchase.title', '주문 정보 입력')}</h1>
+            {items.length === 0 ? <p className="muted">{t('shop.cart.noOrderItems', '주문할 상품이 없습니다.')} <Link to="/cart">{t('shop.cart.toCart', '장바구니로')}</Link></p> : (
                 <form onSubmit={submit}>
                     <ul className="plain-list">
                         {items.map((item) => (
@@ -167,26 +171,26 @@ export function CartOrderPage() {
                         ))}
                     </ul>
                     <fieldset>
-                        <legend>배송 정보</legend>
-                        <Field label="수령인" name="receiverName" required value={receiver.receiverName}
+                        <legend>{t('shop.checkoutForm.shippingInfo', '배송 정보')}</legend>
+                        <Field label={t('shop.checkoutForm.receiverName', '수령인')} name="receiverName" required value={receiver.receiverName}
                                onChange={(e) => setReceiver({...receiver, receiverName: e.target.value})}/>
-                        <Field label="연락처" name="phoneNumber" type="tel" required value={receiver.phoneNumber}
+                        <Field label={t('admin.guestPosting.phone', '연락처')} name="phoneNumber" type="tel" required value={receiver.phoneNumber}
                                onChange={(e) => setReceiver({...receiver, phoneNumber: e.target.value})}/>
-                        <Field label="우편번호" name="postalCode" value={receiver.postalCode}
+                        <Field label={t('shop.profile.postalCode', '우편번호')} name="postalCode" value={receiver.postalCode}
                                onChange={(e) => setReceiver({...receiver, postalCode: e.target.value})}/>
-                        <Field label="주소" name="address" required={needsAddress} value={receiver.address}
+                        <Field label={t('admin.order.field.address', '주소')} name="address" required={needsAddress} value={receiver.address}
                                onChange={(e) => setReceiver({...receiver, address: e.target.value})}/>
-                        <Field label="상세 주소" name="detailAddress" value={receiver.detailAddress}
+                        <Field label={t('shop.profile.detailAddress', '상세 주소')} name="detailAddress" value={receiver.detailAddress}
                                onChange={(e) => setReceiver({...receiver, detailAddress: e.target.value})}/>
-                        <Field label="해외 배송 국가 코드 (국내는 비움, 예: US, JP)" name="country" value={receiver.country}
+                        <Field label={t('shop.cart.countryCode', '해외 배송 국가 코드 (국내는 비움, 예: US, JP)')} name="country" value={receiver.country}
                                onChange={(e) => setReceiver({...receiver, country: e.target.value.toUpperCase()})}/>
                     </fieldset>
                     <DiscountSelector lines={previewLines} postalCode={receiver.postalCode} value={discount} onChange={setDiscount}/>
                     <ErrorBanner error={error}/>
                     <div className="toolbar form-actions">
-                        <button type="button" onClick={() => navigate('/cart')}>장바구니로</button>
+                        <button type="button" onClick={() => navigate('/cart')}>{t('shop.cart.toCart', '장바구니로')}</button>
                         <button type="submit" className="primary" disabled={submitting}>
-                            {submitting ? '주문 중…' : '주문하고 결제하기'}
+                            {submitting ? t('shop.cart.ordering', '주문 중…') : t('shop.checkoutForm.purchase.submit', '주문하고 결제하기')}
                         </button>
                     </div>
                 </form>

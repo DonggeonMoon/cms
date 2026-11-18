@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import type {MapProvider} from '../../api/domain';
 import {externalLinks, type LatLng, loadMapSdk, type Place} from './mapSdk';
+import {useI18n} from '../../api/i18n';
 
 interface Props {
     provider: MapProvider;
@@ -15,6 +16,7 @@ interface Props {
 const SEOUL_CITY_HALL: LatLng = {lat: 37.5666103, lng: 126.9783882};
 
 export function MapView({provider, apiKey, places, focus, height = 380, onPick, missingKeyMessage}: Props) {
+    const {t} = useI18n();
     const containerRef = useRef<HTMLDivElement>(null);
     const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading');
     const pickRef = useRef(onPick);
@@ -50,14 +52,14 @@ export function MapView({provider, apiKey, places, focus, height = 380, onPick, 
             <div className="map-fallback" style={{minHeight: Math.min(height, 200)}}>
                 <p className="muted">
                     {!apiKey
-                        ? missingKeyMessage ?? '지도를 표시할 수 없습니다. 아래 링크로 위치를 확인해 주세요.'
-                        : '지도를 불러오지 못했습니다. 지도 키와 등록된 도메인을 확인해 주세요.'}
+                        ? missingKeyMessage ?? t('shop.mapView.noKey', '지도를 표시할 수 없습니다. 아래 링크로 위치를 확인해 주세요.')
+                        : t('shop.mapView.loadFailed', '지도를 불러오지 못했습니다. 지도 키와 등록된 도메인을 확인해 주세요.')}
                 </p>
                 <ul className="list">
                     {places.map((place) => (
                         <li key={`${place.name}-${place.latitude}`}>
                             <strong>{place.name}</strong> {place.address && <span className="muted small">{place.address}</span>}{' '}
-                            {externalLinks(provider, place).map((link) => (
+                            {externalLinks(provider, place, t).map((link) => (
                                 <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="small"> {link.label}</a>
                             ))}
                         </li>
@@ -68,8 +70,8 @@ export function MapView({provider, apiKey, places, focus, height = 380, onPick, 
     }
     return (
         <div className="map-view" style={{height}}>
-            <div ref={containerRef} className="map-canvas" aria-label="지도" role="region"/>
-            {state === 'loading' && <p className="map-loading muted">지도를 불러오는 중…</p>}
+            <div ref={containerRef} className="map-canvas" aria-label={t('shop.mapView.label', '지도')} role="region"/>
+            {state === 'loading' && <p className="map-loading muted">{t('shop.mapView.loading', '지도를 불러오는 중…')}</p>}
         </div>
     );
 }

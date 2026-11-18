@@ -57,14 +57,16 @@ export type NameFormat = 'FULL' | 'SPLIT';
 
 export type PersonalInfoItem = 'BIRTH_DATE' | 'GENDER' | 'EMAIL' | 'TELEPHONE' | 'MOBILE_PHONE' | 'ADDRESS' | 'OFFICE';
 
-export const PERSONAL_INFO_ITEMS: { value: PersonalInfoItem; label: string }[] = [
-    {value: 'BIRTH_DATE', label: '생년월일'},
-    {value: 'GENDER', label: '성별'},
-    {value: 'EMAIL', label: '이메일'},
-    {value: 'TELEPHONE', label: '전화번호'},
-    {value: 'MOBILE_PHONE', label: '휴대폰 번호'},
-    {value: 'ADDRESS', label: '주소'},
-    {value: 'OFFICE', label: '직장 정보'},
+type TFunc = (key: string, fallback: string, values?: Record<string, string>) => string;
+
+export const personalInfoItems = (t: TFunc): { value: PersonalInfoItem; label: string }[] => [
+    {value: 'BIRTH_DATE', label: t('label.personalInfoItem.BIRTH_DATE', '생년월일')},
+    {value: 'GENDER', label: t('label.personalInfoItem.GENDER', '성별')},
+    {value: 'EMAIL', label: t('label.personalInfoItem.EMAIL', '이메일')},
+    {value: 'TELEPHONE', label: t('label.personalInfoItem.TELEPHONE', '전화번호')},
+    {value: 'MOBILE_PHONE', label: t('label.personalInfoItem.MOBILE_PHONE', '휴대폰 번호')},
+    {value: 'ADDRESS', label: t('label.personalInfoItem.ADDRESS', '주소')},
+    {value: 'OFFICE', label: t('label.personalInfoItem.OFFICE', '직장 정보')},
 ];
 
 export type BirthDateInput = 'SELECT' | 'EIGHT_DIGITS' | 'SIX_DIGITS';

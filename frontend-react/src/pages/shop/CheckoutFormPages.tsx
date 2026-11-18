@@ -9,28 +9,40 @@ import {won} from '../../components/AdminCrudPage';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {Field} from '../../components/Field';
 import {formatDate, formatDateTime} from '../../components/format';
-import {BILLING_CYCLE} from '../../components/labels';
+import {billingCycle} from '../../components/labels';
 import {PostcodeButton} from '../../components/PostcodeButton';
 import {PriceNotice} from '../../components/PriceNotice';
 import {reservationUsage} from '../../components/reservationUsage';
 import {StableLabel} from '../../components/StableLabel';
 import {estimateReservation} from './ReservationPicker';
+import {useI18n} from '../../api/i18n';
 
 const positive = (value: string | null, fallback = 1) => Math.max(fallback, Number(value) || fallback);
 
-const MODES: Record<ProductSaleType, { title: string; receiverLegend: string; totalLabel: string; submit: string }> = {
-    PURCHASE: {title: '주문 정보 입력', receiverLegend: '배송 정보', totalLabel: '결제 예정 금액', submit: '주문하고 결제하기'},
-    SUBSCRIPTION: {title: '구독 신청', receiverLegend: '배송 정보', totalLabel: '회차별 결제 금액', submit: '구독하고 결제하기'},
-    DONATION: {title: '후원 정보 입력', receiverLegend: '후원자 정보', totalLabel: '후원 금액', submit: '후원하고 결제하기'},
-    QUOTE: {title: '견적 문의', receiverLegend: '연락처', totalLabel: '', submit: '견적 요청 보내기'},
-    PASS: {title: '이용권 구매', receiverLegend: '구매자 정보', totalLabel: '결제 금액', submit: '구매하고 결제하기'},
-    GIFT_CARD: {title: '상품권 구매', receiverLegend: '구매자 정보', totalLabel: '결제 금액', submit: '구매하고 결제하기'},
-    PREORDER: {title: '예약 판매 주문', receiverLegend: '배송 정보', totalLabel: '결제 예정 금액', submit: '예약 주문하고 결제하기'},
-    FUNDING: {title: '펀딩 참여', receiverLegend: '배송 정보', totalLabel: '결제 금액', submit: '펀딩 참여하고 결제하기'},
+type T = (key: string, fallback: string, values?: Record<string, string>) => string;
+
+const modes = (t: T): Record<ProductSaleType, { title: string; receiverLegend: string; totalLabel: string; submit: string }> => ({
+    PURCHASE: {title: t('shop.checkoutForm.purchase.title', '주문 정보 입력'), receiverLegend: t('shop.checkoutForm.shippingInfo', '배송 정보'),
+        totalLabel: t('shop.checkoutForm.purchase.totalLabel', '결제 예정 금액'), submit: t('shop.checkoutForm.purchase.submit', '주문하고 결제하기')},
+    SUBSCRIPTION: {title: t('shop.checkoutForm.subscription.title', '구독 신청'), receiverLegend: t('shop.checkoutForm.shippingInfo', '배송 정보'),
+        totalLabel: t('shop.checkoutForm.subscription.totalLabel', '회차별 결제 금액'), submit: t('shop.checkoutForm.subscription.submit', '구독하고 결제하기')},
+    DONATION: {title: t('shop.checkoutForm.donation.title', '후원 정보 입력'), receiverLegend: t('shop.checkoutForm.donation.legend', '후원자 정보'),
+        totalLabel: t('shop.checkoutForm.donation.totalLabel', '후원 금액'), submit: t('shop.checkoutForm.donation.submit', '후원하고 결제하기')},
+    QUOTE: {title: t('shop.checkoutForm.quote.title', '견적 문의'), receiverLegend: t('shop.checkoutForm.quote.legend', '연락처'),
+        totalLabel: '', submit: t('shop.checkoutForm.quote.submit', '견적 요청 보내기')},
+    PASS: {title: t('shop.checkoutForm.pass.title', '이용권 구매'), receiverLegend: t('shop.checkoutForm.buyerInfo', '구매자 정보'),
+        totalLabel: t('shop.checkoutForm.pass.totalLabel', '결제 금액'), submit: t('shop.checkoutForm.pass.submit', '구매하고 결제하기')},
+    GIFT_CARD: {title: t('shop.checkoutForm.giftCard.title', '상품권 구매'), receiverLegend: t('shop.checkoutForm.buyerInfo', '구매자 정보'),
+        totalLabel: t('shop.checkoutForm.pass.totalLabel', '결제 금액'), submit: t('shop.checkoutForm.pass.submit', '구매하고 결제하기')},
+    PREORDER: {title: t('shop.checkoutForm.preorder.title', '예약 판매 주문'), receiverLegend: t('shop.checkoutForm.shippingInfo', '배송 정보'),
+        totalLabel: t('shop.checkoutForm.purchase.totalLabel', '결제 예정 금액'), submit: t('shop.checkoutForm.preorder.submit', '예약 주문하고 결제하기')},
+    FUNDING: {title: t('shop.checkoutForm.funding.title', '펀딩 참여'), receiverLegend: t('shop.checkoutForm.shippingInfo', '배송 정보'),
+        totalLabel: t('shop.checkoutForm.pass.totalLabel', '결제 금액'), submit: t('shop.checkoutForm.funding.submit', '펀딩 참여하고 결제하기')},
     INQUIRY: {title: '', receiverLegend: '', totalLabel: '', submit: ''},
-};
+});
 
 export function OrderFormPage() {
+    const {t} = useI18n();
     const [params] = useSearchParams();
     const navigate = useNavigate();
     const productId = Number(params.get('productId'));
@@ -49,7 +61,7 @@ export function OrderFormPage() {
 
     useEffect(() => {
         shopApi.product(productId).then(setProduct).catch(setError);
-        shopApi.taxSetting().then((t) => setTax(t ?? null)).catch(() => setTax(null));
+        shopApi.taxSetting().then((setting) => setTax(setting ?? null)).catch(() => setTax(null));
         shopApi.exchangeRates().then((r) => setRates(r ?? [])).catch(() => setRates([]));
         memberApi.me().then((me) => setReceiver((current) => ({
             receiverName: current.receiverName || me.name || '',
@@ -65,14 +77,14 @@ export function OrderFormPage() {
         return <ErrorBanner error={error}/>;
     }
     if (!product) {
-        return <p className="muted">불러오는 중…</p>;
+        return <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
     const option = product.options.find((o) => String(o.id) === optionId);
     const discount = product.discounts.find((d) => String(d.id) === discountId);
     const subtotal = (Number(product.price) + Number(option?.additionalPrice ?? 0)) * quantity;
     const total = product.saleType === 'DONATION' ? amount
         : discount ? Math.round(subtotal * (100 - Number(discount.rate)) / 100) : subtotal;
-    const mode = MODES[product.saleType ?? 'PURCHASE'];
+    const mode = modes(t)[product.saleType ?? 'PURCHASE'];
     const purchase = (product.saleType ?? 'PURCHASE') === 'PURCHASE';
     const shipsLikePurchase = product.saleType === 'PREORDER' || product.saleType === 'FUNDING';
     const needsAddress = shipsLikePurchase ? product.requiresShipping !== false
@@ -105,50 +117,51 @@ export function OrderFormPage() {
         <section className="card">
             <h1>{mode.title}</h1>
             <dl className="meta">
-                <dt>상품</dt>
+                <dt>{t('shop.checkoutForm.product', '상품')}</dt>
                 <dd><Link to={`/products/${product.id}`}>{product.name}</Link></dd>
-                {option && (<><dt>옵션</dt><dd>{option.name} (+{won(option.additionalPrice)})</dd></>)}
-                {discount && (<><dt>할인</dt><dd>{discount.name} ({discount.rate}%)</dd></>)}
-                {product.saleType !== 'DONATION' && (<><dt>수량</dt><dd>{quantity}개</dd></>)}
-                {product.saleType === 'SUBSCRIPTION' && product.billingCycle && (<><dt>결제 주기</dt><dd>{BILLING_CYCLE[product.billingCycle]}</dd></>)}
-                {product.preorder?.shipDate && (<><dt>출고 예정일</dt><dd>{formatDate(product.preorder.shipDate)}</dd></>)}
-                {product.funding?.deadline && (<><dt>펀딩 마감</dt><dd>{formatDateTime(product.funding.deadline)}</dd></>)}
+                {option && (<><dt>{t('shop.checkoutForm.option', '옵션')}</dt><dd>{option.name} (+{won(option.additionalPrice)})</dd></>)}
+                {discount && (<><dt>{t('shop.product.discount', '할인')}</dt><dd>{discount.name} ({discount.rate}%)</dd></>)}
+                {product.saleType !== 'DONATION' && (<><dt>{t('shop.checkoutForm.quantity', '수량')}</dt><dd>{t('shop.checkoutForm.quantityOf', '{count}개', {count: String(quantity)})}</dd></>)}
+                {product.saleType === 'SUBSCRIPTION' && product.billingCycle && (<><dt>{t('shop.checkoutForm.billingCycle', '결제 주기')}</dt><dd>{billingCycle(t)[product.billingCycle]}</dd></>)}
+                {product.preorder?.shipDate && (<><dt>{t('shop.checkoutForm.shipDate', '출고 예정일')}</dt><dd>{formatDate(product.preorder.shipDate)}</dd></>)}
+                {product.funding?.deadline && (<><dt>{t('shop.checkoutForm.fundingDeadline', '펀딩 마감')}</dt><dd>{formatDateTime(product.funding.deadline)}</dd></>)}
             </dl>
             <form onSubmit={submit}>
                 {product.saleType === 'QUOTE' && (
                     <div className="field">
-                        <label htmlFor="requestMessage">요청 내용</label>
+                        <label htmlFor="requestMessage">{t('shop.checkoutForm.requestMessage', '요청 내용')}</label>
                         <textarea id="requestMessage" rows={5} maxLength={2000} value={requestMessage}
-                                  placeholder="필요한 수량, 일정, 조건 등을 적어 주세요."
+                                  placeholder={t('shop.checkoutForm.requestMessagePlaceholder', '필요한 수량, 일정, 조건 등을 적어 주세요.')}
                                   onChange={(e) => setRequestMessage(e.target.value)}/>
                     </div>
                 )}
                 <fieldset>
                     <legend>{mode.receiverLegend}</legend>
-                    <Field label={product.saleType === 'DONATION' ? '후원자 이름' : product.saleType === 'QUOTE' ? '담당자 이름' : '수령인'}
+                    <Field label={product.saleType === 'DONATION' ? t('shop.checkoutForm.donorName', '후원자 이름')
+                               : product.saleType === 'QUOTE' ? t('shop.checkoutForm.contactName', '담당자 이름') : t('shop.checkoutForm.receiver', '수령인')}
                            name="receiverName" required value={receiver.receiverName}
                            onChange={(e) => setReceiver({...receiver, receiverName: e.target.value})}/>
-                    <Field label="연락처" name="phoneNumber" type="tel" required value={receiver.phoneNumber}
+                    <Field label={t('admin.order.field.phoneNumber', '연락처')} name="phoneNumber" type="tel" required value={receiver.phoneNumber}
                            onChange={(e) => setReceiver({...receiver, phoneNumber: e.target.value})}/>
                     {product.saleType !== 'DONATION' && (
                         <>
                             <div className="row align-end">
-                                <Field label="우편번호" name="postalCode" value={receiver.postalCode}
+                                <Field label={t('admin.order.field.postalCode', '우편번호')} name="postalCode" value={receiver.postalCode}
                                        onChange={(e) => setReceiver({...receiver, postalCode: e.target.value})}/>
                                 <PostcodeButton onFound={(result) => setReceiver({...receiver, postalCode: result.zonecode,
                                     address: result.roadAddress || result.jibunAddress})}/>
                             </div>
-                            <Field label="주소" name="address" required={needsAddress} value={receiver.address}
+                            <Field label={t('admin.order.field.address', '주소')} name="address" required={needsAddress} value={receiver.address}
                                    onChange={(e) => setReceiver({...receiver, address: e.target.value})}/>
-                            <Field label="상세 주소" name="detailAddress" value={receiver.detailAddress}
+                            <Field label={t('admin.order.field.detailAddress', '상세 주소')} name="detailAddress" value={receiver.detailAddress}
                                    onChange={(e) => setReceiver({...receiver, detailAddress: e.target.value})}/>
-                            <Field label="해외 배송 국가 코드 (국내는 비움, 예: US, JP)" name="country" value={receiver.country}
+                            <Field label={t('shop.checkoutForm.countryCode', '해외 배송 국가 코드 (국내는 비움, 예: US, JP)')} name="country" value={receiver.country}
                                    onChange={(e) => setReceiver({...receiver, country: e.target.value.toUpperCase()})}/>
                         </>
                     )}
                 </fieldset>
                 {product.saleType === 'QUOTE'
-                    ? <p className="muted">요청을 보내면 관리자가 견적 금액을 회신합니다. 마이페이지 주문 내역에서 수락하고 결제할 수 있습니다.</p>
+                    ? <p className="muted">{t('shop.checkoutForm.quoteNotice', '요청을 보내면 관리자가 견적 금액을 회신합니다. 마이페이지 주문 내역에서 수락하고 결제할 수 있습니다.')}</p>
                     : (
                         purchase ? (
                             <DiscountSelector postalCode={needsAddress ? receiver.postalCode : null} value={rewards} onChange={setRewards}
@@ -163,9 +176,9 @@ export function OrderFormPage() {
                     )}
                 <ErrorBanner error={error}/>
                 <div className="toolbar form-actions">
-                    <button type="button" onClick={() => navigate(-1)}>이전</button>
+                    <button type="button" onClick={() => navigate(-1)}>{t('shop.checkoutForm.back', '이전')}</button>
                     <button type="submit" className="primary" disabled={submitting}>
-                        <StableLabel current={submitting ? '보내는 중…' : mode.submit} labels={['보내는 중…', mode.submit]}/>
+                        <StableLabel current={submitting ? t('shop.checkoutForm.sending', '보내는 중…') : mode.submit} labels={[t('shop.checkoutForm.sending', '보내는 중…'), mode.submit]}/>
                     </button>
                 </div>
             </form>
@@ -174,6 +187,7 @@ export function OrderFormPage() {
 }
 
 export function ReservationFormPage() {
+    const {t} = useI18n();
     const [params] = useSearchParams();
     const navigate = useNavigate();
     const reservationItemId = Number(params.get('reservationItemId'));
@@ -199,7 +213,7 @@ export function ReservationFormPage() {
 
     useEffect(() => {
         shopApi.reservationItem(reservationItemId).then(setItem).catch(setError);
-        shopApi.taxSetting().then((t) => setTax(t ?? null)).catch(() => setTax(null));
+        shopApi.taxSetting().then((setting) => setTax(setting ?? null)).catch(() => setTax(null));
         shopApi.exchangeRates().then((r) => setRates(r ?? [])).catch(() => setRates([]));
         memberApi.me().then((me) => setForm((current) => ({
             applicantName: current.applicantName || me.name || '',
@@ -214,7 +228,7 @@ export function ReservationFormPage() {
         return <ErrorBanner error={error}/>;
     }
     if (!item) {
-        return <p className="muted">불러오는 중…</p>;
+        return <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
 
     const subtotal = passId ? 0 : item.reservationType === 'PROGRAM' ? Number(item.price) * quantity
@@ -248,31 +262,32 @@ export function ReservationFormPage() {
 
     return (
         <section className="card">
-            <h1>예약 정보 입력</h1>
+            <h1>{t('shop.reservationForm.title', '예약 정보 입력')}</h1>
             <dl className="meta">
-                <dt>예약 상품</dt>
+                <dt>{t('admin.reservation.column.item', '예약 상품')}</dt>
                 <dd><Link to={`/reservation-items/${item.id}`}>{item.name}</Link></dd>
                 {item.reservationType === 'PROGRAM' ? (
                     <>
-                        <dt>진행 일정</dt>
+                        <dt>{t('shop.reservationItem.schedule', '진행 일정')}</dt>
                         <dd>{(() => {
                             const session = item.sessions.find((s) => s.id === sessionId);
                             return session
                                 ? `${formatDateTime(session.startAt)}${session.endAt ? ` ~ ${formatDateTime(session.endAt)}` : ''}${session.name ? ` · ${session.name}` : ''}`
                                 : `${formatDateTime(item.startDateTime)} ~ ${formatDateTime(item.endDateTime)}`;
                         })()}</dd>
-                        <dt>인원</dt>
-                        <dd>{quantity}명</dd>
+                        <dt>{t('shop.reservationItem.partySize', '인원')}</dt>
+                        <dd>{t('shop.reservationForm.peopleCount', '{count}명', {count: String(quantity)})}</dd>
                     </>
                 ) : (
                     <>
-                        <dt>이용</dt>
+                        <dt>{t('admin.reservation.column.usage', '이용')}</dt>
                         <dd>{reservationUsage({reservationType: item.reservationType, ...selection, partySize, partyBreakdown: partyCounts,
-                            cells: selection.cells.map((key) => item.layout?.cells.find((c) => c.key === key)?.label ?? key)})}</dd>
+                            cells: selection.cells.map((key) => item.layout?.cells.find((c) => c.key === key)?.label ?? key)}, t)}</dd>
                         {item.reservationType === 'ITEM_RENTAL' && (
                             <>
-                                <dt>수량</dt>
-                                <dd>{quantity}개{Number(item.depositAmount ?? 0) > 0 && ` · 보증금 ${won(Number(item.depositAmount) * quantity)} 포함`}</dd>
+                                <dt>{t('shop.checkoutForm.quantity', '수량')}</dt>
+                                <dd>{t('shop.checkoutForm.quantityOf', '{count}개', {count: String(quantity)})}
+                                    {Number(item.depositAmount ?? 0) > 0 && t('shop.reservationForm.depositIncluded', ' · 보증금 {amount} 포함', {amount: won(Number(item.depositAmount) * quantity)})}</dd>
                             </>
                         )}
                     </>
@@ -280,71 +295,72 @@ export function ReservationFormPage() {
             </dl>
             <form onSubmit={submit}>
                 <fieldset>
-                    <legend>신청자 정보</legend>
-                    <Field label="신청자" name="applicantName" required value={form.applicantName}
+                    <legend>{t('shop.reservationForm.applicantInfo', '신청자 정보')}</legend>
+                    <Field label={t('admin.reservation.field.applicantName', '신청자')} name="applicantName" required value={form.applicantName}
                            onChange={(e) => setForm({...form, applicantName: e.target.value})}/>
-                    <Field label="연락처" name="phoneNumber" type="tel" required value={form.phoneNumber}
+                    <Field label={t('admin.order.field.phoneNumber', '연락처')} name="phoneNumber" type="tel" required value={form.phoneNumber}
                            onChange={(e) => setForm({...form, phoneNumber: e.target.value})}/>
                 </fieldset>
                 {item.reservationType === 'VISIT' && (
                     <fieldset>
-                        <legend>방문 정보</legend>
+                        <legend>{t('shop.reservationForm.visitInfo', '방문 정보')}</legend>
                         <div className="row align-end">
-                            <Field label="우편번호" name="visitPostalCode" value={visit.visitPostalCode}
+                            <Field label={t('admin.order.field.postalCode', '우편번호')} name="visitPostalCode" value={visit.visitPostalCode}
                                    onChange={(e) => setVisit({...visit, visitPostalCode: e.target.value})}/>
                             <PostcodeButton onFound={(result) => setVisit({...visit, visitPostalCode: result.zonecode,
                                 visitAddress: result.roadAddress || result.jibunAddress})}/>
                         </div>
-                        <Field label="방문 주소" name="visitAddress" required value={visit.visitAddress}
+                        <Field label={t('shop.reservationForm.visitAddress', '방문 주소')} name="visitAddress" required value={visit.visitAddress}
                                onChange={(e) => setVisit({...visit, visitAddress: e.target.value})}/>
-                        <Field label="상세 주소" name="visitDetailAddress" value={visit.visitDetailAddress}
+                        <Field label={t('admin.order.field.detailAddress', '상세 주소')} name="visitDetailAddress" value={visit.visitDetailAddress}
                                onChange={(e) => setVisit({...visit, visitDetailAddress: e.target.value})}/>
                         <div className="field">
-                            <label htmlFor="requestMemo">요청 사항</label>
-                            <textarea id="requestMemo" rows={3} placeholder="주차, 출입 방법, 증상 등" value={visit.requestMemo}
+                            <label htmlFor="requestMemo">{t('shop.reservationForm.requestMemo', '요청 사항')}</label>
+                            <textarea id="requestMemo" rows={3} placeholder={t('shop.reservationForm.requestMemoPlaceholder', '주차, 출입 방법, 증상 등')} value={visit.requestMemo}
                                       onChange={(e) => setVisit({...visit, requestMemo: e.target.value})}/>
                         </div>
                     </fieldset>
                 )}
                 {!passId && (usableCoupons.length > 0 || pointBalance > 0) && (
                     <fieldset>
-                        <legend>쿠폰·포인트</legend>
+                        <legend>{t('shop.reservationForm.couponsAndPoints', '쿠폰·포인트')}</legend>
                         {usableCoupons.length > 0 && (
                             <div className="field">
-                                <label htmlFor="couponIssueId">쿠폰</label>
+                                <label htmlFor="couponIssueId">{t('admin.nav.coupons', '쿠폰')}</label>
                                 <select id="couponIssueId" value={couponIssueId ?? ''}
                                         onChange={(e) => setCouponIssueId(e.target.value ? Number(e.target.value) : null)}>
-                                    <option value="">쿠폰 사용 안 함</option>
+                                    <option value="">{t('shop.reservationForm.noCoupon', '쿠폰 사용 안 함')}</option>
                                     {usableCoupons.map((c) => (
-                                        <option key={c.id} value={c.id}>{c.couponName} ({couponBenefit(c)})</option>
+                                        <option key={c.id} value={c.id}>{c.couponName} ({couponBenefit(c, t)})</option>
                                     ))}
                                 </select>
                             </div>
                         )}
                         {pointBalance > 0 && (
                             <div className="field">
-                                <label htmlFor="usePoints">포인트 (보유 {pointBalance.toLocaleString('ko-KR')}P)</label>
+                                <label htmlFor="usePoints">{t('shop.reservationForm.pointsBalance', '포인트 (보유 {balance}P)', {balance: pointBalance.toLocaleString('ko-KR')})}</label>
                                 <div className="toolbar">
                                     <input id="usePoints" type="number" min={0} max={maxPoints} value={pointsText}
                                            placeholder="0" onChange={(e) => setPointsText(e.target.value)}/>
-                                    <button type="button" onClick={() => setPointsText(String(maxPoints))}>최대 사용</button>
+                                    <button type="button" onClick={() => setPointsText(String(maxPoints))}>{t('shop.reservationForm.useMax', '최대 사용')}</button>
                                 </div>
-                                <p className="muted small">최대 {maxPoints.toLocaleString('ko-KR')}P 쓸 수 있습니다.</p>
+                                <p className="muted small">{t('shop.reservationForm.maxPointsNotice', '최대 {max}P 쓸 수 있습니다.', {max: maxPoints.toLocaleString('ko-KR')})}</p>
                             </div>
                         )}
                     </fieldset>
                 )}
                 <div className="align-right">
-                    <p className="price">결제 금액 {passId ? '이용권 사용 (0원)' : item.reservationType === 'PROGRAM'
-                        ? (Number(item.price) === 0 ? '무료' : won(total))
-                        : won(total)}</p>
+                    <p className="price">{t('shop.reservationItem.paymentAmount', '결제 금액 {amount}', {amount: passId ? t('shop.reservationItem.usePass', '이용권 사용 (0원)') : item.reservationType === 'PROGRAM'
+                        ? (Number(item.price) === 0 ? t('shop.common.free', '무료') : won(total))
+                        : won(total)})}</p>
                     {!passId && <PriceNotice amount={total} tax={tax} rates={rates}/>}
                 </div>
                 <ErrorBanner error={error}/>
                 <div className="toolbar form-actions">
-                    <button type="button" onClick={() => navigate(-1)}>이전</button>
+                    <button type="button" onClick={() => navigate(-1)}>{t('shop.checkoutForm.back', '이전')}</button>
                     <button type="submit" className="primary" disabled={submitting}>
-                        <StableLabel current={submitting ? '신청 중…' : '예약 신청'} labels={['신청 중…', '예약 신청']}/>
+                        <StableLabel current={submitting ? t('shop.reservationForm.applying', '신청 중…') : t('shop.reservationForm.submit', '예약 신청')}
+                                     labels={[t('shop.reservationForm.applying', '신청 중…'), t('shop.reservationForm.submit', '예약 신청')]}/>
                     </button>
                 </div>
             </form>

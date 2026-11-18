@@ -4,7 +4,11 @@ import type {FieldSpec, FormValues} from '../components/SchemaForm';
 
 export type AttributeType = 'SELECT' | 'NUMBER' | 'TEXT';
 
-export const ATTRIBUTE_TYPE: Record<AttributeType, string> = {SELECT: '선택형', NUMBER: '숫자', TEXT: '텍스트'};
+type TFunc = (key: string, fallback: string, values?: Record<string, string>) => string;
+
+export const attributeType = (t: TFunc): Record<AttributeType, string> => ({
+    SELECT: t('label.attributeType.SELECT', '선택형'), NUMBER: t('label.attributeType.NUMBER', '숫자'), TEXT: t('label.attributeType.TEXT', '텍스트'),
+});
 
 export interface CategoryAttribute {
     key: string;
@@ -54,23 +58,23 @@ export const categoryLabel = (categories: Category[], category: Category) => {
 };
 
 /** 예약 상품·신청 폼·스트리밍/교육과정처럼 속성 없이 카테고리만 고르면 되는 입력 폼용 필드. */
-export function categorySelectField(categories: Category[]): FieldSpec[] {
+export function categorySelectField(categories: Category[], t: TFunc): FieldSpec[] {
     if (categories.length === 0) {
         return [];
     }
-    return [{name: 'categoryId', label: '카테고리', type: 'select', wide: true,
+    return [{name: 'categoryId', label: t('label.category.field', '카테고리'), type: 'select', wide: true,
         options: categories.map((category) => ({value: String(category.id), label: categoryLabel(categories, category)}))}];
 }
 
 const attributeFieldName = (categoryId: number, key: string) => `attr:${categoryId}:${key}`;
 
 /** 상품 입력 폼: 카테고리 선택과, 고른 카테고리의 속성 입력칸. 카테고리마다 칸 이름을 나눠 다른 카테고리 값과 섞이지 않게 한다. */
-export function productCategoryFields(categories: Category[]): FieldSpec[] {
+export function productCategoryFields(categories: Category[], t: TFunc): FieldSpec[] {
     if (categories.length === 0) {
         return [];
     }
     return [
-        {name: 'categoryId', label: '카테고리', type: 'select', wide: true,
+        {name: 'categoryId', label: t('label.category.field', '카테고리'), type: 'select', wide: true,
             options: categories.map((category) => ({value: String(category.id), label: categoryLabel(categories, category)}))},
         ...categories.flatMap((category) => category.effectiveAttributes.map((attribute): FieldSpec => ({
             name: attributeFieldName(category.id, attribute.key),

@@ -1,6 +1,7 @@
 import type {LayoutCell, SpaceLayout} from '../api/domain';
 import {won} from './AdminCrudPage';
-import {CELL_KIND} from './labels';
+import {cellKind} from './labels';
+import {useI18n} from '../api/i18n';
 
 interface Props {
     layout: SpaceLayout;
@@ -11,10 +12,11 @@ interface Props {
 }
 
 export function SpaceGrid({layout, selected = [], taken = [], onCellClick, editing = false}: Props) {
+    const {t} = useI18n();
     const at = new Map(layout.cells.map((cell) => [`${cell.row}:${cell.col}`, cell]));
     return (
         <div className="space-grid" style={{gridTemplateColumns: `repeat(${layout.cols}, minmax(2.6rem, 1fr))`}}
-             role="grid" aria-label="배치표">
+             role="grid" aria-label={t('shop.spaceGrid.label', '배치표')}>
             {Array.from({length: layout.rows * layout.cols}, (_, index) => {
                 const row = Math.floor(index / layout.cols);
                 const col = index % layout.cols;
@@ -24,7 +26,7 @@ export function SpaceGrid({layout, selected = [], taken = [], onCellClick, editi
                 const isTaken = cell != null && taken.includes(cell.key);
                 const isSelected = cell != null && selected.includes(cell.key);
                 const clickable = editing || (bookable && !isTaken);
-                const title = cell ? `${CELL_KIND[kind]} ${cell.label}${cell.price != null ? ` · ${won(cell.price)}` : ''}${isTaken ? ' (예약됨)' : ''}` : '빈칸';
+                const title = cell ? `${cellKind(t)[kind]} ${cell.label}${cell.price != null ? ` · ${won(cell.price)}` : ''}${isTaken ? ` ${t('shop.spaceGrid.taken', '(예약됨)')}` : ''}` : t('shop.spaceGrid.empty', '빈칸');
                 return (
                     <button key={index} type="button" role="gridcell" title={title} aria-label={title}
                             aria-pressed={bookable && !editing ? isSelected : undefined}

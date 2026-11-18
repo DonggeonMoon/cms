@@ -13,9 +13,11 @@ import {HtmlView} from '../../components/HtmlView';
 import {Pagination} from '../../components/Pagination';
 import {type FieldSpec, SchemaForm} from '../../components/SchemaForm';
 import {useFeatureMenuName} from '../../components/SiteContext';
+import {useI18n} from '../../api/i18n';
 
 export function QnaListPage() {
-    const title = useFeatureMenuName('QNA', '질문답변');
+    const {t} = useI18n();
+    const title = useFeatureMenuName('QNA', t('shop.homeBlocks.qna', '질문답변'));
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
     const keyword = params.get('keyword') ?? '';
@@ -30,8 +32,8 @@ export function QnaListPage() {
         <section className="card">
             <h1>{title}</h1>
             <div className="list-toolbar-row">
-                <ListSearch label="검색어" placeholder="제목 검색"/>
-                <Link className="button primary" to="/qna/write">질문하기</Link>
+                <ListSearch label={t('shop.qna.searchKeyword', '검색어')} placeholder={t('shop.application.searchPlaceholder', '제목 검색')}/>
+                <Link className="button primary" to="/qna/write">{t('shop.qna.askQuestion', '질문하기')}</Link>
             </div>
             <ErrorBanner error={error}/>
             {data && (
@@ -40,11 +42,11 @@ export function QnaListPage() {
                         <table className="post-table">
                             <thead>
                             <tr>
-                                <th className="col-no">순번</th>
-                                <th>제목</th>
-                                <th className="col-fit">작성자</th>
-                                <th className="col-fit">작성일</th>
-                                <th className="col-fit">상태</th>
+                                <th className="col-no">{t('admin.board.column.rowNumber', '순번')}</th>
+                                <th>{t('admin.board.column.title', '제목')}</th>
+                                <th className="col-fit">{t('shop.board.author', '작성자')}</th>
+                                <th className="col-fit">{t('shop.board.createdAt', '작성일')}</th>
+                                <th className="col-fit">{t('admin.order.column.status', '상태')}</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -54,10 +56,10 @@ export function QnaListPage() {
                                     <td className="col-title"><Link to={`/qna/${q.id}`}>{q.title}</Link>{q.isSecret && <span className="muted small"> 🔒</span>}</td>
                                     <td className="col-fit">{q.authorName}</td>
                                     <td className="col-fit">{formatDate(q.createdAt)}</td>
-                                    <td className="col-fit">{q.answered ? <span className="badge ok">답변 완료</span> : <span className="badge">답변 대기</span>}</td>
+                                    <td className="col-fit">{q.answered ? <span className="badge ok">{t('shop.qna.answered', '답변 완료')}</span> : <span className="badge">{t('shop.qna.pending', '답변 대기')}</span>}</td>
                                 </tr>
                             ))}
-                            {data.content.length === 0 && <tr><td colSpan={5} className="muted">질문이 없습니다.</td></tr>}
+                            {data.content.length === 0 && <tr><td colSpan={5} className="muted">{t('shop.qna.noQuestions', '질문이 없습니다.')}</td></tr>}
                             </tbody>
                         </table>
                     </div>
@@ -70,6 +72,7 @@ export function QnaListPage() {
 }
 
 export function QnaDetailPage() {
+    const {t} = useI18n();
     const id = Number(useParams().id);
     const navigate = useNavigate();
     const {user} = useAuth();
@@ -102,11 +105,11 @@ export function QnaDetailPage() {
     if (needsPassword) {
         return (
             <section className="card narrow">
-                <h1>비밀 질문입니다</h1>
+                <h1>{t('shop.qna.secretQuestion', '비밀 질문입니다')}</h1>
                 <form onSubmit={unlock}>
-                    <input type="password" aria-label="질문 비밀번호" value={password} onChange={(e) => setPassword(e.target.value)}/>
+                    <input type="password" aria-label={t('shop.qna.questionPassword', '질문 비밀번호')} value={password} onChange={(e) => setPassword(e.target.value)}/>
                     <ErrorBanner error={error}/>
-                    <button type="submit" className="primary">확인</button>
+                    <button type="submit" className="primary">{t('admin.reauth.confirm', '확인')}</button>
                 </form>
             </section>
         );
@@ -115,30 +118,30 @@ export function QnaDetailPage() {
         return <ErrorBanner error={error}/>;
     }
     if (!question) {
-        return <p className="muted">불러오는 중…</p>;
+        return <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
     return (
         <article className="card">
-            <Link to="/qna" className="muted">← 질문 목록</Link>
+            <Link to="/qna" className="muted">← {t('shop.qna.questionList', '질문 목록')}</Link>
             <h1>{question.title}</h1>
             <p className="muted small align-right">{question.authorName} · {formatDateTime(question.createdAt)}{question.email && ` · ${question.email}`}</p>
             <HtmlView html={question.contentHtml}/>
             <div className="answer">
-                <h2>답변</h2>
+                <h2>{t('shop.report.answer', '답변')}</h2>
                 {question.answer
                     ? <>
                         <HtmlView html={question.answer.contentHtml}/>
                         <p className="muted small align-right">{question.answer.authorName} · {formatDateTime(question.answer.modifiedAt)}</p>
                     </>
-                    : <p className="muted">아직 답변이 등록되지 않았습니다.</p>}
+                    : <p className="muted">{t('shop.qna.noAnswerYet', '아직 답변이 등록되지 않았습니다.')}</p>}
             </div>
             <ErrorBanner error={error}/>
             {question.canModify && (
                 <div className="toolbar form-actions">
-                    {!question.answer && <Link className="button" to={`/qna/${id}/edit`} state={{password}}>수정</Link>}
+                    {!question.answer && <Link className="button" to={`/qna/${id}/edit`} state={{password}}>{t('common.edit', '수정')}</Link>}
                     <button type="button" className="danger" onClick={async () => {
-                        const pw = !user ? password || window.prompt('비밀번호를 입력하세요') || undefined : undefined;
-                        if (!window.confirm('질문을 삭제할까요?')) {
+                        const pw = !user ? password || window.prompt(t('shop.qna.passwordPrompt', '비밀번호를 입력하세요')) || undefined : undefined;
+                        if (!window.confirm(t('shop.qna.confirmDelete', '질문을 삭제할까요?'))) {
                             return;
                         }
                         try {
@@ -147,7 +150,7 @@ export function QnaDetailPage() {
                         } catch (e) {
                             setError(e);
                         }
-                    }}>삭제</button>
+                    }}>{t('common.delete', '삭제')}</button>
                 </div>
             )}
         </article>
@@ -155,6 +158,7 @@ export function QnaDetailPage() {
 }
 
 export function QnaWritePage() {
+    const {t} = useI18n();
     const params = useParams();
     const id = params.id ? Number(params.id) : null;
     const navigate = useNavigate();
@@ -176,31 +180,31 @@ export function QnaWritePage() {
         return <ErrorBanner error={error}/>;
     }
     if (!initial) {
-        return <p className="muted">불러오는 중…</p>;
+        return <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
     if (!id && !user && !guest.allowed) {
         return (
             <section className="card">
-                <h1>질문하기</h1>
-                <MemberOnlyNotice message="질문은 회원만 등록할 수 있습니다."/>
+                <h1>{t('shop.qna.askQuestion', '질문하기')}</h1>
+                <MemberOnlyNotice message={t('shop.qna.memberOnly', '질문은 회원만 등록할 수 있습니다.')}/>
             </section>
         );
     }
     const fields: FieldSpec[] = [
         ...(!user ? [
-            {name: 'authorName', label: '이름', required: true, wide: true},
-            {name: 'password', label: '비밀번호', type: 'password', required: true, wide: true, help: '질문 확인·수정에 필요합니다.'},
-            ...(guest.collectPhone ? [{name: 'phoneNumber', label: '연락처', required: true, wide: true}] : []),
-            ...(guest.collectEmail ? [{name: 'email', label: '답변 받을 이메일', required: true, wide: true}] : []),
+            {name: 'authorName', label: t('shop.board.name', '이름'), required: true, wide: true},
+            {name: 'password', label: t('admin.memberJoin.password', '비밀번호'), type: 'password', required: true, wide: true, help: t('shop.qna.passwordHelp', '질문 확인·수정에 필요합니다.')},
+            ...(guest.collectPhone ? [{name: 'phoneNumber', label: t('admin.guestPosting.phone', '연락처'), required: true, wide: true}] : []),
+            ...(guest.collectEmail ? [{name: 'email', label: t('shop.qna.answerEmail', '답변 받을 이메일'), required: true, wide: true}] : []),
         ] as FieldSpec[] : []),
-        {name: 'isSecret', label: '비밀 질문', type: 'checkbox', wide: true},
-        {name: 'title', label: '제목', required: true, wide: true},
-        {name: 'contentHtml', label: '내용', type: 'html'},
+        {name: 'isSecret', label: t('shop.qna.secretQuestionField', '비밀 질문'), type: 'checkbox', wide: true},
+        {name: 'title', label: t('admin.board.column.title', '제목'), required: true, wide: true},
+        {name: 'contentHtml', label: t('shop.report.content', '내용'), type: 'html'},
     ];
     return (
         <section className="card">
-            <h1>{id ? '질문 수정' : '질문하기'}</h1>
-            <SchemaForm fields={fields} initial={initial} submitLabel={id ? '수정' : '등록'} onCancel={() => navigate(-1)}
+            <h1>{id ? t('shop.qna.editQuestion', '질문 수정') : t('shop.qna.askQuestion', '질문하기')}</h1>
+            <SchemaForm fields={fields} initial={initial} submitLabel={id ? t('common.edit', '수정') : t('shop.qna.register', '등록')} onCancel={() => navigate(-1)}
                         onSubmit={async (values) => {
                             if (id) {
                                 await qnaApi.update(id, values);

@@ -26,6 +26,6 @@ export function dismissForDays(storageKey: string, id: number, days: number) {
     }
 }
 
-export function dismissLabel(days: number): string {
-    return days === 1 ? '오늘 하루 보지 않기' : `${days}일간 보지 않기`;
+export function dismissLabel(days: number, t: (key: string, fallback: string, values?: Record<string, string>) => string): string {
+    return days === 1 ? t('shop.topBar.dismissToday', '오늘 하루 보지 않기') : t('shop.topBar.dismissDays', '{days}일간 보지 않기', {days: String(days)});
 }

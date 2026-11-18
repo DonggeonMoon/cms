@@ -3,10 +3,14 @@ import type {Page} from './types';
 
 export type PointType = 'EARN' | 'SIGNUP' | 'REFERRAL' | 'ADMIN' | 'USE' | 'RESTORE' | 'REVOKE' | 'EXPIRE';
 
-export const POINT_TYPE: Record<PointType, string> = {
-    EARN: '구매 적립', SIGNUP: '가입 적립', REFERRAL: '추천인 적립', ADMIN: '관리자 조정', USE: '사용', RESTORE: '사용 취소',
-    REVOKE: '적립 취소', EXPIRE: '소멸',
-};
+export type TFunc = (key: string, fallback: string, values?: Record<string, string>) => string;
+
+export const pointType = (t: TFunc): Record<PointType, string> => ({
+    EARN: t('label.pointType.EARN', '구매 적립'), SIGNUP: t('label.pointType.SIGNUP', '가입 적립'),
+    REFERRAL: t('label.pointType.REFERRAL', '추천인 적립'), ADMIN: t('label.pointType.ADMIN', '관리자 조정'),
+    USE: t('label.pointType.USE', '사용'), RESTORE: t('label.pointType.RESTORE', '사용 취소'),
+    REVOKE: t('label.pointType.REVOKE', '적립 취소'), EXPIRE: t('label.pointType.EXPIRE', '소멸'),
+});
 
 export interface PointPolicy {
     isEnabled: boolean;
@@ -39,11 +43,14 @@ export type DiscountType = 'AMOUNT' | 'RATE';
 export type CouponIssueType = 'DOWNLOAD' | 'SIGNUP' | 'GRADE' | 'MANUAL';
 export type CouponIssueStatus = 'AVAILABLE' | 'USED' | 'EXPIRED';
 
-export const COUPON_ISSUE_TYPE: Record<CouponIssueType, string> = {
-    DOWNLOAD: '다운로드', SIGNUP: '가입 시 자동 지급', GRADE: '등급 달성 시 자동 지급', MANUAL: '관리자 지급',
-};
+export const couponIssueType = (t: TFunc): Record<CouponIssueType, string> => ({
+    DOWNLOAD: t('label.couponIssueType.DOWNLOAD', '다운로드'), SIGNUP: t('label.couponIssueType.SIGNUP', '가입 시 자동 지급'),
+    GRADE: t('label.couponIssueType.GRADE', '등급 달성 시 자동 지급'), MANUAL: t('label.couponIssueType.MANUAL', '관리자 지급'),
+});
 
-export const COUPON_STATUS: Record<CouponIssueStatus, string> = {AVAILABLE: '사용 가능', USED: '사용함', EXPIRED: '기한 만료'};
+export const couponStatus = (t: TFunc): Record<CouponIssueStatus, string> => ({
+    AVAILABLE: t('label.couponStatus.AVAILABLE', '사용 가능'), USED: t('label.couponStatus.USED', '사용함'), EXPIRED: t('label.couponStatus.EXPIRED', '기한 만료'),
+});
 
 export interface Coupon {
     id: number;
@@ -133,13 +140,17 @@ export function maxUsablePoints(policy: PointPolicy, balance: number, afterCoupo
     return Math.max(0, Math.min(balance, cap));
 }
 
-export function couponBenefit(coupon: { discountType: DiscountType | null; discountValue: number | null; maxDiscountAmount: number | null; minOrderAmount: number | null }) {
+export function couponBenefit(coupon: { discountType: DiscountType | null; discountValue: number | null; maxDiscountAmount: number | null; minOrderAmount: number | null }, t: TFunc) {
     if (!coupon.discountType) {
         return '-';
     }
-    const main = coupon.discountType === 'RATE' ? `${Number(coupon.discountValue)}% 할인` : `${won0(coupon.discountValue)}원 할인`;
-    const cap = coupon.discountType === 'RATE' && coupon.maxDiscountAmount ? ` (최대 ${won0(coupon.maxDiscountAmount)}원)` : '';
-    const min = coupon.minOrderAmount ? ` · ${won0(coupon.minOrderAmount)}원 이상 구매 시` : '';
+    const main = coupon.discountType === 'RATE'
+        ? t('label.couponBenefit.rate', '{percent}% 할인', {percent: String(Number(coupon.discountValue))})
+        : t('label.couponBenefit.amount', '{amount}원 할인', {amount: won0(coupon.discountValue)});
+    const cap = coupon.discountType === 'RATE' && coupon.maxDiscountAmount
+        ? t('label.couponBenefit.cap', ' (최대 {amount}원)', {amount: won0(coupon.maxDiscountAmount)}) : '';
+    const min = coupon.minOrderAmount
+        ? t('label.couponBenefit.min', ' · {amount}원 이상 구매 시', {amount: won0(coupon.minOrderAmount)}) : '';
     return main + cap + min;
 }
 

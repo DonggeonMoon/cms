@@ -8,13 +8,14 @@ import type {MediaType, Page} from '../api/types';
 import {useAuth} from '../auth/AuthContext';
 import {ErrorBanner} from '../components/ErrorBanner';
 import {formatDateTime, formatDuration} from '../components/format';
-import {ENROLLMENT_STATUS} from '../components/labels';
+import {enrollmentStatus} from '../components/labels';
 import {ListSearch} from '../components/ListSearch';
 import {MemberOnlyNotice} from '../components/MemberOnlyNotice';
 import {Pagination} from '../components/Pagination';
 import {useFeatureMenuName} from '../components/SiteContext';
 import {Thumbnail} from '../components/Thumbnail';
 import {GradeBadge} from '../components/GradeBadge';
+import {useI18n} from '../api/i18n';
 
 const REPORT_INTERVAL_MS = 10_000;
 // timeupdate 사이 간격이 이보다 크면 재생이 아니라 건너뛰기로 본다.
@@ -22,20 +23,22 @@ const MAX_PLAYBACK_STEP_SECONDS = 3;
 
 type Range = { start: number; end: number };
 
-const mediaLabel = (item: Pick<StreamingItem, 'mediaType'>) => (item.mediaType === 'AUDIO' ? '음악' : '동영상');
+type T = (key: string, fallback: string, values?: Record<string, string>) => string;
 
-const TYPE_TABS: { value: MediaType | ''; label: string }[] = [
-    {value: '', label: '전체'},
-    {value: 'VIDEO', label: '동영상'},
-    {value: 'AUDIO', label: '음악'},
-];
+const mediaLabel = (item: Pick<StreamingItem, 'mediaType'>, t: T) => (item.mediaType === 'AUDIO' ? t('shop.streaming.audio', '음악') : t('shop.streaming.video', '동영상'));
 
 export function StreamingListPage() {
+    const {t} = useI18n();
+    const typeTabs: { value: MediaType | ''; label: string }[] = [
+        {value: '', label: t('shop.streaming.allTypes', '전체')},
+        {value: 'VIDEO', label: t('shop.streaming.video', '동영상')},
+        {value: 'AUDIO', label: t('shop.streaming.audio', '음악')},
+    ];
     const [params, setParams] = useSearchParams();
     const page = Number(params.get('page') ?? 0);
     const keyword = params.get('keyword') ?? '';
     const mediaType = (params.get('type') ?? '') as MediaType | '';
-    const title = useFeatureMenuName('MEDIA', '스트리밍');
+    const title = useFeatureMenuName('MEDIA', t('shop.streaming.title', '스트리밍'));
     const [data, setData] = useState<Page<StreamingItem> | null>(null);
     const [error, setError] = useState<unknown>(null);
 
@@ -51,15 +54,15 @@ export function StreamingListPage() {
     return (
         <section className="card">
             <h1>{title}</h1>
-            <div className="tabs" role="tablist" aria-label="종류">
-                {TYPE_TABS.map((tab) => (
+            <div className="tabs" role="tablist" aria-label={t('shop.streaming.typeTabsLabel', '종류')}>
+                {typeTabs.map((tab) => (
                     <button key={tab.value} type="button" role="tab" aria-selected={mediaType === tab.value}
                             className={mediaType === tab.value ? 'tab active' : 'tab'} onClick={() => go({type: tab.value, page: 0})}>
                         {tab.label}
                     </button>
                 ))}
             </div>
-            <ListSearch label={`${title} 검색`} placeholder="제목 검색"/>
+            <ListSearch label={t('shop.streaming.searchLabel', '{title} 검색', {title})} placeholder={t('shop.streaming.searchPlaceholder', '제목 검색')}/>
             <ErrorBanner error={error}/>
             <div className="product-grid media-grid">
                 {data?.content.map((item) => (
@@ -69,26 +72,27 @@ export function StreamingListPage() {
                             <span className="media-duration">{formatDuration(item.durationSeconds)}</span>
                             {item.myProgress && (
                                 <progress className="media-cover-progress" value={item.myProgress.progressRate} max={100}
-                                          aria-label={`${item.title} 진도율`}/>
+                                          aria-label={t('shop.streaming.progressRate', '{title} 진도율', {title: item.title})}/>
                             )}
                         </div>
                         <strong className="product-name">{item.title}</strong>
                         <span className="row align-center">
-                            <span className="badge">{mediaLabel(item)}</span>
-                            {item.paid && <span className="badge">{item.playable ? '구매함' : won(item.price ?? 0)}</span>}
+                            <span className="badge">{mediaLabel(item, t)}</span>
+                            {item.paid && <span className="badge">{item.playable ? t('shop.streaming.purchased', '구매함') : won(item.price ?? 0)}</span>}
                             <GradeBadge gradeId={item.accessGradeId}/>
                             {item.myProgress && <ProgressSummary progress={item.myProgress}/>}
                         </span>
                     </Link>
                 ))}
             </div>
-            {data?.content.length === 0 && <p className="muted">{keyword ? '검색 결과가 없습니다.' : '등록된 동영상·음악이 없습니다.'}</p>}
+            {data?.content.length === 0 && <p className="muted">{keyword ? t('shop.common.noSearchResults', '검색 결과가 없습니다.') : t('shop.streaming.noneRegistered', '등록된 동영상·음악이 없습니다.')}</p>}
             {data && <Pagination page={page} totalPages={data.page.totalPages} onChange={(next) => go({page: next})}/>}
         </section>
     );
 }
 
 export function StreamingDetailPage() {
+    const {t} = useI18n();
     const id = Number(useParams().id);
     const [params] = useSearchParams();
     const courseId = params.get('courseId') ? Number(params.get('courseId')) : null;
@@ -115,20 +119,25 @@ export function StreamingDetailPage() {
     }, [courseId, lessonId, id]);
 
     if (!item) {
-        return error ? <ErrorBanner error={error}/> : <p className="muted">불러오는 중…</p>;
+        return error ? <ErrorBanner error={error}/> : <p className="muted">{t('common.loading', '불러오는 중…')}</p>;
     }
     return (
         <section className="card">
             <h1>{item.title}</h1>
             <p className="muted">
-                {mediaLabel(item)} · {formatDuration(item.durationSeconds)} · 진도율 {item.completionRate}% 이상 재생하면 수강 완료
+                {t('shop.streaming.summary', '{type} · {duration} · 진도율 {rate}% 이상 재생하면 수강 완료', {
+                    type: mediaLabel(item, t), duration: formatDuration(item.durationSeconds), rate: String(item.completionRate),
+                })}
             </p>
             {user?.userType !== 'MEMBER'
-                ? <MemberOnlyNotice message={item.paid ? '회원으로 로그인한 뒤 구매해 주세요.' : '스트리밍은 회원만 재생할 수 있습니다. 진도는 회원별로 저장됩니다.'}/>
+                ? <MemberOnlyNotice message={item.paid ? t('shop.streaming.loginToBuy', '회원으로 로그인한 뒤 구매해 주세요.') : t('shop.streaming.memberOnly', '스트리밍은 회원만 재생할 수 있습니다. 진도는 회원별로 저장됩니다.')}/>
                 : item.playable ? (
                     <>
                         {item.paid && (
-                            <p className="muted small">구매한 강의입니다.{item.accessExpiresAt && ` ${formatDateTime(item.accessExpiresAt)}까지 볼 수 있습니다.`}</p>
+                            <p className="muted small">
+                                {t('shop.streaming.purchasedLecture', '구매한 강의입니다.')}
+                                {item.accessExpiresAt && t('shop.streaming.watchableUntil', ' {date}까지 볼 수 있습니다.', {date: formatDateTime(item.accessExpiresAt)})}
+                            </p>
                         )}
                         <StreamingPlayer item={item} maxPlaybackRate={playbackLimits.maxPlaybackRate}
                                          preventSkipping={playbackLimits.preventSkipping}/>
@@ -136,12 +145,13 @@ export function StreamingDetailPage() {
                 ) : (
                     <div className="notice-box media-purchase">
                         <p><strong>{won(item.price ?? 0)}</strong>
-                            {item.accessDays != null ? ` · 결제 후 ${item.accessDays}일 동안 시청` : ' · 결제 후 기간 제한 없이 시청'}</p>
-                        <Link className="button primary" to={`/orders/new?productId=${item.productId}&quantity=1`}>구매하기</Link>
+                            {item.accessDays != null ? t('shop.streaming.watchDaysAfterPayment', ' · 결제 후 {days}일 동안 시청', {days: String(item.accessDays)})
+                                : ` ${t('shop.streaming.watchUnlimited', '· 결제 후 기간 제한 없이 시청')}`}</p>
+                        <Link className="button primary" to={`/orders/new?productId=${item.productId}&quantity=1`}>{t('shop.action.buyPass', '구매하기')}</Link>
                     </div>
                 )}
             {item.description && <p className="media-description">{item.description}</p>}
-            <p><Link to="/streaming">목록으로</Link></p>
+            <p><Link to="/streaming">{t('shop.streaming.backToList', '목록으로')}</Link></p>
         </section>
     );
 }
@@ -149,6 +159,7 @@ export function StreamingDetailPage() {
 function StreamingPlayer({item, maxPlaybackRate, preventSkipping}: {
     item: StreamingItem; maxPlaybackRate?: number | null; preventSkipping?: boolean;
 }) {
+    const {t} = useI18n();
     const mediaRef = useRef<HTMLVideoElement & HTMLAudioElement>(null);
     const [progress, setProgress] = useState<StreamingProgress | null>(item.myProgress);
     const [error, setError] = useState<unknown>(null);
@@ -298,14 +309,14 @@ function StreamingPlayer({item, maxPlaybackRate, preventSkipping}: {
             {item.trackProgress && (
                 <>
                     <div className="media-progress">
-                        <progress value={progress?.progressRate ?? 0} max={100} aria-label="진도율"/>
-                        <span>진도율 <strong>{progress?.progressRate ?? 0}%</strong></span>
-                        {progress && <span className={`badge${progress.status === 'COMPLETED' ? ' ok' : ''}`}>{ENROLLMENT_STATUS[progress.status]}</span>}
-                        {progress?.completedAt && <span className="muted small">완료 {formatDateTime(progress.completedAt)}</span>}
+                        <progress value={progress?.progressRate ?? 0} max={100} aria-label={t('shop.streaming.progressRateLabel', '진도율')}/>
+                        <span>{t('shop.streaming.progressRateLabel', '진도율')} <strong>{progress?.progressRate ?? 0}%</strong></span>
+                        {progress && <span className={`badge${progress.status === 'COMPLETED' ? ' ok' : ''}`}>{enrollmentStatus(t)[progress.status]}</span>}
+                        {progress?.completedAt && <span className="muted small">{t('shop.streaming.completedAt', '완료 {date}', {date: formatDateTime(progress.completedAt)})}</span>}
                     </div>
-                    <p className="muted small">실제로 재생한 구간만 진도에 반영됩니다. 앞으로 건너뛴 구간은 들은 것으로 보지 않습니다.</p>
-                    {preventSkipping && <p className="muted small">이 교육과정은 건너뛰기 방지가 적용되어, 아직 보지 않은 구간으로는 이동할 수 없습니다.</p>}
-                    {maxPlaybackRate != null && <p className="muted small">이 교육과정은 최대 {maxPlaybackRate}배속까지만 재생할 수 있습니다.</p>}
+                    <p className="muted small">{t('shop.streaming.progressNotice', '실제로 재생한 구간만 진도에 반영됩니다. 앞으로 건너뛴 구간은 들은 것으로 보지 않습니다.')}</p>
+                    {preventSkipping && <p className="muted small">{t('shop.streaming.preventSkippingNotice', '이 교육과정은 건너뛰기 방지가 적용되어, 아직 보지 않은 구간으로는 이동할 수 없습니다.')}</p>}
+                    {maxPlaybackRate != null && <p className="muted small">{t('shop.streaming.maxRateNotice', '이 교육과정은 최대 {rate}배속까지만 재생할 수 있습니다.', {rate: String(maxPlaybackRate)})}</p>}
                 </>
             )}
             <ErrorBanner error={error}/>
@@ -314,12 +325,14 @@ function StreamingPlayer({item, maxPlaybackRate, preventSkipping}: {
 }
 
 function ProgressSummary({progress}: { progress: StreamingProgress }) {
+    const {t} = useI18n();
     return progress.status === 'COMPLETED'
-        ? <span className="badge ok">{ENROLLMENT_STATUS.COMPLETED}</span>
-        : <span className="muted small">진도 {progress.progressRate}%</span>;
+        ? <span className="badge ok">{enrollmentStatus(t).COMPLETED}</span>
+        : <span className="muted small">{t('shop.streaming.progressOf', '진도 {rate}%', {rate: String(progress.progressRate)})}</span>;
 }
 
 export function MyStreamingPage() {
+    const {t} = useI18n();
     const [page, setPage] = useState(0);
     const [data, setData] = useState<Page<MyStreaming> | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -330,18 +343,18 @@ export function MyStreamingPage() {
 
     return (
         <section className="card">
-            <h1>수강 내역</h1>
+            <h1>{t('shop.streaming.myStreaming', '수강 내역')}</h1>
             <ErrorBanner error={error}/>
             <div className="table-wrap">
                 <table>
                     <thead>
                     <tr>
-                        <th>제목</th>
-                        <th>진도율</th>
-                        <th>상태</th>
-                        <th>시작일</th>
-                        <th>마지막 학습</th>
-                        <th>완료일</th>
+                        <th>{t('admin.content.field.title', '제목')}</th>
+                        <th>{t('shop.streaming.progressRateLabel', '진도율')}</th>
+                        <th>{t('admin.order.column.status', '상태')}</th>
+                        <th>{t('shop.streaming.startedAt', '시작일')}</th>
+                        <th>{t('shop.streaming.lastWatchedAt', '마지막 학습')}</th>
+                        <th>{t('admin.course.completedColumn', '완료일')}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -356,14 +369,14 @@ export function MyStreamingPage() {
                             </td>
                             <td>
                                 <div className="media-progress">
-                                    <progress value={item.progress?.progressRate ?? 0} max={100} aria-label={`${item.title} 진도율`}/>
+                                    <progress value={item.progress?.progressRate ?? 0} max={100} aria-label={t('shop.streaming.progressRate', '{title} 진도율', {title: item.title})}/>
                                     <span>{item.progress?.progressRate ?? 0}%</span>
                                 </div>
                             </td>
                             <td>
                                 {item.progress && (
                                     <span className={`badge${item.progress.status === 'COMPLETED' ? ' ok' : ''}`}>
-                                        {ENROLLMENT_STATUS[item.progress.status]}
+                                        {enrollmentStatus(t)[item.progress.status]}
                                     </span>
                                 )}
                             </td>
@@ -374,7 +387,7 @@ export function MyStreamingPage() {
                     ))}
                     {data?.content.length === 0 && (
                         <tr>
-                            <td colSpan={6} className="muted">수강한 항목이 없습니다. <Link to="/streaming">스트리밍 보러 가기</Link></td>
+                            <td colSpan={6} className="muted">{t('shop.streaming.noneEnrolled', '수강한 항목이 없습니다.')} <Link to="/streaming">{t('shop.streaming.goBrowse', '스트리밍 보러 가기')}</Link></td>
                         </tr>
                     )}
                     </tbody>

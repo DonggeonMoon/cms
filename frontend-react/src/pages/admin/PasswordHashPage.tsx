@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
 import {request} from '../../api/client';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {ReauthGate, type ReauthGuard} from '../../components/ReauthGate';
+import {useI18n} from '../../api/i18n';
 
 type Algorithm = 'BCRYPT' | 'ARGON2' | 'SCRYPT' | 'PBKDF2';
 
@@ -16,10 +17,12 @@ const passwordHashApi = {
 };
 
 export function PasswordHashPage() {
-    return <ReauthGate title="해시 알고리즘 관리">{(guard) => <PasswordHashPanel guard={guard}/>}</ReauthGate>;
+    const {t} = useI18n();
+    return <ReauthGate title={t('admin.passwordHash.title', '해시 알고리즘 관리')}>{(guard) => <PasswordHashPanel guard={guard}/>}</ReauthGate>;
 }
 
 function PasswordHashPanel({guard}: { guard: ReauthGuard }) {
+    const {t} = useI18n();
     const [data, setData] = useState<PasswordHash | null>(null);
     const [selected, setSelected] = useState<Algorithm>('BCRYPT');
     const [error, setError] = useState<unknown>(null);
@@ -34,7 +37,7 @@ function PasswordHashPanel({guard}: { guard: ReauthGuard }) {
 
     const save = async () => {
         const option = data?.options.find((o) => o.value === selected);
-        if (!window.confirm(`새로 저장하는 비밀번호부터 ${option?.label ?? selected}(으)로 해시합니다. 계속할까요?`)) {
+        if (!window.confirm(t('admin.passwordHash.confirmChange', '새로 저장하는 비밀번호부터 {algorithm}(으)로 해시합니다. 계속할까요?', {algorithm: option?.label ?? selected}))) {
             return;
         }
         setError(null);
@@ -49,31 +52,30 @@ function PasswordHashPanel({guard}: { guard: ReauthGuard }) {
 
     return (
         <section className="card">
-            <h1>해시 알고리즘 관리</h1>
+            <h1>{t('admin.passwordHash.title', '해시 알고리즘 관리')}</h1>
             <div className="muted page-description">
-                <p>회원·관리자 비밀번호와 비회원 글 비밀번호를 저장할 때 쓰는 해시 알고리즘입니다. 안전성이 검증된
-                    알고리즘만 고를 수 있습니다.</p>
-                <p>바꿔도 기존 비밀번호로 그대로 로그인할 수 있습니다. 회원·관리자 비밀번호는 다음 로그인에 성공할 때 새 알고리즘으로 다시 저장됩니다.</p>
+                <p>{t('admin.passwordHash.description1', '회원·관리자 비밀번호와 비회원 글 비밀번호를 저장할 때 쓰는 해시 알고리즘입니다. 안전성이 검증된 알고리즘만 고를 수 있습니다.')}</p>
+                <p>{t('admin.passwordHash.description2', '바꿔도 기존 비밀번호로 그대로 로그인할 수 있습니다. 회원·관리자 비밀번호는 다음 로그인에 성공할 때 새 알고리즘으로 다시 저장됩니다.')}</p>
             </div>
             <ErrorBanner error={error}/>
             {data && (
                 <>
-                    <div className="hash-options" role="radiogroup" aria-label="해시 알고리즘">
+                    <div className="hash-options" role="radiogroup" aria-label={t('admin.passwordHash.algorithm', '해시 알고리즘')}>
                         {data.options.map((option) => (
                             <label key={option.value} className={`hash-option${selected === option.value ? ' selected' : ''}`}>
                                 <input type="radio" name="algorithm" checked={selected === option.value}
                                        onChange={() => setSelected(option.value)}/>
                                 <span>
                                     <strong>{option.label}</strong>
-                                    {data.algorithm === option.value && <span className="badge ok">사용 중</span>}
+                                    {data.algorithm === option.value && <span className="badge ok">{t('admin.passwordHash.inUse', '사용 중')}</span>}
                                     <span className="muted small hash-description">{option.description}</span>
                                 </span>
                             </label>
                         ))}
                     </div>
                     <div className="toolbar form-actions">
-                        <button type="button" className="primary" disabled={selected === data.algorithm} onClick={save}>저장</button>
-                        {saved && <span className="ok">저장했습니다.</span>}
+                        <button type="button" className="primary" disabled={selected === data.algorithm} onClick={save}>{t('common.save', '저장')}</button>
+                        {saved && <span className="ok">{t('common.saved', '저장했습니다.')}</span>}
                     </div>
                 </>
             )}

@@ -2,8 +2,10 @@ import {useEffect, useState} from 'react';
 import {shopApi} from '../../api/endpoints';
 import {useAuth} from '../../auth/AuthContext';
 import {ErrorBanner} from '../../components/ErrorBanner';
+import {useI18n} from '../../api/i18n';
 
 export function WishButton({productId}: { productId: number }) {
+    const {t} = useI18n();
     const {user} = useAuth();
     const [wished, setWished] = useState<boolean | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -30,7 +32,7 @@ export function WishButton({productId}: { productId: number }) {
     return (
         <>
             <button type="button" aria-pressed={wished} className={wished ? 'wish-button active' : 'wish-button'} onClick={toggle}>
-                {wished ? '♥ 찜함' : '♡ 찜하기'}
+                {wished ? t('shop.wishButton.wished', '♥ 찜함') : t('shop.wishButton.wish', '♡ 찜하기')}
             </button>
             <ErrorBanner error={error}/>
         </>

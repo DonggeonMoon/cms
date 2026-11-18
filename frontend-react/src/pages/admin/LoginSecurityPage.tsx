@@ -2,12 +2,15 @@ import {type FormEvent, useEffect, useState} from 'react';
 import {loginSecurityApi, type LoginSecuritySettings} from '../../api/loginSecurity';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {ReauthGate, type ReauthGuard} from '../../components/ReauthGate';
+import {useI18n} from '../../api/i18n';
 
 export function LoginSecurityPage() {
-    return <ReauthGate title="로그인 보안">{(guard) => <LoginSecurityEditor guard={guard}/>}</ReauthGate>;
+    const {t} = useI18n();
+    return <ReauthGate title={t('admin.loginSecurity.title', '로그인 보안')}>{(guard) => <LoginSecurityEditor guard={guard}/>}</ReauthGate>;
 }
 
 function LoginSecurityEditor({guard}: { guard: ReauthGuard }) {
+    const {t} = useI18n();
     const [settings, setSettings] = useState<LoginSecuritySettings | null>(null);
     const [maxLoginTryCount, setMaxLoginTryCount] = useState('');
     const [error, setError] = useState<unknown>(null);
@@ -33,20 +36,20 @@ function LoginSecurityEditor({guard}: { guard: ReauthGuard }) {
     };
 
     if (!settings) {
-        return <section className="card"><h1>로그인 보안</h1><ErrorBanner error={error}/></section>;
+        return <section className="card"><h1>{t('admin.loginSecurity.title', '로그인 보안')}</h1><ErrorBanner error={error}/></section>;
     }
     return (
         <section className="card">
-            <h1>로그인 보안</h1>
+            <h1>{t('admin.loginSecurity.title', '로그인 보안')}</h1>
             <div className="muted page-description">
-                <p>회원·관리자 모두 로그인에 거듭 실패하면 계정이 잠깁니다. 잠긴 계정은 관리자가 각 관리 화면에서 잠금 해제해야 다시 로그인할 수 있습니다.</p>
+                <p>{t('admin.loginSecurity.description', '회원·관리자 모두 로그인에 거듭 실패하면 계정이 잠깁니다. 잠긴 계정은 관리자가 각 관리 화면에서 잠금 해제해야 다시 로그인할 수 있습니다.')}</p>
             </div>
             <form className="toolbar" onSubmit={save}>
-                <label htmlFor="maxLoginTryCount">로그인 실패 허용 횟수</label>
+                <label htmlFor="maxLoginTryCount">{t('admin.loginSecurity.maxTryCount', '로그인 실패 허용 횟수')}</label>
                 <input id="maxLoginTryCount" type="number" min={1} max={1000} required value={maxLoginTryCount}
                        onChange={(e) => setMaxLoginTryCount(e.target.value)}/>
-                <button type="submit" className="primary">저장</button>
-                {saved && <span className="badge ok">저장됨</span>}
+                <button type="submit" className="primary">{t('common.save', '저장')}</button>
+                {saved && <span className="badge ok">{t('admin.loginSecurity.savedBadge', '저장됨')}</span>}
             </form>
             <ErrorBanner error={error}/>
         </section>

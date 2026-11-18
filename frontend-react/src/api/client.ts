@@ -43,11 +43,18 @@ export class ApiError extends Error {
 
 export const CONNECTION_ERROR_CODES = ['NETWORK_ERROR', 'SERVER_UNAVAILABLE', 'TIMEOUT', 'INVALID_RESPONSE'] as const;
 
-const CONNECTION_MESSAGES: Record<(typeof CONNECTION_ERROR_CODES)[number], string> = {
+export const CONNECTION_MESSAGES: Record<(typeof CONNECTION_ERROR_CODES)[number], string> = {
     NETWORK_ERROR: '서버에 연결할 수 없습니다. 인터넷 연결을 확인하거나, 서버가 켜져 있는지 확인한 뒤 다시 시도해 주세요.',
     SERVER_UNAVAILABLE: '서버가 응답하지 않습니다. 서버가 꺼져 있거나 점검 중일 수 있으니 잠시 후 다시 시도해 주세요.',
     TIMEOUT: '서버 응답이 너무 늦어 요청을 멈췄습니다. 잠시 후 다시 시도해 주세요.',
     INVALID_RESPONSE: '서버에서 알 수 없는 응답이 왔습니다. 서버가 제대로 실행 중인지 확인해 주세요.',
+};
+
+export const CONNECTION_ERROR_KEYS: Record<(typeof CONNECTION_ERROR_CODES)[number], string> = {
+    NETWORK_ERROR: 'error.connection.networkError',
+    SERVER_UNAVAILABLE: 'error.connection.serverUnavailable',
+    TIMEOUT: 'error.connection.timeout',
+    INVALID_RESPONSE: 'error.connection.invalidResponse',
 };
 
 const TIMEOUT_MS = 30_000;

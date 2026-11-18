@@ -2,8 +2,10 @@ import {useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import {type NumberRegexTarget, regexAdminApi, type RegexOption} from '../api/regex';
 import {ErrorBanner} from './ErrorBanner';
+import {useI18n} from '../api/i18n';
 
 export function RegexBindingSelect({target, label}: { target: NumberRegexTarget; label: string }) {
+    const {t} = useI18n();
     const [options, setOptions] = useState<RegexOption[]>([]);
     const [selected, setSelected] = useState<string>('');
     const [error, setError] = useState<unknown>(null);
@@ -38,11 +40,11 @@ export function RegexBindingSelect({target, label}: { target: NumberRegexTarget;
             <div className="row align-center">
                 <label htmlFor={id}>{label}</label>
                 <select id={id} value={selected} onChange={(e) => void change(e.target.value)}>
-                    <option value="">검사 안 함</option>
+                    <option value="">{t('admin.regexBinding.none', '검사 안 함')}</option>
                     {options.map((option) => <option key={option.id} value={option.id}>{option.name} ({option.pattern})</option>)}
                 </select>
-                {saved && <span className="ok small">저장했습니다.</span>}
-                <Link to="/admin/regexes" className="small">정규식 관리</Link>
+                {saved && <span className="ok small">{t('common.saved', '저장했습니다.')}</span>}
+                <Link to="/admin/regexes" className="small">{t('admin.regexBinding.manage', '정규식 관리')}</Link>
             </div>
             <ErrorBanner error={error}/>
         </div>

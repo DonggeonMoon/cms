@@ -1,5 +1,6 @@
 import {type FormEvent, useEffect, useState} from 'react';
 import {useSearchParams} from 'react-router';
+import {useI18n} from '../api/i18n';
 
 export function ListSearch({label, placeholder, placement = 'top', keepFilters = false}: {
     label: string;
@@ -7,6 +8,7 @@ export function ListSearch({label, placeholder, placement = 'top', keepFilters =
     placement?: 'top' | 'bottom';
     keepFilters?: boolean;
 }) {
+    const {t} = useI18n();
     const [params, setParams] = useSearchParams();
     const keyword = params.get('keyword') ?? '';
     const [input, setInput] = useState(keyword);
@@ -32,7 +34,7 @@ export function ListSearch({label, placeholder, placement = 'top', keepFilters =
     return (
         <form className={`list-search ${placement}`} role="search" onSubmit={submit}>
             <input aria-label={label} placeholder={placeholder} value={input} onChange={(e) => setInput(e.target.value)}/>
-            <button type="submit">검색</button>
+            <button type="submit">{t('common.search', '검색')}</button>
         </form>
     );
 }
