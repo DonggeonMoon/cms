@@ -7,9 +7,13 @@ import com.dgmoonlabs.cms.domain.business.reservation.constant.ReservationStatus
 import com.dgmoonlabs.cms.domain.business.reservation.repository.ReservationItemRepository;
 import com.dgmoonlabs.cms.domain.business.reservation.repository.ReservationRepository;
 import com.dgmoonlabs.cms.domain.business.review.constant.ReviewTargetType;
+import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewPolicyRequest;
+import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewPolicyResponse;
 import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewResponse;
 import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewSaveRequest;
 import com.dgmoonlabs.cms.domain.business.review.entity.Review;
+import com.dgmoonlabs.cms.domain.business.review.entity.ReviewPolicy;
+import com.dgmoonlabs.cms.domain.business.review.repository.ReviewPolicyRepository;
 import com.dgmoonlabs.cms.domain.business.review.repository.ReviewRepository;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.error.BusinessException;
@@ -32,6 +36,7 @@ public class ReviewService {
     private static final Set<OrderStatus> PURCHASED = EnumSet.of(OrderStatus.PAID, OrderStatus.SHIPPING, OrderStatus.DELIVERED);
 
     private final ReviewRepository reviewRepository;
+    private final ReviewPolicyRepository reviewPolicyRepository;
     private final OrderRepository orderRepository;
     private final ReservationRepository reservationRepository;
     private final ReservationItemRepository reservationItemRepository;
@@ -87,6 +92,23 @@ public class ReviewService {
         return reviewRepository.averageReservationItemRating(reservationItemId);
     }
 
+    @Transactional(readOnly = true)
+    public ReviewPolicyResponse getPolicy() {
+        return ReviewPolicyResponse.from(policy());
+    }
+
+    @Transactional
+    public ReviewPolicyResponse updatePolicy(final ReviewPolicyRequest request) {
+        ReviewPolicy policy = reviewPolicyRepository.findFirstByOrderByIdAsc()
+                .orElseGet(() -> reviewPolicyRepository.save(ReviewPolicy.builder().build()));
+        policy.update(request.minimumContentLength());
+        return ReviewPolicyResponse.from(policy);
+    }
+
+    private ReviewPolicy policy() {
+        return reviewPolicyRepository.findFirstByOrderByIdAsc().orElseGet(() -> ReviewPolicy.builder().build());
+    }
+
     @Transactional
     public void deleteReview(final Long reviewId) {
         Review review = reviewRepository.findByIdAndDeletedAtIsNull(reviewId).orElseThrow(BusinessException::notFound);
@@ -99,11 +121,15 @@ public class ReviewService {
     private Long save(final LoginUser member, final ReviewSaveRequest request, final String ipAddress,
                       final Review.ReviewBuilder target) {
         String html = htmlSanitizer.sanitize(request.contentHtml());
+        String text = htmlSanitizer.toPlainText(html);
+        if (text.length() < policy().getMinimumContentLength()) {
+            throw new BusinessException(ErrorCode.REVIEW_CONTENT_TOO_SHORT);
+        }
         return reviewRepository.save(target
                 .rating(request.rating())
                 .title(request.title())
                 .contentHtml(html)
-                .contentText(htmlSanitizer.toPlainText(html))
+                .contentText(text)
                 .userType(UserType.MEMBER)
                 .userId(member.id())
                 .authorName(member.name())

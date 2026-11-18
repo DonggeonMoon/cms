@@ -182,6 +182,7 @@ public enum ErrorCode {
     INVALID_STATUS_TRANSITION(HttpStatus.CONFLICT, "현재 상태에서는 처리할 수 없습니다."),
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "결제 금액이 주문 금액과 일치하지 않습니다."),
     ALREADY_SUBMITTED(HttpStatus.CONFLICT, "이미 참여했습니다."),
+    REVIEW_CONTENT_TOO_SHORT(HttpStatus.BAD_REQUEST, "리뷰 내용을 너무 짧게 입력했습니다."),
     VOTE_OPTIONS_REQUIRED(HttpStatus.BAD_REQUEST, "투표는 선택지를 2개 이상 등록해야 합니다."),
     VOTE_ALREADY_CLOSED(HttpStatus.CONFLICT, "이미 마감된 투표입니다."),
     INVALID_VOTE_OPTION(HttpStatus.BAD_REQUEST, "존재하지 않는 선택지입니다."),

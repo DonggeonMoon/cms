@@ -57,6 +57,8 @@ import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.WorkCo
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.WorkerRequest;
 import com.dgmoonlabs.cms.domain.business.reservation.service.ReservationService;
 import com.dgmoonlabs.cms.domain.business.review.constant.ReviewTargetType;
+import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewPolicyRequest;
+import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewPolicyResponse;
 import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewResponse;
 import com.dgmoonlabs.cms.domain.business.review.service.ReviewService;
 import com.dgmoonlabs.cms.global.security.LoginUser;
@@ -478,5 +480,10 @@ public class BusinessAdminController {
             @RequestParam(defaultValue = "PRODUCT") final ReviewTargetType targetType,
             @PageableDefault(size = 20) final Pageable pageable) {
         return ResponseEntity.ok(new PagedModel<>(reviewService.getAllReviews(targetType, pageable)));
+    }
+
+    @PutMapping("/review-policy")
+    public ResponseEntity<ReviewPolicyResponse> updateReviewPolicy(@RequestBody @Valid final ReviewPolicyRequest request) {
+        return ResponseEntity.ok(reviewService.updatePolicy(request));
     }
 }

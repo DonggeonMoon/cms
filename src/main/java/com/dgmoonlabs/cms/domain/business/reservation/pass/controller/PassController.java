@@ -1,7 +1,7 @@
-package com.dgmoonlabs.cms.domain.business.pass.controller;
+package com.dgmoonlabs.cms.domain.business.reservation.pass.controller;
 
-import com.dgmoonlabs.cms.domain.business.pass.dto.PassDtos.PassResponse;
-import com.dgmoonlabs.cms.domain.business.pass.service.PassService;
+import com.dgmoonlabs.cms.domain.business.reservation.pass.dto.PassDtos.PassResponse;
+import com.dgmoonlabs.cms.domain.business.reservation.pass.service.PassService;
 import com.dgmoonlabs.cms.global.security.LoginUser;
 import lombok.RequiredArgsConstructor;
 import java.util.List;

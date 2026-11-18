@@ -1,7 +1,7 @@
-package com.dgmoonlabs.cms.domain.business.pass.repository;
+package com.dgmoonlabs.cms.domain.business.reservation.pass.repository;
 
-import com.dgmoonlabs.cms.domain.business.pass.constant.PassStatus;
-import com.dgmoonlabs.cms.domain.business.pass.entity.MemberPass;
+import com.dgmoonlabs.cms.domain.business.reservation.pass.constant.PassStatus;
+import com.dgmoonlabs.cms.domain.business.reservation.pass.entity.MemberPass;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

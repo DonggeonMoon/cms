@@ -2,6 +2,7 @@ package com.dgmoonlabs.cms.domain.business.review.dto;
 
 import com.dgmoonlabs.cms.domain.business.review.constant.ReviewTargetType;
 import com.dgmoonlabs.cms.domain.business.review.entity.Review;
+import com.dgmoonlabs.cms.domain.business.review.entity.ReviewPolicy;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -29,6 +30,15 @@ public final class ReviewDtos {
             return new ReviewResponse(review.getId(), review.getTargetType(), review.getProductId(), review.getReservationItemId(),
                     review.getRating(), review.getTitle(), review.getContentHtml(), review.getAuthorName(), canDelete,
                     review.getCreatedAt());
+        }
+    }
+
+    public record ReviewPolicyRequest(@Min(0) int minimumContentLength) {
+    }
+
+    public record ReviewPolicyResponse(int minimumContentLength) {
+        public static ReviewPolicyResponse from(final ReviewPolicy policy) {
+            return new ReviewPolicyResponse(policy.getMinimumContentLength());
         }
     }
 }

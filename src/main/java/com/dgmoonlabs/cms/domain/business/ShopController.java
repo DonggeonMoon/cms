@@ -7,6 +7,7 @@ import com.dgmoonlabs.cms.domain.business.order.service.ProductService;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.Availability;
 import com.dgmoonlabs.cms.domain.business.reservation.dto.ReservationDtos.ReservationItemResponse;
 import com.dgmoonlabs.cms.domain.business.reservation.service.ReservationService;
+import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewPolicyResponse;
 import com.dgmoonlabs.cms.domain.business.review.dto.ReviewDtos.ReviewResponse;
 import com.dgmoonlabs.cms.domain.business.review.service.ReviewService;
 import lombok.RequiredArgsConstructor;
@@ -73,5 +74,10 @@ public class ShopController {
     public ResponseEntity<PagedModel<ReviewResponse>> reservationItemReviews(@PathVariable final Long id,
                                                                               @PageableDefault final Pageable pageable) {
         return ResponseEntity.ok(new PagedModel<>(reviewService.getReservationItemReviews(id, pageable)));
+    }
+
+    @GetMapping("/api/review-policy")
+    public ResponseEntity<ReviewPolicyResponse> reviewPolicy() {
+        return ResponseEntity.ok(reviewService.getPolicy());
     }
 }

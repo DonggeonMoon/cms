@@ -1,4 +1,4 @@
-package com.dgmoonlabs.cms.domain.business.pass.service;
+package com.dgmoonlabs.cms.domain.business.reservation.pass.service;
 
 import com.dgmoonlabs.cms.domain.business.order.constant.PassUnit;
 import com.dgmoonlabs.cms.domain.business.order.constant.ProductSaleType;
@@ -7,10 +7,10 @@ import com.dgmoonlabs.cms.domain.business.order.entity.product.Product;
 import com.dgmoonlabs.cms.domain.business.order.repository.OrderRepository;
 import com.dgmoonlabs.cms.domain.business.order.repository.ProductRepository;
 import com.dgmoonlabs.cms.domain.business.order.service.OrderPaidEvent;
-import com.dgmoonlabs.cms.domain.business.pass.constant.PassStatus;
-import com.dgmoonlabs.cms.domain.business.pass.dto.PassDtos.PassResponse;
-import com.dgmoonlabs.cms.domain.business.pass.entity.MemberPass;
-import com.dgmoonlabs.cms.domain.business.pass.repository.MemberPassRepository;
+import com.dgmoonlabs.cms.domain.business.reservation.pass.constant.PassStatus;
+import com.dgmoonlabs.cms.domain.business.reservation.pass.dto.PassDtos.PassResponse;
+import com.dgmoonlabs.cms.domain.business.reservation.pass.entity.MemberPass;
+import com.dgmoonlabs.cms.domain.business.reservation.pass.repository.MemberPassRepository;
 import com.dgmoonlabs.cms.domain.common.user.constant.UserType;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;

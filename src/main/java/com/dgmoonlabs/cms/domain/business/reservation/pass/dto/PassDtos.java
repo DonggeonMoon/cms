@@ -1,8 +1,8 @@
-package com.dgmoonlabs.cms.domain.business.pass.dto;
+package com.dgmoonlabs.cms.domain.business.reservation.pass.dto;
 
 import com.dgmoonlabs.cms.domain.business.order.constant.PassUnit;
-import com.dgmoonlabs.cms.domain.business.pass.constant.PassStatus;
-import com.dgmoonlabs.cms.domain.business.pass.entity.MemberPass;
+import com.dgmoonlabs.cms.domain.business.reservation.pass.constant.PassStatus;
+import com.dgmoonlabs.cms.domain.business.reservation.pass.entity.MemberPass;
 
 import java.time.LocalDateTime;
 

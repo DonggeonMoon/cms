@@ -1,7 +1,7 @@
-package com.dgmoonlabs.cms.domain.business.pass.entity;
+package com.dgmoonlabs.cms.domain.business.reservation.pass.entity;
 
 import com.dgmoonlabs.cms.domain.business.order.constant.PassUnit;
-import com.dgmoonlabs.cms.domain.business.pass.constant.PassStatus;
+import com.dgmoonlabs.cms.domain.business.reservation.pass.constant.PassStatus;
 import com.dgmoonlabs.cms.global.entity.BaseEntity;
 import com.dgmoonlabs.cms.global.error.BusinessException;
 import com.dgmoonlabs.cms.global.error.ErrorCode;
