@@ -32,7 +32,7 @@ public class Site extends BaseEntity {
     private String domain;
 
     @Column(length = 50, unique = true)
-    @Comment("경로 접속용 사이트 코드 (/s/{code}/ 로 접속). 기본 사이트는 null")
+    @Comment("경로 접속용 사이트 코드 (/site/{code}/ 로 접속). 기본 사이트는 null")
     private String code;
 
     @Comment("사이트 테마")

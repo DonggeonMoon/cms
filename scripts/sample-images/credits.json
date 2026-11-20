@@ -82,5 +82,26 @@
     "author": "Ocdp",
     "license": "CC0",
     "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "skin-care-facial.jpg": {
+    "title": "facial",
+    "source": "https://www.flickr.com/photos/93609956@N05/9865582355",
+    "author": "Zenspa1",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+  },
+  "kids-art-class.jpg": {
+    "title": "painting",
+    "source": "https://www.flickr.com/photos/79983908@N00/5079103604",
+    "author": "mandaroo63",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+  },
+  "kyoto-cherry-blossom.jpg": {
+    "title": "Temari sakura for latecomers",
+    "source": "https://www.flickr.com/photos/63312719@N08/8685837432",
+    "author": "lensonjapan",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
   }
 }

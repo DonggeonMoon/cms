@@ -1,9 +1,9 @@
 import {createBrowserRouter} from 'react-router';
-import {setApiSiteCode} from './api/client';
+import {readSavedAdminSiteCode, setApiSiteCode} from './api/client';
 import {AuthZone} from './auth/AuthZone';
 import {RequireRole} from './auth/RequireRole';
 import {AdminLayout} from './components/AdminLayout';
-import {RequireFeature} from './components/SiteContext';
+import {RequireFeature, RequireFeatureAdmin} from './components/SiteContext';
 import {SiteLayout} from './components/SiteLayout';
 import {CodePage} from './pages/admin/CodePage';
 import {ApiKeyPage} from './pages/admin/ApiKeyPage';
@@ -258,30 +258,30 @@ export const routes = [
                             {path: 'banners', element: <BannerAdminPage/>},
                             {path: 'configs', element: <ConfigAdminPage/>},
                             {
-                                element: <RequireFeature feature="CONTENT"/>,
+                                element: <RequireFeatureAdmin feature="CONTENT"/>,
                                 children: [{path: 'contents', element: <ContentAdminPage/>}],
                             },
                             {
-                                element: <RequireFeature feature="BOARD"/>,
+                                element: <RequireFeatureAdmin feature="BOARD"/>,
                                 children: [{path: 'boards', element: <BoardAdminPage/>}],
                             },
                             {
-                                element: <RequireFeature feature="QNA"/>,
+                                element: <RequireFeatureAdmin feature="QNA"/>,
                                 children: [{path: 'questions', element: <QuestionAdminPage/>}],
                             },
                             {
-                                element: <RequireFeature feature="ARCHIVE"/>,
+                                element: <RequireFeatureAdmin feature="ARCHIVE"/>,
                                 children: [
                                     {path: 'archives', element: <ArchiveAdminPage/>},
                                     {path: 'archives/:id', element: <ArchiveArticleAdminPage/>},
                                 ],
                             },
                             {
-                                element: <RequireFeature feature="MAP"/>,
+                                element: <RequireFeatureAdmin feature="MAP"/>,
                                 children: [{path: 'map', element: <MapAdminPage/>}],
                             },
                             {
-                                element: <RequireFeature feature="PRODUCT"/>,
+                                element: <RequireFeatureAdmin feature="PRODUCT"/>,
                                 children: [
                                     {path: 'products', element: <ProductAdminPage/>},
                                     {path: 'discounts', element: <DiscountAdminPage/>},
@@ -295,7 +295,7 @@ export const routes = [
                                 ],
                             },
                             {
-                                element: <RequireFeature feature="PROGRAM"/>,
+                                element: <RequireFeatureAdmin feature="PROGRAM"/>,
                                 children: [
                                     {path: 'reservation-items', element: <ReservationItemAdminPage/>},
                                     {path: 'reservations', element: <ReservationAdminPage/>},
@@ -305,11 +305,11 @@ export const routes = [
                                 ],
                             },
                             {
-                                element: <RequireFeature feature="MEDIA"/>,
+                                element: <RequireFeatureAdmin feature="MEDIA"/>,
                                 children: [{path: 'streaming', element: <CourseAdminPage/>}, {path: 'courses', element: <CourseAdminPage/>}],
                             },
                             {
-                                element: <RequireFeature feature="APPLICATION"/>,
+                                element: <RequireFeatureAdmin feature="APPLICATION"/>,
                                 children: [
                                     {path: 'applications', element: <ApplicationAdminPage/>},
                                     {path: 'repairs', element: <RepairAdminPage/>},
@@ -317,22 +317,22 @@ export const routes = [
                                 ],
                             },
                             {
-                                element: <RequireFeature feature={['PRODUCT', 'PROGRAM', 'APPLICATION', 'MEDIA']}/>,
+                                element: <RequireFeatureAdmin feature={['PRODUCT', 'PROGRAM', 'APPLICATION', 'MEDIA']}/>,
                                 children: [{path: 'categories', element: <CategoryAdminPage/>}],
                             },
                             {
-                                element: <RequireFeature feature={['PRODUCT', 'PROGRAM']}/>,
+                                element: <RequireFeatureAdmin feature={['PRODUCT', 'PROGRAM']}/>,
                                 children: [
                                     {path: 'payments', element: <PaymentAdminPage/>},
                                     {path: 'reviews', element: <ReviewAdminPage/>},
                                 ],
                             },
                             {
-                                element: <RequireFeature feature="REPORT"/>,
+                                element: <RequireFeatureAdmin feature="REPORT"/>,
                                 children: [{path: 'reports', element: <ReportAdminPage/>}],
                             },
                             {
-                                element: <RequireFeature feature="SATISFACTION"/>,
+                                element: <RequireFeatureAdmin feature="SATISFACTION"/>,
                                 children: [{path: 'satisfactions', element: <SatisfactionAdminPage/>}],
                             },
                             {path: 'members', element: <MemberListPage/>},
@@ -364,8 +364,11 @@ export const routes = [
     },
 ];
 
-const siteCodeMatch = /^\/s\/([a-z0-9-]+)(?=\/|$)/.exec(window.location.pathname);
-const siteCode = siteCodeMatch?.[1] ?? null;
+// 공개 사이트는 URL의 /s/{code}로 정하고, 관리자 화면은 사이트 전환 드롭다운이 저장해 둔 사이트를 되살린다.
+// 그 외(기본 사이트의 공개 페이지)는 항상 기본 사이트로 본다.
+// 라우터의 basename은 실제 URL이 /s/{code}일 때만 쓴다 - 관리자 화면(/admin)은 그 경로가 아니므로 basename을 주면 라우트가 전혀 안 맞는다.
+const siteCodeMatch = /^\/site\/([a-z0-9-]+)(?=\/|$)/.exec(window.location.pathname);
+const siteCode = siteCodeMatch?.[1] ?? (window.location.pathname.startsWith('/admin') ? readSavedAdminSiteCode() : null);
 setApiSiteCode(siteCode);
 
-export const router = createBrowserRouter(routes, siteCode ? {basename: `/s/${siteCode}`} : undefined);
+export const router = createBrowserRouter(routes, siteCodeMatch ? {basename: `/site/${siteCodeMatch[1]}`} : undefined);

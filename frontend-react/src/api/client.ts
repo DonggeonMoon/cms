@@ -8,6 +8,8 @@ const SITE_HEADER = 'X-CMS-Site';
 
 export type ApiZone = 'site' | 'admin';
 
+export const ADMIN_SITE_CODE_KEY = 'cms.admin.siteCode';
+
 let currentZone: ApiZone = 'site';
 let currentSiteCode: string | null = null;
 
@@ -18,6 +20,15 @@ export function setApiZone(zone: ApiZone) {
 /** 공개 사이트는 URL의 /s/{code} 프리픽스로, 관리자는 선택한 사이트로 지정한다. 비워 두면 기본 사이트. */
 export function setApiSiteCode(code: string | null) {
     currentSiteCode = code;
+}
+
+/** 관리자가 사이트 전환 드롭다운에서 골라 저장해 둔 작업 사이트. */
+export function readSavedAdminSiteCode(): string | null {
+    try {
+        return localStorage.getItem(ADMIN_SITE_CODE_KEY);
+    } catch {
+        return null;
+    }
 }
 
 export function getApiSiteCode(): string | null {

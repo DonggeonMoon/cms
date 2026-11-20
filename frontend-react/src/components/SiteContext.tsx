@@ -1,5 +1,5 @@
 import {createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState} from 'react';
-import {Outlet} from 'react-router';
+import {Navigate, Outlet} from 'react-router';
 import type {Archive, Board, Menu, Site, SiteFeature} from '../api/domain';
 import {archiveApi, boardApi, siteApi} from '../api/endpoints';
 import {getApiSiteCode} from '../api/client';
@@ -136,6 +136,15 @@ export function RequireFeature({feature}: { feature: SiteFeature | SiteFeature[]
     const {isEnabled} = useSite();
     if (!(Array.isArray(feature) ? feature : [feature]).some(isEnabled)) {
         return <NotFoundPage/>;
+    }
+    return <Outlet/>;
+}
+
+/** 관리자 화면 전용: 사이트 전환으로 현재 쓰고 있던 기능이 없어지면 404 대신 대시보드로 보낸다. */
+export function RequireFeatureAdmin({feature}: { feature: SiteFeature | SiteFeature[] }) {
+    const {isEnabled} = useSite();
+    if (!(Array.isArray(feature) ? feature : [feature]).some(isEnabled)) {
+        return <Navigate to="/admin" replace/>;
     }
     return <Outlet/>;
 }

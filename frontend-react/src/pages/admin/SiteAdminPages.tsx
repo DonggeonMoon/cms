@@ -92,7 +92,10 @@ export function SiteAdminPage() {
             columns={[
                 {label: t('admin.site.column.name', '이름'), render: (s) => s.name},
                 {label: t('admin.site.column.domain', '도메인'), render: (s) => s.domain ?? '-'},
-                {label: t('admin.site.column.address', '접속 주소'), render: (s) => s.code ? `/s/${s.code}/` : '/'},
+                {label: t('admin.site.column.address', '접속 주소'), render: (s) => {
+                    const path = s.code ? `/site/${s.code}/` : '/';
+                    return <a href={path} target="_blank" rel="noreferrer">{path}</a>;
+                }},
                 {label: t('admin.site.column.isDefault', '기본'), render: (s) => <YesNo value={s.isDefault}/>},
                 {label: t('admin.site.column.features', '켜진 기능'), render: (s) => {
                     const on = siteFeatures(t).filter((feature) => s.features[feature.value] !== false);

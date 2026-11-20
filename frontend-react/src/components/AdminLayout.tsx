@@ -1,29 +1,13 @@
 import {useEffect, useState} from 'react';
 import {Link, NavLink, Outlet, useNavigate} from 'react-router';
 import {type AdminArea, useMyPermissions} from '../api/admins';
-import {getApiSiteCode, setApiSiteCode} from '../api/client';
+import {ADMIN_SITE_CODE_KEY, getApiSiteCode} from '../api/client';
 import {ColorModeToggle, useColorMode} from './ColorMode';
 import {adminApi} from '../api/endpoints';
 import type {Site, SiteFeature} from '../api/domain';
 import {useAuth} from '../auth/AuthContext';
 import {I18nProvider, LANGUAGE_NAMES, useI18n} from '../api/i18n';
 import {SiteProvider, useSite} from './SiteContext';
-
-const ADMIN_SITE_CODE_KEY = 'cms.admin.siteCode';
-
-function readSavedSiteCode(): string | null {
-    try {
-        return localStorage.getItem(ADMIN_SITE_CODE_KEY);
-    } catch {
-        return null;
-    }
-}
-
-// 라우터가 /admin 경로에서 setApiSiteCode(null)로 초기화하므로, 관리자가 고른 사이트를 모듈 로드 시점에 복원한다.
-const savedAdminSiteCode = readSavedSiteCode();
-if (savedAdminSiteCode) {
-    setApiSiteCode(savedAdminSiteCode);
-}
 
 interface MenuItem {
     to: string;
@@ -157,12 +141,8 @@ export function AdminLayout() {
 }
 
 /** 핵심 콘텐츠(메뉴·배너·컨텐츠·게시판·강의·예약상품)를 관리할 사이트를 고른다. 바꾸면 그 사이트 기준으로 다시 불러오려고 새로고침한다. */
-function SiteSwitcher() {
+function SiteSwitcher({sites}: { sites: Site[] }) {
     const {t} = useI18n();
-    const [sites, setSites] = useState<Site[]>([]);
-    useEffect(() => {
-        adminApi.sites.search({size: 200}).then((page) => setSites(page?.content ?? [])).catch(() => setSites([]));
-    }, []);
     if (sites.length <= 1) {
         return null;
     }
@@ -194,6 +174,12 @@ function AdminFrame() {
     const navigate = useNavigate();
     const permissions = useMyPermissions();
     const [colorMode, setColorMode] = useColorMode('cms-admin-color-mode');
+    const [sites, setSites] = useState<Site[]>([]);
+    useEffect(() => {
+        adminApi.sites.search({size: 200}).then((page) => setSites(page?.content ?? [])).catch(() => setSites([]));
+    }, []);
+    // 관리자 화면 자체의 브랜드는 작업 중인 사이트가 아니라 항상 기본 사이트 이름을 따른다.
+    const brandName = sites.find((s) => s.isDefault)?.name ?? name;
     const allowed = (item: MenuItem, groupArea?: AdminArea) => {
         if (item.superOnly) {
             return permissions?.superAdmin === true;
@@ -217,12 +203,12 @@ function AdminFrame() {
     return (
         <div className="admin">
             <header className="admin-header">
-                <Link to="/admin" className="brand">{name} {t('admin.layout.title', '관리자')}</Link>
+                <Link to="/admin" className="brand">{brandName} {t('admin.layout.title', '관리자')}</Link>
                 <div className="admin-account">
-                    <SiteSwitcher/>
+                    <SiteSwitcher sites={sites}/>
                     <ColorModeToggle mode={colorMode} onChange={setColorMode}/>
                     <span className="muted">{user?.name}</span>
-                    <a href={getApiSiteCode() ? `/s/${getApiSiteCode()}/` : '/'}>{t('admin.layout.goToSite', '사이트로 이동')}</a>
+                    <a href={getApiSiteCode() ? `/site/${getApiSiteCode()}/` : '/'}>{t('admin.layout.goToSite', '사이트로 이동')}</a>
                     <button type="button" onClick={handleLogout}>{t('nav.logout', '로그아웃')}</button>
                     {languages.length > 1 && (
                         <select className="language-select" aria-label={t('language.label', '언어')} value={language}
